@@ -50,6 +50,7 @@ const Index = () => {
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [maes, setMaes] = useState<MaeProcesso[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all">("all");
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -108,15 +109,25 @@ const Index = () => {
   }, [user]);
 
   const filteredMaes = useMemo(() => {
-    if (!searchQuery.trim()) return maes;
-
-    const query = searchQuery.toLowerCase().trim();
-    return maes.filter(
-      (mae) =>
-        mae.nome_mae.toLowerCase().includes(query) ||
-        mae.cpf.includes(query.replace(/\D/g, ""))
-    );
-  }, [searchQuery, maes]);
+    let filtered = maes;
+    
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((mae) => mae.status_processo === statusFilter);
+    }
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(
+        (mae) =>
+          mae.nome_mae.toLowerCase().includes(query) ||
+          mae.cpf.includes(query.replace(/\D/g, ""))
+      );
+    }
+    
+    return filtered;
+  }, [searchQuery, maes, statusFilter]);
 
   const stats = useMemo(() => {
     const total = maes.length;
@@ -138,6 +149,10 @@ const Index = () => {
 
     return { total, aprovadas, indeferidas, emAnalise, pendencias, entradaDocs };
   }, [maes]);
+
+  const handleStatsClick = (filter: StatusProcesso | "all") => {
+    setStatusFilter(statusFilter === filter ? "all" : filter);
+  };
 
   const handleCardClick = (mae: MaeProcesso) => {
     setSelectedMae(mae);
@@ -203,36 +218,48 @@ const Index = () => {
             value={stats.total}
             icon={Users}
             description="Todas as mães cadastradas"
+            onClick={() => handleStatsClick("all")}
+            isActive={statusFilter === "all"}
           />
           <StatsCard
             title="Aprovadas"
             value={stats.aprovadas}
             icon={CheckCircle2}
             className="border-l-4 border-l-emerald-500"
+            onClick={() => handleStatsClick("✅ Aprovada")}
+            isActive={statusFilter === "✅ Aprovada"}
           />
           <StatsCard
             title="Indeferidas"
             value={stats.indeferidas}
             icon={XCircle}
             className="border-l-4 border-l-destructive"
+            onClick={() => handleStatsClick("❌ Indeferida")}
+            isActive={statusFilter === "❌ Indeferida"}
           />
           <StatsCard
             title="Em Análise"
             value={stats.emAnalise}
             icon={Clock}
             className="border-l-4 border-l-primary"
+            onClick={() => handleStatsClick("🔎 Em Análise")}
+            isActive={statusFilter === "🔎 Em Análise"}
           />
           <StatsCard
             title="Pendências"
             value={stats.pendencias}
             icon={AlertTriangle}
             className="border-l-4 border-l-accent-foreground"
+            onClick={() => handleStatsClick("⚠️ Pendência Documental")}
+            isActive={statusFilter === "⚠️ Pendência Documental"}
           />
           <StatsCard
             title="Entrada de Docs"
             value={stats.entradaDocs}
             icon={FileText}
             className="border-l-4 border-l-secondary"
+            onClick={() => handleStatsClick("📥 Entrada de Documentos")}
+            isActive={statusFilter === "📥 Entrada de Documentos"}
           />
         </section>
 
