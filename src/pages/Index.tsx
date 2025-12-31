@@ -5,6 +5,7 @@ import { StatsCard } from "@/components/dashboard/StatsCard";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { MaeDetailDialog } from "@/components/mae/MaeDetailDialog";
 import { MaeFormDialog } from "@/components/mae/MaeFormDialog";
+import { MaeEditDialog } from "@/components/mae/MaeEditDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso } from "@/types/mae";
@@ -45,6 +46,7 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMae, setSelectedMae] = useState<MaeProcesso | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [maes, setMaes] = useState<MaeProcesso[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,7 +141,38 @@ const Index = () => {
 
   const handleCardClick = (mae: MaeProcesso) => {
     setSelectedMae(mae);
-    setDialogOpen(true);
+    setEditDialogOpen(true);
+  };
+
+  // Map display status (with emoji) to db status (without emoji)
+  const mapDisplayStatusToDb = (status: StatusProcesso): string => {
+    return status.split(" ").slice(1).join(" ") || status;
+  };
+
+  const handleStatusChange = async (maeId: string, newStatus: StatusProcesso) => {
+    const dbStatus = mapDisplayStatusToDb(newStatus) as 
+      "Entrada de Documentos" | "Em Análise" | "Pendência Documental" | 
+      "Elegível (Análise Positiva)" | "Protocolo INSS" | "Aguardando Análise INSS" | 
+      "Aprovada" | "Indeferida" | "Recurso / Judicial" | "Processo Encerrado";
+
+    const { error } = await supabase
+      .from("mae_processo")
+      .update({ status_processo: dbStatus })
+      .eq("id", maeId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar status",
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: "Status atualizado",
+        description: `Processo movido para ${newStatus}`,
+      });
+      fetchMaes();
+    }
   };
 
   if (authLoading || loading) {
@@ -215,7 +248,11 @@ const Index = () => {
 
             <TabsContent value="all" className="mt-0">
               <div className="rounded-lg border bg-muted/30 min-h-[500px]">
-                <KanbanBoard maes={filteredMaes} onCardClick={handleCardClick} />
+                <KanbanBoard 
+                  maes={filteredMaes} 
+                  onCardClick={handleCardClick} 
+                  onStatusChange={handleStatusChange}
+                />
               </div>
             </TabsContent>
 
@@ -224,6 +261,7 @@ const Index = () => {
                 <KanbanBoard
                   maes={filteredMaes}
                   onCardClick={handleCardClick}
+                  onStatusChange={handleStatusChange}
                   visibleStatuses={[
                     "📥 Entrada de Documentos",
                     "🔎 Em Análise",
@@ -240,6 +278,7 @@ const Index = () => {
                 <KanbanBoard
                   maes={filteredMaes}
                   onCardClick={handleCardClick}
+                  onStatusChange={handleStatusChange}
                   visibleStatuses={["⚠️ Pendência Documental"]}
                 />
               </div>
@@ -250,6 +289,7 @@ const Index = () => {
                 <KanbanBoard
                   maes={filteredMaes}
                   onCardClick={handleCardClick}
+                  onStatusChange={handleStatusChange}
                   visibleStatuses={[
                     "✅ Aprovada",
                     "❌ Indeferida",
@@ -267,6 +307,13 @@ const Index = () => {
         mae={selectedMae}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+      />
+
+      <MaeEditDialog
+        mae={selectedMae}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSuccess={fetchMaes}
       />
 
       <MaeFormDialog
