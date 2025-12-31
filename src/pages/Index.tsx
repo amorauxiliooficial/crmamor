@@ -126,11 +126,17 @@ const Index = () => {
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(
-        (mae) =>
-          mae.nome_mae.toLowerCase().includes(query) ||
-          mae.cpf.includes(query.replace(/\D/g, ""))
-      );
+      console.log("Search query:", query);
+      console.log("Maes before filter:", filtered.map(m => ({ nome: m.nome_mae, cpf: m.cpf })));
+      
+      filtered = filtered.filter((mae) => {
+        const nameMatch = mae.nome_mae?.toLowerCase().includes(query);
+        const cpfMatch = mae.cpf?.replace(/\D/g, "").includes(query.replace(/\D/g, ""));
+        console.log(`Checking ${mae.nome_mae}: nameMatch=${nameMatch}, cpfMatch=${cpfMatch}`);
+        return nameMatch || cpfMatch;
+      });
+      
+      console.log("Maes after filter:", filtered.length);
     }
     
     return filtered;
