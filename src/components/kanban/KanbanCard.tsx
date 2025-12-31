@@ -1,18 +1,23 @@
 import { MaeProcesso } from "@/types/mae";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Phone } from "lucide-react";
+import { Calendar, FileText } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
+import { cn } from "@/lib/utils";
 
 interface KanbanCardProps {
   mae: MaeProcesso;
   onClick: () => void;
+  isDragging?: boolean;
 }
 
-export function KanbanCard({ mae, onClick }: KanbanCardProps) {
+export function KanbanCard({ mae, onClick, isDragging }: KanbanCardProps) {
   return (
     <Card
-      className="cursor-pointer transition-all hover:shadow-md hover:ring-2 hover:ring-primary/20"
+      className={cn(
+        "cursor-pointer transition-all hover:shadow-md hover:ring-2 hover:ring-primary/20",
+        isDragging && "shadow-lg ring-2 ring-primary rotate-2"
+      )}
       onClick={onClick}
     >
       <CardContent className="p-3">
