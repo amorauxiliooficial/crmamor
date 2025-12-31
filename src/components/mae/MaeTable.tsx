@@ -14,6 +14,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -27,7 +28,8 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Settings2, Check, X, ArrowUpDown, Filter } from "lucide-react";
+import { Settings2, Check, X, ArrowUpDown, Filter, MoreHorizontal, Copy } from "lucide-react";
+import { toast } from "sonner";
 
 interface MaeTableProps {
   maes: MaeProcesso[];
@@ -55,6 +57,7 @@ const getStatusBadgeVariant = (status: string) => {
 };
 
 const defaultColumns: Column[] = [
+  { id: "acoes", label: "Ações", visible: true, sortable: false },
   { id: "nome_mae", label: "Nome", visible: true, sortable: true },
   { id: "cpf", label: "CPF", visible: true, sortable: true },
   { id: "telefone", label: "Telefone", visible: true, sortable: false },
@@ -75,7 +78,16 @@ const defaultColumns: Column[] = [
   { id: "data_ultima_atualizacao", label: "Última Atualização", visible: true, sortable: true },
 ];
 
-const COLUMNS_STORAGE_KEY = "mae-table-columns-v2";
+const copyToClipboard = async (text: string, label: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success(`${label} copiado!`);
+  } catch (err) {
+    toast.error("Erro ao copiar");
+  }
+};
+
+const COLUMNS_STORAGE_KEY = "mae-table-columns-v3";
 
 const loadColumnsFromStorage = (): Column[] => {
   try {
@@ -269,12 +281,57 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
               sortedMaes.map((mae) => (
                 <TableRow
                   key={mae.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => onRowClick(mae)}
+                  className="hover:bg-muted/50"
                 >
                   {visibleColumns.map((column) => (
                     <TableCell key={column.id}>
-                      {column.id !== "acoes" && renderCellContent(mae, column.id as keyof MaeProcesso)}
+                      {column.id === "acoes" ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="bg-background">
+                            <DropdownMenuLabel>Copiar</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => copyToClipboard(mae.cpf, "CPF")}>
+                              <Copy className="h-4 w-4 mr-2" />
+                              CPF
+                            </DropdownMenuItem>
+                            {mae.telefone && (
+                              <DropdownMenuItem onClick={() => copyToClipboard(mae.telefone!, "Telefone")}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                Telefone
+                              </DropdownMenuItem>
+                            )}
+                            {mae.email && (
+                              <DropdownMenuItem onClick={() => copyToClipboard(mae.email!, "Email")}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                Email
+                              </DropdownMenuItem>
+                            )}
+                            {mae.senha_gov && (
+                              <DropdownMenuItem onClick={() => copyToClipboard(mae.senha_gov!, "Senha Gov")}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                Senha Gov
+                              </DropdownMenuItem>
+                            )}
+                            {mae.protocolo_inss && (
+                              <DropdownMenuItem onClick={() => copyToClipboard(mae.protocolo_inss!, "Protocolo INSS")}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                Protocolo INSS
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => onRowClick(mae)}>
+                              Ver detalhes
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : (
+                        renderCellContent(mae, column.id as keyof MaeProcesso)
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
