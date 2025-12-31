@@ -35,7 +35,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
     email: "",
     tipo_evento: "Parto" as "Parto" | "Adoção" | "Guarda judicial",
     data_evento: "",
-    data_evento_tipo: "" as "" | "Parto (real)" | "DPP",
+    data_evento_tipo: "none" as "none" | "Parto (real)" | "DPP",
     categoria_previdenciaria: "Não informado" as "CLT" | "MEI" | "Contribuinte Individual" | "Desempregada" | "Não informado",
     contrato_assinado: false,
     uf: "",
@@ -94,7 +94,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
       email: formData.email || null,
       tipo_evento: formData.tipo_evento,
       data_evento: formData.data_evento || null,
-      data_evento_tipo: formData.data_evento_tipo || "",
+      data_evento_tipo: formData.data_evento_tipo === "none" ? "" : formData.data_evento_tipo,
       categoria_previdenciaria: formData.categoria_previdenciaria,
       contrato_assinado: formData.contrato_assinado,
       uf: formData.uf || null,
@@ -123,7 +123,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
         email: "",
         tipo_evento: "Parto",
         data_evento: "",
-        data_evento_tipo: "",
+        data_evento_tipo: "none",
         categoria_previdenciaria: "Não informado",
         contrato_assinado: false,
         uf: "",
@@ -256,7 +256,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
                 <Label>Tipo da Data</Label>
                 <Select
                   value={formData.data_evento_tipo}
-                  onValueChange={(value: "" | "Parto (real)" | "DPP") => 
+                  onValueChange={(value: "none" | "Parto (real)" | "DPP") => 
                     setFormData({ ...formData, data_evento_tipo: value })
                   }
                 >
@@ -264,7 +264,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Não informado</SelectItem>
+                    <SelectItem value="none">Não informado</SelectItem>
                     <SelectItem value="Parto (real)">Parto (real)</SelectItem>
                     <SelectItem value="DPP">DPP</SelectItem>
                   </SelectContent>
