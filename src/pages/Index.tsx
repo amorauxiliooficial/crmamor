@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -78,10 +79,11 @@ const Index = () => {
       .order("data_ultima_atualizacao", { ascending: false });
 
     if (error) {
+      logError('fetch_maes', error);
       toast({
         variant: "destructive",
         title: "Erro ao carregar dados",
-        description: error.message,
+        description: getUserFriendlyError(error),
       });
     } else if (data) {
       const mappedData: MaeProcesso[] = data.map((item) => ({
@@ -194,10 +196,11 @@ const Index = () => {
       .eq("id", maeId);
 
     if (error) {
+      logError('update_status', error);
       toast({
         variant: "destructive",
         title: "Erro ao atualizar status",
-        description: error.message,
+        description: getUserFriendlyError(error),
       });
     } else {
       toast({

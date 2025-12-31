@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { logError } from "@/lib/errorHandler";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,7 +69,7 @@ export default function Conferencia() {
       .order("data_ultima_atualizacao", { ascending: true });
 
     if (maesError) {
-      console.error("Error fetching maes:", maesError);
+      logError('fetch_maes_em_analise', maesError);
       setLoading(false);
       return;
     }

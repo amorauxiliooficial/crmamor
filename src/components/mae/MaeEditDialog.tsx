@@ -10,6 +10,7 @@ import { Loader2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
+import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 
 interface MaeEditDialogProps {
   mae: MaeProcesso | null;
@@ -150,10 +151,11 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     setIsLoading(false);
 
     if (error) {
+      logError('mae_edit_submit', error);
       toast({
         variant: "destructive",
         title: "Erro ao salvar",
-        description: error.message,
+        description: getUserFriendlyError(error),
       });
     } else {
       toast({

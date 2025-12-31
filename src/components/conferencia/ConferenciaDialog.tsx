@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 
 interface ConferenciaDialogProps {
   open: boolean;
@@ -58,10 +59,10 @@ export function ConferenciaDialog({
     setIsLoading(false);
 
     if (error) {
-      console.error("Error creating conferencia:", error);
+      logError('conferencia_submit', error);
       toast({
         title: "Erro ao registrar conferência",
-        description: error.message,
+        description: getUserFriendlyError(error),
         variant: "destructive",
       });
       return;
