@@ -22,6 +22,7 @@ import {
   LayoutGrid,
   List,
   ClipboardCheck,
+  DollarSign,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -314,6 +315,15 @@ const Index = () => {
               )}
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/pagamentos")}
+                className="gap-2"
+              >
+                <DollarSign className="h-4 w-4" />
+                Pagamentos
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
