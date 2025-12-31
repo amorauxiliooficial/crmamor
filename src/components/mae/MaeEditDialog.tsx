@@ -6,11 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
+import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
 
 interface MaeEditDialogProps {
   mae: MaeProcesso | null;
@@ -33,6 +34,7 @@ const mapDisplayStatusToDb = (status: StatusProcesso): string => {
 export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDialogProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [pagamentoDialogOpen, setPagamentoDialogOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     nome_mae: "",
@@ -440,26 +442,47 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           </div>
 
           {/* Submit */}
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
+          <div className="flex justify-between gap-3">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setPagamentoDialogOpen(true)}
+              className="gap-2"
+            >
+              <DollarSign className="h-4 w-4" />
+              Gerenciar Pagamentos
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Salvar Alterações
-                </>
-              )}
-            </Button>
+            <div className="flex gap-3">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvar Alterações
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
+
+      {mae && (
+        <PagamentoDialog
+          open={pagamentoDialogOpen}
+          onOpenChange={setPagamentoDialogOpen}
+          maeId={mae.id}
+          maeNome={mae.nome_mae}
+          onSuccess={() => {}}
+        />
+      )}
     </Dialog>
   );
 }

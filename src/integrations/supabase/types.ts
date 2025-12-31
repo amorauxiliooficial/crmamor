@@ -219,6 +219,85 @@ export type Database = {
         }
         Relationships: []
       }
+      pagamentos_mae: {
+        Row: {
+          created_at: string
+          id: string
+          mae_id: string
+          tipo_pagamento: string
+          total_parcelas: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mae_id: string
+          tipo_pagamento?: string
+          total_parcelas?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mae_id?: string
+          tipo_pagamento?: string
+          total_parcelas?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_mae_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parcelas_pagamento: {
+        Row: {
+          created_at: string
+          data_pagamento: string | null
+          id: string
+          numero_parcela: number
+          observacoes: string | null
+          pagamento_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          numero_parcela: number
+          observacoes?: string | null
+          pagamento_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          numero_parcela?: number
+          observacoes?: string | null
+          pagamento_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcelas_pagamento_pagamento_id_fkey"
+            columns: ["pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "pagamentos_mae"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
