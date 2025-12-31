@@ -17,7 +17,7 @@ interface Conferencia {
   observacoes: string | null;
   created_at: string;
   user_id: string;
-  user_email?: string;
+  user_name?: string;
 }
 
 export function ConferenciaHistorico({ maeId }: ConferenciaHistoricoProps) {
@@ -30,7 +30,10 @@ export function ConferenciaHistorico({ maeId }: ConferenciaHistoricoProps) {
       
       const { data, error } = await supabase
         .from("conferencia_inss")
-        .select("*")
+        .select(`
+          *,
+          profiles:user_id (full_name)
+        `)
         .eq("mae_id", maeId)
         .order("created_at", { ascending: false });
 
@@ -40,20 +43,14 @@ export function ConferenciaHistorico({ maeId }: ConferenciaHistoricoProps) {
         return;
       }
 
-      // Fetch user emails for each conferencia
-      const userIds = [...new Set(data.map((c) => c.user_id))];
-      const userEmails: Record<string, string> = {};
-
-      for (const userId of userIds) {
-        const { data: userData } = await supabase.auth.admin.getUserById(userId).catch(() => ({ data: null }));
-        // Since we can't use admin API, we'll just show the user_id or a fallback
-        userEmails[userId] = userId.slice(0, 8) + "...";
-      }
-
       setConferencias(
-        data.map((c) => ({
-          ...c,
-          user_email: userEmails[c.user_id],
+        data.map((c: any) => ({
+          id: c.id,
+          houve_atualizacao: c.houve_atualizacao,
+          observacoes: c.observacoes,
+          created_at: c.created_at,
+          user_id: c.user_id,
+          user_name: c.profiles?.full_name || c.user_id.slice(0, 8) + "...",
         }))
       );
       setLoading(false);
@@ -118,7 +115,7 @@ export function ConferenciaHistorico({ maeId }: ConferenciaHistoricoProps) {
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <User className="h-3 w-3" />
-              <span>Conferido por: {conf.user_email}</span>
+              <span>Conferido por: {conf.user_name}</span>
               <span>•</span>
               <span>
                 {format(new Date(conf.created_at), "dd/MM/yyyy 'às' HH:mm", {
