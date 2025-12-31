@@ -40,7 +40,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     email: "",
     tipo_evento: "Parto" as "Parto" | "Adoção" | "Guarda judicial",
     data_evento: "",
-    data_evento_tipo: "" as "" | "Parto (real)" | "DPP",
+    data_evento_tipo: "none" as "none" | "Parto (real)" | "DPP",
     categoria_previdenciaria: "Não informado" as "CLT" | "MEI" | "Contribuinte Individual" | "Desempregada" | "Não informado",
     status_processo: "📥 Entrada de Documentos" as StatusProcesso,
     protocolo_inss: "",
@@ -62,7 +62,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
         email: mae.email || "",
         tipo_evento: mae.tipo_evento,
         data_evento: mae.data_evento || "",
-        data_evento_tipo: mae.data_evento_tipo || "",
+        data_evento_tipo: mae.data_evento_tipo || "none",
         categoria_previdenciaria: mae.categoria_previdenciaria,
         status_processo: mae.status_processo,
         protocolo_inss: mae.protocolo_inss || "",
@@ -127,7 +127,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
         email: formData.email || null,
         tipo_evento: formData.tipo_evento,
         data_evento: formData.data_evento || null,
-        data_evento_tipo: formData.data_evento_tipo || "",
+        data_evento_tipo: formData.data_evento_tipo === "none" ? "" : formData.data_evento_tipo,
         categoria_previdenciaria: formData.categoria_previdenciaria,
         status_processo: dbStatusValue,
         protocolo_inss: formData.protocolo_inss || null,
@@ -305,7 +305,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                 <Label>Tipo da Data</Label>
                 <Select
                   value={formData.data_evento_tipo}
-                  onValueChange={(value: "" | "Parto (real)" | "DPP") => 
+                  onValueChange={(value: "none" | "Parto (real)" | "DPP") => 
                     setFormData({ ...formData, data_evento_tipo: value })
                   }
                 >
@@ -313,7 +313,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Não informado</SelectItem>
+                    <SelectItem value="none">Não informado</SelectItem>
                     <SelectItem value="Parto (real)">Parto (real)</SelectItem>
                     <SelectItem value="DPP">DPP</SelectItem>
                   </SelectContent>
