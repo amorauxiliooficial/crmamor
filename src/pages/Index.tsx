@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import { MaeTable } from "@/components/mae/MaeTable";
 import { MaeDetailDialog } from "@/components/mae/MaeDetailDialog";
 import { MaeFormDialog } from "@/components/mae/MaeFormDialog";
 import { MaeEditDialog } from "@/components/mae/MaeEditDialog";
@@ -17,9 +18,12 @@ import {
   AlertTriangle,
   FileText,
   Loader2,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 // Map database status to display status with emoji
 const mapDbStatusToDisplay = (status: string): StatusProcesso => {
@@ -51,6 +55,7 @@ const Index = () => {
   const [maes, setMaes] = useState<MaeProcesso[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all">("all");
+  const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -263,70 +268,92 @@ const Index = () => {
           />
         </section>
 
-        {/* Kanban Tabs */}
+        {/* View Toggle and Content */}
         <section>
-          <Tabs defaultValue="all" className="w-full">
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">Todos os Status</TabsTrigger>
-              <TabsTrigger value="active">Em Andamento</TabsTrigger>
-              <TabsTrigger value="pending">Pendências</TabsTrigger>
-              <TabsTrigger value="completed">Finalizados</TabsTrigger>
-            </TabsList>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Processos</h2>
+            <ToggleGroup
+              type="single"
+              value={viewMode}
+              onValueChange={(value) => value && setViewMode(value as "kanban" | "table")}
+            >
+              <ToggleGroupItem value="kanban" aria-label="Visualização Kanban">
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                Kanban
+              </ToggleGroupItem>
+              <ToggleGroupItem value="table" aria-label="Visualização Tabela">
+                <List className="h-4 w-4 mr-2" />
+                Tabela
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
 
-            <TabsContent value="all" className="mt-0">
-              <div className="rounded-lg border bg-muted/30 min-h-[500px]">
-                <KanbanBoard 
-                  maes={filteredMaes} 
-                  onCardClick={handleCardClick} 
-                  onStatusChange={handleStatusChange}
-                />
-              </div>
-            </TabsContent>
+          {viewMode === "table" ? (
+            <MaeTable maes={filteredMaes} onRowClick={handleCardClick} />
+          ) : (
+            <Tabs defaultValue="all" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="all">Todos os Status</TabsTrigger>
+                <TabsTrigger value="active">Em Andamento</TabsTrigger>
+                <TabsTrigger value="pending">Pendências</TabsTrigger>
+                <TabsTrigger value="completed">Finalizados</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="active" className="mt-0">
-              <div className="rounded-lg border bg-muted/30 min-h-[500px]">
-                <KanbanBoard
-                  maes={filteredMaes}
-                  onCardClick={handleCardClick}
-                  onStatusChange={handleStatusChange}
-                  visibleStatuses={[
-                    "📥 Entrada de Documentos",
-                    "🔎 Em Análise",
-                    "🟡 Elegível (Análise Positiva)",
-                    "📤 Protocolo INSS",
-                    "⏳ Aguardando Análise INSS",
-                  ]}
-                />
-              </div>
-            </TabsContent>
+              <TabsContent value="all" className="mt-0">
+                <div className="rounded-lg border bg-muted/30 min-h-[500px]">
+                  <KanbanBoard 
+                    maes={filteredMaes} 
+                    onCardClick={handleCardClick} 
+                    onStatusChange={handleStatusChange}
+                  />
+                </div>
+              </TabsContent>
 
-            <TabsContent value="pending" className="mt-0">
-              <div className="rounded-lg border bg-muted/30 min-h-[500px]">
-                <KanbanBoard
-                  maes={filteredMaes}
-                  onCardClick={handleCardClick}
-                  onStatusChange={handleStatusChange}
-                  visibleStatuses={["⚠️ Pendência Documental"]}
-                />
-              </div>
-            </TabsContent>
+              <TabsContent value="active" className="mt-0">
+                <div className="rounded-lg border bg-muted/30 min-h-[500px]">
+                  <KanbanBoard
+                    maes={filteredMaes}
+                    onCardClick={handleCardClick}
+                    onStatusChange={handleStatusChange}
+                    visibleStatuses={[
+                      "📥 Entrada de Documentos",
+                      "🔎 Em Análise",
+                      "🟡 Elegível (Análise Positiva)",
+                      "📤 Protocolo INSS",
+                      "⏳ Aguardando Análise INSS",
+                    ]}
+                  />
+                </div>
+              </TabsContent>
 
-            <TabsContent value="completed" className="mt-0">
-              <div className="rounded-lg border bg-muted/30 min-h-[500px]">
-                <KanbanBoard
-                  maes={filteredMaes}
-                  onCardClick={handleCardClick}
-                  onStatusChange={handleStatusChange}
-                  visibleStatuses={[
-                    "✅ Aprovada",
-                    "❌ Indeferida",
-                    "⚖️ Recurso / Judicial",
-                    "📦 Processo Encerrado",
-                  ]}
-                />
-              </div>
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="pending" className="mt-0">
+                <div className="rounded-lg border bg-muted/30 min-h-[500px]">
+                  <KanbanBoard
+                    maes={filteredMaes}
+                    onCardClick={handleCardClick}
+                    onStatusChange={handleStatusChange}
+                    visibleStatuses={["⚠️ Pendência Documental"]}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="completed" className="mt-0">
+                <div className="rounded-lg border bg-muted/30 min-h-[500px]">
+                  <KanbanBoard
+                    maes={filteredMaes}
+                    onCardClick={handleCardClick}
+                    onStatusChange={handleStatusChange}
+                    visibleStatuses={[
+                      "✅ Aprovada",
+                      "❌ Indeferida",
+                      "⚖️ Recurso / Judicial",
+                      "📦 Processo Encerrado",
+                    ]}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
         </section>
       </main>
 
