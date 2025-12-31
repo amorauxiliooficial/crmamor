@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
 import {
   Table,
@@ -75,11 +75,34 @@ const defaultColumns: Column[] = [
   { id: "data_ultima_atualizacao", label: "Última Atualização", visible: true, sortable: true },
 ];
 
+const COLUMNS_STORAGE_KEY = "mae-table-columns";
+
+const loadColumnsFromStorage = (): Column[] => {
+  try {
+    const stored = localStorage.getItem(COLUMNS_STORAGE_KEY);
+    if (stored) {
+      const parsedColumns = JSON.parse(stored) as Column[];
+      // Merge with default columns to handle new columns added in updates
+      return defaultColumns.map(defaultCol => {
+        const storedCol = parsedColumns.find(c => c.id === defaultCol.id);
+        return storedCol ? { ...defaultCol, visible: storedCol.visible } : defaultCol;
+      });
+    }
+  } catch (e) {
+    console.error("Error loading columns from storage:", e);
+  }
+  return defaultColumns;
+};
+
 export function MaeTable({ maes, onRowClick }: MaeTableProps) {
-  const [columns, setColumns] = useState<Column[]>(defaultColumns);
+  const [columns, setColumns] = useState<Column[]>(loadColumnsFromStorage);
   const [sortColumn, setSortColumn] = useState<keyof MaeProcesso | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all">("all");
+
+  useEffect(() => {
+    localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(columns));
+  }, [columns]);
 
   const visibleColumns = useMemo(() => columns.filter((col) => col.visible), [columns]);
 
@@ -155,7 +178,7 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
           <X className="h-4 w-4 text-muted-foreground" />
         );
       case "senha_gov":
-        return value ? "••••••" : "-";
+        return value ? String(value) : "-";
       default:
         return value !== undefined && value !== null ? String(value) : "-";
     }
