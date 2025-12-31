@@ -15,6 +15,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Loader2,
   Edit,
   Trash2,
@@ -25,9 +32,10 @@ import {
   Plus,
   Users,
   TrendingUp,
+  CalendarIcon,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
-import { format, parseISO, isThisMonth } from "date-fns";
+import { format, parseISO, getMonth, getYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
 import {
@@ -83,6 +91,18 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
   const [editingPagamentoId, setEditingPagamentoId] = useState<string | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pagamentoToDelete, setPagamentoToDelete] = useState<string | null>(null);
+  
+  // Filtro de mês/ano para "Recebido"
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<number>(getMonth(currentDate));
+  const [selectedYear, setSelectedYear] = useState<number>(getYear(currentDate));
+
+  const meses = [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+  ];
+
+  const anos = Array.from({ length: 5 }, (_, i) => getYear(currentDate) - 2 + i);
 
   const fetchData = async () => {
     setLoading(true);
@@ -183,7 +203,7 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
     let valorTotal = 0;
     let valorPago = 0;
     let valorPendente = 0;
-    let valorMesAtual = 0;
+    let valorMesSelecionado = 0;
 
     pagamentos.forEach((pag) => {
       pag.parcelas.forEach((p) => {
@@ -194,12 +214,12 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
         if (p.status === "pago") {
           pagas++;
           valorPago += valor;
-          // Verificar se foi pago este mês
+          // Verificar se foi pago no mês/ano selecionado
           if (p.data_pagamento) {
             try {
               const dataPag = parseISO(p.data_pagamento);
-              if (isThisMonth(dataPag)) {
-                valorMesAtual += valor;
+              if (getMonth(dataPag) === selectedMonth && getYear(dataPag) === selectedYear) {
+                valorMesSelecionado += valor;
               }
             } catch {}
           }
@@ -224,9 +244,9 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
       valorTotal,
       valorPago,
       valorPendente,
-      valorMesAtual,
+      valorMesSelecionado,
     };
-  }, [pagamentos, maesAprovadas]);
+  }, [pagamentos, maesAprovadas, selectedMonth, selectedYear]);
 
   const filteredPagamentos = useMemo(() => {
     if (!searchQuery.trim()) return pagamentos;
@@ -410,12 +430,33 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
         </Card>
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recebido Este Mês</CardTitle>
+            <CardTitle className="text-sm font-medium">Recebido no Período</CardTitle>
             <TrendingUp className="h-4 w-4 text-blue-500" />
           </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-blue-600">{formatCurrency(stats.valorMesAtual)}</div>
-            <p className="text-xs text-muted-foreground">Dezembro/2025</p>
+          <CardContent className="space-y-2">
+            <div className="text-xl font-bold text-blue-600">{formatCurrency(stats.valorMesSelecionado)}</div>
+            <div className="flex gap-2">
+              <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+                <SelectTrigger className="h-7 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {meses.map((mes, idx) => (
+                    <SelectItem key={idx} value={String(idx)}>{mes}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+                <SelectTrigger className="h-7 text-xs w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {anos.map((ano) => (
+                    <SelectItem key={ano} value={String(ano)}>{ano}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -533,7 +574,7 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
                           <TableCell className="font-mono text-sm">{formatCpf(pag.mae_cpf)}</TableCell>
                           <TableCell>
                             <Badge variant="outline">
-                              {pag.tipo_pagamento === "a_vista" ? "À Vista" : `${pag.total_parcelas}x`}
+                              {pag.tipo_pagamento === "a_vista" ? "Mãe Única" : `Mãe Parcelada (${pag.total_parcelas}x)`}
                             </Badge>
                           </TableCell>
                           <TableCell>
