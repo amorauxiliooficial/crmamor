@@ -14,7 +14,170 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      checklist_mae: {
+        Row: {
+          carencia_cumprida: boolean
+          checklist_status: Database["public"]["Enums"]["checklist_status"]
+          created_at: string
+          documentos_completos: boolean
+          id: string
+          mae_id: string
+          prazo_legal_ok: boolean
+          qualidade_segurada: boolean
+          updated_at: string
+        }
+        Insert: {
+          carencia_cumprida?: boolean
+          checklist_status?: Database["public"]["Enums"]["checklist_status"]
+          created_at?: string
+          documentos_completos?: boolean
+          id?: string
+          mae_id: string
+          prazo_legal_ok?: boolean
+          qualidade_segurada?: boolean
+          updated_at?: string
+        }
+        Update: {
+          carencia_cumprida?: boolean
+          checklist_status?: Database["public"]["Enums"]["checklist_status"]
+          created_at?: string
+          documentos_completos?: boolean
+          id?: string
+          mae_id?: string
+          prazo_legal_ok?: boolean
+          qualidade_segurada?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_mae_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: true
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decisao_processo: {
+        Row: {
+          created_at: string
+          id: string
+          mae_id: string
+          motivo_decisao: string | null
+          observacoes_internas: string | null
+          resultado_final: Database["public"]["Enums"]["resultado_final"] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mae_id: string
+          motivo_decisao?: string | null
+          observacoes_internas?: string | null
+          resultado_final?:
+            | Database["public"]["Enums"]["resultado_final"]
+            | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mae_id?: string
+          motivo_decisao?: string | null
+          observacoes_internas?: string | null
+          resultado_final?:
+            | Database["public"]["Enums"]["resultado_final"]
+            | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decisao_processo_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: true
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mae_processo: {
+        Row: {
+          categoria_previdenciaria: Database["public"]["Enums"]["categoria_previdenciaria"]
+          contrato_assinado: boolean
+          cpf: string
+          created_at: string
+          data_evento: string | null
+          data_evento_tipo:
+            | Database["public"]["Enums"]["data_evento_tipo"]
+            | null
+          data_ultima_atualizacao: string
+          email: string | null
+          id: string
+          nome_mae: string
+          observacoes: string | null
+          origem: string | null
+          parcelas: string | null
+          precisa_gps: string | null
+          protocolo_inss: string | null
+          segurada: string | null
+          status_processo: Database["public"]["Enums"]["status_processo"]
+          telefone: string | null
+          tipo_evento: Database["public"]["Enums"]["tipo_evento"]
+          uf: string | null
+          user_id: string
+        }
+        Insert: {
+          categoria_previdenciaria?: Database["public"]["Enums"]["categoria_previdenciaria"]
+          contrato_assinado?: boolean
+          cpf: string
+          created_at?: string
+          data_evento?: string | null
+          data_evento_tipo?:
+            | Database["public"]["Enums"]["data_evento_tipo"]
+            | null
+          data_ultima_atualizacao?: string
+          email?: string | null
+          id?: string
+          nome_mae: string
+          observacoes?: string | null
+          origem?: string | null
+          parcelas?: string | null
+          precisa_gps?: string | null
+          protocolo_inss?: string | null
+          segurada?: string | null
+          status_processo?: Database["public"]["Enums"]["status_processo"]
+          telefone?: string | null
+          tipo_evento?: Database["public"]["Enums"]["tipo_evento"]
+          uf?: string | null
+          user_id: string
+        }
+        Update: {
+          categoria_previdenciaria?: Database["public"]["Enums"]["categoria_previdenciaria"]
+          contrato_assinado?: boolean
+          cpf?: string
+          created_at?: string
+          data_evento?: string | null
+          data_evento_tipo?:
+            | Database["public"]["Enums"]["data_evento_tipo"]
+            | null
+          data_ultima_atualizacao?: string
+          email?: string | null
+          id?: string
+          nome_mae?: string
+          observacoes?: string | null
+          origem?: string | null
+          parcelas?: string | null
+          precisa_gps?: string | null
+          protocolo_inss?: string | null
+          segurada?: string | null
+          status_processo?: Database["public"]["Enums"]["status_processo"]
+          telefone?: string | null
+          tipo_evento?: Database["public"]["Enums"]["tipo_evento"]
+          uf?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +186,27 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      categoria_previdenciaria:
+        | "CLT"
+        | "MEI"
+        | "Contribuinte Individual"
+        | "Desempregada"
+        | "Não informado"
+      checklist_status: "OK" | "Incompleto"
+      data_evento_tipo: "Parto (real)" | "DPP" | ""
+      resultado_final: "APROVADA" | "REPROVADA"
+      status_processo:
+        | "Entrada de Documentos"
+        | "Em Análise"
+        | "Pendência Documental"
+        | "Elegível (Análise Positiva)"
+        | "Protocolo INSS"
+        | "Aguardando Análise INSS"
+        | "Aprovada"
+        | "Indeferida"
+        | "Recurso / Judicial"
+        | "Processo Encerrado"
+      tipo_evento: "Parto" | "Adoção" | "Guarda judicial"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +333,30 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      categoria_previdenciaria: [
+        "CLT",
+        "MEI",
+        "Contribuinte Individual",
+        "Desempregada",
+        "Não informado",
+      ],
+      checklist_status: ["OK", "Incompleto"],
+      data_evento_tipo: ["Parto (real)", "DPP", ""],
+      resultado_final: ["APROVADA", "REPROVADA"],
+      status_processo: [
+        "Entrada de Documentos",
+        "Em Análise",
+        "Pendência Documental",
+        "Elegível (Análise Positiva)",
+        "Protocolo INSS",
+        "Aguardando Análise INSS",
+        "Aprovada",
+        "Indeferida",
+        "Recurso / Judicial",
+        "Processo Encerrado",
+      ],
+      tipo_evento: ["Parto", "Adoção", "Guarda judicial"],
+    },
   },
 } as const
