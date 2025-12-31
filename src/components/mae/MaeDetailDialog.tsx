@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import { MaeProcesso, STATUS_COLORS } from "@/types/mae";
 import { formatCpf, formatDate } from "@/lib/formatters";
 import {
@@ -17,8 +18,14 @@ import {
   User,
   ClipboardList,
   MessageSquare,
+  Copy,
+  Check,
+  Key,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface MaeDetailDialogProps {
   mae: MaeProcesso | null;
@@ -26,15 +33,21 @@ interface MaeDetailDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const copyToClipboard = async (text: string, label: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success(`${label} copiado!`);
+  } catch (err) {
+    toast.error("Erro ao copiar");
+  }
+};
+
 export function MaeDetailDialog({
   mae,
   open,
   onOpenChange,
 }: MaeDetailDialogProps) {
   if (!mae) return null;
-
-  const statusEmoji = mae.status_processo.split(" ")[0];
-  const statusLabel = mae.status_processo.split(" ").slice(1).join(" ");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -46,9 +59,19 @@ export function MaeDetailDialog({
             </div>
             <div>
               <DialogTitle className="text-xl">{mae.nome_mae}</DialogTitle>
-              <p className="text-sm text-muted-foreground font-mono">
-                CPF: {formatCpf(mae.cpf)}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-muted-foreground font-mono">
+                  CPF: {formatCpf(mae.cpf)}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => copyToClipboard(mae.cpf, "CPF")}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
           </div>
         </DialogHeader>
@@ -63,7 +86,7 @@ export function MaeDetailDialog({
               )}
               variant="outline"
             >
-              {statusEmoji} {statusLabel}
+              {mae.status_processo}
             </Badge>
             {mae.contrato_assinado && (
               <Badge variant="secondary">Contrato Assinado</Badge>
@@ -95,11 +118,19 @@ export function MaeDetailDialog({
               value={mae.uf || "Não informado"}
             />
             {mae.telefone && (
-              <InfoItem icon={Phone} label="Telefone" value={mae.telefone} />
+              <InfoItemWithCopy icon={Phone} label="Telefone" value={mae.telefone} onCopy={() => copyToClipboard(mae.telefone!, "Telefone")} />
             )}
             {mae.email && (
-              <InfoItem icon={Mail} label="Email" value={mae.email} />
+              <InfoItemWithCopy icon={Mail} label="Email" value={mae.email} onCopy={() => copyToClipboard(mae.email!, "Email")} />
             )}
+            {mae.senha_gov && (
+              <InfoItemWithCopy icon={Key} label="Senha Gov" value={mae.senha_gov} onCopy={() => copyToClipboard(mae.senha_gov!, "Senha Gov")} />
+            )}
+            <InfoItem
+              icon={ShieldCheck}
+              label="Verificação 2 Etapas"
+              value={mae.verificacao_duas_etapas ? "Sim" : "Não"}
+            />
           </div>
 
           {/* Protocolo INSS */}
@@ -196,6 +227,34 @@ function InfoItem({ icon: Icon, label, value }: InfoItemProps) {
       <div>
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="font-medium text-sm">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+interface InfoItemWithCopyProps extends InfoItemProps {
+  onCopy: () => void;
+}
+
+function InfoItemWithCopy({ icon: Icon, label, value, onCopy }: InfoItemWithCopyProps) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="flex h-8 w-8 items-center justify-center rounded bg-muted">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <div className="flex-1">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-medium text-sm">{value}</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+            onClick={onCopy}
+          >
+            <Copy className="h-3 w-3" />
+          </Button>
+        </div>
       </div>
     </div>
   );
