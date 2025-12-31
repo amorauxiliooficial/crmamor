@@ -60,7 +60,7 @@ const Index = () => {
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [maes, setMaes] = useState<MaeProcesso[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all" | "gestantes">("all");
   const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
 
   // Redirect to auth if not logged in
@@ -130,8 +130,16 @@ const Index = () => {
   const filteredMaes = useMemo(() => {
     let filtered = maes;
     
+    // Apply gestantes filter
+    if (statusFilter === "gestantes") {
+      filtered = filtered.filter((mae) => {
+        if (mae.data_evento_tipo !== "DPP" || !mae.data_evento) return false;
+        const dpp = parseISO(mae.data_evento);
+        return dpp > new Date();
+      });
+    } 
     // Apply status filter
-    if (statusFilter !== "all") {
+    else if (statusFilter !== "all") {
       filtered = filtered.filter((mae) => mae.status_processo === statusFilter);
     }
     
@@ -180,7 +188,7 @@ const Index = () => {
     return { total, aprovadas, indeferidas, emAnalise, pendencias };
   }, [maes]);
 
-  const handleStatsClick = (filter: StatusProcesso | "all") => {
+  const handleStatsClick = (filter: StatusProcesso | "all" | "gestantes") => {
     setStatusFilter(statusFilter === filter ? "all" : filter);
   };
 
@@ -289,6 +297,8 @@ const Index = () => {
             value={gestantesCount}
             icon={Baby}
             className="border-l-4 border-l-pink-500"
+            onClick={() => handleStatsClick("gestantes")}
+            isActive={statusFilter === "gestantes"}
           />
         </section>
 
@@ -358,7 +368,7 @@ const Index = () => {
               <TabsContent value="gestantes" className="mt-0">
                 <div className="rounded-lg border bg-muted/30 min-h-[500px]">
                   <GestantesBoard
-                    maes={gestantes}
+                    maes={statusFilter === "gestantes" ? filteredMaes : gestantes}
                     onCardClick={handleCardClick}
                   />
                 </div>
