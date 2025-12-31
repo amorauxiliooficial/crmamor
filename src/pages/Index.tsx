@@ -391,7 +391,18 @@ const Index = () => {
       <MaeFormDialog
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
-        onSuccess={fetchMaes}
+        onSuccess={(createdMae) => {
+          fetchMaes();
+          if (createdMae) {
+            // Map the status to display format
+            const mappedMae = {
+              ...createdMae,
+              status_processo: mapDbStatusToDisplay(createdMae.status_processo) as MaeProcesso["status_processo"],
+            };
+            setSelectedMae(mappedMae);
+            setEditDialogOpen(true);
+          }
+        }}
       />
     </div>
   );
