@@ -228,6 +228,7 @@ export type Database = {
           total_parcelas: number | null
           updated_at: string
           user_id: string
+          valor_total: number | null
         }
         Insert: {
           created_at?: string
@@ -237,6 +238,7 @@ export type Database = {
           total_parcelas?: number | null
           updated_at?: string
           user_id: string
+          valor_total?: number | null
         }
         Update: {
           created_at?: string
@@ -246,6 +248,7 @@ export type Database = {
           total_parcelas?: number | null
           updated_at?: string
           user_id?: string
+          valor_total?: number | null
         }
         Relationships: [
           {
@@ -267,6 +270,7 @@ export type Database = {
           pagamento_id: string
           status: string
           updated_at: string
+          valor: number | null
         }
         Insert: {
           created_at?: string
@@ -277,6 +281,7 @@ export type Database = {
           pagamento_id: string
           status?: string
           updated_at?: string
+          valor?: number | null
         }
         Update: {
           created_at?: string
@@ -287,6 +292,7 @@ export type Database = {
           pagamento_id?: string
           status?: string
           updated_at?: string
+          valor?: number | null
         }
         Relationships: [
           {

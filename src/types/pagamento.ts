@@ -8,6 +8,7 @@ export interface PagamentoMae {
   user_id: string;
   tipo_pagamento: TipoPagamento;
   total_parcelas: number;
+  valor_total?: number;
   created_at: string;
   updated_at: string;
 }
@@ -19,6 +20,7 @@ export interface ParcelaPagamento {
   data_pagamento?: string;
   status: StatusParcela;
   observacoes?: string;
+  valor?: number;
   created_at: string;
   updated_at: string;
 }

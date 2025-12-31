@@ -24,9 +24,10 @@ import {
   Clock,
   Plus,
   Users,
+  TrendingUp,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isThisMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
 import {
@@ -45,6 +46,7 @@ interface PagamentoComMae {
   mae_id: string;
   tipo_pagamento: string;
   total_parcelas: number;
+  valor_total: number | null;
   mae_nome: string;
   mae_cpf: string;
   parcelas: {
@@ -53,6 +55,7 @@ interface PagamentoComMae {
     data_pagamento: string | null;
     status: string;
     observacoes: string | null;
+    valor: number | null;
   }[];
 }
 
@@ -147,10 +150,18 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
         id: pag.id,
         mae_id: pag.mae_id,
         tipo_pagamento: pag.tipo_pagamento,
-        total_parcelas: pag.total_parcelas,
+        total_parcelas: pag.total_parcelas ?? 0,
+        valor_total: pag.valor_total,
         mae_nome: mae?.nome_mae || "N/A",
         mae_cpf: mae?.cpf || "",
-        parcelas: parcelas || [],
+        parcelas: (parcelas || []).map((p: any) => ({
+          id: p.id,
+          numero_parcela: p.numero_parcela,
+          data_pagamento: p.data_pagamento,
+          status: p.status,
+          observacoes: p.observacoes,
+          valor: p.valor,
+        })),
       });
     }
 
@@ -169,19 +180,52 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
     let pagas = 0;
     let pendentes = 0;
     let inadimplentes = 0;
+    let valorTotal = 0;
+    let valorPago = 0;
+    let valorPendente = 0;
+    let valorMesAtual = 0;
 
     pagamentos.forEach((pag) => {
       pag.parcelas.forEach((p) => {
         totalParcelas++;
-        if (p.status === "pago") pagas++;
-        else if (p.status === "pendente") pendentes++;
-        else if (p.status === "inadimplente") inadimplentes++;
+        const valor = p.valor || 0;
+        valorTotal += valor;
+
+        if (p.status === "pago") {
+          pagas++;
+          valorPago += valor;
+          // Verificar se foi pago este mês
+          if (p.data_pagamento) {
+            try {
+              const dataPag = parseISO(p.data_pagamento);
+              if (isThisMonth(dataPag)) {
+                valorMesAtual += valor;
+              }
+            } catch {}
+          }
+        } else if (p.status === "pendente") {
+          pendentes++;
+          valorPendente += valor;
+        } else if (p.status === "inadimplente") {
+          inadimplentes++;
+          valorPendente += valor;
+        }
       });
     });
 
     const maesSemPagamento = maesAprovadas.filter(m => !m.temPagamento).length;
 
-    return { totalParcelas, pagas, pendentes, inadimplentes, maesSemPagamento };
+    return { 
+      totalParcelas, 
+      pagas, 
+      pendentes, 
+      inadimplentes, 
+      maesSemPagamento,
+      valorTotal,
+      valorPago,
+      valorPendente,
+      valorMesAtual,
+    };
   }, [pagamentos, maesAprovadas]);
 
   const filteredPagamentos = useMemo(() => {
@@ -266,6 +310,13 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
     }
   };
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -276,7 +327,7 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
+      {/* Stats Cards - Quantidades */}
       <div className="grid gap-4 md:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -321,6 +372,50 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">{stats.inadimplentes}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Stats Cards - Valores */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
+            <DollarSign className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{formatCurrency(stats.valorTotal)}</div>
+            <p className="text-xs text-muted-foreground">Todas as parcelas</p>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-emerald-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Valor Recebido</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold text-emerald-600">{formatCurrency(stats.valorPago)}</div>
+            <p className="text-xs text-muted-foreground">Parcelas pagas</p>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-amber-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Valor Pendente</CardTitle>
+            <Clock className="h-4 w-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold text-amber-600">{formatCurrency(stats.valorPendente)}</div>
+            <p className="text-xs text-muted-foreground">A receber</p>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-blue-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Recebido Este Mês</CardTitle>
+            <TrendingUp className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold text-blue-600">{formatCurrency(stats.valorMesAtual)}</div>
+            <p className="text-xs text-muted-foreground">Dezembro/2025</p>
           </CardContent>
         </Card>
       </div>
@@ -413,7 +508,8 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
                     <TableHead>CPF</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Parcelas</TableHead>
-                    <TableHead>Datas de Pagamento</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Data Pagamento</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-[100px]">Ações</TableHead>
                   </TableRow>
@@ -421,61 +517,89 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
                 <TableBody>
                   {filteredPagamentos.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         Nenhum pagamento encontrado
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredPagamentos.map((pag) => (
-                      <TableRow key={pag.id}>
-                        <TableCell className="font-medium">{pag.mae_nome}</TableCell>
-                        <TableCell className="font-mono text-sm">{formatCpf(pag.mae_cpf)}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {pag.tipo_pagamento === "a_vista" ? "À Vista" : `${pag.total_parcelas}x`}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{pag.total_parcelas}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-1">
-                            {pag.parcelas.map((p) => (
-                              <div key={p.id} className="flex items-center gap-2 text-sm">
-                                <span className="text-muted-foreground">{p.numero_parcela}ª:</span>
-                                <span>{formatDate(p.data_pagamento)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-1">
-                            {pag.parcelas.map((p) => (
-                              <div key={p.id}>{getStatusBadge(p.status)}</div>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEdit(pag)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setPagamentoToDelete(pag.id);
-                                setDeleteDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    filteredPagamentos.map((pag) => {
+                      const parcelasPagas = pag.parcelas.filter(p => p.status === "pago").length;
+                      const totalParcelas = pag.parcelas.length;
+                      const parcelasRestantes = totalParcelas - parcelasPagas;
+                      
+                      return (
+                        <TableRow key={pag.id}>
+                          <TableCell className="font-medium">{pag.mae_nome}</TableCell>
+                          <TableCell className="font-mono text-sm">{formatCpf(pag.mae_cpf)}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {pag.tipo_pagamento === "a_vista" ? "À Vista" : `${pag.total_parcelas}x`}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{parcelasPagas}/{totalParcelas}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {parcelasRestantes > 0 ? `${parcelasRestantes} restante${parcelasRestantes > 1 ? "s" : ""}` : "Completo"}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              {pag.parcelas.map((p) => (
+                                <div key={p.id} className="flex items-center gap-2 text-sm">
+                                  <span className="text-muted-foreground">{p.numero_parcela}ª:</span>
+                                  <span className="font-medium">{p.valor ? formatCurrency(p.valor) : "-"}</span>
+                                </div>
+                              ))}
+                              {pag.valor_total && (
+                                <div className="border-t pt-1 mt-1">
+                                  <span className="text-xs font-semibold">Total: {formatCurrency(pag.valor_total)}</span>
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              {pag.parcelas.map((p) => (
+                                <div key={p.id} className="flex items-center gap-2 text-sm">
+                                  <span className="text-muted-foreground">{p.numero_parcela}ª:</span>
+                                  <span>{formatDate(p.data_pagamento)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              {pag.parcelas.map((p) => (
+                                <div key={p.id}>{getStatusBadge(p.status)}</div>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(pag)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setPagamentoToDelete(pag.id);
+                                  setDeleteDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -504,14 +628,16 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir pagamento?</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Todas as parcelas serão excluídas.
+              Tem certeza que deseja excluir este pagamento? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+              Excluir
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
