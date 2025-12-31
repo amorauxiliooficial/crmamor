@@ -100,6 +100,8 @@ const Index = () => {
         uf: item.uf || undefined,
         observacoes: item.observacoes || undefined,
         origem: item.origem || undefined,
+        senha_gov: item.senha_gov || undefined,
+        verificacao_duas_etapas: item.verificacao_duas_etapas ?? false,
         data_ultima_atualizacao: item.data_ultima_atualizacao,
       }));
       setMaes(mappedData);

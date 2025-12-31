@@ -40,6 +40,8 @@ export interface MaeProcesso {
   uf?: string;
   observacoes?: string;
   origem?: string;
+  senha_gov?: string;
+  verificacao_duas_etapas: boolean;
   data_ultima_atualizacao: string;
 }
 

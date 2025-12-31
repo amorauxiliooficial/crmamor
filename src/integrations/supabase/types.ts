@@ -120,11 +120,13 @@ export type Database = {
           precisa_gps: string | null
           protocolo_inss: string | null
           segurada: string | null
+          senha_gov: string | null
           status_processo: Database["public"]["Enums"]["status_processo"]
           telefone: string | null
           tipo_evento: Database["public"]["Enums"]["tipo_evento"]
           uf: string | null
           user_id: string
+          verificacao_duas_etapas: boolean
         }
         Insert: {
           categoria_previdenciaria?: Database["public"]["Enums"]["categoria_previdenciaria"]
@@ -145,11 +147,13 @@ export type Database = {
           precisa_gps?: string | null
           protocolo_inss?: string | null
           segurada?: string | null
+          senha_gov?: string | null
           status_processo?: Database["public"]["Enums"]["status_processo"]
           telefone?: string | null
           tipo_evento?: Database["public"]["Enums"]["tipo_evento"]
           uf?: string | null
           user_id: string
+          verificacao_duas_etapas?: boolean
         }
         Update: {
           categoria_previdenciaria?: Database["public"]["Enums"]["categoria_previdenciaria"]
@@ -170,11 +174,13 @@ export type Database = {
           precisa_gps?: string | null
           protocolo_inss?: string | null
           segurada?: string | null
+          senha_gov?: string | null
           status_processo?: Database["public"]["Enums"]["status_processo"]
           telefone?: string | null
           tipo_evento?: Database["public"]["Enums"]["tipo_evento"]
           uf?: string | null
           user_id?: string
+          verificacao_duas_etapas?: boolean
         }
         Relationships: []
       }

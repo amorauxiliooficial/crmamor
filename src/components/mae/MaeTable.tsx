@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { MaeProcesso } from "@/types/mae";
 import {
   Table,
@@ -8,12 +9,30 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Settings2, Check, X, ArrowUpDown } from "lucide-react";
 
 interface MaeTableProps {
   maes: MaeProcesso[];
   onRowClick: (mae: MaeProcesso) => void;
+}
+
+interface Column {
+  id: keyof MaeProcesso | "acoes";
+  label: string;
+  visible: boolean;
+  sortable: boolean;
 }
 
 const formatCpf = (cpf: string) => {
@@ -29,69 +48,182 @@ const getStatusBadgeVariant = (status: string) => {
   return "outline";
 };
 
+const defaultColumns: Column[] = [
+  { id: "nome_mae", label: "Nome", visible: true, sortable: true },
+  { id: "cpf", label: "CPF", visible: true, sortable: true },
+  { id: "telefone", label: "Telefone", visible: true, sortable: false },
+  { id: "email", label: "Email", visible: false, sortable: true },
+  { id: "tipo_evento", label: "Tipo Evento", visible: true, sortable: true },
+  { id: "data_evento", label: "Data Evento", visible: true, sortable: true },
+  { id: "categoria_previdenciaria", label: "Categoria", visible: true, sortable: true },
+  { id: "status_processo", label: "Status", visible: true, sortable: true },
+  { id: "uf", label: "UF", visible: true, sortable: true },
+  { id: "contrato_assinado", label: "Contrato", visible: true, sortable: true },
+  { id: "senha_gov", label: "Senha Gov", visible: true, sortable: false },
+  { id: "verificacao_duas_etapas", label: "2FA", visible: true, sortable: true },
+  { id: "protocolo_inss", label: "Protocolo INSS", visible: false, sortable: true },
+  { id: "parcelas", label: "Parcelas", visible: false, sortable: false },
+  { id: "segurada", label: "Segurada", visible: false, sortable: true },
+  { id: "precisa_gps", label: "GPS", visible: false, sortable: true },
+  { id: "origem", label: "Origem", visible: false, sortable: true },
+  { id: "data_ultima_atualizacao", label: "Última Atualização", visible: true, sortable: true },
+];
+
 export function MaeTable({ maes, onRowClick }: MaeTableProps) {
+  const [columns, setColumns] = useState<Column[]>(defaultColumns);
+  const [sortColumn, setSortColumn] = useState<keyof MaeProcesso | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  const visibleColumns = useMemo(() => columns.filter((col) => col.visible), [columns]);
+
+  const sortedMaes = useMemo(() => {
+    if (!sortColumn) return maes;
+    
+    return [...maes].sort((a, b) => {
+      const aVal = a[sortColumn];
+      const bVal = b[sortColumn];
+      
+      if (aVal === undefined || aVal === null) return sortDirection === "asc" ? 1 : -1;
+      if (bVal === undefined || bVal === null) return sortDirection === "asc" ? -1 : 1;
+      
+      if (typeof aVal === "boolean" && typeof bVal === "boolean") {
+        return sortDirection === "asc" 
+          ? (aVal === bVal ? 0 : aVal ? -1 : 1)
+          : (aVal === bVal ? 0 : aVal ? 1 : -1);
+      }
+      
+      const comparison = String(aVal).localeCompare(String(bVal), "pt-BR", { sensitivity: "base" });
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [maes, sortColumn, sortDirection]);
+
+  const handleSort = (columnId: keyof MaeProcesso) => {
+    if (sortColumn === columnId) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(columnId);
+      setSortDirection("asc");
+    }
+  };
+
+  const toggleColumn = (columnId: string) => {
+    setColumns(
+      columns.map((col) =>
+        col.id === columnId ? { ...col, visible: !col.visible } : col
+      )
+    );
+  };
+
+  const renderCellContent = (mae: MaeProcesso, columnId: keyof MaeProcesso) => {
+    const value = mae[columnId];
+
+    switch (columnId) {
+      case "cpf":
+        return formatCpf(value as string);
+      case "data_evento":
+        return value ? format(new Date(value as string), "dd/MM/yyyy") : "-";
+      case "data_ultima_atualizacao":
+        return format(new Date(value as string), "dd/MM/yyyy HH:mm", { locale: ptBR });
+      case "status_processo":
+        return (
+          <Badge variant={getStatusBadgeVariant(value as string)} className="whitespace-nowrap">
+            {value}
+          </Badge>
+        );
+      case "contrato_assinado":
+        return (
+          <Badge variant={value ? "default" : "secondary"}>
+            {value ? "Sim" : "Não"}
+          </Badge>
+        );
+      case "verificacao_duas_etapas":
+        return value ? (
+          <Check className="h-4 w-4 text-emerald-500" />
+        ) : (
+          <X className="h-4 w-4 text-muted-foreground" />
+        );
+      case "senha_gov":
+        return value ? "••••••" : "-";
+      default:
+        return value !== undefined && value !== null ? String(value) : "-";
+    }
+  };
+
   return (
-    <div className="rounded-md border overflow-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="min-w-[200px]">Nome</TableHead>
-            <TableHead className="min-w-[130px]">CPF</TableHead>
-            <TableHead className="min-w-[120px]">Telefone</TableHead>
-            <TableHead className="min-w-[100px]">Tipo Evento</TableHead>
-            <TableHead className="min-w-[100px]">Data Evento</TableHead>
-            <TableHead className="min-w-[120px]">Categoria</TableHead>
-            <TableHead className="min-w-[200px]">Status</TableHead>
-            <TableHead className="min-w-[80px]">UF</TableHead>
-            <TableHead className="min-w-[100px]">Contrato</TableHead>
-            <TableHead className="min-w-[150px]">Última Atualização</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {maes.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
-                Nenhum processo encontrado
-              </TableCell>
-            </TableRow>
-          ) : (
-            maes.map((mae) => (
-              <TableRow
-                key={mae.id}
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => onRowClick(mae)}
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Settings2 className="h-4 w-4 mr-2" />
+              Colunas
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 bg-background">
+            <DropdownMenuLabel>Colunas Visíveis</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {columns.map((column) => (
+              <DropdownMenuCheckboxItem
+                key={column.id}
+                checked={column.visible}
+                onCheckedChange={() => toggleColumn(column.id)}
               >
-                <TableCell className="font-medium">{mae.nome_mae}</TableCell>
-                <TableCell>{formatCpf(mae.cpf)}</TableCell>
-                <TableCell>{mae.telefone || "-"}</TableCell>
-                <TableCell>{mae.tipo_evento}</TableCell>
-                <TableCell>
-                  {mae.data_evento
-                    ? format(new Date(mae.data_evento), "dd/MM/yyyy")
-                    : "-"}
-                </TableCell>
-                <TableCell>{mae.categoria_previdenciaria}</TableCell>
-                <TableCell>
-                  <Badge variant={getStatusBadgeVariant(mae.status_processo)}>
-                    {mae.status_processo}
-                  </Badge>
-                </TableCell>
-                <TableCell>{mae.uf || "-"}</TableCell>
-                <TableCell>
-                  <Badge variant={mae.contrato_assinado ? "default" : "secondary"}>
-                    {mae.contrato_assinado ? "Sim" : "Não"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {format(new Date(mae.data_ultima_atualizacao), "dd/MM/yyyy HH:mm", {
-                    locale: ptBR,
-                  })}
+                {column.label}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className="rounded-md border overflow-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {visibleColumns.map((column) => (
+                <TableHead
+                  key={column.id}
+                  className={`min-w-[100px] ${column.sortable ? "cursor-pointer hover:bg-muted/50" : ""}`}
+                  onClick={() => column.sortable && column.id !== "acoes" && handleSort(column.id as keyof MaeProcesso)}
+                >
+                  <div className="flex items-center gap-1">
+                    {column.label}
+                    {column.sortable && column.id !== "acoes" && (
+                      <ArrowUpDown className={`h-3 w-3 ${sortColumn === column.id ? "text-primary" : "text-muted-foreground"}`} />
+                    )}
+                  </div>
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedMaes.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={visibleColumns.length} className="text-center text-muted-foreground py-8">
+                  Nenhum processo encontrado
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              sortedMaes.map((mae) => (
+                <TableRow
+                  key={mae.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => onRowClick(mae)}
+                >
+                  {visibleColumns.map((column) => (
+                    <TableCell key={column.id}>
+                      {column.id !== "acoes" && renderCellContent(mae, column.id as keyof MaeProcesso)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      
+      <div className="text-sm text-muted-foreground">
+        {sortedMaes.length} registro(s) encontrado(s)
+      </div>
     </div>
   );
 }

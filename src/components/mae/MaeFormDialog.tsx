@@ -41,6 +41,8 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
     uf: "",
     origem: "",
     observacoes: "",
+    senha_gov: "",
+    verificacao_duas_etapas: false,
   });
 
   const formatCpf = (value: string) => {
@@ -100,6 +102,8 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
       uf: formData.uf || null,
       origem: formData.origem || null,
       observacoes: formData.observacoes || null,
+      senha_gov: formData.senha_gov || null,
+      verificacao_duas_etapas: formData.verificacao_duas_etapas,
     });
 
     setIsLoading(false);
@@ -129,6 +133,8 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
         uf: "",
         origem: "",
         observacoes: "",
+        senha_gov: "",
+        verificacao_duas_etapas: false,
       });
       onSuccess();
       onOpenChange(false);
@@ -215,6 +221,25 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
                   onChange={(e) => setFormData({ ...formData, origem: e.target.value })}
                   placeholder="Como chegou até nós"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="senha_gov">Senha Gov.br</Label>
+                <Input
+                  id="senha_gov"
+                  value={formData.senha_gov}
+                  onChange={(e) => setFormData({ ...formData, senha_gov: e.target.value })}
+                  placeholder="Senha do Gov.br"
+                />
+              </div>
+              <div className="flex items-center space-x-2 pt-6">
+                <Switch
+                  id="verificacao_duas_etapas_form"
+                  checked={formData.verificacao_duas_etapas}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, verificacao_duas_etapas: checked })
+                  }
+                />
+                <Label htmlFor="verificacao_duas_etapas_form">Verificação em duas etapas ativa</Label>
               </div>
             </div>
           </div>
