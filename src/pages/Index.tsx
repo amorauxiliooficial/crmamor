@@ -151,14 +151,16 @@ const Index = () => {
     return filtered;
   }, [searchQuery, maes, statusFilter]);
 
-  // Count gestantes (mothers with DPP and future date)
-  const gestantesCount = useMemo(() => {
+  // Filter only gestantes (mothers with DPP and future date)
+  const gestantes = useMemo(() => {
     return maes.filter((m) => {
       if (m.data_evento_tipo !== "DPP" || !m.data_evento) return false;
       const dpp = parseISO(m.data_evento);
       return dpp > new Date();
-    }).length;
+    });
   }, [maes]);
+
+  const gestantesCount = gestantes.length;
 
   const stats = useMemo(() => {
     const total = maes.length;
@@ -356,7 +358,7 @@ const Index = () => {
               <TabsContent value="gestantes" className="mt-0">
                 <div className="rounded-lg border bg-muted/30 min-h-[500px]">
                   <GestantesBoard
-                    maes={filteredMaes}
+                    maes={gestantes}
                     onCardClick={handleCardClick}
                   />
                 </div>
