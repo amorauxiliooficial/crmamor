@@ -14,7 +14,31 @@ import { useAuth } from "@/hooks/useAuth";
 interface MaeFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
+  onSuccess: (createdMae?: MaeProcesso) => void;
+}
+
+interface MaeProcesso {
+  id: string;
+  nome_mae: string;
+  cpf: string;
+  telefone?: string;
+  email?: string;
+  tipo_evento: "Parto" | "Adoção" | "Guarda judicial";
+  data_evento?: string;
+  data_evento_tipo?: "" | "Parto (real)" | "DPP";
+  categoria_previdenciaria: "CLT" | "MEI" | "Contribuinte Individual" | "Desempregada" | "Não informado";
+  status_processo: string;
+  protocolo_inss?: string;
+  parcelas?: string;
+  contrato_assinado: boolean;
+  segurada?: string;
+  precisa_gps?: string;
+  uf?: string;
+  observacoes?: string;
+  origem?: string;
+  senha_gov?: string;
+  verificacao_duas_etapas: boolean;
+  data_ultima_atualizacao: string;
 }
 
 const UF_OPTIONS = [
@@ -87,11 +111,29 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
     }
 
     setIsLoading(true);
+
+    // Check for duplicate CPF
+    const cpfClean = formData.cpf.replace(/\D/g, "");
+    const { data: existingMae } = await supabase
+      .from("mae_processo")
+      .select("id, nome_mae")
+      .eq("cpf", cpfClean)
+      .maybeSingle();
+
+    if (existingMae) {
+      setIsLoading(false);
+      toast({
+        variant: "destructive",
+        title: "CPF já cadastrado",
+        description: `Já existe um cadastro com este CPF: ${existingMae.nome_mae}`,
+      });
+      return;
+    }
     
-    const { error } = await supabase.from("mae_processo").insert({
+    const { data, error } = await supabase.from("mae_processo").insert({
       user_id: user.id,
       nome_mae: formData.nome_mae.trim(),
-      cpf: formData.cpf.replace(/\D/g, ""),
+      cpf: cpfClean,
       telefone: formData.telefone || null,
       email: formData.email || null,
       tipo_evento: formData.tipo_evento,
@@ -104,7 +146,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
       observacoes: formData.observacoes || null,
       senha_gov: formData.senha_gov || null,
       verificacao_duas_etapas: formData.verificacao_duas_etapas,
-    });
+    }).select().single();
 
     setIsLoading(false);
 
@@ -114,11 +156,37 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
         title: "Erro ao cadastrar",
         description: error.message,
       });
-    } else {
+    } else if (data) {
       toast({
         title: "Sucesso!",
-        description: "Processo cadastrado com sucesso.",
+        description: `${data.nome_mae} cadastrada com sucesso.`,
       });
+      
+      // Create the MaeProcesso object to pass back
+      const createdMae: MaeProcesso = {
+        id: data.id,
+        nome_mae: data.nome_mae,
+        cpf: data.cpf,
+        telefone: data.telefone || undefined,
+        email: data.email || undefined,
+        tipo_evento: data.tipo_evento as MaeProcesso["tipo_evento"],
+        data_evento: data.data_evento || undefined,
+        data_evento_tipo: (data.data_evento_tipo || "") as MaeProcesso["data_evento_tipo"],
+        categoria_previdenciaria: data.categoria_previdenciaria as MaeProcesso["categoria_previdenciaria"],
+        status_processo: data.status_processo,
+        protocolo_inss: data.protocolo_inss || undefined,
+        parcelas: data.parcelas || undefined,
+        contrato_assinado: data.contrato_assinado,
+        segurada: data.segurada || undefined,
+        precisa_gps: data.precisa_gps || undefined,
+        uf: data.uf || undefined,
+        observacoes: data.observacoes || undefined,
+        origem: data.origem || undefined,
+        senha_gov: data.senha_gov || undefined,
+        verificacao_duas_etapas: data.verificacao_duas_etapas ?? false,
+        data_ultima_atualizacao: data.data_ultima_atualizacao,
+      };
+
       // Reset form
       setFormData({
         nome_mae: "",
@@ -136,8 +204,9 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
         senha_gov: "",
         verificacao_duas_etapas: false,
       });
-      onSuccess();
+      
       onOpenChange(false);
+      onSuccess(createdMae);
     }
   };
 
