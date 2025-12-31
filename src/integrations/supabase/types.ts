@@ -224,7 +224,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      owns_mae_processo: { Args: { _mae_id: string }; Returns: boolean }
     }
     Enums: {
       categoria_previdenciaria:
