@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,33 +41,119 @@ interface MaeProcesso {
   data_ultima_atualizacao: string;
 }
 
+type MaeFormData = {
+  nome_mae: string;
+  cpf: string;
+  telefone: string;
+  email: string;
+  tipo_evento: "Parto" | "Adoção" | "Guarda judicial";
+  data_evento: string;
+  data_evento_tipo: "none" | "Parto (real)" | "DPP";
+  categoria_previdenciaria: "CLT" | "MEI" | "Contribuinte Individual" | "Desempregada" | "Não informado";
+  contrato_assinado: boolean;
+  uf: string;
+  origem: string;
+  observacoes: string;
+  senha_gov: string;
+  verificacao_duas_etapas: boolean;
+};
+
+const getEmptyFormData = (): MaeFormData => ({
+  nome_mae: "",
+  cpf: "",
+  telefone: "",
+  email: "",
+  tipo_evento: "Parto",
+  data_evento: "",
+  data_evento_tipo: "none",
+  categoria_previdenciaria: "Não informado",
+  contrato_assinado: false,
+  uf: "",
+  origem: "",
+  observacoes: "",
+  senha_gov: "",
+  verificacao_duas_etapas: false,
+});
+
 const UF_OPTIONS = [
-  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
-  "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
-  "SP", "SE", "TO"
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
 ];
 
 export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    nome_mae: "",
-    cpf: "",
-    telefone: "",
-    email: "",
-    tipo_evento: "Parto" as "Parto" | "Adoção" | "Guarda judicial",
-    data_evento: "",
-    data_evento_tipo: "none" as "none" | "Parto (real)" | "DPP",
-    categoria_previdenciaria: "Não informado" as "CLT" | "MEI" | "Contribuinte Individual" | "Desempregada" | "Não informado",
-    contrato_assinado: false,
-    uf: "",
-    origem: "",
-    observacoes: "",
-    senha_gov: "",
-    verificacao_duas_etapas: false,
-  });
+
+  const draftKey = useMemo(() => {
+    const userId = user?.id ?? "anon";
+    return `mae_form_draft_v1:${userId}`;
+  }, [user?.id]);
+
+  const [formData, setFormData] = useState<MaeFormData>(getEmptyFormData);
+
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem(draftKey);
+    } catch {
+      // ignore
+    }
+  };
+
+  // Restore draft when dialog opens (prevents losing typed data if the app reloads)
+  useEffect(() => {
+    if (!open) return;
+
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw) as Partial<MaeFormData>;
+      setFormData((prev) => ({
+        ...prev,
+        ...parsed,
+      }));
+    } catch {
+      clearDraft();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, draftKey]);
+
+  // Persist draft while typing
+  useEffect(() => {
+    if (!open) return;
+
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(formData));
+    } catch {
+      // ignore
+    }
+  }, [open, draftKey, formData]);
 
   const formatCpf = (value: string) => {
     const numbers = value.replace(/\D/g, "").slice(0, 11);
@@ -187,29 +273,14 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
         data_ultima_atualizacao: data.data_ultima_atualizacao,
       };
 
-      // Reset form
-      setFormData({
-        nome_mae: "",
-        cpf: "",
-        telefone: "",
-        email: "",
-        tipo_evento: "Parto",
-        data_evento: "",
-        data_evento_tipo: "none",
-        categoria_previdenciaria: "Não informado",
-        contrato_assinado: false,
-        uf: "",
-        origem: "",
-        observacoes: "",
-        senha_gov: "",
-        verificacao_duas_etapas: false,
-      });
-      
+      // Clear saved draft + reset form
+      clearDraft();
+      setFormData(getEmptyFormData());
+
       onOpenChange(false);
       onSuccess(createdMae);
     }
   };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
