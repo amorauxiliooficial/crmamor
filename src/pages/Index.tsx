@@ -8,6 +8,8 @@ import { MaeTable } from "@/components/mae/MaeTable";
 import { MaeDetailDialog } from "@/components/mae/MaeDetailDialog";
 import { MaeFormDialog } from "@/components/mae/MaeFormDialog";
 import { MaeEditDialog } from "@/components/mae/MaeEditDialog";
+import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
+import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso } from "@/types/mae";
@@ -29,7 +31,6 @@ import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { differenceInMonths, parseISO } from "date-fns";
 
 // Map database status to display status with emoji
@@ -315,24 +316,6 @@ const Index = () => {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/pagamentos")}
-                className="gap-2"
-              >
-                <DollarSign className="h-4 w-4" />
-                Pagamentos
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/conferencia")}
-                className="gap-2"
-              >
-                <ClipboardCheck className="h-4 w-4" />
-                Conferência INSS
-              </Button>
               <ToggleGroup
               type="single"
               value={viewMode}
@@ -363,6 +346,14 @@ const Index = () => {
                 <TabsTrigger value="active">Em Andamento</TabsTrigger>
                 <TabsTrigger value="pending">Pendências</TabsTrigger>
                 <TabsTrigger value="completed">Finalizados</TabsTrigger>
+                <TabsTrigger value="conferencia" className="gap-1">
+                  <ClipboardCheck className="h-4 w-4" />
+                  Conferência INSS
+                </TabsTrigger>
+                <TabsTrigger value="pagamentos" className="gap-1">
+                  <DollarSign className="h-4 w-4" />
+                  Pagamentos
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="all" className="mt-0">
@@ -424,6 +415,18 @@ const Index = () => {
                       "📦 Processo Encerrado",
                     ]}
                   />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="conferencia" className="mt-0">
+                <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
+                  <ConferenciaTab searchQuery={searchQuery} />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="pagamentos" className="mt-0">
+                <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
+                  <PagamentosTab searchQuery={searchQuery} />
                 </div>
               </TabsContent>
             </Tabs>
