@@ -58,6 +58,41 @@ export type Database = {
           },
         ]
       }
+      conferencia_inss: {
+        Row: {
+          created_at: string
+          houve_atualizacao: boolean
+          id: string
+          mae_id: string
+          observacoes: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          houve_atualizacao?: boolean
+          id?: string
+          mae_id: string
+          observacoes?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          houve_atualizacao?: boolean
+          id?: string
+          mae_id?: string
+          observacoes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conferencia_inss_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decisao_processo: {
         Row: {
           created_at: string
