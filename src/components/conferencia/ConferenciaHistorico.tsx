@@ -28,29 +28,50 @@ export function ConferenciaHistorico({ maeId }: ConferenciaHistoricoProps) {
     const fetchConferencias = async () => {
       setLoading(true);
       
-      const { data, error } = await supabase
+      // Fetch conferencias first
+      const { data: confData, error: confError } = await supabase
         .from("conferencia_inss")
-        .select(`
-          *,
-          profiles:user_id (full_name)
-        `)
+        .select("*")
         .eq("mae_id", maeId)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching conferencias:", error);
+      if (confError) {
+        console.error("Error fetching conferencias:", confError);
         setLoading(false);
         return;
       }
 
+      if (!confData || confData.length === 0) {
+        setConferencias([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set(confData.map((c) => c.user_id))];
+
+      // Fetch profiles for these users
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+
+      // Create a map of user_id -> full_name
+      const profileMap: Record<string, string> = {};
+      if (profilesData) {
+        profilesData.forEach((p) => {
+          profileMap[p.id] = p.full_name || "";
+        });
+      }
+
       setConferencias(
-        data.map((c: any) => ({
+        confData.map((c) => ({
           id: c.id,
           houve_atualizacao: c.houve_atualizacao,
           observacoes: c.observacoes,
           created_at: c.created_at,
           user_id: c.user_id,
-          user_name: c.profiles?.full_name || c.user_id.slice(0, 8) + "...",
+          user_name: profileMap[c.user_id] || c.user_id.slice(0, 8) + "...",
         }))
       );
       setLoading(false);
