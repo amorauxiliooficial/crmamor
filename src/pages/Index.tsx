@@ -20,11 +20,13 @@ import {
   Loader2,
   LayoutGrid,
   List,
+  ClipboardCheck,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 // Map database status to display status with emoji
 const mapDbStatusToDisplay = (status: string): StatusProcesso => {
@@ -290,7 +292,17 @@ const Index = () => {
                 </Badge>
               )}
             </div>
-            <ToggleGroup
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/conferencia")}
+                className="gap-2"
+              >
+                <ClipboardCheck className="h-4 w-4" />
+                Conferência INSS
+              </Button>
+              <ToggleGroup
               type="single"
               value={viewMode}
               onValueChange={(value) => value && setViewMode(value as "kanban" | "table")}
@@ -303,7 +315,8 @@ const Index = () => {
                 <List className="h-4 w-4 mr-2" />
                 Tabela
               </ToggleGroupItem>
-            </ToggleGroup>
+              </ToggleGroup>
+            </div>
           </div>
 
           {viewMode === "table" ? (
