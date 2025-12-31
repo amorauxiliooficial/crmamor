@@ -20,7 +20,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { TipoPagamento, StatusParcela } from "@/types/pagamento";
-import { format } from "date-fns";
 
 interface PagamentoDialogProps {
   open: boolean;
@@ -36,6 +35,7 @@ interface ParcelaForm {
   data_pagamento: string;
   status: StatusParcela;
   observacoes: string;
+  valor: string;
 }
 
 export function PagamentoDialog({
@@ -52,7 +52,7 @@ export function PagamentoDialog({
   const [saving, setSaving] = useState(false);
   const [tipoPagamento, setTipoPagamento] = useState<TipoPagamento>("parcelado");
   const [parcelas, setParcelas] = useState<ParcelaForm[]>([
-    { numero_parcela: 1, data_pagamento: "", status: "pendente", observacoes: "" },
+    { numero_parcela: 1, data_pagamento: "", status: "pendente", observacoes: "", valor: "" },
   ]);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export function PagamentoDialog({
       loadExistingPagamento();
     } else if (open && !existingPagamentoId) {
       setTipoPagamento("parcelado");
-      setParcelas([{ numero_parcela: 1, data_pagamento: "", status: "pendente", observacoes: "" }]);
+      setParcelas([{ numero_parcela: 1, data_pagamento: "", status: "pendente", observacoes: "", valor: "" }]);
     }
   }, [open, existingPagamentoId]);
 
@@ -103,11 +103,12 @@ export function PagamentoDialog({
     setTipoPagamento(pagamento.tipo_pagamento as TipoPagamento);
     if (parcelasData && parcelasData.length > 0) {
       setParcelas(
-        parcelasData.map((p) => ({
+        parcelasData.map((p: any) => ({
           numero_parcela: p.numero_parcela,
           data_pagamento: p.data_pagamento || "",
           status: p.status as StatusParcela,
           observacoes: p.observacoes || "",
+          valor: p.valor ? String(p.valor) : "",
         }))
       );
     }
@@ -122,6 +123,7 @@ export function PagamentoDialog({
         data_pagamento: "",
         status: "pendente",
         observacoes: "",
+        valor: "",
       },
     ]);
   };
@@ -139,21 +141,33 @@ export function PagamentoDialog({
     );
   };
 
+  const calcularValorTotal = () => {
+    return parcelas.reduce((acc, p) => {
+      const valor = parseFloat(p.valor) || 0;
+      return acc + valor;
+    }, 0);
+  };
+
   const handleSave = async () => {
     if (!user) return;
 
     setSaving(true);
 
     try {
+      const valorTotal = calcularValorTotal();
+
       if (existingPagamentoId) {
         // Update existing
-        await supabase
+        const { error: updateError } = await supabase
           .from("pagamentos_mae")
           .update({
             tipo_pagamento: tipoPagamento,
             total_parcelas: parcelas.length,
+            valor_total: valorTotal || null,
           })
           .eq("id", existingPagamentoId);
+
+        if (updateError) throw updateError;
 
         // Delete old parcelas and insert new ones
         await supabase
@@ -162,13 +176,15 @@ export function PagamentoDialog({
           .eq("pagamento_id", existingPagamentoId);
 
         for (const parcela of parcelas) {
-          await supabase.from("parcelas_pagamento").insert({
+          const { error: insertError } = await supabase.from("parcelas_pagamento").insert({
             pagamento_id: existingPagamentoId,
             numero_parcela: parcela.numero_parcela,
             data_pagamento: parcela.data_pagamento || null,
             status: parcela.status,
             observacoes: parcela.observacoes || null,
+            valor: parcela.valor ? parseFloat(parcela.valor) : null,
           });
+          if (insertError) throw insertError;
         }
       } else {
         // Create new
@@ -179,6 +195,7 @@ export function PagamentoDialog({
             user_id: user.id,
             tipo_pagamento: tipoPagamento,
             total_parcelas: parcelas.length,
+            valor_total: valorTotal || null,
           })
           .select()
           .single();
@@ -186,13 +203,15 @@ export function PagamentoDialog({
         if (pagError) throw pagError;
 
         for (const parcela of parcelas) {
-          await supabase.from("parcelas_pagamento").insert({
+          const { error: insertError } = await supabase.from("parcelas_pagamento").insert({
             pagamento_id: newPagamento.id,
             numero_parcela: parcela.numero_parcela,
             data_pagamento: parcela.data_pagamento || null,
             status: parcela.status,
             observacoes: parcela.observacoes || null,
+            valor: parcela.valor ? parseFloat(parcela.valor) : null,
           });
+          if (insertError) throw insertError;
         }
       }
 
@@ -219,13 +238,20 @@ export function PagamentoDialog({
   const handleTipoPagamentoChange = (value: TipoPagamento) => {
     setTipoPagamento(value);
     if (value === "a_vista") {
-      setParcelas([{ numero_parcela: 1, data_pagamento: "", status: "pendente", observacoes: "" }]);
+      setParcelas([{ numero_parcela: 1, data_pagamento: "", status: "pendente", observacoes: "", valor: "" }]);
     }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {existingPagamentoId ? "Editar" : "Cadastrar"} Pagamento - {maeNome}
@@ -253,7 +279,12 @@ export function PagamentoDialog({
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label>Parcelas ({parcelas.length})</Label>
+                <div className="flex items-center gap-4">
+                  <Label>Parcelas ({parcelas.length})</Label>
+                  <span className="text-sm text-muted-foreground">
+                    Valor Total: <span className="font-semibold text-foreground">{formatCurrency(calcularValorTotal())}</span>
+                  </span>
+                </div>
                 {tipoPagamento === "parcelado" && (
                   <Button type="button" variant="outline" size="sm" onClick={addParcela}>
                     <Plus className="h-4 w-4 mr-1" />
@@ -270,7 +301,18 @@ export function PagamentoDialog({
                   <div className="col-span-1 text-center font-medium text-muted-foreground">
                     {parcela.numero_parcela}ª
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-2">
+                    <Label className="text-xs">Valor (R$)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={parcela.valor}
+                      onChange={(e) => updateParcela(index, "valor", e.target.value)}
+                      placeholder="0,00"
+                    />
+                  </div>
+                  <div className="col-span-2">
                     <Label className="text-xs">Data Pagamento</Label>
                     <Input
                       type="date"
@@ -278,7 +320,7 @@ export function PagamentoDialog({
                       onChange={(e) => updateParcela(index, "data_pagamento", e.target.value)}
                     />
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-2">
                     <Label className="text-xs">Status</Label>
                     <Select
                       value={parcela.status}
