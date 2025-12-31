@@ -24,6 +24,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Badge } from "@/components/ui/badge";
 
 // Map database status to display status with emoji
 const mapDbStatusToDisplay = (status: string): StatusProcesso => {
@@ -275,7 +276,14 @@ const Index = () => {
         {/* View Toggle and Content */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Processos</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold">Processos</h2>
+              {searchQuery.trim() && (
+                <Badge variant="secondary" className="gap-1">
+                  Buscando: "{searchQuery}" ({filteredMaes.length} resultado{filteredMaes.length !== 1 ? 's' : ''})
+                </Badge>
+              )}
+            </div>
             <ToggleGroup
               type="single"
               value={viewMode}
