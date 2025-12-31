@@ -63,7 +63,7 @@ const Index = () => {
   const [maes, setMaes] = useState<MaeProcesso[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all" | "gestantes">("all");
-  const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
+  const [viewMode, setViewMode] = useState<"kanban" | "table" | "conferencia" | "pagamentos">("kanban");
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -317,23 +317,39 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-2">
               <ToggleGroup
-              type="single"
-              value={viewMode}
-              onValueChange={(value) => value && setViewMode(value as "kanban" | "table")}
-            >
-              <ToggleGroupItem value="kanban" aria-label="Visualização Kanban">
-                <LayoutGrid className="h-4 w-4 mr-2" />
-                Kanban
-              </ToggleGroupItem>
-              <ToggleGroupItem value="table" aria-label="Visualização Tabela">
-                <List className="h-4 w-4 mr-2" />
-                Tabela
-              </ToggleGroupItem>
+                type="single"
+                value={viewMode}
+                onValueChange={(value) => value && setViewMode(value as "kanban" | "table" | "conferencia" | "pagamentos")}
+              >
+                <ToggleGroupItem value="kanban" aria-label="Visualização Kanban">
+                  <LayoutGrid className="h-4 w-4 mr-2" />
+                  Kanban
+                </ToggleGroupItem>
+                <ToggleGroupItem value="table" aria-label="Visualização Tabela">
+                  <List className="h-4 w-4 mr-2" />
+                  Tabela
+                </ToggleGroupItem>
+                <ToggleGroupItem value="conferencia" aria-label="Conferência INSS">
+                  <ClipboardCheck className="h-4 w-4 mr-2" />
+                  Conferência INSS
+                </ToggleGroupItem>
+                <ToggleGroupItem value="pagamentos" aria-label="Pagamentos">
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Pagamentos
+                </ToggleGroupItem>
               </ToggleGroup>
             </div>
           </div>
 
-          {viewMode === "table" ? (
+          {viewMode === "conferencia" ? (
+            <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
+              <ConferenciaTab searchQuery={searchQuery} />
+            </div>
+          ) : viewMode === "pagamentos" ? (
+            <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
+              <PagamentosTab searchQuery={searchQuery} />
+            </div>
+          ) : viewMode === "table" ? (
             <MaeTable maes={filteredMaes} onRowClick={handleCardClick} />
           ) : (
             <Tabs defaultValue="all" className="w-full">
@@ -346,14 +362,6 @@ const Index = () => {
                 <TabsTrigger value="active">Em Andamento</TabsTrigger>
                 <TabsTrigger value="pending">Pendências</TabsTrigger>
                 <TabsTrigger value="completed">Finalizados</TabsTrigger>
-                <TabsTrigger value="conferencia" className="gap-1">
-                  <ClipboardCheck className="h-4 w-4" />
-                  Conferência INSS
-                </TabsTrigger>
-                <TabsTrigger value="pagamentos" className="gap-1">
-                  <DollarSign className="h-4 w-4" />
-                  Pagamentos
-                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="all" className="mt-0">
@@ -415,18 +423,6 @@ const Index = () => {
                       "📦 Processo Encerrado",
                     ]}
                   />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="conferencia" className="mt-0">
-                <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-                  <ConferenciaTab searchQuery={searchQuery} />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="pagamentos" className="mt-0">
-                <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-                  <PagamentosTab searchQuery={searchQuery} />
                 </div>
               </TabsContent>
             </Tabs>
