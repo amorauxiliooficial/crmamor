@@ -4,11 +4,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Loader2, Mail, Lock } from "lucide-react";
+import { Loader2, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import logo from "@/assets/logo.png";
 
 const authSchema = z.object({
   email: z.string().email("E-mail inválido").max(255),
@@ -107,16 +108,11 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="p-3 rounded-full bg-primary/10">
-              <Heart className="h-8 w-8 text-primary" />
-            </div>
+            <img src={logo} alt="Amor Auxílio Maternidade" className="h-20 w-auto" />
           </div>
-          <div>
-            <CardTitle className="text-2xl font-bold">AAM</CardTitle>
-            <CardDescription className="text-base">
-              Amor Auxílio Maternidade
-            </CardDescription>
-          </div>
+          <CardTitle className="text-xl font-bold text-primary">
+            Amor Auxílio Maternidade
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">

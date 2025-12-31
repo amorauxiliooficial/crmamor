@@ -1,4 +1,5 @@
-import { Heart, Search, Bell, LogOut, UserPlus } from "lucide-react";
+import { Search, Bell, LogOut, UserPlus } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,15 +36,8 @@ export function Header({ searchQuery, onSearchChange, onAddMae }: HeaderProps) {
     <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="flex h-16 items-center justify-between px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
-            <Heart className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="font-bold text-lg">AAM</h1>
-            <p className="text-xs text-muted-foreground">
-              Amor Auxílio Maternidade
-            </p>
-          </div>
+          <img src={logo} alt="Amor Auxílio Maternidade" className="h-12 w-auto" />
+          <h1 className="font-bold text-lg hidden sm:block">Amor Auxílio Maternidade</h1>
         </div>
 
         <div className="flex-1 max-w-md mx-8">
