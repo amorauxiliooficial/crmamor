@@ -10,6 +10,7 @@ import { Loader2, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 
 interface MaeFormDialogProps {
   open: boolean;
@@ -237,10 +238,11 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
     setIsLoading(false);
 
     if (error) {
+      logError('mae_form_submit', error);
       toast({
         variant: "destructive",
         title: "Erro ao cadastrar",
-        description: error.message,
+        description: getUserFriendlyError(error),
       });
     } else if (data) {
       toast({

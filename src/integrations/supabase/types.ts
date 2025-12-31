@@ -225,6 +225,7 @@ export type Database = {
     }
     Functions: {
       owns_mae_processo: { Args: { _mae_id: string }; Returns: boolean }
+      validate_cpf: { Args: { cpf: string }; Returns: boolean }
     }
     Enums: {
       categoria_previdenciaria:
