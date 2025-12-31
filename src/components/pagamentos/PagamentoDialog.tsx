@@ -271,8 +271,8 @@ export function PagamentoDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="a_vista">À Vista</SelectItem>
-                  <SelectItem value="parcelado">Parcelado</SelectItem>
+                  <SelectItem value="a_vista">Mãe Única</SelectItem>
+                  <SelectItem value="parcelado">Mãe Parcelada</SelectItem>
                 </SelectContent>
               </Select>
             </div>
