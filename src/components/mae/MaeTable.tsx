@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { MaeProcesso } from "@/types/mae";
+import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
 import {
   Table,
   TableBody,
@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -19,9 +18,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Settings2, Check, X, ArrowUpDown } from "lucide-react";
+import { Settings2, Check, X, ArrowUpDown, Filter } from "lucide-react";
 
 interface MaeTableProps {
   maes: MaeProcesso[];
@@ -73,13 +79,19 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
   const [columns, setColumns] = useState<Column[]>(defaultColumns);
   const [sortColumn, setSortColumn] = useState<keyof MaeProcesso | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all">("all");
 
   const visibleColumns = useMemo(() => columns.filter((col) => col.visible), [columns]);
 
+  const filteredMaes = useMemo(() => {
+    if (statusFilter === "all") return maes;
+    return maes.filter((mae) => mae.status_processo === statusFilter);
+  }, [maes, statusFilter]);
+
   const sortedMaes = useMemo(() => {
-    if (!sortColumn) return maes;
+    if (!sortColumn) return filteredMaes;
     
-    return [...maes].sort((a, b) => {
+    return [...filteredMaes].sort((a, b) => {
       const aVal = a[sortColumn];
       const bVal = b[sortColumn];
       
@@ -95,7 +107,7 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
       const comparison = String(aVal).localeCompare(String(bVal), "pt-BR", { sensitivity: "base" });
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [maes, sortColumn, sortDirection]);
+  }, [filteredMaes, sortColumn, sortDirection]);
 
   const handleSort = (columnId: keyof MaeProcesso) => {
     if (sortColumn === columnId) {
@@ -151,7 +163,35 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => setStatusFilter(value as StatusProcesso | "all")}
+          >
+            <SelectTrigger className="w-[280px]">
+              <SelectValue placeholder="Filtrar por status" />
+            </SelectTrigger>
+            <SelectContent className="bg-background">
+              <SelectItem value="all">Todos os status</SelectItem>
+              {STATUS_ORDER.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {statusFilter !== "all" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStatusFilter("all")}
+            >
+              Limpar filtro
+            </Button>
+          )}
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
