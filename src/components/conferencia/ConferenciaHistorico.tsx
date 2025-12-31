@@ -53,14 +53,14 @@ export function ConferenciaHistorico({ maeId }: ConferenciaHistoricoProps) {
       // Fetch profiles for these users
       const { data: profilesData } = await supabase
         .from("profiles")
-        .select("id, full_name")
+        .select("id, full_name, email")
         .in("id", userIds);
 
-      // Create a map of user_id -> full_name
+      // Create a map of user_id -> display name (full_name or email)
       const profileMap: Record<string, string> = {};
       if (profilesData) {
         profilesData.forEach((p) => {
-          profileMap[p.id] = p.full_name || "";
+          profileMap[p.id] = p.full_name || p.email || "";
         });
       }
 
