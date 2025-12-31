@@ -9,6 +9,8 @@ interface StatsCardProps {
   description?: string;
   trend?: "up" | "down" | "neutral";
   className?: string;
+  onClick?: () => void;
+  isActive?: boolean;
 }
 
 export function StatsCard({
@@ -18,9 +20,18 @@ export function StatsCard({
   description,
   trend,
   className,
+  onClick,
+  isActive,
 }: StatsCardProps) {
   return (
-    <Card className={cn("overflow-hidden", className)}>
+    <Card 
+      className={cn(
+        "overflow-hidden transition-all cursor-pointer hover:shadow-md hover:scale-[1.02]",
+        isActive && "ring-2 ring-primary shadow-md",
+        className
+      )}
+      onClick={onClick}
+    >
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
