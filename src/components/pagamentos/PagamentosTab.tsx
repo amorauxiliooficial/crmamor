@@ -72,6 +72,13 @@ interface MaeAprovada {
   nome_mae: string;
   cpf: string;
   temPagamento: boolean;
+  pagamentoId?: string;
+  statusParcelas: {
+    pagas: number;
+    pendentes: number;
+    inadimplentes: number;
+    total: number;
+  };
 }
 
 interface PagamentosTabProps {
@@ -138,16 +145,42 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
       return;
     }
 
-    // Get mae_ids with payments
-    const maeIdsComPagamento = new Set(pagamentosData?.map(p => p.mae_id) || []);
+    // Get mae_ids with payments and their status
+    const maePaymentMap = new Map<string, { pagamentoId: string; parcelas: any[] }>();
+    
+    for (const pag of pagamentosData || []) {
+      const { data: parcelas } = await supabase
+        .from("parcelas_pagamento")
+        .select("*")
+        .eq("pagamento_id", pag.id);
+      
+      maePaymentMap.set(pag.mae_id, {
+        pagamentoId: pag.id,
+        parcelas: parcelas || [],
+      });
+    }
 
-    // Build maes aprovadas list
-    const maesComStatus: MaeAprovada[] = (maesData || []).map(mae => ({
-      id: mae.id,
-      nome_mae: mae.nome_mae,
-      cpf: mae.cpf,
-      temPagamento: maeIdsComPagamento.has(mae.id),
-    }));
+    // Build maes aprovadas list with payment status
+    const maesComStatus: MaeAprovada[] = (maesData || []).map(mae => {
+      const paymentInfo = maePaymentMap.get(mae.id);
+      const parcelas = paymentInfo?.parcelas || [];
+      
+      const statusParcelas = {
+        pagas: parcelas.filter((p: any) => p.status === "pago").length,
+        pendentes: parcelas.filter((p: any) => p.status === "pendente").length,
+        inadimplentes: parcelas.filter((p: any) => p.status === "inadimplente").length,
+        total: parcelas.length,
+      };
+
+      return {
+        id: mae.id,
+        nome_mae: mae.nome_mae,
+        cpf: mae.cpf,
+        temPagamento: maePaymentMap.has(mae.id),
+        pagamentoId: paymentInfo?.pagamentoId,
+        statusParcelas,
+      };
+    });
     setMaesAprovadas(maesComStatus);
 
     // Build pagamentos completos
@@ -499,15 +532,47 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
                         <TableCell className="font-medium">{mae.nome_mae}</TableCell>
                         <TableCell className="font-mono text-sm">{formatCpf(mae.cpf)}</TableCell>
                         <TableCell>
-                          {mae.temPagamento ? (
+                          {!mae.temPagamento ? (
+                            <Badge variant="secondary">
+                              <Clock className="h-3 w-3 mr-1" />
+                              Sem Cadastro
+                            </Badge>
+                          ) : mae.statusParcelas.inadimplentes > 0 ? (
+                            <div className="flex flex-col gap-1">
+                              <Badge variant="destructive">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                Inadimplente ({mae.statusParcelas.inadimplentes})
+                              </Badge>
+                              {mae.statusParcelas.pagas > 0 && (
+                                <span className="text-xs text-muted-foreground">
+                                  {mae.statusParcelas.pagas}/{mae.statusParcelas.total} pagas
+                                </span>
+                              )}
+                            </div>
+                          ) : mae.statusParcelas.pendentes > 0 && mae.statusParcelas.pagas > 0 ? (
+                            <div className="flex flex-col gap-1">
+                              <Badge className="bg-amber-500/20 text-amber-700">
+                                <Clock className="h-3 w-3 mr-1" />
+                                Parcial
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {mae.statusParcelas.pagas}/{mae.statusParcelas.total} pagas
+                              </span>
+                            </div>
+                          ) : mae.statusParcelas.pendentes > 0 ? (
+                            <Badge className="bg-amber-500/20 text-amber-700">
+                              <Clock className="h-3 w-3 mr-1" />
+                              Pendente ({mae.statusParcelas.pendentes})
+                            </Badge>
+                          ) : mae.statusParcelas.pagas > 0 ? (
                             <Badge className="bg-emerald-500/20 text-emerald-700">
                               <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Cadastrado
+                              Pago ({mae.statusParcelas.pagas}/{mae.statusParcelas.total})
                             </Badge>
                           ) : (
                             <Badge variant="secondary">
                               <Clock className="h-3 w-3 mr-1" />
-                              Pendente
+                              Sem Parcelas
                             </Badge>
                           )}
                         </TableCell>
