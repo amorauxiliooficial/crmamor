@@ -75,7 +75,7 @@ const defaultColumns: Column[] = [
   { id: "data_ultima_atualizacao", label: "Última Atualização", visible: true, sortable: true },
 ];
 
-const COLUMNS_STORAGE_KEY = "mae-table-columns";
+const COLUMNS_STORAGE_KEY = "mae-table-columns-v2";
 
 const loadColumnsFromStorage = (): Column[] => {
   try {
