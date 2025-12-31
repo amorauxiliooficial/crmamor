@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import { GestantesBoard } from "@/components/kanban/GestantesBoard";
 import { MaeTable } from "@/components/mae/MaeTable";
 import { MaeDetailDialog } from "@/components/mae/MaeDetailDialog";
 import { MaeFormDialog } from "@/components/mae/MaeFormDialog";
@@ -16,7 +17,7 @@ import {
   XCircle,
   Clock,
   AlertTriangle,
-  FileText,
+  Baby,
   Loader2,
   LayoutGrid,
   List,
@@ -28,6 +29,7 @@ import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { differenceInMonths, parseISO } from "date-fns";
 
 // Map database status to display status with emoji
 const mapDbStatusToDisplay = (status: string): StatusProcesso => {
@@ -149,6 +151,15 @@ const Index = () => {
     return filtered;
   }, [searchQuery, maes, statusFilter]);
 
+  // Count gestantes (mothers with DPP and future date)
+  const gestantesCount = useMemo(() => {
+    return maes.filter((m) => {
+      if (m.data_evento_tipo !== "DPP" || !m.data_evento) return false;
+      const dpp = parseISO(m.data_evento);
+      return dpp > new Date();
+    }).length;
+  }, [maes]);
+
   const stats = useMemo(() => {
     const total = maes.length;
     const aprovadas = maes.filter(
@@ -163,11 +174,8 @@ const Index = () => {
     const pendencias = maes.filter(
       (m) => m.status_processo === "⚠️ Pendência Documental"
     ).length;
-    const entradaDocs = maes.filter(
-      (m) => m.status_processo === "📥 Entrada de Documentos"
-    ).length;
 
-    return { total, aprovadas, indeferidas, emAnalise, pendencias, entradaDocs };
+    return { total, aprovadas, indeferidas, emAnalise, pendencias };
   }, [maes]);
 
   const handleStatsClick = (filter: StatusProcesso | "all") => {
@@ -275,12 +283,10 @@ const Index = () => {
             isActive={statusFilter === "⚠️ Pendência Documental"}
           />
           <StatsCard
-            title="Entrada de Docs"
-            value={stats.entradaDocs}
-            icon={FileText}
-            className="border-l-4 border-l-secondary"
-            onClick={() => handleStatsClick("📥 Entrada de Documentos")}
-            isActive={statusFilter === "📥 Entrada de Documentos"}
+            title="Gestantes"
+            value={gestantesCount}
+            icon={Baby}
+            className="border-l-4 border-l-pink-500"
           />
         </section>
 
@@ -328,6 +334,10 @@ const Index = () => {
             <Tabs defaultValue="all" className="w-full">
               <TabsList className="mb-4">
                 <TabsTrigger value="all">Todos os Status</TabsTrigger>
+                <TabsTrigger value="gestantes" className="gap-1">
+                  <Baby className="h-4 w-4" />
+                  Gestantes
+                </TabsTrigger>
                 <TabsTrigger value="active">Em Andamento</TabsTrigger>
                 <TabsTrigger value="pending">Pendências</TabsTrigger>
                 <TabsTrigger value="completed">Finalizados</TabsTrigger>
@@ -343,6 +353,15 @@ const Index = () => {
                 </div>
               </TabsContent>
 
+              <TabsContent value="gestantes" className="mt-0">
+                <div className="rounded-lg border bg-muted/30 min-h-[500px]">
+                  <GestantesBoard
+                    maes={filteredMaes}
+                    onCardClick={handleCardClick}
+                  />
+                </div>
+              </TabsContent>
+
               <TabsContent value="active" className="mt-0">
                 <div className="rounded-lg border bg-muted/30 min-h-[500px]">
                   <KanbanBoard
@@ -350,7 +369,6 @@ const Index = () => {
                     onCardClick={handleCardClick}
                     onStatusChange={handleStatusChange}
                     visibleStatuses={[
-                      "📥 Entrada de Documentos",
                       "🔎 Em Análise",
                       "🟡 Elegível (Análise Positiva)",
                       "📤 Protocolo INSS",
