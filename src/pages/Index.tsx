@@ -116,6 +116,11 @@ const Index = () => {
     }
   }, [user]);
 
+  // Função para remover acentos
+  const removeAccents = (str: string) => {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  };
+
   const filteredMaes = useMemo(() => {
     let filtered = maes;
     
@@ -126,11 +131,12 @@ const Index = () => {
     
     // Apply search filter
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
+      const query = removeAccents(searchQuery.toLowerCase().trim());
       const queryDigits = query.replace(/\D/g, "");
       
       filtered = filtered.filter((mae) => {
-        const nameMatch = mae.nome_mae?.toLowerCase().includes(query);
+        const normalizedName = removeAccents(mae.nome_mae?.toLowerCase() || "");
+        const nameMatch = normalizedName.includes(query);
         const cpfMatch = queryDigits.length > 0 && mae.cpf?.replace(/\D/g, "").includes(queryDigits);
         return nameMatch || cpfMatch;
       });
