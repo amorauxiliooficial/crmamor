@@ -10,6 +10,7 @@ import { MaeFormDialog } from "@/components/mae/MaeFormDialog";
 import { MaeEditDialog } from "@/components/mae/MaeEditDialog";
 import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
 import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
+import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso } from "@/types/mae";
@@ -25,6 +26,7 @@ import {
   List,
   ClipboardCheck,
   DollarSign,
+  UserPlus,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -63,7 +65,7 @@ const Index = () => {
   const [maes, setMaes] = useState<MaeProcesso[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all" | "gestantes">("all");
-  const [viewMode, setViewMode] = useState<"kanban" | "table" | "gestantes" | "conferencia" | "pagamentos">("kanban");
+  const [viewMode, setViewMode] = useState<"kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes">("kanban");
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -320,7 +322,7 @@ const Index = () => {
               <ToggleGroup
                 type="single"
                 value={viewMode}
-                onValueChange={(value) => value && setViewMode(value as "kanban" | "table" | "gestantes" | "conferencia" | "pagamentos")}
+                onValueChange={(value) => value && setViewMode(value as "kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes")}
               >
                 <ToggleGroupItem value="kanban" aria-label="Visualização Kanban">
                   <LayoutGrid className="h-4 w-4 mr-2" />
@@ -342,11 +344,19 @@ const Index = () => {
                   <DollarSign className="h-4 w-4 mr-2" />
                   Pagamentos
                 </ToggleGroupItem>
+                <ToggleGroupItem value="indicacoes" aria-label="Indicações">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Indicações
+                </ToggleGroupItem>
               </ToggleGroup>
             </div>
           </div>
 
-          {viewMode === "conferencia" ? (
+          {viewMode === "indicacoes" ? (
+            <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
+              <IndicacoesTab searchQuery={searchQuery} />
+            </div>
+          ) : viewMode === "conferencia" ? (
             <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
               <ConferenciaTab searchQuery={searchQuery} />
             </div>
