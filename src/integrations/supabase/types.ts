@@ -328,6 +328,44 @@ export type Database = {
         }
         Relationships: []
       }
+      verificacao_gestante: {
+        Row: {
+          atualizacao_realizada: string
+          created_at: string
+          id: string
+          mae_id: string
+          observacoes: string | null
+          user_id: string
+          verificado_em: string
+        }
+        Insert: {
+          atualizacao_realizada: string
+          created_at?: string
+          id?: string
+          mae_id: string
+          observacoes?: string | null
+          user_id: string
+          verificado_em?: string
+        }
+        Update: {
+          atualizacao_realizada?: string
+          created_at?: string
+          id?: string
+          mae_id?: string
+          observacoes?: string | null
+          user_id?: string
+          verificado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verificacao_gestante_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
