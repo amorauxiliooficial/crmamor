@@ -6,15 +6,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { Indicacao, StatusAbordagem, statusAbordagemLabels, statusAbordagemColors, ProximaAcao, proximaAcaoLabels, proximaAcaoColors, MotivoAbordagem, motivoAbordagemLabels, AcaoIndicacao } from "@/types/indicacao";
-import { Loader2, Trash2, History } from "lucide-react";
+import { Indicacao, StatusAbordagem, statusAbordagemLabels, ProximaAcao, proximaAcaoLabels, MotivoAbordagem, motivoAbordagemLabels, AcaoIndicacao } from "@/types/indicacao";
+import { Loader2, Trash2, History, CalendarIcon } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface IndicacaoDialogProps {
   indicacao: Indicacao | null;
@@ -29,6 +32,8 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<Partial<Indicacao>>({});
   const [acoes, setAcoes] = useState<AcaoIndicacao[]>([]);
+  const [proximaAcaoDate, setProximaAcaoDate] = useState<Date | undefined>();
+  const [proximaAcaoTime, setProximaAcaoTime] = useState("09:00");
 
   const fetchAcoes = async (indicacaoId: string) => {
     const { data } = await supabase
@@ -53,34 +58,47 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
         motivo_abordagem: indicacao.motivo_abordagem,
         observacoes: indicacao.observacoes,
         proxima_acao: indicacao.proxima_acao,
+        proxima_acao_observacao: indicacao.proxima_acao_observacao,
       });
+      if (indicacao.proxima_acao_data) {
+        const date = parseISO(indicacao.proxima_acao_data);
+        setProximaAcaoDate(date);
+        setProximaAcaoTime(format(date, "HH:mm"));
+      } else {
+        setProximaAcaoDate(undefined);
+        setProximaAcaoTime("09:00");
+      }
       fetchAcoes(indicacao.id);
     } else {
       setAcoes([]);
+      setProximaAcaoDate(undefined);
+      setProximaAcaoTime("09:00");
     }
     onOpenChange(isOpen);
   };
 
-  const registerAction = async (tipoAcao: string) => {
+  const registerAction = async (tipoAcao: string, observacao?: string) => {
     if (!indicacao || !user) return;
     await supabase.from("acoes_indicacao").insert({
       indicacao_id: indicacao.id,
       tipo_acao: tipoAcao,
+      observacao: observacao || null,
       user_id: user.id,
     });
-  };
-
-  const handleStatusChange = async (status: StatusAbordagem) => {
-    setFormData({ ...formData, status_abordagem: status });
-  };
-
-  const handleProximaAcao = (acao: ProximaAcao) => {
-    setFormData({ ...formData, proxima_acao: acao, status_abordagem: "em_andamento" });
   };
 
   const handleSave = async () => {
     if (!indicacao) return;
     setLoading(true);
+
+    // Build próxima ação datetime
+    let proximaAcaoDatetime: string | null = null;
+    if (proximaAcaoDate) {
+      const [hours, minutes] = proximaAcaoTime.split(":").map(Number);
+      const dateWithTime = new Date(proximaAcaoDate);
+      dateWithTime.setHours(hours, minutes, 0, 0);
+      proximaAcaoDatetime = dateWithTime.toISOString();
+    }
 
     // Check what changed to register actions
     const changes: string[] = [];
@@ -105,6 +123,8 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
         motivo_abordagem: formData.motivo_abordagem,
         observacoes: formData.observacoes,
         proxima_acao: formData.proxima_acao,
+        proxima_acao_data: proximaAcaoDatetime,
+        proxima_acao_observacao: formData.proxima_acao_observacao,
       })
       .eq("id", indicacao.id);
 
@@ -118,7 +138,7 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
     } else {
       // Register all changes as actions
       for (const change of changes) {
-        await registerAction(change);
+        await registerAction(change, formData.proxima_acao_observacao);
       }
       
       toast({
@@ -205,83 +225,126 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Status da Abordagem</Label>
-              <div className="flex gap-2">
-                {(["pendente", "em_andamento", "concluido"] as StatusAbordagem[]).map((status) => (
-                  <Button
-                    key={status}
-                    type="button"
-                    size="sm"
-                    variant={formData.status_abordagem === status ? "default" : "outline"}
-                    className={formData.status_abordagem === status ? statusAbordagemColors[status] : ""}
-                    onClick={() => handleStatusChange(status)}
-                  >
-                    {statusAbordagemLabels[status]}
-                  </Button>
-                ))}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Status da Abordagem</Label>
+                <Select
+                  value={formData.status_abordagem}
+                  onValueChange={(value) => setFormData({ ...formData, status_abordagem: value as StatusAbordagem })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(statusAbordagemLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Motivo</Label>
+                <Select
+                  value={formData.motivo_abordagem || ""}
+                  onValueChange={(value) => setFormData({ ...formData, motivo_abordagem: value as MotivoAbordagem })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o motivo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(motivoAbordagemLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="motivo">Motivo</Label>
-              <Select
-                value={formData.motivo_abordagem || ""}
-                onValueChange={(value) => setFormData({ ...formData, motivo_abordagem: value as MotivoAbordagem })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o motivo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(motivoAbordagemLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="observacoes">Observações</Label>
+              <Label htmlFor="observacoes">Observações Gerais</Label>
               <Textarea
                 id="observacoes"
                 value={formData.observacoes || ""}
                 onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                rows={3}
+                rows={2}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Próxima Ação</Label>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={formData.proxima_acao === "primeiro_contato" ? "default" : "outline"}
-                  className={formData.proxima_acao === "primeiro_contato" ? proximaAcaoColors.primeiro_contato : ""}
-                  onClick={() => handleProximaAcao("primeiro_contato")}
+            {/* Próxima Ação Section */}
+            <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+              <Label className="text-base font-semibold">Próxima Ação</Label>
+              
+              <div className="space-y-2">
+                <Label>Tipo de Ação</Label>
+                <Select
+                  value={formData.proxima_acao || ""}
+                  onValueChange={(value) => setFormData({ ...formData, proxima_acao: value as ProximaAcao })}
                 >
-                  1º Contato
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={formData.proxima_acao === "follow_up" ? "default" : "outline"}
-                  className={formData.proxima_acao === "follow_up" ? proximaAcaoColors.follow_up : ""}
-                  onClick={() => handleProximaAcao("follow_up")}
-                >
-                  Follow Up
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={formData.proxima_acao === "proxima_acao" ? "default" : "outline"}
-                  className={formData.proxima_acao === "proxima_acao" ? proximaAcaoColors.proxima_acao : ""}
-                  onClick={() => handleProximaAcao("proxima_acao")}
-                >
-                  Próx. Ação
-                </Button>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a ação" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(proximaAcaoLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Data Agendada</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !proximaAcaoDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {proximaAcaoDate ? format(proximaAcaoDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={proximaAcaoDate}
+                        onSelect={setProximaAcaoDate}
+                        initialFocus
+                        locale={ptBR}
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Horário</Label>
+                  <Input
+                    type="time"
+                    value={proximaAcaoTime}
+                    onChange={(e) => setProximaAcaoTime(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Observação da Ação</Label>
+                <Textarea
+                  value={formData.proxima_acao_observacao || ""}
+                  onChange={(e) => setFormData({ ...formData, proxima_acao_observacao: e.target.value })}
+                  rows={2}
+                  placeholder="Descreva detalhes sobre esta ação..."
+                />
               </div>
             </div>
 
@@ -296,11 +359,16 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
               ) : (
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {acoes.map((acao) => (
-                    <div key={acao.id} className="flex items-center justify-between text-sm bg-muted/50 rounded-md px-3 py-2">
-                      <span>{acao.tipo_acao}</span>
-                      <span className="text-muted-foreground text-xs">
-                        {format(parseISO(acao.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                      </span>
+                    <div key={acao.id} className="bg-muted/50 rounded-md px-3 py-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">{acao.tipo_acao}</span>
+                        <span className="text-muted-foreground text-xs">
+                          {format(parseISO(acao.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        </span>
+                      </div>
+                      {acao.observacao && (
+                        <p className="text-xs text-muted-foreground mt-1">{acao.observacao}</p>
+                      )}
                     </div>
                   ))}
                 </div>
