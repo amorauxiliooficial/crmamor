@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bell, CheckCircle2, Clock, User, Calendar, AlertTriangle } from "lucide-react";
+import { Bell, CheckCircle2, Clock, User, Calendar, AlertTriangle, History } from "lucide-react";
 import { VerificacaoGestanteDialog } from "./VerificacaoGestanteDialog";
 import { cn } from "@/lib/utils";
 
@@ -107,6 +107,14 @@ export function GestantesNotificacao({ maes, onRefresh }: GestantesNotificacaoPr
       </div>
     );
   }
+
+  // Últimas verificações realizadas (todas, não só 7º mês)
+  const ultimasVerificacoes = useMemo(() => {
+    return verificacoes.slice(0, 10).map((v) => {
+      const mae = maes.find((m) => m.id === v.mae_id);
+      return { ...v, mae };
+    });
+  }, [verificacoes, maes]);
 
   return (
     <div className="space-y-6">
@@ -238,6 +246,64 @@ export function GestantesNotificacao({ maes, onRefresh }: GestantesNotificacaoPr
           </Card>
         </div>
       )}
+
+      {/* Atividades Recentes - Nova seção */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <History className="h-4 w-4 text-primary" />
+            Atividades Recentes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[250px]">
+            <div className="space-y-3">
+              {ultimasVerificacoes.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                  Nenhuma atividade registrada ainda.
+                </p>
+              ) : (
+                ultimasVerificacoes.map((verificacao) => (
+                  <div
+                    key={verificacao.id}
+                    className="rounded-lg border bg-card p-3 space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        <span className="font-medium text-sm">
+                          {verificacao.mae?.nome_mae || "Mãe não encontrada"}
+                        </span>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {format(new Date(verificacao.verificado_em), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </Badge>
+                    </div>
+                    <div className="text-xs space-y-1">
+                      <p className="text-muted-foreground">
+                        <span className="font-medium text-foreground">Atualização realizada:</span>
+                      </p>
+                      <p className="text-foreground bg-muted/50 rounded p-2">
+                        {verificacao.atualizacao_realizada}
+                      </p>
+                      {verificacao.observacoes && (
+                        <>
+                          <p className="text-muted-foreground mt-2">
+                            <span className="font-medium text-foreground">Observações:</span>
+                          </p>
+                          <p className="text-muted-foreground italic">
+                            {verificacao.observacoes}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
 
       <VerificacaoGestanteDialog
         mae={selectedMae}
