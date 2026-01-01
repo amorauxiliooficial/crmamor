@@ -56,6 +56,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     observacoes: "",
     senha_gov: "",
     verificacao_duas_etapas: false,
+    is_gestante: false,
   });
 
   useEffect(() => {
@@ -80,6 +81,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
         observacoes: mae.observacoes || "",
         senha_gov: mae.senha_gov || "",
         verificacao_duas_etapas: mae.verificacao_duas_etapas ?? false,
+        is_gestante: mae.is_gestante ?? false,
       });
     }
   }, [mae]);
@@ -147,6 +149,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
         observacoes: formData.observacoes || null,
         senha_gov: formData.senha_gov || null,
         verificacao_duas_etapas: formData.verificacao_duas_etapas,
+        is_gestante: formData.is_gestante,
       })
       .eq("id", mae.id);
 
@@ -414,6 +417,19 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                 />
               </div>
             </div>
+          </div>
+
+          {/* Gestante */}
+          <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg">
+            <div>
+              <Label htmlFor="is_gestante" className="font-medium">Gestante</Label>
+              <p className="text-sm text-muted-foreground">A cliente está grávida?</p>
+            </div>
+            <Switch
+              id="is_gestante"
+              checked={formData.is_gestante}
+              onCheckedChange={(checked) => setFormData({ ...formData, is_gestante: checked })}
+            />
           </div>
 
           {/* Contrato */}

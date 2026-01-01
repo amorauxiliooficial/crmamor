@@ -60,9 +60,10 @@ export function GestantesNotificacao({ maes, onRefresh }: GestantesNotificacaoPr
     fetchVerificacoes();
   }, []);
 
-  // Gestantes no 7º mês
+  // Gestantes no 7º mês (apenas se is_gestante = true e tem DPP)
   const gestantes7Mes = useMemo(() => {
     return maes.filter((mae) => {
+      if (!mae.is_gestante) return false;
       const mes = calcularMesGravidez(mae.data_evento, mae.data_evento_tipo);
       return mes === 7;
     });

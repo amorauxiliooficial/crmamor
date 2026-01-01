@@ -39,6 +39,7 @@ interface MaeProcesso {
   origem?: string;
   senha_gov?: string;
   verificacao_duas_etapas: boolean;
+  is_gestante: boolean;
   data_ultima_atualizacao: string;
 }
 
@@ -57,6 +58,7 @@ type MaeFormData = {
   observacoes: string;
   senha_gov: string;
   verificacao_duas_etapas: boolean;
+  is_gestante: boolean;
 };
 
 const getEmptyFormData = (): MaeFormData => ({
@@ -74,6 +76,7 @@ const getEmptyFormData = (): MaeFormData => ({
   observacoes: "",
   senha_gov: "",
   verificacao_duas_etapas: false,
+  is_gestante: false,
 });
 
 const UF_OPTIONS = [
@@ -233,6 +236,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
       observacoes: formData.observacoes || null,
       senha_gov: formData.senha_gov || null,
       verificacao_duas_etapas: formData.verificacao_duas_etapas,
+      is_gestante: formData.is_gestante,
     }).select().single();
 
     setIsLoading(false);
@@ -272,6 +276,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
         origem: data.origem || undefined,
         senha_gov: data.senha_gov || undefined,
         verificacao_duas_etapas: data.verificacao_duas_etapas ?? false,
+        is_gestante: data.is_gestante ?? false,
         data_ultima_atualizacao: data.data_ultima_atualizacao,
       };
 
@@ -458,6 +463,19 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
                 </Select>
               </div>
             </div>
+          </div>
+
+          {/* Gestante */}
+          <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg">
+            <div>
+              <Label htmlFor="is_gestante_form" className="font-medium">Gestante</Label>
+              <p className="text-sm text-muted-foreground">A cliente está grávida?</p>
+            </div>
+            <Switch
+              id="is_gestante_form"
+              checked={formData.is_gestante}
+              onCheckedChange={(checked) => setFormData({ ...formData, is_gestante: checked })}
+            />
           </div>
 
           {/* Contrato */}
