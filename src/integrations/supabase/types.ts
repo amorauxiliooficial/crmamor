@@ -148,6 +148,7 @@ export type Database = {
           data_ultima_atualizacao: string
           email: string | null
           id: string
+          is_gestante: boolean
           nome_mae: string
           observacoes: string | null
           origem: string | null
@@ -175,6 +176,7 @@ export type Database = {
           data_ultima_atualizacao?: string
           email?: string | null
           id?: string
+          is_gestante?: boolean
           nome_mae: string
           observacoes?: string | null
           origem?: string | null
@@ -202,6 +204,7 @@ export type Database = {
           data_ultima_atualizacao?: string
           email?: string | null
           id?: string
+          is_gestante?: boolean
           nome_mae?: string
           observacoes?: string | null
           origem?: string | null

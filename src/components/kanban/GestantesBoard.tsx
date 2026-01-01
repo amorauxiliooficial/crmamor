@@ -39,7 +39,7 @@ function calcularMesGravidez(dataEvento: string | undefined, dataEventoTipo: str
 export function GestantesBoard({ maes, onCardClick, onRefresh }: GestantesBoardProps) {
   const [activeTab, setActiveTab] = useState("board");
 
-  // Filter only gestantes (DPP type and future dates)
+  // Filter only gestantes (is_gestante = true, DPP type and future dates)
   const gestantesPorMes = useMemo(() => {
     const grupos: Record<number, MaeProcesso[]> = {};
     
@@ -49,6 +49,7 @@ export function GestantesBoard({ maes, onCardClick, onRefresh }: GestantesBoardP
     }
     
     maes.forEach((mae) => {
+      if (!mae.is_gestante) return;
       const mes = calcularMesGravidez(mae.data_evento, mae.data_evento_tipo);
       if (mes !== null) {
         grupos[mes].push(mae);

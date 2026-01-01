@@ -111,6 +111,7 @@ const Index = () => {
         origem: item.origem || undefined,
         senha_gov: item.senha_gov || undefined,
         verificacao_duas_etapas: item.verificacao_duas_etapas ?? false,
+        is_gestante: item.is_gestante ?? false,
         data_ultima_atualizacao: item.data_ultima_atualizacao,
       }));
       setMaes(mappedData);
