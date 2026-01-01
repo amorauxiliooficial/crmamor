@@ -90,6 +90,14 @@ export function GestantesNotificacao({ maes, onRefresh }: GestantesNotificacaoPr
   const pendentes = gestantesComStatus.filter((g) => !g.verificadaRecentemente);
   const verificadas = gestantesComStatus.filter((g) => g.verificadaRecentemente);
 
+  // Últimas verificações realizadas (todas, não só 7º mês)
+  const ultimasVerificacoes = useMemo(() => {
+    return verificacoes.slice(0, 10).map((v) => {
+      const mae = maes.find((m) => m.id === v.mae_id);
+      return { ...v, mae };
+    });
+  }, [verificacoes, maes]);
+
   const handleVerificar = (mae: MaeProcesso) => {
     setSelectedMae(mae);
     setDialogOpen(true);
@@ -107,14 +115,6 @@ export function GestantesNotificacao({ maes, onRefresh }: GestantesNotificacaoPr
       </div>
     );
   }
-
-  // Últimas verificações realizadas (todas, não só 7º mês)
-  const ultimasVerificacoes = useMemo(() => {
-    return verificacoes.slice(0, 10).map((v) => {
-      const mae = maes.find((m) => m.id === v.mae_id);
-      return { ...v, mae };
-    });
-  }, [verificacoes, maes]);
 
   return (
     <div className="space-y-6">
