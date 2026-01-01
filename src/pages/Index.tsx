@@ -379,6 +379,7 @@ const Index = () => {
                   <GestantesBoard
                     maes={statusFilter === "gestantes" ? filteredMaes : gestantes}
                     onCardClick={handleCardClick}
+                    onRefresh={fetchMaes}
                   />
                 </div>
               </TabsContent>
