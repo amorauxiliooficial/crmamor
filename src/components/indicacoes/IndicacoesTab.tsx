@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { Indicacao, StatusAbordagem, statusAbordagemLabels, statusAbordagemColors } from "@/types/indicacao";
+import { Indicacao, StatusAbordagem, statusAbordagemLabels, statusAbordagemColors, ProximaAcao, proximaAcaoLabels, proximaAcaoColors } from "@/types/indicacao";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { IndicacaoDialog } from "./IndicacaoDialog";
 import { IndicacaoFormDialog } from "./IndicacaoFormDialog";
-import { Plus, Phone, Search, Users, UserPlus, MessageSquare, XCircle, CheckCircle, Clock, Loader2 } from "lucide-react";
+import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -84,16 +84,41 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
     return {
       total: indicacoes.length,
       pendentes: indicacoes.filter((i) => i.status_abordagem === "pendente").length,
-      emContato: indicacoes.filter((i) => i.status_abordagem === "em_contato").length,
-      interessadas: indicacoes.filter((i) => i.status_abordagem === "interessada").length,
-      convertidas: indicacoes.filter((i) => i.status_abordagem === "convertida").length,
-      naoInteressadas: indicacoes.filter((i) => i.status_abordagem === "nao_interessada").length,
+      emAndamento: indicacoes.filter((i) => i.status_abordagem === "em_andamento").length,
+      concluidos: indicacoes.filter((i) => i.status_abordagem === "concluido").length,
     };
   }, [indicacoes]);
 
   const handleRowClick = (indicacao: Indicacao) => {
     setSelectedIndicacao(indicacao);
     setEditDialogOpen(true);
+  };
+
+  const handleProximaAcao = async (indicacaoId: string, acao: ProximaAcao, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const { error } = await supabase
+      .from("indicacoes")
+      .update({ 
+        proxima_acao: acao,
+        status_abordagem: "em_andamento"
+      })
+      .eq("id", indicacaoId);
+
+    if (error) {
+      logError("update_proxima_acao", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar",
+        description: getUserFriendlyError(error),
+      });
+    } else {
+      toast({
+        title: "Ação registrada",
+        description: `${proximaAcaoLabels[acao]} registrado com sucesso.`,
+      });
+      fetchIndicacoes();
+    }
   };
 
   if (loading) {
@@ -107,7 +132,7 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -133,45 +158,23 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Em Contato
+              <PlayCircle className="h-4 w-4" />
+              Em Andamento
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.emContato}</div>
+            <div className="text-2xl font-bold">{stats.emAndamento}</div>
           </CardContent>
         </Card>
         <Card className="border-l-4 border-l-emerald-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <UserPlus className="h-4 w-4" />
-              Interessadas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.interessadas}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
               <CheckCircle className="h-4 w-4" />
-              Convertidas
+              Concluídos
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.convertidas}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-destructive">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <XCircle className="h-4 w-4" />
-              Não Interessadas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.naoInteressadas}</div>
+            <div className="text-2xl font-bold">{stats.concluidos}</div>
           </CardContent>
         </Card>
       </div>
@@ -202,9 +205,9 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
               <TableHead>Indicada</TableHead>
               <TableHead>Telefone</TableHead>
               <TableHead>Indicadora</TableHead>
-              <TableHead>Tel. Indicadora</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Motivo</TableHead>
+              <TableHead>Próxima Ação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -241,26 +244,40 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
                   </TableCell>
                   <TableCell>{indicacao.nome_indicadora || "-"}</TableCell>
                   <TableCell>
-                    {indicacao.telefone_indicadora && (
-                      <a
-                        href={`https://wa.me/${indicacao.telefone_indicadora.replace(/\D/g, "")}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-emerald-600 hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Phone className="h-3 w-3" />
-                        {indicacao.telefone_indicadora}
-                      </a>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={statusAbordagemColors[indicacao.status_abordagem as StatusAbordagem]}>
-                      {statusAbordagemLabels[indicacao.status_abordagem as StatusAbordagem]}
+                    <Badge className={statusAbordagemColors[indicacao.status_abordagem as StatusAbordagem] || statusAbordagemColors.pendente}>
+                      {statusAbordagemLabels[indicacao.status_abordagem as StatusAbordagem] || "Pendente"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate">
+                  <TableCell className="max-w-[150px] truncate">
                     {indicacao.motivo_abordagem || "-"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant={indicacao.proxima_acao === "primeiro_contato" ? "default" : "outline"}
+                        className={indicacao.proxima_acao === "primeiro_contato" ? proximaAcaoColors.primeiro_contato : ""}
+                        onClick={(e) => handleProximaAcao(indicacao.id, "primeiro_contato", e)}
+                      >
+                        1º Contato
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={indicacao.proxima_acao === "follow_up" ? "default" : "outline"}
+                        className={indicacao.proxima_acao === "follow_up" ? proximaAcaoColors.follow_up : ""}
+                        onClick={(e) => handleProximaAcao(indicacao.id, "follow_up", e)}
+                      >
+                        Follow Up
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={indicacao.proxima_acao === "proxima_acao" ? "default" : "outline"}
+                        className={indicacao.proxima_acao === "proxima_acao" ? proximaAcaoColors.proxima_acao : ""}
+                        onClick={(e) => handleProximaAcao(indicacao.id, "proxima_acao", e)}
+                      >
+                        Próx. Ação
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

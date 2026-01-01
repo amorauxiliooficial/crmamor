@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { Indicacao, StatusAbordagem, statusAbordagemLabels } from "@/types/indicacao";
+import { Indicacao, StatusAbordagem, statusAbordagemLabels, ProximaAcao, proximaAcaoLabels, proximaAcaoColors } from "@/types/indicacao";
 import { Loader2, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -24,21 +24,6 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<Partial<Indicacao>>({});
 
-  // Initialize form when indicacao changes
-  useState(() => {
-    if (indicacao) {
-      setFormData({
-        nome_indicada: indicacao.nome_indicada,
-        telefone_indicada: indicacao.telefone_indicada,
-        nome_indicadora: indicacao.nome_indicadora,
-        telefone_indicadora: indicacao.telefone_indicadora,
-        status_abordagem: indicacao.status_abordagem,
-        motivo_abordagem: indicacao.motivo_abordagem,
-        observacoes: indicacao.observacoes,
-      });
-    }
-  });
-
   // Reset form when dialog opens with new indicacao
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen && indicacao) {
@@ -50,6 +35,7 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
         status_abordagem: indicacao.status_abordagem,
         motivo_abordagem: indicacao.motivo_abordagem,
         observacoes: indicacao.observacoes,
+        proxima_acao: indicacao.proxima_acao,
       });
     }
     onOpenChange(isOpen);
@@ -69,6 +55,7 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
         status_abordagem: formData.status_abordagem,
         motivo_abordagem: formData.motivo_abordagem,
         observacoes: formData.observacoes,
+        proxima_acao: formData.proxima_acao,
       })
       .eq("id", indicacao.id);
 
@@ -114,6 +101,10 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
     setLoading(false);
   };
 
+  const handleProximaAcao = (acao: ProximaAcao) => {
+    setFormData({ ...formData, proxima_acao: acao, status_abordagem: "em_andamento" });
+  };
+
   if (!indicacao) return null;
 
   return (
@@ -121,6 +112,7 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Editar Indicação</DialogTitle>
+          <DialogDescription>Atualize os dados da indicação abaixo.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -199,6 +191,39 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
               onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
               rows={3}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Próxima Ação</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.proxima_acao === "primeiro_contato" ? "default" : "outline"}
+                className={formData.proxima_acao === "primeiro_contato" ? proximaAcaoColors.primeiro_contato : ""}
+                onClick={() => handleProximaAcao("primeiro_contato")}
+              >
+                1º Contato
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.proxima_acao === "follow_up" ? "default" : "outline"}
+                className={formData.proxima_acao === "follow_up" ? proximaAcaoColors.follow_up : ""}
+                onClick={() => handleProximaAcao("follow_up")}
+              >
+                Follow Up
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.proxima_acao === "proxima_acao" ? "default" : "outline"}
+                className={formData.proxima_acao === "proxima_acao" ? proximaAcaoColors.proxima_acao : ""}
+                onClick={() => handleProximaAcao("proxima_acao")}
+              >
+                Próx. Ação
+              </Button>
+            </div>
           </div>
         </div>
 

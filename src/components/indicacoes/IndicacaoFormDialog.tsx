@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { StatusAbordagem, statusAbordagemLabels } from "@/types/indicacao";
+import { StatusAbordagem, statusAbordagemLabels, ProximaAcao, proximaAcaoColors } from "@/types/indicacao";
 import { Loader2 } from "lucide-react";
 
 interface IndicacaoFormDialogProps {
@@ -30,6 +30,7 @@ export function IndicacaoFormDialog({ open, onOpenChange, onSuccess }: Indicacao
     status_abordagem: "pendente" as StatusAbordagem,
     motivo_abordagem: "",
     observacoes: "",
+    proxima_acao: undefined as ProximaAcao | undefined,
   });
 
   const resetForm = () => {
@@ -41,6 +42,7 @@ export function IndicacaoFormDialog({ open, onOpenChange, onSuccess }: Indicacao
       status_abordagem: "pendente",
       motivo_abordagem: "",
       observacoes: "",
+      proxima_acao: undefined,
     });
   };
 
@@ -49,6 +51,10 @@ export function IndicacaoFormDialog({ open, onOpenChange, onSuccess }: Indicacao
       resetForm();
     }
     onOpenChange(isOpen);
+  };
+
+  const handleProximaAcao = (acao: ProximaAcao) => {
+    setFormData({ ...formData, proxima_acao: acao, status_abordagem: "em_andamento" });
   };
 
   const handleSubmit = async () => {
@@ -72,6 +78,7 @@ export function IndicacaoFormDialog({ open, onOpenChange, onSuccess }: Indicacao
       status_abordagem: formData.status_abordagem,
       motivo_abordagem: formData.motivo_abordagem.trim() || null,
       observacoes: formData.observacoes.trim() || null,
+      proxima_acao: formData.proxima_acao || null,
       user_id: user.id,
     });
 
@@ -98,6 +105,7 @@ export function IndicacaoFormDialog({ open, onOpenChange, onSuccess }: Indicacao
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Nova Indicação</DialogTitle>
+          <DialogDescription>Preencha os dados da nova indicação.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -181,6 +189,39 @@ export function IndicacaoFormDialog({ open, onOpenChange, onSuccess }: Indicacao
               rows={3}
               placeholder="Anotações adicionais..."
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Próxima Ação</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.proxima_acao === "primeiro_contato" ? "default" : "outline"}
+                className={formData.proxima_acao === "primeiro_contato" ? proximaAcaoColors.primeiro_contato : ""}
+                onClick={() => handleProximaAcao("primeiro_contato")}
+              >
+                1º Contato
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.proxima_acao === "follow_up" ? "default" : "outline"}
+                className={formData.proxima_acao === "follow_up" ? proximaAcaoColors.follow_up : ""}
+                onClick={() => handleProximaAcao("follow_up")}
+              >
+                Follow Up
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.proxima_acao === "proxima_acao" ? "default" : "outline"}
+                className={formData.proxima_acao === "proxima_acao" ? proximaAcaoColors.proxima_acao : ""}
+                onClick={() => handleProximaAcao("proxima_acao")}
+              >
+                Próx. Ação
+              </Button>
+            </div>
           </div>
         </div>
 

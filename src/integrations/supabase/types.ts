@@ -144,6 +144,7 @@ export type Database = {
           nome_indicada: string
           nome_indicadora: string | null
           observacoes: string | null
+          proxima_acao: string | null
           status_abordagem: string
           telefone_indicada: string | null
           telefone_indicadora: string | null
@@ -158,6 +159,7 @@ export type Database = {
           nome_indicada: string
           nome_indicadora?: string | null
           observacoes?: string | null
+          proxima_acao?: string | null
           status_abordagem?: string
           telefone_indicada?: string | null
           telefone_indicadora?: string | null
@@ -172,6 +174,7 @@ export type Database = {
           nome_indicada?: string
           nome_indicadora?: string | null
           observacoes?: string | null
+          proxima_acao?: string | null
           status_abordagem?: string
           telefone_indicada?: string | null
           telefone_indicadora?: string | null
