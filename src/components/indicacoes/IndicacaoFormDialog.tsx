@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { StatusAbordagem, statusAbordagemLabels, ProximaAcao, proximaAcaoColors } from "@/types/indicacao";
+import { StatusAbordagem, statusAbordagemLabels, statusAbordagemColors, ProximaAcao, proximaAcaoColors, MotivoAbordagem, motivoAbordagemLabels } from "@/types/indicacao";
 import { Loader2 } from "lucide-react";
 
 interface IndicacaoFormDialogProps {
@@ -28,7 +28,7 @@ export function IndicacaoFormDialog({ open, onOpenChange, onSuccess }: Indicacao
     nome_indicadora: "",
     telefone_indicadora: "",
     status_abordagem: "pendente" as StatusAbordagem,
-    motivo_abordagem: "",
+    motivo_abordagem: "" as MotivoAbordagem | "",
     observacoes: "",
     proxima_acao: undefined as ProximaAcao | undefined,
   });
@@ -53,6 +53,10 @@ export function IndicacaoFormDialog({ open, onOpenChange, onSuccess }: Indicacao
     onOpenChange(isOpen);
   };
 
+  const handleStatusChange = (status: StatusAbordagem) => {
+    setFormData({ ...formData, status_abordagem: status });
+  };
+
   const handleProximaAcao = (acao: ProximaAcao) => {
     setFormData({ ...formData, proxima_acao: acao, status_abordagem: "em_andamento" });
   };
@@ -70,17 +74,17 @@ export function IndicacaoFormDialog({ open, onOpenChange, onSuccess }: Indicacao
 
     setLoading(true);
 
-    const { error } = await supabase.from("indicacoes").insert({
+    const { data: indicacao, error } = await supabase.from("indicacoes").insert({
       nome_indicada: formData.nome_indicada.trim(),
       telefone_indicada: formData.telefone_indicada.trim() || null,
       nome_indicadora: formData.nome_indicadora.trim() || null,
       telefone_indicadora: formData.telefone_indicadora.trim() || null,
       status_abordagem: formData.status_abordagem,
-      motivo_abordagem: formData.motivo_abordagem.trim() || null,
+      motivo_abordagem: formData.motivo_abordagem || null,
       observacoes: formData.observacoes.trim() || null,
       proxima_acao: formData.proxima_acao || null,
       user_id: user.id,
-    });
+    }).select().single();
 
     if (error) {
       logError("create_indicacao", error);
@@ -90,6 +94,15 @@ export function IndicacaoFormDialog({ open, onOpenChange, onSuccess }: Indicacao
         description: getUserFriendlyError(error),
       });
     } else {
+      // Register initial action
+      if (indicacao) {
+        await supabase.from("acoes_indicacao").insert({
+          indicacao_id: indicacao.id,
+          tipo_acao: "Indicação criada",
+          user_id: user.id,
+        });
+      }
+      
       toast({
         title: "Indicação criada",
         description: "A nova indicação foi registrada com sucesso.",
@@ -152,32 +165,40 @@ export function IndicacaoFormDialog({ open, onOpenChange, onSuccess }: Indicacao
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="status">Status da Abordagem</Label>
+            <Label>Status da Abordagem</Label>
+            <div className="flex gap-2">
+              {(["pendente", "em_andamento", "concluido"] as StatusAbordagem[]).map((status) => (
+                <Button
+                  key={status}
+                  type="button"
+                  size="sm"
+                  variant={formData.status_abordagem === status ? "default" : "outline"}
+                  className={formData.status_abordagem === status ? statusAbordagemColors[status] : ""}
+                  onClick={() => handleStatusChange(status)}
+                >
+                  {statusAbordagemLabels[status]}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="motivo">Motivo</Label>
             <Select
-              value={formData.status_abordagem}
-              onValueChange={(value) => setFormData({ ...formData, status_abordagem: value as StatusAbordagem })}
+              value={formData.motivo_abordagem}
+              onValueChange={(value) => setFormData({ ...formData, motivo_abordagem: value as MotivoAbordagem })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecione o status" />
+                <SelectValue placeholder="Selecione o motivo" />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(statusAbordagemLabels).map(([value, label]) => (
+                {Object.entries(motivoAbordagemLabels).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
                     {label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="motivo">Motivo da Abordagem</Label>
-            <Input
-              id="motivo"
-              value={formData.motivo_abordagem}
-              onChange={(e) => setFormData({ ...formData, motivo_abordagem: e.target.value })}
-              placeholder="Ex: Primeiro contato, follow-up, etc."
-            />
           </div>
 
           <div className="space-y-2">

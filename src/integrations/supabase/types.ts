@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      acoes_indicacao: {
+        Row: {
+          created_at: string
+          id: string
+          indicacao_id: string
+          tipo_acao: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          indicacao_id: string
+          tipo_acao: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          indicacao_id?: string
+          tipo_acao?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acoes_indicacao_indicacao_id_fkey"
+            columns: ["indicacao_id"]
+            isOneToOne: false
+            referencedRelation: "indicacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_mae: {
         Row: {
           carencia_cumprida: boolean

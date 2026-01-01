@@ -3,10 +3,24 @@ export type StatusAbordagem =
   | "em_andamento" 
   | "concluido";
 
+export type MotivoAbordagem = 
+  | "sem_resposta" 
+  | "sem_interesse" 
+  | "fechou_contrato" 
+  | "voltou_trabalhar";
+
 export type ProximaAcao = 
   | "primeiro_contato" 
   | "follow_up" 
   | "proxima_acao";
+
+export interface AcaoIndicacao {
+  id: string;
+  indicacao_id: string;
+  tipo_acao: string;
+  user_id: string;
+  created_at: string;
+}
 
 export interface Indicacao {
   id: string;
@@ -16,7 +30,7 @@ export interface Indicacao {
   nome_indicadora?: string;
   telefone_indicadora?: string;
   status_abordagem: StatusAbordagem;
-  motivo_abordagem?: string;
+  motivo_abordagem?: MotivoAbordagem;
   observacoes?: string;
   proxima_acao?: ProximaAcao;
   user_id: string;
@@ -31,15 +45,22 @@ export const statusAbordagemLabels: Record<StatusAbordagem, string> = {
 };
 
 export const statusAbordagemColors: Record<StatusAbordagem, string> = {
-  pendente: "bg-muted text-muted-foreground",
-  em_andamento: "bg-blue-500/20 text-blue-700 dark:text-blue-300",
-  concluido: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+  pendente: "bg-muted text-muted-foreground hover:bg-muted/80",
+  em_andamento: "bg-blue-500/20 text-blue-700 dark:text-blue-300 hover:bg-blue-500/30",
+  concluido: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/30",
+};
+
+export const motivoAbordagemLabels: Record<MotivoAbordagem, string> = {
+  sem_resposta: "Sem resposta",
+  sem_interesse: "Não tem interesse",
+  fechou_contrato: "Fechou contrato",
+  voltou_trabalhar: "Voltou a trabalhar",
 };
 
 export const proximaAcaoLabels: Record<ProximaAcao, string> = {
-  primeiro_contato: "Primeiro Contato",
+  primeiro_contato: "1º Contato",
   follow_up: "Follow Up",
-  proxima_acao: "Próxima Ação",
+  proxima_acao: "Próx. Ação",
 };
 
 export const proximaAcaoColors: Record<ProximaAcao, string> = {
