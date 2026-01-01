@@ -19,6 +19,7 @@ export type Database = {
           created_at: string
           id: string
           indicacao_id: string
+          observacao: string | null
           tipo_acao: string
           user_id: string
         }
@@ -26,6 +27,7 @@ export type Database = {
           created_at?: string
           id?: string
           indicacao_id: string
+          observacao?: string | null
           tipo_acao: string
           user_id: string
         }
@@ -33,6 +35,7 @@ export type Database = {
           created_at?: string
           id?: string
           indicacao_id?: string
+          observacao?: string | null
           tipo_acao?: string
           user_id?: string
         }
@@ -177,6 +180,8 @@ export type Database = {
           nome_indicadora: string | null
           observacoes: string | null
           proxima_acao: string | null
+          proxima_acao_data: string | null
+          proxima_acao_observacao: string | null
           status_abordagem: string
           telefone_indicada: string | null
           telefone_indicadora: string | null
@@ -192,6 +197,8 @@ export type Database = {
           nome_indicadora?: string | null
           observacoes?: string | null
           proxima_acao?: string | null
+          proxima_acao_data?: string | null
+          proxima_acao_observacao?: string | null
           status_abordagem?: string
           telefone_indicada?: string | null
           telefone_indicadora?: string | null
@@ -207,6 +214,8 @@ export type Database = {
           nome_indicadora?: string | null
           observacoes?: string | null
           proxima_acao?: string | null
+          proxima_acao_data?: string | null
+          proxima_acao_observacao?: string | null
           status_abordagem?: string
           telefone_indicada?: string | null
           telefone_indicadora?: string | null

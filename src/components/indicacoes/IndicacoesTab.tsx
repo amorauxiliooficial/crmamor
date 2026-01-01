@@ -3,14 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { Indicacao, StatusAbordagem, statusAbordagemLabels, statusAbordagemColors, ProximaAcao, proximaAcaoLabels, proximaAcaoColors, motivoAbordagemLabels, MotivoAbordagem } from "@/types/indicacao";
+import { Indicacao, StatusAbordagem, statusAbordagemLabels, statusAbordagemColors, ProximaAcao, proximaAcaoLabels, motivoAbordagemLabels, MotivoAbordagem } from "@/types/indicacao";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { IndicacaoDialog } from "./IndicacaoDialog";
 import { IndicacaoFormDialog } from "./IndicacaoFormDialog";
-import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle } from "lucide-react";
+import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle, CalendarClock } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -91,65 +92,6 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
   const handleRowClick = (indicacao: Indicacao) => {
     setSelectedIndicacao(indicacao);
     setEditDialogOpen(true);
-  };
-
-  const handleStatusChange = async (indicacaoId: string, status: StatusAbordagem, e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    const { error } = await supabase
-      .from("indicacoes")
-      .update({ status_abordagem: status })
-      .eq("id", indicacaoId);
-
-    if (error) {
-      logError("update_status", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar",
-        description: getUserFriendlyError(error),
-      });
-    } else {
-      // Registrar ação
-      await supabase.from("acoes_indicacao").insert({
-        indicacao_id: indicacaoId,
-        tipo_acao: `Status: ${statusAbordagemLabels[status]}`,
-        user_id: user!.id,
-      });
-      fetchIndicacoes();
-    }
-  };
-
-  const handleProximaAcao = async (indicacaoId: string, acao: ProximaAcao, e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    const { error } = await supabase
-      .from("indicacoes")
-      .update({ 
-        proxima_acao: acao,
-        status_abordagem: "em_andamento"
-      })
-      .eq("id", indicacaoId);
-
-    if (error) {
-      logError("update_proxima_acao", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar",
-        description: getUserFriendlyError(error),
-      });
-    } else {
-      // Registrar ação
-      await supabase.from("acoes_indicacao").insert({
-        indicacao_id: indicacaoId,
-        tipo_acao: `Ação: ${proximaAcaoLabels[acao]}`,
-        user_id: user!.id,
-      });
-      toast({
-        title: "Ação registrada",
-        description: `${proximaAcaoLabels[acao]} registrado com sucesso.`,
-      });
-      fetchIndicacoes();
-    }
   };
 
   if (loading) {
@@ -275,19 +217,9 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
                   </TableCell>
                   <TableCell>{indicacao.nome_indicadora || "-"}</TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      {(["pendente", "em_andamento", "concluido"] as StatusAbordagem[]).map((status) => (
-                        <Button
-                          key={status}
-                          size="sm"
-                          variant={indicacao.status_abordagem === status ? "default" : "outline"}
-                          className={`text-xs px-2 py-1 h-7 ${indicacao.status_abordagem === status ? statusAbordagemColors[status] : ""}`}
-                          onClick={(e) => handleStatusChange(indicacao.id, status, e)}
-                        >
-                          {statusAbordagemLabels[status]}
-                        </Button>
-                      ))}
-                    </div>
+                    <Badge className={statusAbordagemColors[indicacao.status_abordagem as StatusAbordagem] || statusAbordagemColors.pendente}>
+                      {statusAbordagemLabels[indicacao.status_abordagem as StatusAbordagem] || "Pendente"}
+                    </Badge>
                   </TableCell>
                   <TableCell className="max-w-[150px]">
                     {indicacao.motivo_abordagem 
@@ -295,31 +227,19 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
                       : "-"}
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant={indicacao.proxima_acao === "primeiro_contato" ? "default" : "outline"}
-                        className={`text-xs px-2 py-1 h-7 ${indicacao.proxima_acao === "primeiro_contato" ? proximaAcaoColors.primeiro_contato : ""}`}
-                        onClick={(e) => handleProximaAcao(indicacao.id, "primeiro_contato", e)}
-                      >
-                        1º Contato
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={indicacao.proxima_acao === "follow_up" ? "default" : "outline"}
-                        className={`text-xs px-2 py-1 h-7 ${indicacao.proxima_acao === "follow_up" ? proximaAcaoColors.follow_up : ""}`}
-                        onClick={(e) => handleProximaAcao(indicacao.id, "follow_up", e)}
-                      >
-                        Follow Up
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={indicacao.proxima_acao === "proxima_acao" ? "default" : "outline"}
-                        className={`text-xs px-2 py-1 h-7 ${indicacao.proxima_acao === "proxima_acao" ? proximaAcaoColors.proxima_acao : ""}`}
-                        onClick={(e) => handleProximaAcao(indicacao.id, "proxima_acao", e)}
-                      >
-                        Próx. Ação
-                      </Button>
+                    <div className="flex flex-col gap-1">
+                      {indicacao.proxima_acao && (
+                        <Badge variant="outline" className="w-fit">
+                          {proximaAcaoLabels[indicacao.proxima_acao as ProximaAcao] || indicacao.proxima_acao}
+                        </Badge>
+                      )}
+                      {indicacao.proxima_acao_data && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <CalendarClock className="h-3 w-3" />
+                          {format(parseISO(indicacao.proxima_acao_data), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                        </span>
+                      )}
+                      {!indicacao.proxima_acao && !indicacao.proxima_acao_data && "-"}
                     </div>
                   </TableCell>
                 </TableRow>

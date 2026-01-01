@@ -18,6 +18,7 @@ export interface AcaoIndicacao {
   id: string;
   indicacao_id: string;
   tipo_acao: string;
+  observacao?: string;
   user_id: string;
   created_at: string;
 }
@@ -33,6 +34,8 @@ export interface Indicacao {
   motivo_abordagem?: MotivoAbordagem;
   observacoes?: string;
   proxima_acao?: ProximaAcao;
+  proxima_acao_data?: string;
+  proxima_acao_observacao?: string;
   user_id: string;
   created_at: string;
   updated_at: string;
