@@ -3,9 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { Indicacao, StatusAbordagem, statusAbordagemLabels, statusAbordagemColors, ProximaAcao, proximaAcaoLabels, proximaAcaoColors } from "@/types/indicacao";
+import { Indicacao, StatusAbordagem, statusAbordagemLabels, statusAbordagemColors, ProximaAcao, proximaAcaoLabels, proximaAcaoColors, motivoAbordagemLabels, MotivoAbordagem } from "@/types/indicacao";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -94,6 +93,32 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
     setEditDialogOpen(true);
   };
 
+  const handleStatusChange = async (indicacaoId: string, status: StatusAbordagem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const { error } = await supabase
+      .from("indicacoes")
+      .update({ status_abordagem: status })
+      .eq("id", indicacaoId);
+
+    if (error) {
+      logError("update_status", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar",
+        description: getUserFriendlyError(error),
+      });
+    } else {
+      // Registrar ação
+      await supabase.from("acoes_indicacao").insert({
+        indicacao_id: indicacaoId,
+        tipo_acao: `Status: ${statusAbordagemLabels[status]}`,
+        user_id: user!.id,
+      });
+      fetchIndicacoes();
+    }
+  };
+
   const handleProximaAcao = async (indicacaoId: string, acao: ProximaAcao, e: React.MouseEvent) => {
     e.stopPropagation();
     
@@ -113,6 +138,12 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
         description: getUserFriendlyError(error),
       });
     } else {
+      // Registrar ação
+      await supabase.from("acoes_indicacao").insert({
+        indicacao_id: indicacaoId,
+        tipo_acao: `Ação: ${proximaAcaoLabels[acao]}`,
+        user_id: user!.id,
+      });
       toast({
         title: "Ação registrada",
         description: `${proximaAcaoLabels[acao]} registrado com sucesso.`,
@@ -244,19 +275,31 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
                   </TableCell>
                   <TableCell>{indicacao.nome_indicadora || "-"}</TableCell>
                   <TableCell>
-                    <Badge className={statusAbordagemColors[indicacao.status_abordagem as StatusAbordagem] || statusAbordagemColors.pendente}>
-                      {statusAbordagemLabels[indicacao.status_abordagem as StatusAbordagem] || "Pendente"}
-                    </Badge>
+                    <div className="flex gap-1">
+                      {(["pendente", "em_andamento", "concluido"] as StatusAbordagem[]).map((status) => (
+                        <Button
+                          key={status}
+                          size="sm"
+                          variant={indicacao.status_abordagem === status ? "default" : "outline"}
+                          className={`text-xs px-2 py-1 h-7 ${indicacao.status_abordagem === status ? statusAbordagemColors[status] : ""}`}
+                          onClick={(e) => handleStatusChange(indicacao.id, status, e)}
+                        >
+                          {statusAbordagemLabels[status]}
+                        </Button>
+                      ))}
+                    </div>
                   </TableCell>
-                  <TableCell className="max-w-[150px] truncate">
-                    {indicacao.motivo_abordagem || "-"}
+                  <TableCell className="max-w-[150px]">
+                    {indicacao.motivo_abordagem 
+                      ? motivoAbordagemLabels[indicacao.motivo_abordagem as MotivoAbordagem] || indicacao.motivo_abordagem
+                      : "-"}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
                       <Button
                         size="sm"
                         variant={indicacao.proxima_acao === "primeiro_contato" ? "default" : "outline"}
-                        className={indicacao.proxima_acao === "primeiro_contato" ? proximaAcaoColors.primeiro_contato : ""}
+                        className={`text-xs px-2 py-1 h-7 ${indicacao.proxima_acao === "primeiro_contato" ? proximaAcaoColors.primeiro_contato : ""}`}
                         onClick={(e) => handleProximaAcao(indicacao.id, "primeiro_contato", e)}
                       >
                         1º Contato
@@ -264,7 +307,7 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
                       <Button
                         size="sm"
                         variant={indicacao.proxima_acao === "follow_up" ? "default" : "outline"}
-                        className={indicacao.proxima_acao === "follow_up" ? proximaAcaoColors.follow_up : ""}
+                        className={`text-xs px-2 py-1 h-7 ${indicacao.proxima_acao === "follow_up" ? proximaAcaoColors.follow_up : ""}`}
                         onClick={(e) => handleProximaAcao(indicacao.id, "follow_up", e)}
                       >
                         Follow Up
@@ -272,7 +315,7 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
                       <Button
                         size="sm"
                         variant={indicacao.proxima_acao === "proxima_acao" ? "default" : "outline"}
-                        className={indicacao.proxima_acao === "proxima_acao" ? proximaAcaoColors.proxima_acao : ""}
+                        className={`text-xs px-2 py-1 h-7 ${indicacao.proxima_acao === "proxima_acao" ? proximaAcaoColors.proxima_acao : ""}`}
                         onClick={(e) => handleProximaAcao(indicacao.id, "proxima_acao", e)}
                       >
                         Próx. Ação
