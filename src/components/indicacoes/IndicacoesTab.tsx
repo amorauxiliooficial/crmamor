@@ -3,15 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { Indicacao, StatusAbordagem, statusAbordagemLabels, statusAbordagemColors, ProximaAcao, proximaAcaoLabels, motivoAbordagemLabels, MotivoAbordagem } from "@/types/indicacao";
+import { Indicacao, StatusAbordagem, statusAbordagemLabels, ProximaAcao, proximaAcaoLabels, motivoAbordagemLabels, MotivoAbordagem } from "@/types/indicacao";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { IndicacaoDialog } from "./IndicacaoDialog";
 import { IndicacaoFormDialog } from "./IndicacaoFormDialog";
-import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle, CalendarClock } from "lucide-react";
+import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle, CalendarClock, ChevronDown } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -28,6 +30,7 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState("");
+  const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
 
   const fetchIndicacoes = async () => {
     if (!user) return;
@@ -51,9 +54,23 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
     setLoading(false);
   };
 
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle();
+    
+    if (data) {
+      setUserProfile(data);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchIndicacoes();
+      fetchUserProfile();
     }
   }, [user]);
 
@@ -89,9 +106,101 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
     };
   }, [indicacoes]);
 
-  const handleRowClick = (indicacao: Indicacao) => {
+  const handleRowClick = (indicacao: Indicacao, e: React.MouseEvent) => {
+    // Prevent opening dialog when clicking on select or dropdown
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-radix-collection-item]') || target.closest('[role="combobox"]') || target.closest('[role="menuitem"]') || target.closest('button')) {
+      return;
+    }
     setSelectedIndicacao(indicacao);
     setEditDialogOpen(true);
+  };
+
+  const handleStatusChange = async (indicacaoId: string, status: StatusAbordagem) => {
+    const userName = userProfile?.full_name || user?.email || "Usuário";
+    
+    const { error } = await supabase
+      .from("indicacoes")
+      .update({ status_abordagem: status })
+      .eq("id", indicacaoId);
+
+    if (error) {
+      logError("update_status", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar",
+        description: getUserFriendlyError(error),
+      });
+    } else {
+      await supabase.from("acoes_indicacao").insert({
+        indicacao_id: indicacaoId,
+        tipo_acao: `Status: ${statusAbordagemLabels[status]}`,
+        observacao: `Por: ${userName}`,
+        user_id: user!.id,
+      });
+      fetchIndicacoes();
+    }
+  };
+
+  const handleMotivoChange = async (indicacaoId: string, motivo: MotivoAbordagem) => {
+    const userName = userProfile?.full_name || user?.email || "Usuário";
+    
+    const { error } = await supabase
+      .from("indicacoes")
+      .update({ motivo_abordagem: motivo })
+      .eq("id", indicacaoId);
+
+    if (error) {
+      logError("update_motivo", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar",
+        description: getUserFriendlyError(error),
+      });
+    } else {
+      await supabase.from("acoes_indicacao").insert({
+        indicacao_id: indicacaoId,
+        tipo_acao: `Motivo: ${motivoAbordagemLabels[motivo]}`,
+        observacao: `Por: ${userName}`,
+        user_id: user!.id,
+      });
+      fetchIndicacoes();
+    }
+  };
+
+  const handleProximaAcao = async (indicacaoId: string, acao: ProximaAcao) => {
+    const userName = userProfile?.full_name || user?.email || "Usuário";
+    const now = new Date();
+    
+    const { error } = await supabase
+      .from("indicacoes")
+      .update({ 
+        proxima_acao: acao,
+        status_abordagem: "em_andamento",
+        proxima_acao_data: now.toISOString(),
+      })
+      .eq("id", indicacaoId);
+
+    if (error) {
+      logError("update_proxima_acao", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar",
+        description: getUserFriendlyError(error),
+      });
+    } else {
+      await supabase.from("acoes_indicacao").insert({
+        indicacao_id: indicacaoId,
+        tipo_acao: `Ação: ${proximaAcaoLabels[acao]}`,
+        observacao: `Por: ${userName}`,
+        user_id: user!.id,
+      });
+      toast({
+        title: "Ação registrada",
+        description: `${proximaAcaoLabels[acao]} registrado em ${format(now, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} por ${userName}.`,
+      });
+      fetchIndicacoes();
+    }
   };
 
   if (loading) {
@@ -180,7 +289,7 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
               <TableHead>Indicadora</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Motivo</TableHead>
-              <TableHead>Próxima Ação</TableHead>
+              <TableHead>Ação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -195,7 +304,7 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
                 <TableRow
                   key={indicacao.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleRowClick(indicacao)}
+                  onClick={(e) => handleRowClick(indicacao, e)}
                 >
                   <TableCell className="whitespace-nowrap">
                     {format(parseISO(indicacao.data_indicacao), "dd/MM/yyyy", { locale: ptBR })}
@@ -216,30 +325,64 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
                     )}
                   </TableCell>
                   <TableCell>{indicacao.nome_indicadora || "-"}</TableCell>
-                  <TableCell>
-                    <Badge className={statusAbordagemColors[indicacao.status_abordagem as StatusAbordagem] || statusAbordagemColors.pendente}>
-                      {statusAbordagemLabels[indicacao.status_abordagem as StatusAbordagem] || "Pendente"}
-                    </Badge>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={indicacao.status_abordagem}
+                      onValueChange={(value) => handleStatusChange(indicacao.id, value as StatusAbordagem)}
+                    >
+                      <SelectTrigger className="w-[130px] h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(statusAbordagemLabels).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </TableCell>
-                  <TableCell className="max-w-[150px]">
-                    {indicacao.motivo_abordagem 
-                      ? motivoAbordagemLabels[indicacao.motivo_abordagem as MotivoAbordagem] || indicacao.motivo_abordagem
-                      : "-"}
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={indicacao.motivo_abordagem || ""}
+                      onValueChange={(value) => handleMotivoChange(indicacao.id, value as MotivoAbordagem)}
+                    >
+                      <SelectTrigger className="w-[140px] h-8 text-xs">
+                        <SelectValue placeholder="Selecionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(motivoAbordagemLabels).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <div className="flex flex-col gap-1">
-                      {indicacao.proxima_acao && (
-                        <Badge variant="outline" className="w-fit">
-                          {proximaAcaoLabels[indicacao.proxima_acao as ProximaAcao] || indicacao.proxima_acao}
-                        </Badge>
-                      )}
-                      {indicacao.proxima_acao_data && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-8 text-xs">
+                            Ação
+                            <ChevronDown className="h-3 w-3 ml-1" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleProximaAcao(indicacao.id, "primeiro_contato")}>
+                            1º Contato
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleProximaAcao(indicacao.id, "follow_up")}>
+                            Follow Up
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      {indicacao.proxima_acao && indicacao.proxima_acao_data && (
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                           <CalendarClock className="h-3 w-3" />
-                          {format(parseISO(indicacao.proxima_acao_data), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                          {format(parseISO(indicacao.proxima_acao_data), "dd/MM HH:mm", { locale: ptBR })}
                         </span>
                       )}
-                      {!indicacao.proxima_acao && !indicacao.proxima_acao_data && "-"}
                     </div>
                   </TableCell>
                 </TableRow>
