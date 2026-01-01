@@ -63,7 +63,7 @@ const Index = () => {
   const [maes, setMaes] = useState<MaeProcesso[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all" | "gestantes">("all");
-  const [viewMode, setViewMode] = useState<"kanban" | "table" | "conferencia" | "pagamentos">("kanban");
+  const [viewMode, setViewMode] = useState<"kanban" | "table" | "gestantes" | "conferencia" | "pagamentos">("kanban");
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -319,15 +319,19 @@ const Index = () => {
               <ToggleGroup
                 type="single"
                 value={viewMode}
-                onValueChange={(value) => value && setViewMode(value as "kanban" | "table" | "conferencia" | "pagamentos")}
+                onValueChange={(value) => value && setViewMode(value as "kanban" | "table" | "gestantes" | "conferencia" | "pagamentos")}
               >
                 <ToggleGroupItem value="kanban" aria-label="Visualização Kanban">
                   <LayoutGrid className="h-4 w-4 mr-2" />
-                  Kanban
+                  Processos
                 </ToggleGroupItem>
                 <ToggleGroupItem value="table" aria-label="Visualização Tabela">
                   <List className="h-4 w-4 mr-2" />
                   Tabela
+                </ToggleGroupItem>
+                <ToggleGroupItem value="gestantes" aria-label="Gestantes">
+                  <Baby className="h-4 w-4 mr-2" />
+                  Gestantes
                 </ToggleGroupItem>
                 <ToggleGroupItem value="conferencia" aria-label="Conferência INSS">
                   <ClipboardCheck className="h-4 w-4 mr-2" />
@@ -349,16 +353,20 @@ const Index = () => {
             <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
               <PagamentosTab searchQuery={searchQuery} />
             </div>
+          ) : viewMode === "gestantes" ? (
+            <div className="rounded-lg border bg-muted/30 min-h-[500px]">
+              <GestantesBoard
+                maes={statusFilter === "gestantes" ? filteredMaes : gestantes}
+                onCardClick={handleCardClick}
+                onRefresh={fetchMaes}
+              />
+            </div>
           ) : viewMode === "table" ? (
             <MaeTable maes={filteredMaes} onRowClick={handleCardClick} />
           ) : (
             <Tabs defaultValue="all" className="w-full">
               <TabsList className="mb-4">
                 <TabsTrigger value="all">Todos os Status</TabsTrigger>
-                <TabsTrigger value="gestantes" className="gap-1">
-                  <Baby className="h-4 w-4" />
-                  Gestantes
-                </TabsTrigger>
                 <TabsTrigger value="active">Em Andamento</TabsTrigger>
                 <TabsTrigger value="pending">Pendências</TabsTrigger>
                 <TabsTrigger value="completed">Finalizados</TabsTrigger>
@@ -370,16 +378,6 @@ const Index = () => {
                     maes={filteredMaes} 
                     onCardClick={handleCardClick} 
                     onStatusChange={handleStatusChange}
-                  />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="gestantes" className="mt-0">
-                <div className="rounded-lg border bg-muted/30 min-h-[500px]">
-                  <GestantesBoard
-                    maes={statusFilter === "gestantes" ? filteredMaes : gestantes}
-                    onCardClick={handleCardClick}
-                    onRefresh={fetchMaes}
                   />
                 </div>
               </TabsContent>
