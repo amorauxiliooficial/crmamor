@@ -135,6 +135,51 @@ export type Database = {
           },
         ]
       }
+      indicacoes: {
+        Row: {
+          created_at: string
+          data_indicacao: string
+          id: string
+          motivo_abordagem: string | null
+          nome_indicada: string
+          nome_indicadora: string | null
+          observacoes: string | null
+          status_abordagem: string
+          telefone_indicada: string | null
+          telefone_indicadora: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_indicacao?: string
+          id?: string
+          motivo_abordagem?: string | null
+          nome_indicada: string
+          nome_indicadora?: string | null
+          observacoes?: string | null
+          status_abordagem?: string
+          telefone_indicada?: string | null
+          telefone_indicadora?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_indicacao?: string
+          id?: string
+          motivo_abordagem?: string | null
+          nome_indicada?: string
+          nome_indicadora?: string | null
+          observacoes?: string | null
+          status_abordagem?: string
+          telefone_indicada?: string | null
+          telefone_indicadora?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mae_processo: {
         Row: {
           categoria_previdenciaria: Database["public"]["Enums"]["categoria_previdenciaria"]
