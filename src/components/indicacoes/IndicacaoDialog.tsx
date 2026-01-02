@@ -111,29 +111,57 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
     
     const tipoLabel = novaAcaoTipo === "primeiro_contato" ? "1º Contato" : "Follow Up";
     
-    const { error } = await supabase.from("acoes_indicacao").insert({
+    // Register the action
+    const { error: acaoError } = await supabase.from("acoes_indicacao").insert({
       indicacao_id: indicacao.id,
       tipo_acao: tipoLabel,
       observacao: novaAcaoObservacao || null,
       user_id: user.id,
     });
 
-    if (error) {
-      logError("registrar_acao", error);
+    if (acaoError) {
+      logError("registrar_acao", acaoError);
       toast({
         variant: "destructive",
         title: "Erro ao registrar ação",
-        description: getUserFriendlyError(error),
+        description: getUserFriendlyError(acaoError),
       });
-    } else {
-      toast({
-        title: "Ação registrada",
-        description: `${tipoLabel} registrado com sucesso.`,
-      });
-      setNovaAcaoObservacao("");
-      setNovaAcaoOpen(false);
-      fetchAcoes(indicacao.id);
+      setSavingAcao(false);
+      return;
     }
+
+    // Update próxima ação if set
+    let proximaAcaoDatetime: string | null = null;
+    if (proximaAcaoDate) {
+      const [hours, minutes] = proximaAcaoTime.split(":").map(Number);
+      const dateWithTime = new Date(proximaAcaoDate);
+      dateWithTime.setHours(hours, minutes, 0, 0);
+      proximaAcaoDatetime = dateWithTime.toISOString();
+    }
+
+    const { error: updateError } = await supabase
+      .from("indicacoes")
+      .update({
+        proxima_acao: formData.proxima_acao,
+        proxima_acao_data: proximaAcaoDatetime,
+        proxima_acao_observacao: formData.proxima_acao_observacao,
+        status_abordagem: "em_andamento",
+      })
+      .eq("id", indicacao.id);
+
+    if (updateError) {
+      logError("update_proxima_acao", updateError);
+    }
+
+    toast({
+      title: "Ação registrada",
+      description: `${tipoLabel} registrado com sucesso.`,
+    });
+    
+    setNovaAcaoObservacao("");
+    setNovaAcaoOpen(false);
+    fetchAcoes(indicacao.id);
+    onSuccess();
     setSavingAcao(false);
   };
 
@@ -325,85 +353,12 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
               />
             </div>
 
-            {/* Próxima Ação Section */}
-            <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
-              <Label className="text-base font-semibold">Próxima Ação</Label>
-              
-              <div className="space-y-2">
-                <Label>Tipo de Ação</Label>
-                <Select
-                  value={formData.proxima_acao || ""}
-                  onValueChange={(value) => setFormData({ ...formData, proxima_acao: value as ProximaAcao })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a ação" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(proximaAcaoLabels).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Data Agendada</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !proximaAcaoDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {proximaAcaoDate ? format(proximaAcaoDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={proximaAcaoDate}
-                        onSelect={setProximaAcaoDate}
-                        initialFocus
-                        locale={ptBR}
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Horário</Label>
-                  <Input
-                    type="time"
-                    value={proximaAcaoTime}
-                    onChange={(e) => setProximaAcaoTime(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Observação da Ação</Label>
-                <Textarea
-                  value={formData.proxima_acao_observacao || ""}
-                  onChange={(e) => setFormData({ ...formData, proxima_acao_observacao: e.target.value })}
-                  rows={2}
-                  placeholder="Descreva detalhes sobre esta ação..."
-                />
-              </div>
-            </div>
-
-            {/* Nova Ação - Popover */}
+            {/* Ação - Popover */}
             <Popover open={novaAcaoOpen} onOpenChange={setNovaAcaoOpen} modal={true}>
               <PopoverTrigger asChild>
                 <Button 
                   type="button"
-                  variant="outline" 
+                  variant="default" 
                   className="w-full flex items-center justify-center gap-2"
                   onClick={(e) => {
                     e.preventDefault();
@@ -412,50 +367,130 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
                   }}
                 >
                   <Plus className="h-4 w-4" />
-                  <span>Registrar Nova Ação</span>
+                  <span>Ação</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 bg-popover border shadow-lg z-[200]" align="center" sideOffset={5}>
-                <div className="space-y-4">
-                  <div className="font-medium text-sm">Nova Ação</div>
-                  
-                  <div className="space-y-2">
-                    <Label className="text-xs">Tipo de Ação</Label>
-                    <Select
-                      value={novaAcaoTipo}
-                      onValueChange={(value) => setNovaAcaoTipo(value as "primeiro_contato" | "follow_up")}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover z-[100]">
-                        <SelectItem value="primeiro_contato">1º Contato</SelectItem>
-                        <SelectItem value="follow_up">Follow Up</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label className="text-xs">Observações do Registro</Label>
-                    <Textarea
-                      value={novaAcaoObservacao}
-                      onChange={(e) => setNovaAcaoObservacao(e.target.value)}
-                      rows={3}
-                      placeholder="Descreva o que foi discutido..."
-                      className="text-sm"
-                    />
-                  </div>
+              <PopoverContent className="w-96 bg-popover border shadow-lg z-[200]" align="center" sideOffset={5}>
+                <ScrollArea className="max-h-[400px]">
+                  <div className="space-y-4 p-1">
+                    <div className="font-medium text-sm border-b pb-2">Registrar Ação</div>
+                    
+                    {/* Tipo de Ação */}
+                    <div className="space-y-2">
+                      <Label className="text-xs">Tipo de Ação</Label>
+                      <Select
+                        value={novaAcaoTipo}
+                        onValueChange={(value) => setNovaAcaoTipo(value as "primeiro_contato" | "follow_up")}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover z-[300]">
+                          <SelectItem value="primeiro_contato">1º Contato</SelectItem>
+                          <SelectItem value="follow_up">Follow Up</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Observações do Registro */}
+                    <div className="space-y-2">
+                      <Label className="text-xs">Observações do Registro</Label>
+                      <Textarea
+                        value={novaAcaoObservacao}
+                        onChange={(e) => setNovaAcaoObservacao(e.target.value)}
+                        rows={2}
+                        placeholder="Descreva o que foi discutido..."
+                        className="text-sm"
+                      />
+                    </div>
 
-                  <Button 
-                    onClick={handleRegistrarAcao} 
-                    disabled={savingAcao}
-                    className="w-full"
-                    size="sm"
-                  >
-                    {savingAcao && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Registrar
-                  </Button>
-                </div>
+                    {/* Próxima Ação */}
+                    <div className="border-t pt-4 space-y-3">
+                      <Label className="text-xs font-semibold">Projetar Próxima Ação</Label>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-xs">Tipo</Label>
+                        <Select
+                          value={formData.proxima_acao || ""}
+                          onValueChange={(value) => setFormData({ ...formData, proxima_acao: value as ProximaAcao })}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover z-[300]">
+                            {Object.entries(proximaAcaoLabels).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Data</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className={cn(
+                                  "w-full h-9 justify-start text-left font-normal text-xs",
+                                  !proximaAcaoDate && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-1 h-3 w-3" />
+                                {proximaAcaoDate ? format(proximaAcaoDate, "dd/MM/yy", { locale: ptBR }) : "Data"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 z-[400]" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={proximaAcaoDate}
+                                onSelect={setProximaAcaoDate}
+                                initialFocus
+                                locale={ptBR}
+                                className="p-3 pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs">Horário</Label>
+                          <Input
+                            type="time"
+                            value={proximaAcaoTime}
+                            onChange={(e) => setProximaAcaoTime(e.target.value)}
+                            className="h-9 text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs">Observação</Label>
+                        <Textarea
+                          value={formData.proxima_acao_observacao || ""}
+                          onChange={(e) => setFormData({ ...formData, proxima_acao_observacao: e.target.value })}
+                          rows={2}
+                          placeholder="Detalhes da próxima ação..."
+                          className="text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <Button 
+                      onClick={handleRegistrarAcao} 
+                      disabled={savingAcao}
+                      className="w-full"
+                      size="sm"
+                    >
+                      {savingAcao && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Registrar
+                    </Button>
+                  </div>
+                </ScrollArea>
               </PopoverContent>
             </Popover>
 
