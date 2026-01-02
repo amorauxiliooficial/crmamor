@@ -396,6 +396,103 @@ export type Database = {
           },
         ]
       }
+      playbook_categorias: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          ordem: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          ordem?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          ordem?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      playbook_entradas: {
+        Row: {
+          categoria_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          pergunta: string
+          resposta: string
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          categoria_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          pergunta: string
+          resposta: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          categoria_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          pergunta?: string
+          resposta?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playbook_entradas_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "playbook_categorias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playbook_favoritos: {
+        Row: {
+          created_at: string
+          entrada_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entrada_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entrada_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playbook_favoritos_entrada_id_fkey"
+            columns: ["entrada_id"]
+            isOneToOne: false
+            referencedRelation: "playbook_entradas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -417,6 +514,27 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -463,10 +581,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       owns_mae_processo: { Args: { _mae_id: string }; Returns: boolean }
       validate_cpf: { Args: { cpf: string }; Returns: boolean }
     }
     Enums: {
+      app_role: "admin" | "user"
       categoria_previdenciaria:
         | "CLT"
         | "MEI"
@@ -615,6 +741,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       categoria_previdenciaria: [
         "CLT",
         "MEI",
