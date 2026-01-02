@@ -324,8 +324,12 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <div className="flex flex-col gap-1">
+                  <TableCell>
+                    <div 
+                      className="flex flex-col gap-1"
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                    >
                       <AcaoPopover 
                         indicacaoId={indicacao.id} 
                         onSuccess={fetchIndicacoes}
