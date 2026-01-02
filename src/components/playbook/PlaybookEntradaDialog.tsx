@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,6 +38,15 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+const DRAFT_STORAGE_KEY = "playbook_nova_entrada_draft_v1";
+
+type PlaybookEntradaDraft = {
+  pergunta: string;
+  categoria_id?: string;
+  tags?: string;
+  respostas: string[];
+};
+
 interface PlaybookEntradaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -54,6 +63,7 @@ export function PlaybookEntradaDialog({
   onSave,
 }: PlaybookEntradaDialogProps) {
   const [respostas, setRespostas] = useState<string[]>([""]);
+  const skipNextDraftSaveRef = useRef(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -64,7 +74,13 @@ export function PlaybookEntradaDialog({
     },
   });
 
+  const watchedPergunta = form.watch("pergunta");
+  const watchedCategoriaId = form.watch("categoria_id");
+  const watchedTags = form.watch("tags");
+
   useEffect(() => {
+    if (!open) return;
+
     if (entrada) {
       form.reset({
         pergunta: entrada.pergunta,
@@ -72,15 +88,57 @@ export function PlaybookEntradaDialog({
         tags: entrada.tags?.join(", ") || "",
       });
       setRespostas(entrada.respostas?.length ? entrada.respostas : [""]);
-    } else {
-      form.reset({
-        pergunta: "",
-        categoria_id: "",
-        tags: "",
-      });
-      setRespostas([""]);
+      return;
     }
+
+    // Nova entrada: tenta restaurar rascunho salvo
+    skipNextDraftSaveRef.current = true;
+    try {
+      const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<PlaybookEntradaDraft>;
+        form.reset({
+          pergunta: typeof parsed.pergunta === "string" ? parsed.pergunta : "",
+          categoria_id: typeof parsed.categoria_id === "string" ? parsed.categoria_id : "",
+          tags: typeof parsed.tags === "string" ? parsed.tags : "",
+        });
+        setRespostas(Array.isArray(parsed.respostas) && parsed.respostas.length ? parsed.respostas : [""]);
+        return;
+      }
+    } catch {
+      // ignore
+    }
+
+    form.reset({
+      pergunta: "",
+      categoria_id: "",
+      tags: "",
+    });
+    setRespostas([""]);
   }, [entrada, form, open]);
+
+  useEffect(() => {
+    if (!open || entrada) return;
+
+    // evita sobrescrever o rascunho logo após hidratar/resetar
+    if (skipNextDraftSaveRef.current) {
+      skipNextDraftSaveRef.current = false;
+      return;
+    }
+
+    const draft: PlaybookEntradaDraft = {
+      pergunta: watchedPergunta || "",
+      categoria_id: watchedCategoriaId || "",
+      tags: watchedTags || "",
+      respostas,
+    };
+
+    try {
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    } catch {
+      // ignore
+    }
+  }, [open, entrada, watchedPergunta, watchedCategoriaId, watchedTags, respostas]);
 
   const handleAddResposta = () => {
     setRespostas([...respostas, ""]);
@@ -106,6 +164,14 @@ export function PlaybookEntradaDialog({
     const tags = values.tags
       ? values.tags.split(",").map((t) => t.trim()).filter(Boolean)
       : undefined;
+
+    // Ao salvar de fato, limpa o rascunho
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+
     onSave({
       pergunta: values.pergunta,
       respostas: validRespostas,
