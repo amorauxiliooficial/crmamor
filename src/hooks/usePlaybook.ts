@@ -73,7 +73,7 @@ export function usePlaybook() {
     }
   };
 
-  const addEntrada = async (data: { pergunta: string; resposta: string; categoria_id?: string; tags?: string[] }) => {
+  const addEntrada = async (data: { pergunta: string; respostas: string[]; categoria_id?: string; tags?: string[] }) => {
     if (!user) return;
     const { error } = await supabase
       .from("playbook_entradas")
@@ -86,11 +86,11 @@ export function usePlaybook() {
     }
   };
 
-  const importEntradas = async (entries: { pergunta: string; resposta: string }[]) => {
+  const importEntradas = async (entries: { pergunta: string; respostas: string[] }[]) => {
     if (!user || entries.length === 0) return;
     const dataToInsert = entries.map((e) => ({
       pergunta: e.pergunta,
-      resposta: e.resposta,
+      respostas: e.respostas,
       created_by: user.id,
     }));
     const { error } = await supabase.from("playbook_entradas").insert(dataToInsert);

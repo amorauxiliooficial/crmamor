@@ -25,9 +25,10 @@ export function PlaybookChatCard({
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await navigator.clipboard.writeText(entrada.resposta);
+    const textToCopy = entrada.respostas?.join("\n\n• ") || "";
+    await navigator.clipboard.writeText(textToCopy ? "• " + textToCopy : "");
     setCopied(true);
-    toast({ title: "Resposta copiada!" });
+    toast({ title: "Respostas copiadas!" });
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -63,7 +64,7 @@ export function PlaybookChatCard({
         </div>
       </div>
 
-      {/* Resposta - estilo mensagem enviada (direita) */}
+      {/* Respostas - estilo mensagem enviada (direita) */}
       <div
         className={cn(
           "flex justify-end overflow-hidden transition-all duration-300 ease-in-out",
@@ -72,9 +73,16 @@ export function PlaybookChatCard({
       >
         <div className="max-w-[85%] space-y-2">
           <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-3">
-            <p className="text-sm whitespace-pre-wrap leading-relaxed">
-              {entrada.resposta}
-            </p>
+            {entrada.respostas && entrada.respostas.length > 0 && (
+              <ul className="space-y-2">
+                {entrada.respostas.map((resposta, index) => (
+                  <li key={index} className="flex gap-2 text-sm">
+                    <span className="font-bold shrink-0">•</span>
+                    <span className="whitespace-pre-wrap leading-relaxed">{resposta}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           
           {/* Tags */}
