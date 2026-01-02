@@ -399,14 +399,23 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
             </div>
 
             {/* Nova Ação - Popover */}
-            <Popover open={novaAcaoOpen} onOpenChange={setNovaAcaoOpen}>
+            <Popover open={novaAcaoOpen} onOpenChange={setNovaAcaoOpen} modal={true}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setNovaAcaoOpen(true);
+                  }}
+                >
                   <Plus className="h-4 w-4" />
                   <span>Registrar Nova Ação</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 bg-popover border shadow-lg z-50" align="center">
+              <PopoverContent className="w-80 bg-popover border shadow-lg z-[200]" align="center" sideOffset={5}>
                 <div className="space-y-4">
                   <div className="font-medium text-sm">Nova Ação</div>
                   
