@@ -13,8 +13,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { Indicacao, StatusAbordagem, statusAbordagemLabels, ProximaAcao, proximaAcaoLabels, MotivoAbordagem, motivoAbordagemLabels, AcaoIndicacao } from "@/types/indicacao";
-import { Loader2, Trash2, History, CalendarIcon } from "lucide-react";
+import { Loader2, Trash2, History, CalendarIcon, Plus, User, ChevronDown } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -31,9 +32,13 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<Partial<Indicacao>>({});
-  const [acoes, setAcoes] = useState<AcaoIndicacao[]>([]);
+  const [acoes, setAcoes] = useState<(AcaoIndicacao & { user_name?: string })[]>([]);
   const [proximaAcaoDate, setProximaAcaoDate] = useState<Date | undefined>();
   const [proximaAcaoTime, setProximaAcaoTime] = useState("09:00");
+  const [novaAcaoOpen, setNovaAcaoOpen] = useState(false);
+  const [novaAcaoTipo, setNovaAcaoTipo] = useState<"primeiro_contato" | "follow_up">("primeiro_contato");
+  const [novaAcaoObservacao, setNovaAcaoObservacao] = useState("");
+  const [savingAcao, setSavingAcao] = useState(false);
 
   const fetchAcoes = async (indicacaoId: string) => {
     const { data } = await supabase
@@ -43,7 +48,21 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
       .order("created_at", { ascending: false });
     
     if (data) {
-      setAcoes(data as AcaoIndicacao[]);
+      // Fetch user names for each action
+      const acoesWithUserName = await Promise.all(
+        data.map(async (acao) => {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", acao.user_id)
+            .maybeSingle();
+          return {
+            ...acao,
+            user_name: profile?.full_name || "Usuário",
+          };
+        })
+      );
+      setAcoes(acoesWithUserName as (AcaoIndicacao & { user_name?: string })[]);
     }
   };
 
@@ -85,6 +104,38 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
       observacao: observacao || null,
       user_id: user.id,
     });
+  };
+
+  const handleRegistrarAcao = async () => {
+    if (!indicacao || !user) return;
+    setSavingAcao(true);
+    
+    const tipoLabel = novaAcaoTipo === "primeiro_contato" ? "1º Contato" : "Follow Up";
+    
+    const { error } = await supabase.from("acoes_indicacao").insert({
+      indicacao_id: indicacao.id,
+      tipo_acao: tipoLabel,
+      observacao: novaAcaoObservacao || null,
+      user_id: user.id,
+    });
+
+    if (error) {
+      logError("registrar_acao", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao registrar ação",
+        description: getUserFriendlyError(error),
+      });
+    } else {
+      toast({
+        title: "Ação registrada",
+        description: `${tipoLabel} registrado com sucesso.`,
+      });
+      setNovaAcaoObservacao("");
+      setNovaAcaoOpen(false);
+      fetchAcoes(indicacao.id);
+    }
+    setSavingAcao(false);
   };
 
   const handleSave = async () => {
@@ -348,6 +399,55 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
               </div>
             </div>
 
+            {/* Nova Ação - Collapsible */}
+            <Collapsible open={novaAcaoOpen} onOpenChange={setNovaAcaoOpen} className="border rounded-lg bg-muted/20">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full flex items-center justify-between p-4 hover:bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    <span className="font-medium">Registrar Nova Ação</span>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${novaAcaoOpen ? 'rotate-180' : ''}`} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="px-4 pb-4 space-y-4">
+                <div className="space-y-2">
+                  <Label>Tipo de Ação</Label>
+                  <Select
+                    value={novaAcaoTipo}
+                    onValueChange={(value) => setNovaAcaoTipo(value as "primeiro_contato" | "follow_up")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="primeiro_contato">1º Contato</SelectItem>
+                      <SelectItem value="follow_up">Follow Up</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Observações do Registro</Label>
+                  <Textarea
+                    value={novaAcaoObservacao}
+                    onChange={(e) => setNovaAcaoObservacao(e.target.value)}
+                    rows={2}
+                    placeholder="Descreva o que foi discutido ou observado..."
+                  />
+                </div>
+
+                <Button 
+                  onClick={handleRegistrarAcao} 
+                  disabled={savingAcao}
+                  className="w-full"
+                >
+                  {savingAcao && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Registrar Ação
+                </Button>
+              </CollapsibleContent>
+            </Collapsible>
+
             {/* Histórico de Ações */}
             <div className="space-y-2 border-t pt-4">
               <Label className="flex items-center gap-2">
@@ -357,17 +457,21 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
               {acoes.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhuma ação registrada.</p>
               ) : (
-                <div className="space-y-2 max-h-40 overflow-y-auto">
+                <div className="space-y-2 max-h-48 overflow-y-auto">
                   {acoes.map((acao) => (
-                    <div key={acao.id} className="bg-muted/50 rounded-md px-3 py-2">
+                    <div key={acao.id} className="bg-muted/50 rounded-md px-3 py-2 border-l-2 border-primary/50">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium">{acao.tipo_acao}</span>
+                        <span className="font-medium text-primary">{acao.tipo_acao}</span>
                         <span className="text-muted-foreground text-xs">
                           {format(parseISO(acao.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                         </span>
                       </div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                        <User className="h-3 w-3" />
+                        <span>{acao.user_name}</span>
+                      </div>
                       {acao.observacao && (
-                        <p className="text-xs text-muted-foreground mt-1">{acao.observacao}</p>
+                        <p className="text-xs text-foreground/80 mt-2 bg-background/50 p-2 rounded">{acao.observacao}</p>
                       )}
                     </div>
                   ))}
