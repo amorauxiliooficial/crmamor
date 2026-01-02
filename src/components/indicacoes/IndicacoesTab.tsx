@@ -3,17 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { Indicacao, StatusAbordagem, statusAbordagemLabels, motivoAbordagemLabels, MotivoAbordagem } from "@/types/indicacao";
+import { Indicacao, StatusAbordagem, statusAbordagemLabels, motivoAbordagemLabels, MotivoAbordagem, proximaAcaoLabels, ProximaAcao } from "@/types/indicacao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { IndicacaoDialog } from "./IndicacaoDialog";
 import { IndicacaoFormDialog } from "./IndicacaoFormDialog";
 import { AcaoPopover } from "./AcaoPopover";
-import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle, CalendarClock } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle, CalendarClock, AlertTriangle, Bell } from "lucide-react";
+import { format, parseISO, isPast, isToday, differenceInMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface IndicacoesTabProps {
@@ -105,6 +107,39 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
     };
   }, [indicacoes]);
 
+  // Identificar tarefas atrasadas e próximas
+  const tarefasStatus = useMemo(() => {
+    const agora = new Date();
+    const atrasadas: Indicacao[] = [];
+    const proximas: Indicacao[] = []; // Próximas 2 horas
+
+    indicacoes.forEach((ind) => {
+      if (ind.proxima_acao_data && ind.status_abordagem !== "concluido") {
+        const dataAcao = parseISO(ind.proxima_acao_data);
+        if (isPast(dataAcao)) {
+          atrasadas.push(ind);
+        } else if (differenceInMinutes(dataAcao, agora) <= 120) {
+          proximas.push(ind);
+        }
+      }
+    });
+
+    return { atrasadas, proximas };
+  }, [indicacoes]);
+
+  const getProximaAcaoStatus = (indicacao: Indicacao) => {
+    if (!indicacao.proxima_acao_data) return null;
+    const dataAcao = parseISO(indicacao.proxima_acao_data);
+    const agora = new Date();
+    
+    if (isPast(dataAcao)) {
+      return "atrasada";
+    } else if (differenceInMinutes(dataAcao, agora) <= 120) {
+      return "proxima";
+    }
+    return "agendada";
+  };
+
   const handleRowClick = (indicacao: Indicacao, e: React.MouseEvent) => {
     // Prevent opening dialog when clicking on select or dropdown
     const target = e.target as HTMLElement;
@@ -178,6 +213,64 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Alerta de Tarefas Atrasadas */}
+      {tarefasStatus.atrasadas.length > 0 && (
+        <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            {tarefasStatus.atrasadas.length} tarefa(s) atrasada(s)!
+          </AlertTitle>
+          <AlertDescription className="mt-2">
+            <div className="flex flex-wrap gap-2">
+              {tarefasStatus.atrasadas.slice(0, 5).map((ind) => (
+                <Badge 
+                  key={ind.id} 
+                  variant="destructive"
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setSelectedIndicacao(ind);
+                    setEditDialogOpen(true);
+                  }}
+                >
+                  {ind.nome_indicada} - {ind.proxima_acao && proximaAcaoLabels[ind.proxima_acao as ProximaAcao]}
+                  {ind.proxima_acao_data && ` (${format(parseISO(ind.proxima_acao_data), "dd/MM HH:mm")})`}
+                </Badge>
+              ))}
+              {tarefasStatus.atrasadas.length > 5 && (
+                <Badge variant="outline">+{tarefasStatus.atrasadas.length - 5} mais</Badge>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Alerta de Tarefas Próximas (próximas 2 horas) */}
+      {tarefasStatus.proximas.length > 0 && (
+        <Alert className="border-amber-500/50 bg-amber-500/10">
+          <Clock className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-700 dark:text-amber-400">
+            {tarefasStatus.proximas.length} tarefa(s) nas próximas 2 horas
+          </AlertTitle>
+          <AlertDescription className="mt-2">
+            <div className="flex flex-wrap gap-2">
+              {tarefasStatus.proximas.map((ind) => (
+                <Badge 
+                  key={ind.id} 
+                  variant="outline"
+                  className="border-amber-500 text-amber-700 dark:text-amber-400 cursor-pointer"
+                  onClick={() => {
+                    setSelectedIndicacao(ind);
+                    setEditDialogOpen(true);
+                  }}
+                >
+                  {ind.nome_indicada} - {format(parseISO(ind.proxima_acao_data!), "HH:mm")}
+                </Badge>
+              ))}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-l-4 border-l-primary">
@@ -335,10 +428,30 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
                         onSuccess={fetchIndicacoes}
                       />
                       {indicacao.proxima_acao && indicacao.proxima_acao_data && (
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <CalendarClock className="h-3 w-3" />
-                          {format(parseISO(indicacao.proxima_acao_data), "dd/MM HH:mm", { locale: ptBR })}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          {getProximaAcaoStatus(indicacao) === "atrasada" && (
+                            <Badge variant="destructive" className="text-[10px] px-1 py-0 h-5 flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              ATRASADA
+                            </Badge>
+                          )}
+                          {getProximaAcaoStatus(indicacao) === "proxima" && (
+                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-5 border-amber-500 text-amber-600 flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              EM BREVE
+                            </Badge>
+                          )}
+                          <span className={`text-xs flex items-center gap-1 ${
+                            getProximaAcaoStatus(indicacao) === "atrasada" 
+                              ? "text-destructive font-medium" 
+                              : getProximaAcaoStatus(indicacao) === "proxima"
+                                ? "text-amber-600 font-medium"
+                                : "text-muted-foreground"
+                          }`}>
+                            <CalendarClock className="h-3 w-3" />
+                            {format(parseISO(indicacao.proxima_acao_data), "dd/MM HH:mm", { locale: ptBR })}
+                          </span>
+                        </div>
                       )}
                     </div>
                   </TableCell>
