@@ -13,9 +13,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { Indicacao, StatusAbordagem, statusAbordagemLabels, ProximaAcao, proximaAcaoLabels, MotivoAbordagem, motivoAbordagemLabels, AcaoIndicacao } from "@/types/indicacao";
-import { Loader2, Trash2, History, CalendarIcon, Plus, User, ChevronDown } from "lucide-react";
+import { Loader2, Trash2, History, CalendarIcon, Plus, User } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -399,54 +398,57 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
               </div>
             </div>
 
-            {/* Nova Ação - Collapsible */}
-            <Collapsible open={novaAcaoOpen} onOpenChange={setNovaAcaoOpen} className="border rounded-lg bg-muted/20">
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full flex items-center justify-between p-4 hover:bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    <span className="font-medium">Registrar Nova Ação</span>
+            {/* Nova Ação - Popover */}
+            <Popover open={novaAcaoOpen} onOpenChange={setNovaAcaoOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  <span>Registrar Nova Ação</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 bg-popover border shadow-lg z-50" align="center">
+                <div className="space-y-4">
+                  <div className="font-medium text-sm">Nova Ação</div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-xs">Tipo de Ação</Label>
+                    <Select
+                      value={novaAcaoTipo}
+                      onValueChange={(value) => setNovaAcaoTipo(value as "primeiro_contato" | "follow_up")}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover z-[100]">
+                        <SelectItem value="primeiro_contato">1º Contato</SelectItem>
+                        <SelectItem value="follow_up">Follow Up</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${novaAcaoOpen ? 'rotate-180' : ''}`} />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="px-4 pb-4 space-y-4">
-                <div className="space-y-2">
-                  <Label>Tipo de Ação</Label>
-                  <Select
-                    value={novaAcaoTipo}
-                    onValueChange={(value) => setNovaAcaoTipo(value as "primeiro_contato" | "follow_up")}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="primeiro_contato">1º Contato</SelectItem>
-                      <SelectItem value="follow_up">Follow Up</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Observações do Registro</Label>
-                  <Textarea
-                    value={novaAcaoObservacao}
-                    onChange={(e) => setNovaAcaoObservacao(e.target.value)}
-                    rows={2}
-                    placeholder="Descreva o que foi discutido ou observado..."
-                  />
-                </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-xs">Observações do Registro</Label>
+                    <Textarea
+                      value={novaAcaoObservacao}
+                      onChange={(e) => setNovaAcaoObservacao(e.target.value)}
+                      rows={3}
+                      placeholder="Descreva o que foi discutido..."
+                      className="text-sm"
+                    />
+                  </div>
 
-                <Button 
-                  onClick={handleRegistrarAcao} 
-                  disabled={savingAcao}
-                  className="w-full"
-                >
-                  {savingAcao && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Registrar Ação
-                </Button>
-              </CollapsibleContent>
-            </Collapsible>
+                  <Button 
+                    onClick={handleRegistrarAcao} 
+                    disabled={savingAcao}
+                    className="w-full"
+                    size="sm"
+                  >
+                    {savingAcao && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Registrar
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
 
             {/* Histórico de Ações */}
             <div className="space-y-2 border-t pt-4">
