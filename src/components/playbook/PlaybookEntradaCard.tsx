@@ -22,13 +22,21 @@ export function PlaybookEntradaCard({
 }: PlaybookEntradaCardProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  const handleCopy = async () => {
+  const handleCopyAll = async () => {
     const textToCopy = entrada.respostas?.join("\n\n• ") || "";
     await navigator.clipboard.writeText(textToCopy ? "• " + textToCopy : "");
     setCopied(true);
-    toast({ title: "Respostas copiadas!" });
+    toast({ title: "Todas as respostas copiadas!" });
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopySingle = async (resposta: string, index: number) => {
+    await navigator.clipboard.writeText(resposta);
+    setCopiedIndex(index);
+    toast({ title: "Resposta copiada!" });
+    setTimeout(() => setCopiedIndex(null), 2000);
   };
 
   return (
@@ -58,7 +66,8 @@ export function PlaybookEntradaCard({
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={handleCopy}
+              onClick={handleCopyAll}
+              title="Copiar todas as respostas"
             >
               {copied ? (
                 <Check className="h-4 w-4 text-green-500" />
@@ -94,9 +103,19 @@ export function PlaybookEntradaCard({
         {entrada.respostas && entrada.respostas.length > 0 && (
           <ul className="space-y-2">
             {entrada.respostas.map((resposta, index) => (
-              <li key={index} className="flex gap-2 text-sm text-muted-foreground">
+              <li 
+                key={index} 
+                className="group/item flex items-start gap-2 text-sm text-muted-foreground hover:bg-muted/50 rounded-md p-1 -m-1 cursor-pointer transition-colors"
+                onClick={() => handleCopySingle(resposta, index)}
+                title="Clique para copiar"
+              >
                 <span className="text-primary font-bold shrink-0">•</span>
-                <span className="whitespace-pre-wrap">{resposta}</span>
+                <span className="whitespace-pre-wrap flex-1">{resposta}</span>
+                {copiedIndex === index ? (
+                  <Check className="h-4 w-4 text-green-500 shrink-0" />
+                ) : (
+                  <Copy className="h-4 w-4 text-muted-foreground opacity-0 group-hover/item:opacity-100 transition-opacity shrink-0" />
+                )}
               </li>
             ))}
           </ul>
