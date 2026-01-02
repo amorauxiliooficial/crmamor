@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,18 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { Indicacao, StatusAbordagem, statusAbordagemLabels, ProximaAcao, proximaAcaoLabels, MotivoAbordagem, motivoAbordagemLabels, AcaoIndicacao } from "@/types/indicacao";
-import { Loader2, Trash2, History, CalendarIcon, Plus, User } from "lucide-react";
+import { Indicacao, StatusAbordagem, statusAbordagemLabels, MotivoAbordagem, motivoAbordagemLabels, AcaoIndicacao } from "@/types/indicacao";
+import { Loader2, Trash2, History, User, Plus } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { AcaoPopover } from "./AcaoPopover";
 
 interface IndicacaoDialogProps {
   indicacao: Indicacao | null;
@@ -32,12 +30,6 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<Partial<Indicacao>>({});
   const [acoes, setAcoes] = useState<(AcaoIndicacao & { user_name?: string })[]>([]);
-  const [proximaAcaoDate, setProximaAcaoDate] = useState<Date | undefined>();
-  const [proximaAcaoTime, setProximaAcaoTime] = useState("09:00");
-  const [novaAcaoOpen, setNovaAcaoOpen] = useState(false);
-  const [novaAcaoTipo, setNovaAcaoTipo] = useState<"primeiro_contato" | "follow_up">("primeiro_contato");
-  const [novaAcaoObservacao, setNovaAcaoObservacao] = useState("");
-  const [savingAcao, setSavingAcao] = useState(false);
 
   const fetchAcoes = async (indicacaoId: string) => {
     const { data } = await supabase
@@ -47,7 +39,6 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
       .order("created_at", { ascending: false });
     
     if (data) {
-      // Fetch user names for each action
       const acoesWithUserName = await Promise.all(
         data.map(async (acao) => {
           const { data: profile } = await supabase
@@ -75,120 +66,17 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
         status_abordagem: indicacao.status_abordagem,
         motivo_abordagem: indicacao.motivo_abordagem,
         observacoes: indicacao.observacoes,
-        proxima_acao: indicacao.proxima_acao,
-        proxima_acao_observacao: indicacao.proxima_acao_observacao,
       });
-      if (indicacao.proxima_acao_data) {
-        const date = parseISO(indicacao.proxima_acao_data);
-        setProximaAcaoDate(date);
-        setProximaAcaoTime(format(date, "HH:mm"));
-      } else {
-        setProximaAcaoDate(undefined);
-        setProximaAcaoTime("09:00");
-      }
       fetchAcoes(indicacao.id);
     } else {
       setAcoes([]);
-      setProximaAcaoDate(undefined);
-      setProximaAcaoTime("09:00");
     }
     onOpenChange(isOpen);
-  };
-
-  const registerAction = async (tipoAcao: string, observacao?: string) => {
-    if (!indicacao || !user) return;
-    await supabase.from("acoes_indicacao").insert({
-      indicacao_id: indicacao.id,
-      tipo_acao: tipoAcao,
-      observacao: observacao || null,
-      user_id: user.id,
-    });
-  };
-
-  const handleRegistrarAcao = async () => {
-    if (!indicacao || !user) return;
-    setSavingAcao(true);
-    
-    const tipoLabel = novaAcaoTipo === "primeiro_contato" ? "1º Contato" : "Follow Up";
-    
-    // Register the action
-    const { error: acaoError } = await supabase.from("acoes_indicacao").insert({
-      indicacao_id: indicacao.id,
-      tipo_acao: tipoLabel,
-      observacao: novaAcaoObservacao || null,
-      user_id: user.id,
-    });
-
-    if (acaoError) {
-      logError("registrar_acao", acaoError);
-      toast({
-        variant: "destructive",
-        title: "Erro ao registrar ação",
-        description: getUserFriendlyError(acaoError),
-      });
-      setSavingAcao(false);
-      return;
-    }
-
-    // Update próxima ação if set
-    let proximaAcaoDatetime: string | null = null;
-    if (proximaAcaoDate) {
-      const [hours, minutes] = proximaAcaoTime.split(":").map(Number);
-      const dateWithTime = new Date(proximaAcaoDate);
-      dateWithTime.setHours(hours, minutes, 0, 0);
-      proximaAcaoDatetime = dateWithTime.toISOString();
-    }
-
-    const { error: updateError } = await supabase
-      .from("indicacoes")
-      .update({
-        proxima_acao: formData.proxima_acao,
-        proxima_acao_data: proximaAcaoDatetime,
-        proxima_acao_observacao: formData.proxima_acao_observacao,
-        status_abordagem: "em_andamento",
-      })
-      .eq("id", indicacao.id);
-
-    if (updateError) {
-      logError("update_proxima_acao", updateError);
-    }
-
-    toast({
-      title: "Ação registrada",
-      description: `${tipoLabel} registrado com sucesso.`,
-    });
-    
-    setNovaAcaoObservacao("");
-    setNovaAcaoOpen(false);
-    fetchAcoes(indicacao.id);
-    onSuccess();
-    setSavingAcao(false);
   };
 
   const handleSave = async () => {
     if (!indicacao) return;
     setLoading(true);
-
-    // Build próxima ação datetime
-    let proximaAcaoDatetime: string | null = null;
-    if (proximaAcaoDate) {
-      const [hours, minutes] = proximaAcaoTime.split(":").map(Number);
-      const dateWithTime = new Date(proximaAcaoDate);
-      dateWithTime.setHours(hours, minutes, 0, 0);
-      proximaAcaoDatetime = dateWithTime.toISOString();
-    }
-
-    // Check what changed to register actions
-    const changes: string[] = [];
-    if (formData.status_abordagem !== indicacao.status_abordagem) {
-      changes.push(`Status: ${statusAbordagemLabels[formData.status_abordagem as StatusAbordagem]}`);
-    }
-    if (formData.proxima_acao !== indicacao.proxima_acao && formData.proxima_acao) {
-      changes.push(`Ação: ${proximaAcaoLabels[formData.proxima_acao as ProximaAcao]}`);
-    }
-    if (formData.motivo_abordagem !== indicacao.motivo_abordagem && formData.motivo_abordagem) {
-      changes.push(`Motivo: ${motivoAbordagemLabels[formData.motivo_abordagem as MotivoAbordagem] || formData.motivo_abordagem}`);
-    }
 
     const { error } = await supabase
       .from("indicacoes")
@@ -200,9 +88,6 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
         status_abordagem: formData.status_abordagem,
         motivo_abordagem: formData.motivo_abordagem,
         observacoes: formData.observacoes,
-        proxima_acao: formData.proxima_acao,
-        proxima_acao_data: proximaAcaoDatetime,
-        proxima_acao_observacao: formData.proxima_acao_observacao,
       })
       .eq("id", indicacao.id);
 
@@ -214,11 +99,6 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
         description: getUserFriendlyError(error),
       });
     } else {
-      // Register all changes as actions
-      for (const change of changes) {
-        await registerAction(change, formData.proxima_acao_observacao);
-      }
-      
       toast({
         title: "Indicação atualizada",
         description: "Os dados foram salvos com sucesso.",
@@ -251,6 +131,13 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
       onOpenChange(false);
     }
     setLoading(false);
+  };
+
+  const handleAcaoSuccess = () => {
+    if (indicacao) {
+      fetchAcoes(indicacao.id);
+    }
+    onSuccess();
   };
 
   if (!indicacao) return null;
@@ -353,146 +240,17 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
               />
             </div>
 
-            {/* Ação - Popover */}
-            <Popover open={novaAcaoOpen} onOpenChange={setNovaAcaoOpen} modal={true}>
-              <PopoverTrigger asChild>
-                <Button 
-                  type="button"
-                  variant="default" 
-                  className="w-full flex items-center justify-center gap-2"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setNovaAcaoOpen(true);
-                  }}
-                >
+            {/* Botão Ação com Popover */}
+            <AcaoPopover
+              indicacaoId={indicacao.id}
+              onSuccess={handleAcaoSuccess}
+              trigger={
+                <Button type="button" variant="default" className="w-full flex items-center justify-center gap-2">
                   <Plus className="h-4 w-4" />
                   <span>Ação</span>
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-96 bg-popover border shadow-lg z-[200]" align="center" sideOffset={5}>
-                <ScrollArea className="max-h-[400px]">
-                  <div className="space-y-4 p-1">
-                    <div className="font-medium text-sm border-b pb-2">Registrar Ação</div>
-                    
-                    {/* Tipo de Ação */}
-                    <div className="space-y-2">
-                      <Label className="text-xs">Tipo de Ação</Label>
-                      <Select
-                        value={novaAcaoTipo}
-                        onValueChange={(value) => setNovaAcaoTipo(value as "primeiro_contato" | "follow_up")}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover z-[300]">
-                          <SelectItem value="primeiro_contato">1º Contato</SelectItem>
-                          <SelectItem value="follow_up">Follow Up</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {/* Observações do Registro */}
-                    <div className="space-y-2">
-                      <Label className="text-xs">Observações do Registro</Label>
-                      <Textarea
-                        value={novaAcaoObservacao}
-                        onChange={(e) => setNovaAcaoObservacao(e.target.value)}
-                        rows={2}
-                        placeholder="Descreva o que foi discutido..."
-                        className="text-sm"
-                      />
-                    </div>
-
-                    {/* Próxima Ação */}
-                    <div className="border-t pt-4 space-y-3">
-                      <Label className="text-xs font-semibold">Projetar Próxima Ação</Label>
-                      
-                      <div className="space-y-2">
-                        <Label className="text-xs">Tipo</Label>
-                        <Select
-                          value={formData.proxima_acao || ""}
-                          onValueChange={(value) => setFormData({ ...formData, proxima_acao: value as ProximaAcao })}
-                        >
-                          <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover z-[300]">
-                            {Object.entries(proximaAcaoLabels).map(([value, label]) => (
-                              <SelectItem key={value} value={value}>
-                                {label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Data</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className={cn(
-                                  "w-full h-9 justify-start text-left font-normal text-xs",
-                                  !proximaAcaoDate && "text-muted-foreground"
-                                )}
-                              >
-                                <CalendarIcon className="mr-1 h-3 w-3" />
-                                {proximaAcaoDate ? format(proximaAcaoDate, "dd/MM/yy", { locale: ptBR }) : "Data"}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 z-[400]" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={proximaAcaoDate}
-                                onSelect={setProximaAcaoDate}
-                                initialFocus
-                                locale={ptBR}
-                                className="p-3 pointer-events-auto"
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label className="text-xs">Horário</Label>
-                          <Input
-                            type="time"
-                            value={proximaAcaoTime}
-                            onChange={(e) => setProximaAcaoTime(e.target.value)}
-                            className="h-9 text-xs"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-xs">Observação</Label>
-                        <Textarea
-                          value={formData.proxima_acao_observacao || ""}
-                          onChange={(e) => setFormData({ ...formData, proxima_acao_observacao: e.target.value })}
-                          rows={2}
-                          placeholder="Detalhes da próxima ação..."
-                          className="text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <Button 
-                      onClick={handleRegistrarAcao} 
-                      disabled={savingAcao}
-                      className="w-full"
-                      size="sm"
-                    >
-                      {savingAcao && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      Registrar
-                    </Button>
-                  </div>
-                </ScrollArea>
-              </PopoverContent>
-            </Popover>
+              }
+            />
 
             {/* Histórico de Ações */}
             <div className="space-y-2 border-t pt-4">

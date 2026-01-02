@@ -3,17 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { Indicacao, StatusAbordagem, statusAbordagemLabels, ProximaAcao, proximaAcaoLabels, motivoAbordagemLabels, MotivoAbordagem } from "@/types/indicacao";
+import { Indicacao, StatusAbordagem, statusAbordagemLabels, motivoAbordagemLabels, MotivoAbordagem } from "@/types/indicacao";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { IndicacaoDialog } from "./IndicacaoDialog";
 import { IndicacaoFormDialog } from "./IndicacaoFormDialog";
-import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle, CalendarClock, ChevronDown } from "lucide-react";
+import { AcaoPopover } from "./AcaoPopover";
+import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle, CalendarClock } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -168,40 +167,6 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
     }
   };
 
-  const handleProximaAcao = async (indicacaoId: string, acao: ProximaAcao) => {
-    const userName = userProfile?.full_name || user?.email || "Usuário";
-    const now = new Date();
-    
-    const { error } = await supabase
-      .from("indicacoes")
-      .update({ 
-        proxima_acao: acao,
-        status_abordagem: "em_andamento",
-        proxima_acao_data: now.toISOString(),
-      })
-      .eq("id", indicacaoId);
-
-    if (error) {
-      logError("update_proxima_acao", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar",
-        description: getUserFriendlyError(error),
-      });
-    } else {
-      await supabase.from("acoes_indicacao").insert({
-        indicacao_id: indicacaoId,
-        tipo_acao: `Ação: ${proximaAcaoLabels[acao]}`,
-        observacao: `Por: ${userName}`,
-        user_id: user!.id,
-      });
-      toast({
-        title: "Ação registrada",
-        description: `${proximaAcaoLabels[acao]} registrado em ${format(now, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} por ${userName}.`,
-      });
-      fetchIndicacoes();
-    }
-  };
 
   if (loading) {
     return (
@@ -361,22 +326,10 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <div className="flex flex-col gap-1">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" className="h-8 text-xs">
-                            Ação
-                            <ChevronDown className="h-3 w-3 ml-1" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleProximaAcao(indicacao.id, "primeiro_contato")}>
-                            1º Contato
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleProximaAcao(indicacao.id, "follow_up")}>
-                            Follow Up
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <AcaoPopover 
+                        indicacaoId={indicacao.id} 
+                        onSuccess={fetchIndicacoes}
+                      />
                       {indicacao.proxima_acao && indicacao.proxima_acao_data && (
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                           <CalendarClock className="h-3 w-3" />
