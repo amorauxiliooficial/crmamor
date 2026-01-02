@@ -24,9 +24,10 @@ export function PlaybookEntradaCard({
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(entrada.resposta);
+    const textToCopy = entrada.respostas?.join("\n\n• ") || "";
+    await navigator.clipboard.writeText(textToCopy ? "• " + textToCopy : "");
     setCopied(true);
-    toast({ title: "Resposta copiada!" });
+    toast({ title: "Respostas copiadas!" });
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -90,9 +91,16 @@ export function PlaybookEntradaCard({
         )}
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-          {entrada.resposta}
-        </p>
+        {entrada.respostas && entrada.respostas.length > 0 && (
+          <ul className="space-y-2">
+            {entrada.respostas.map((resposta, index) => (
+              <li key={index} className="flex gap-2 text-sm text-muted-foreground">
+                <span className="text-primary font-bold shrink-0">•</span>
+                <span className="whitespace-pre-wrap">{resposta}</span>
+              </li>
+            ))}
+          </ul>
+        )}
         {entrada.tags && entrada.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-3">
             {entrada.tags.map((tag) => (

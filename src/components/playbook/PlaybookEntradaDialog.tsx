@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,10 +28,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PlaybookCategoria, PlaybookEntrada } from "@/types/playbook";
+import { Plus, Trash2 } from "lucide-react";
 
 const formSchema = z.object({
   pergunta: z.string().min(1, "Pergunta obrigatória"),
-  resposta: z.string().min(1, "Resposta obrigatória"),
   categoria_id: z.string().optional(),
   tags: z.string().optional(),
 });
@@ -43,7 +43,7 @@ interface PlaybookEntradaDialogProps {
   onOpenChange: (open: boolean) => void;
   categorias: PlaybookCategoria[];
   entrada?: PlaybookEntrada | null;
-  onSave: (data: { pergunta: string; resposta: string; categoria_id?: string; tags?: string[] }) => void;
+  onSave: (data: { pergunta: string; respostas: string[]; categoria_id?: string; tags?: string[] }) => void;
 }
 
 export function PlaybookEntradaDialog({
@@ -53,11 +53,12 @@ export function PlaybookEntradaDialog({
   entrada,
   onSave,
 }: PlaybookEntradaDialogProps) {
+  const [respostas, setRespostas] = useState<string[]>([""]);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       pergunta: "",
-      resposta: "",
       categoria_id: "",
       tags: "",
     },
@@ -67,27 +68,47 @@ export function PlaybookEntradaDialog({
     if (entrada) {
       form.reset({
         pergunta: entrada.pergunta,
-        resposta: entrada.resposta,
         categoria_id: entrada.categoria_id || "",
         tags: entrada.tags?.join(", ") || "",
       });
+      setRespostas(entrada.respostas?.length ? entrada.respostas : [""]);
     } else {
       form.reset({
         pergunta: "",
-        resposta: "",
         categoria_id: "",
         tags: "",
       });
+      setRespostas([""]);
     }
-  }, [entrada, form]);
+  }, [entrada, form, open]);
+
+  const handleAddResposta = () => {
+    setRespostas([...respostas, ""]);
+  };
+
+  const handleRemoveResposta = (index: number) => {
+    if (respostas.length > 1) {
+      setRespostas(respostas.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleRespostaChange = (index: number, value: string) => {
+    const newRespostas = [...respostas];
+    newRespostas[index] = value;
+    setRespostas(newRespostas);
+  };
 
   const handleSubmit = (values: FormValues) => {
+    const validRespostas = respostas.filter((r) => r.trim() !== "");
+    if (validRespostas.length === 0) {
+      return;
+    }
     const tags = values.tags
       ? values.tags.split(",").map((t) => t.trim()).filter(Boolean)
       : undefined;
     onSave({
       pergunta: values.pergunta,
-      resposta: values.resposta,
+      respostas: validRespostas,
       categoria_id: values.categoria_id || undefined,
       tags,
     });
@@ -96,7 +117,7 @@ export function PlaybookEntradaDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {entrada ? "Editar Entrada" : "Nova Entrada"}
@@ -144,23 +165,48 @@ export function PlaybookEntradaDialog({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="resposta"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Resposta Sugerida</FormLabel>
-                  <FormControl>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <FormLabel>Respostas Sugeridas</FormLabel>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddResposta}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Adicionar
+                </Button>
+              </div>
+              {respostas.map((resposta, index) => (
+                <div key={index} className="flex gap-2">
+                  <div className="flex-1">
                     <Textarea
-                      placeholder="Escreva a resposta ideal para esta pergunta..."
-                      className="min-h-[120px]"
-                      {...field}
+                      placeholder={`Resposta ${index + 1}...`}
+                      className="min-h-[80px]"
+                      value={resposta}
+                      onChange={(e) => handleRespostaChange(index, e.target.value)}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                  </div>
+                  {respostas.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 text-destructive hover:text-destructive"
+                      onClick={() => handleRemoveResposta(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {respostas.every((r) => r.trim() === "") && (
+                <p className="text-sm text-destructive">Pelo menos uma resposta é obrigatória</p>
               )}
-            />
+            </div>
+
             <FormField
               control={form.control}
               name="tags"
@@ -178,7 +224,9 @@ export function PlaybookEntradaDialog({
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit">Salvar</Button>
+              <Button type="submit" disabled={respostas.every((r) => r.trim() === "")}>
+                Salvar
+              </Button>
             </DialogFooter>
           </form>
         </Form>

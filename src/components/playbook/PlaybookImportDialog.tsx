@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 interface PlaybookImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (entries: { pergunta: string; resposta: string }[]) => Promise<void>;
+  onImport: (entries: { pergunta: string; respostas: string[] }[]) => Promise<void>;
 }
 
 export function PlaybookImportDialog({
@@ -28,11 +28,11 @@ export function PlaybookImportDialog({
   const { toast } = useToast();
   const [manualText, setManualText] = useState("");
   const [importing, setImporting] = useState(false);
-  const [parsedEntries, setParsedEntries] = useState<{ pergunta: string; resposta: string }[]>([]);
+  const [parsedEntries, setParsedEntries] = useState<{ pergunta: string; respostas: string[] }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const parseText = (text: string): { pergunta: string; resposta: string }[] => {
-    const entries: { pergunta: string; resposta: string }[] = [];
+  const parseText = (text: string): { pergunta: string; respostas: string[] }[] => {
+    const entries: { pergunta: string; respostas: string[] }[] = [];
     
     // Split by "Pergunta:" to get each entry
     const blocks = text.split(/Pergunta:\s*/i).filter(Boolean);
@@ -43,7 +43,7 @@ export function PlaybookImportDialog({
         const pergunta = parts[0].trim();
         const resposta = parts.slice(1).join("Resposta:").trim();
         if (pergunta && resposta) {
-          entries.push({ pergunta, resposta });
+          entries.push({ pergunta, respostas: [resposta] });
         }
       }
     }

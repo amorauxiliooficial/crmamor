@@ -430,7 +430,7 @@ export type Database = {
           created_by: string | null
           id: string
           pergunta: string
-          resposta: string
+          respostas: string[] | null
           tags: string[] | null
           updated_at: string
         }
@@ -440,7 +440,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           pergunta: string
-          resposta: string
+          respostas?: string[] | null
           tags?: string[] | null
           updated_at?: string
         }
@@ -450,7 +450,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           pergunta?: string
-          resposta?: string
+          respostas?: string[] | null
           tags?: string[] | null
           updated_at?: string
         }

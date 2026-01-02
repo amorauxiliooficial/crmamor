@@ -11,7 +11,7 @@ export interface PlaybookEntrada {
   id: string;
   categoria_id: string | null;
   pergunta: string;
-  resposta: string;
+  respostas: string[];
   tags: string[] | null;
   created_by: string | null;
   created_at: string;

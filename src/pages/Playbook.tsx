@@ -74,18 +74,20 @@ export default function Playbook() {
       const query = removeAccents(searchQuery.toLowerCase());
       filtered = filtered.filter((e) => {
         const perguntaMatch = removeAccents(e.pergunta.toLowerCase()).includes(query);
-        const respostaMatch = removeAccents(e.resposta.toLowerCase()).includes(query);
+        const respostasMatch = e.respostas?.some((r) =>
+          removeAccents(r.toLowerCase()).includes(query)
+        );
         const tagsMatch = e.tags?.some((t) =>
           removeAccents(t.toLowerCase()).includes(query)
         );
-        return perguntaMatch || respostaMatch || tagsMatch;
+        return perguntaMatch || respostasMatch || tagsMatch;
       });
     }
 
     return filtered;
   }, [entradas, searchQuery, selectedCategoria, showFavoritos]);
 
-  const handleSave = (data: { pergunta: string; resposta: string; categoria_id?: string; tags?: string[] }) => {
+  const handleSave = (data: { pergunta: string; respostas: string[]; categoria_id?: string; tags?: string[] }) => {
     if (editingEntrada) {
       updateEntrada(editingEntrada.id, data);
     } else {
