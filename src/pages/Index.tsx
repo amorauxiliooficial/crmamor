@@ -11,6 +11,7 @@ import { MaeEditDialog } from "@/components/mae/MaeEditDialog";
 import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
 import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
 import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
+import { Indicacao } from "@/types/indicacao";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso } from "@/types/mae";
@@ -66,6 +67,12 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all" | "gestantes">("all");
   const [viewMode, setViewMode] = useState<"kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes">("kanban");
+  const [selectedIndicacaoFromNotification, setSelectedIndicacaoFromNotification] = useState<Indicacao | null>(null);
+
+  const handleNotificationClick = (indicacao: Indicacao) => {
+    setViewMode("indicacoes");
+    setSelectedIndicacaoFromNotification(indicacao);
+  };
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -252,6 +259,7 @@ const Index = () => {
         searchQuery={searchQuery} 
         onSearchChange={setSearchQuery} 
         onAddMae={() => setFormDialogOpen(true)}
+        onSelectIndicacao={handleNotificationClick}
       />
 
       <main className="p-6 space-y-6">
@@ -354,7 +362,11 @@ const Index = () => {
 
           {viewMode === "indicacoes" ? (
             <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-              <IndicacoesTab searchQuery={searchQuery} />
+              <IndicacoesTab 
+                searchQuery={searchQuery} 
+                externalSelectedIndicacao={selectedIndicacaoFromNotification}
+                onClearExternalSelection={() => setSelectedIndicacaoFromNotification(null)}
+              />
             </div>
           ) : viewMode === "conferencia" ? (
             <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">

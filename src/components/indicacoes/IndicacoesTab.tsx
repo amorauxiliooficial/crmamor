@@ -3,26 +3,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { Indicacao, StatusAbordagem, statusAbordagemLabels, motivoAbordagemLabels, MotivoAbordagem, proximaAcaoLabels, ProximaAcao } from "@/types/indicacao";
+import { Indicacao, StatusAbordagem, statusAbordagemLabels, motivoAbordagemLabels, MotivoAbordagem } from "@/types/indicacao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { IndicacaoDialog } from "./IndicacaoDialog";
 import { IndicacaoFormDialog } from "./IndicacaoFormDialog";
 import { AcaoPopover } from "./AcaoPopover";
-import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle, CalendarClock, AlertTriangle, Bell } from "lucide-react";
-import { format, parseISO, isPast, isToday, differenceInMinutes } from "date-fns";
+import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle, CalendarClock, AlertTriangle } from "lucide-react";
+import { format, parseISO, isPast, differenceInMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface IndicacoesTabProps {
   searchQuery?: string;
+  externalSelectedIndicacao?: Indicacao | null;
+  onClearExternalSelection?: () => void;
 }
 
-export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
+export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onClearExternalSelection }: IndicacoesTabProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [indicacoes, setIndicacoes] = useState<Indicacao[]>([]);
@@ -32,6 +33,15 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState("");
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
+
+  // Handle external selection from notification
+  useEffect(() => {
+    if (externalSelectedIndicacao) {
+      setSelectedIndicacao(externalSelectedIndicacao);
+      setEditDialogOpen(true);
+      onClearExternalSelection?.();
+    }
+  }, [externalSelectedIndicacao, onClearExternalSelection]);
 
   const fetchIndicacoes = async () => {
     if (!user) return;
@@ -107,38 +117,20 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
     };
   }, [indicacoes]);
 
-  // Identificar tarefas atrasadas e próximas
-  const tarefasStatus = useMemo(() => {
-    const agora = new Date();
-    const atrasadas: Indicacao[] = [];
-    const proximas: Indicacao[] = []; // Próximas 2 horas
-
-    indicacoes.forEach((ind) => {
-      if (ind.proxima_acao_data && ind.status_abordagem !== "concluido") {
-        const dataAcao = parseISO(ind.proxima_acao_data);
-        if (isPast(dataAcao)) {
-          atrasadas.push(ind);
-        } else if (differenceInMinutes(dataAcao, agora) <= 120) {
-          proximas.push(ind);
-        }
-      }
-    });
-
-    return { atrasadas, proximas };
-  }, [indicacoes]);
-
   const getProximaAcaoStatus = (indicacao: Indicacao) => {
     if (!indicacao.proxima_acao_data) return null;
     const dataAcao = parseISO(indicacao.proxima_acao_data);
     const agora = new Date();
+    const minAtrasados = differenceInMinutes(agora, dataAcao);
     
-    if (isPast(dataAcao)) {
+    if (minAtrasados >= 5) {
       return "atrasada";
-    } else if (differenceInMinutes(dataAcao, agora) <= 120) {
-      return "proxima";
+    } else if (isPast(dataAcao)) {
+      return "proxima"; // Atrasada menos de 5 min
     }
     return "agendada";
   };
+
 
   const handleRowClick = (indicacao: Indicacao, e: React.MouseEvent) => {
     // Prevent opening dialog when clicking on select or dropdown
@@ -213,64 +205,6 @@ export function IndicacoesTab({ searchQuery = "" }: IndicacoesTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Alerta de Tarefas Atrasadas */}
-      {tarefasStatus.atrasadas.length > 0 && (
-        <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            {tarefasStatus.atrasadas.length} tarefa(s) atrasada(s)!
-          </AlertTitle>
-          <AlertDescription className="mt-2">
-            <div className="flex flex-wrap gap-2">
-              {tarefasStatus.atrasadas.slice(0, 5).map((ind) => (
-                <Badge 
-                  key={ind.id} 
-                  variant="destructive"
-                  className="cursor-pointer"
-                  onClick={() => {
-                    setSelectedIndicacao(ind);
-                    setEditDialogOpen(true);
-                  }}
-                >
-                  {ind.nome_indicada} - {ind.proxima_acao && proximaAcaoLabels[ind.proxima_acao as ProximaAcao]}
-                  {ind.proxima_acao_data && ` (${format(parseISO(ind.proxima_acao_data), "dd/MM HH:mm")})`}
-                </Badge>
-              ))}
-              {tarefasStatus.atrasadas.length > 5 && (
-                <Badge variant="outline">+{tarefasStatus.atrasadas.length - 5} mais</Badge>
-              )}
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Alerta de Tarefas Próximas (próximas 2 horas) */}
-      {tarefasStatus.proximas.length > 0 && (
-        <Alert className="border-amber-500/50 bg-amber-500/10">
-          <Clock className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-700 dark:text-amber-400">
-            {tarefasStatus.proximas.length} tarefa(s) nas próximas 2 horas
-          </AlertTitle>
-          <AlertDescription className="mt-2">
-            <div className="flex flex-wrap gap-2">
-              {tarefasStatus.proximas.map((ind) => (
-                <Badge 
-                  key={ind.id} 
-                  variant="outline"
-                  className="border-amber-500 text-amber-700 dark:text-amber-400 cursor-pointer"
-                  onClick={() => {
-                    setSelectedIndicacao(ind);
-                    setEditDialogOpen(true);
-                  }}
-                >
-                  {ind.nome_indicada} - {format(parseISO(ind.proxima_acao_data!), "HH:mm")}
-                </Badge>
-              ))}
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-l-4 border-l-primary">
