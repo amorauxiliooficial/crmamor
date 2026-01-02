@@ -9,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 
 interface PlaybookEntradaCardProps {
   entrada: PlaybookEntrada;
-  isAdmin: boolean;
   onToggleFavorito: (id: string) => void;
   onEdit?: (entrada: PlaybookEntrada) => void;
   onDelete?: (id: string) => void;
@@ -17,7 +16,6 @@ interface PlaybookEntradaCardProps {
 
 export function PlaybookEntradaCard({
   entrada,
-  isAdmin,
   onToggleFavorito,
   onEdit,
   onDelete,
@@ -67,26 +65,22 @@ export function PlaybookEntradaCard({
                 <Copy className="h-4 w-4 text-muted-foreground" />
               )}
             </Button>
-            {isAdmin && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => onEdit?.(entrada)}
-                >
-                  <Pencil className="h-4 w-4 text-muted-foreground" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => onDelete?.(entrada.id)}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </>
-            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => onEdit?.(entrada)}
+            >
+              <Pencil className="h-4 w-4 text-muted-foreground" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => onDelete?.(entrada.id)}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
           </div>
         </div>
         {entrada.categoria && (
