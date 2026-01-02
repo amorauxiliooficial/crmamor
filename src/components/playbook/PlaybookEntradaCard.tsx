@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, Copy, Check, Pencil, Trash2 } from "lucide-react";
+import { Star, Copy, Check, Pencil, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { PlaybookEntrada } from "@/types/playbook";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +23,10 @@ export function PlaybookEntradaCard({
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const respostasCount = entrada.respostas?.length || 0;
+  const hasMultipleRespostas = respostasCount > 1;
 
   const handleCopyAll = async () => {
     const textToCopy = entrada.respostas?.join("\n\n• ") || "";
@@ -39,13 +43,24 @@ export function PlaybookEntradaCard({
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
+  const displayedRespostas = hasMultipleRespostas && !isExpanded 
+    ? entrada.respostas?.slice(0, 1) 
+    : entrada.respostas;
+
   return (
     <Card className="group">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-base font-medium leading-tight">
-            {entrada.pergunta}
-          </CardTitle>
+          <div className="flex-1">
+            <CardTitle className="text-base font-medium leading-tight">
+              {entrada.pergunta}
+            </CardTitle>
+            {hasMultipleRespostas && (
+              <Badge variant="outline" className="mt-2 text-xs">
+                {respostasCount} respostas
+              </Badge>
+            )}
+          </div>
           <div className="flex items-center gap-1 shrink-0">
             <Button
               variant="ghost"
@@ -62,19 +77,21 @@ export function PlaybookEntradaCard({
                 )}
               />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleCopyAll}
-              title="Copiar todas as respostas"
-            >
-              {copied ? (
-                <Check className="h-4 w-4 text-green-500" />
-              ) : (
-                <Copy className="h-4 w-4 text-muted-foreground" />
-              )}
-            </Button>
+            {hasMultipleRespostas && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleCopyAll}
+                title="Copiar todas as respostas"
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -100,9 +117,9 @@ export function PlaybookEntradaCard({
         )}
       </CardHeader>
       <CardContent>
-        {entrada.respostas && entrada.respostas.length > 0 && (
+        {displayedRespostas && displayedRespostas.length > 0 && (
           <ul className="space-y-2">
-            {entrada.respostas.map((resposta, index) => (
+            {displayedRespostas.map((resposta, index) => (
               <li 
                 key={index} 
                 className="group/item flex items-start gap-2 text-sm text-muted-foreground hover:bg-muted/50 rounded-md p-1 -m-1 cursor-pointer transition-colors"
@@ -120,6 +137,28 @@ export function PlaybookEntradaCard({
             ))}
           </ul>
         )}
+
+        {hasMultipleRespostas && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-2 w-full text-muted-foreground hover:text-foreground"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="h-4 w-4 mr-1" />
+                Recolher
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4 mr-1" />
+                Ver mais {respostasCount - 1} {respostasCount - 1 === 1 ? "resposta" : "respostas"}
+              </>
+            )}
+          </Button>
+        )}
+
         {entrada.tags && entrada.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-3">
             {entrada.tags.map((tag) => (
