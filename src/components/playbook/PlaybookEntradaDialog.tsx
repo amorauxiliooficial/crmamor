@@ -156,29 +156,6 @@ export function PlaybookEntradaDialog({
     setRespostas(newRespostas);
   };
 
-  const handleRespostaPaste = (index: number, e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const pastedText = e.clipboardData.getData("text");
-    
-    // Verifica se o texto colado contém marcadores de lista (•)
-    if (pastedText.includes("•")) {
-      e.preventDefault();
-      
-      // Separa por • e limpa
-      const parts = pastedText
-        .split("•")
-        .map((p) => p.trim())
-        .filter((p) => p.length > 0);
-      
-      if (parts.length > 1) {
-        // Remove o campo atual vazio e adiciona as partes separadas
-        const newRespostas = [...respostas];
-        newRespostas.splice(index, 1, ...parts);
-        setRespostas(newRespostas);
-        return;
-      }
-    }
-  };
-
   const handleSubmit = (values: FormValues) => {
     const validRespostas = respostas.filter((r) => r.trim() !== "");
     if (validRespostas.length === 0) {
@@ -255,51 +232,48 @@ export function PlaybookEntradaDialog({
               )}
             />
             
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <FormLabel>Respostas Sugeridas</FormLabel>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Use o botão "Adicionar" para cada resposta separada, ou cole texto com • para separar automaticamente
-                  </p>
-                </div>
+                <FormLabel>Respostas Sugeridas</FormLabel>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   onClick={handleAddResposta}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Adicionar
+                  Nova Resposta
                 </Button>
               </div>
+              
               {respostas.map((resposta, index) => (
-                <div key={index} className="flex gap-2">
-                  <div className="flex items-center gap-2 flex-1">
-                    <span className="bg-primary text-primary-foreground text-xs font-medium rounded-full h-6 w-6 flex items-center justify-center shrink-0">
-                      {index + 1}
+                <div key={index} className="space-y-2 p-3 border border-border rounded-lg bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">
+                      Resposta {index + 1}
                     </span>
-                    <Textarea
-                      placeholder={`Resposta ${index + 1}...`}
-                      className="min-h-[80px]"
-                      value={resposta}
-                      onChange={(e) => handleRespostaChange(index, e.target.value)}
-                      onPaste={(e) => handleRespostaPaste(index, e)}
-                    />
+                    {respostas.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-destructive hover:text-destructive"
+                        onClick={() => handleRemoveResposta(index)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Remover
+                      </Button>
+                    )}
                   </div>
-                  {respostas.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 text-destructive hover:text-destructive"
-                      onClick={() => handleRemoveResposta(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Textarea
+                    placeholder={`Digite a resposta ${index + 1}...`}
+                    className="min-h-[100px] bg-background"
+                    value={resposta}
+                    onChange={(e) => handleRespostaChange(index, e.target.value)}
+                  />
                 </div>
               ))}
+              
               {respostas.every((r) => r.trim() === "") && (
                 <p className="text-sm text-destructive">Pelo menos uma resposta é obrigatória</p>
               )}
