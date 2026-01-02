@@ -36,11 +36,22 @@ export function PlaybookEntradaCard({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleCopySingle = async (resposta: string, index: number) => {
+  const handleCopySingle = async (e: React.MouseEvent, resposta: string, index: number) => {
+    e.stopPropagation();
     await navigator.clipboard.writeText(resposta);
     setCopiedIndex(index);
     toast({ title: "Resposta copiada!" });
     setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  const handleRespostaClick = (e: React.MouseEvent, resposta: string, index: number) => {
+    // Se está colapsado e tem múltiplas respostas, expande
+    if (hasMultipleRespostas && !isExpanded) {
+      setIsExpanded(true);
+      return;
+    }
+    // Se está expandido ou só tem uma resposta, copia
+    handleCopySingle(e, resposta, index);
   };
 
   const displayedRespostas = hasMultipleRespostas && !isExpanded 
@@ -122,13 +133,21 @@ export function PlaybookEntradaCard({
             {displayedRespostas.map((resposta, index) => (
               <li 
                 key={index} 
-                className="group/item flex items-start gap-2 text-sm text-muted-foreground hover:bg-muted/50 rounded-md p-1 -m-1 cursor-pointer transition-colors"
-                onClick={() => handleCopySingle(resposta, index)}
-                title="Clique para copiar"
+                className={cn(
+                  "group/item flex items-start gap-2 text-sm text-muted-foreground hover:bg-muted/50 rounded-md p-1 -m-1 cursor-pointer transition-colors",
+                  hasMultipleRespostas && !isExpanded && "border border-dashed border-muted-foreground/30"
+                )}
+                onClick={(e) => handleRespostaClick(e, resposta, index)}
+                title={hasMultipleRespostas && !isExpanded ? "Clique para ver todas as respostas" : "Clique para copiar"}
               >
                 <span className="text-primary font-bold shrink-0">•</span>
                 <span className="whitespace-pre-wrap flex-1">{resposta}</span>
-                {copiedIndex === index ? (
+                {hasMultipleRespostas && !isExpanded ? (
+                  <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+                    <ChevronDown className="h-4 w-4" />
+                    +{respostasCount - 1}
+                  </span>
+                ) : copiedIndex === index ? (
                   <Check className="h-4 w-4 text-green-500 shrink-0" />
                 ) : (
                   <Copy className="h-4 w-4 text-muted-foreground opacity-0 group-hover/item:opacity-100 transition-opacity shrink-0" />
@@ -138,24 +157,15 @@ export function PlaybookEntradaCard({
           </ul>
         )}
 
-        {hasMultipleRespostas && (
+        {hasMultipleRespostas && isExpanded && (
           <Button
             variant="ghost"
             size="sm"
             className="mt-2 w-full text-muted-foreground hover:text-foreground"
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => setIsExpanded(false)}
           >
-            {isExpanded ? (
-              <>
-                <ChevronUp className="h-4 w-4 mr-1" />
-                Recolher
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-4 w-4 mr-1" />
-                Ver mais {respostasCount - 1} {respostasCount - 1 === 1 ? "resposta" : "respostas"}
-              </>
-            )}
+            <ChevronUp className="h-4 w-4 mr-1" />
+            Recolher
           </Button>
         )}
 
