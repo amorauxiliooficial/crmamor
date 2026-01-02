@@ -86,6 +86,21 @@ export function usePlaybook() {
     }
   };
 
+  const importEntradas = async (entries: { pergunta: string; resposta: string }[]) => {
+    if (!user || entries.length === 0) return;
+    const dataToInsert = entries.map((e) => ({
+      pergunta: e.pergunta,
+      resposta: e.resposta,
+      created_by: user.id,
+    }));
+    const { error } = await supabase.from("playbook_entradas").insert(dataToInsert);
+    if (error) {
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+      throw error;
+    }
+    fetchData();
+  };
+
   const updateEntrada = async (id: string, data: Partial<PlaybookEntrada>) => {
     const { error } = await supabase
       .from("playbook_entradas")
@@ -116,6 +131,7 @@ export function usePlaybook() {
     toggleFavorito,
     addCategoria,
     addEntrada,
+    importEntradas,
     updateEntrada,
     deleteEntrada,
     refetch: fetchData,

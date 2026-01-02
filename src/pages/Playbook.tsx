@@ -5,11 +5,13 @@ import { usePlaybook } from "@/hooks/usePlaybook";
 import { Header } from "@/components/layout/Header";
 import { PlaybookChatCard } from "@/components/playbook/PlaybookChatCard";
 import { PlaybookEntradaDialog } from "@/components/playbook/PlaybookEntradaDialog";
+import { PlaybookImportDialog } from "@/components/playbook/PlaybookImportDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Plus, Search, Star, ArrowLeft } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Loader2, Plus, Search, Star, ArrowLeft, Upload, FileText, ChevronDown } from "lucide-react";
 import { PlaybookEntrada } from "@/types/playbook";
 import {
   AlertDialog,
@@ -31,6 +33,7 @@ export default function Playbook() {
     loading,
     toggleFavorito,
     addEntrada,
+    importEntradas,
     updateEntrada,
     deleteEntrada,
   } = usePlaybook();
@@ -39,6 +42,7 @@ export default function Playbook() {
   const [selectedCategoria, setSelectedCategoria] = useState<string>("all");
   const [showFavoritos, setShowFavoritos] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editingEntrada, setEditingEntrada] = useState<PlaybookEntrada | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -134,10 +138,25 @@ export default function Playbook() {
               </p>
             </div>
           </div>
-          <Button onClick={() => { setEditingEntrada(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Entrada
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { setEditingEntrada(null); setDialogOpen(true); }}>
+                <FileText className="h-4 w-4 mr-2" />
+                Entrada Manual
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setImportDialogOpen(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Importar Várias
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Search and Filters */}
@@ -215,6 +234,12 @@ export default function Playbook() {
         categorias={categorias}
         entrada={editingEntrada}
         onSave={handleSave}
+      />
+
+      <PlaybookImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImport={importEntradas}
       />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
