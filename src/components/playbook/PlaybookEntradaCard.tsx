@@ -128,40 +128,53 @@ export function PlaybookEntradaCard({
         )}
       </CardHeader>
       <CardContent>
-        {displayedRespostas && displayedRespostas.length > 0 && (
-          <ul className="space-y-2">
-            {displayedRespostas.map((resposta, index) => (
-              <li 
+        {/* Quando colapsado, mostra preview clicável */}
+        {hasMultipleRespostas && !isExpanded && entrada.respostas?.[0] && (
+          <div 
+            className="flex items-start gap-2 text-sm text-muted-foreground hover:bg-muted/50 rounded-md p-2 cursor-pointer transition-colors border border-dashed border-muted-foreground/30"
+            onClick={() => setIsExpanded(true)}
+            title="Clique para ver todas as respostas"
+          >
+            <span className="text-primary font-bold shrink-0">•</span>
+            <span className="whitespace-pre-wrap flex-1 line-clamp-2">{entrada.respostas[0]}</span>
+            <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+              <ChevronDown className="h-4 w-4" />
+              +{respostasCount - 1}
+            </span>
+          </div>
+        )}
+
+        {/* Quando expandido ou só tem uma resposta, mostra cada uma em card separado */}
+        {((hasMultipleRespostas && isExpanded) || !hasMultipleRespostas) && entrada.respostas && entrada.respostas.length > 0 && (
+          <div className="space-y-3">
+            {entrada.respostas.map((resposta, index) => (
+              <div 
                 key={index} 
-                className={cn(
-                  "group/item flex items-start gap-2 text-sm text-muted-foreground hover:bg-muted/50 rounded-md p-1 -m-1 cursor-pointer transition-colors",
-                  hasMultipleRespostas && !isExpanded && "border border-dashed border-muted-foreground/30"
-                )}
-                onClick={(e) => handleRespostaClick(e, resposta, index)}
-                title={hasMultipleRespostas && !isExpanded ? "Clique para ver todas as respostas" : "Clique para copiar"}
+                className="group/item bg-muted/30 border border-border rounded-lg p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={(e) => handleCopySingle(e, resposta, index)}
+                title="Clique para copiar"
               >
-                <span className="text-primary font-bold shrink-0">•</span>
-                <span className="whitespace-pre-wrap flex-1">{resposta}</span>
-                {hasMultipleRespostas && !isExpanded ? (
-                  <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
-                    <ChevronDown className="h-4 w-4" />
-                    +{respostasCount - 1}
+                <div className="flex items-start gap-2">
+                  <span className="bg-primary text-primary-foreground text-xs font-medium rounded-full h-5 w-5 flex items-center justify-center shrink-0">
+                    {index + 1}
                   </span>
-                ) : copiedIndex === index ? (
-                  <Check className="h-4 w-4 text-green-500 shrink-0" />
-                ) : (
-                  <Copy className="h-4 w-4 text-muted-foreground opacity-0 group-hover/item:opacity-100 transition-opacity shrink-0" />
-                )}
-              </li>
+                  <span className="whitespace-pre-wrap flex-1 text-sm text-foreground">{resposta}</span>
+                  {copiedIndex === index ? (
+                    <Check className="h-4 w-4 text-green-500 shrink-0" />
+                  ) : (
+                    <Copy className="h-4 w-4 text-muted-foreground opacity-0 group-hover/item:opacity-100 transition-opacity shrink-0" />
+                  )}
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
 
         {hasMultipleRespostas && isExpanded && (
           <Button
             variant="ghost"
             size="sm"
-            className="mt-2 w-full text-muted-foreground hover:text-foreground"
+            className="mt-3 w-full text-muted-foreground hover:text-foreground"
             onClick={() => setIsExpanded(false)}
           >
             <ChevronUp className="h-4 w-4 mr-1" />
