@@ -1,4 +1,4 @@
-import { Heart, Search, Bell, LogOut, UserPlus } from "lucide-react";
+import { Heart, Search, Bell, LogOut, UserPlus, BookOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -65,6 +65,16 @@ export function Header({ searchQuery, onSearchChange, onAddMae }: HeaderProps) {
               <span className="hidden sm:inline">Nova Mãe</span>
             </Button>
           )}
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2"
+            onClick={() => navigate("/playbook")}
+          >
+            <BookOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">Playbook</span>
+          </Button>
           
           <Button variant="ghost" size="icon">
             <Bell className="h-5 w-5" />
