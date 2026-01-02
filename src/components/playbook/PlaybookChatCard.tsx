@@ -44,78 +44,110 @@ export function PlaybookChatCard({
   };
 
   return (
-    <div className="space-y-3">
-      {/* Pergunta - estilo mensagem recebida (esquerda) */}
+    <div className="relative">
+      {/* Pergunta - Nó principal do fluxograma */}
       <div 
-        className="flex items-start gap-2 cursor-pointer group"
+        className="cursor-pointer group"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex-1 max-w-[85%]">
-          <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3 relative">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-sm font-medium leading-relaxed pr-6">
+        <div className="bg-primary text-primary-foreground rounded-xl px-4 py-3 shadow-md hover:shadow-lg transition-shadow">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-medium opacity-70">Pergunta / Objeção</span>
+                {respostasCount > 1 && (
+                  <Badge variant="secondary" className="text-xs bg-primary-foreground/20 text-primary-foreground border-0">
+                    {respostasCount} opções
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm font-medium leading-relaxed">
                 {entrada.pergunta}
               </p>
-              <ChevronDown 
-                className={cn(
-                  "h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200",
-                  isExpanded && "rotate-180"
-                )}
-              />
+              {entrada.categoria && (
+                <Badge variant="secondary" className="mt-2 text-xs bg-primary-foreground/20 text-primary-foreground border-0">
+                  {entrada.categoria.nome}
+                </Badge>
+              )}
             </div>
-            {entrada.categoria && (
-              <Badge variant="secondary" className="mt-2 text-xs">
-                {entrada.categoria.nome}
-              </Badge>
-            )}
-            {respostasCount > 1 && (
-              <Badge variant="outline" className="mt-2 ml-2 text-xs">
-                {respostasCount} respostas
-              </Badge>
-            )}
+            <ChevronDown 
+              className={cn(
+                "h-5 w-5 shrink-0 transition-transform duration-300",
+                isExpanded && "rotate-180"
+              )}
+            />
           </div>
-          <span className="text-xs text-muted-foreground ml-2 mt-1 block">
-            Clique para ver {respostasCount > 1 ? "respostas" : "resposta"}
-          </span>
         </div>
       </div>
 
-      {/* Respostas - cada uma em seu próprio balão */}
+      {/* Conector vertical principal */}
       <div
         className={cn(
-          "space-y-3 overflow-hidden transition-all duration-300 ease-in-out",
-          isExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
+          "overflow-hidden transition-all duration-300 ease-in-out",
+          isExpanded ? "max-h-[3000px] opacity-100" : "max-h-0 opacity-0"
         )}
       >
-        {entrada.respostas && entrada.respostas.length > 0 && entrada.respostas.map((resposta, index) => (
-          <div key={index} className="flex justify-end">
-            <div 
-              className="max-w-[85%] group/item cursor-pointer"
-              onClick={(e) => handleCopySingle(e, resposta, index)}
-              title="Clique para copiar"
-            >
-              <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-3 hover:bg-primary/90 transition-colors">
-                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-primary-foreground/20">
-                  <span className="bg-primary-foreground/20 text-primary-foreground text-xs font-semibold rounded-full h-5 w-5 flex items-center justify-center">
-                    {index + 1}
-                  </span>
-                  <span className="text-xs font-medium opacity-80">Resposta {index + 1}</span>
-                  <div className="flex-1" />
-                  {copiedIndex === index ? (
-                    <Check className="h-4 w-4 text-green-300" />
-                  ) : (
-                    <Copy className="h-4 w-4 opacity-0 group-hover/item:opacity-70 transition-opacity" />
-                  )}
+        {/* Linha vertical do fluxograma */}
+        <div className="flex justify-center">
+          <div className="w-0.5 h-4 bg-border" />
+        </div>
+
+        {/* Respostas como nós do fluxograma */}
+        <div className="relative">
+          {entrada.respostas && entrada.respostas.length > 0 && entrada.respostas.map((resposta, index) => (
+            <div key={index} className="relative">
+              {/* Conector entre respostas */}
+              {index > 0 && (
+                <div className="flex justify-center">
+                  <div className="w-0.5 h-3 bg-border" />
                 </div>
-                <p className="text-sm whitespace-pre-wrap leading-relaxed">{resposta}</p>
+              )}
+              
+              {/* Nó da resposta */}
+              <div className="flex items-start">
+                {/* Indicador de ramificação */}
+                <div className="flex items-center shrink-0 mr-2">
+                  <div className="w-4 h-0.5 bg-border" />
+                  <div className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm border-2 transition-colors",
+                    copiedIndex === index 
+                      ? "bg-green-500 border-green-500 text-white" 
+                      : "bg-background border-primary text-primary"
+                  )}>
+                    {copiedIndex === index ? <Check className="h-4 w-4" /> : index + 1}
+                  </div>
+                  <div className="w-2 h-0.5 bg-border" />
+                </div>
+
+                {/* Card da resposta */}
+                <div 
+                  className="flex-1 group/item cursor-pointer"
+                  onClick={(e) => handleCopySingle(e, resposta, index)}
+                  title="Clique para copiar"
+                >
+                  <div className={cn(
+                    "bg-muted border border-border rounded-xl px-4 py-3 transition-all hover:border-primary hover:shadow-md",
+                    copiedIndex === index && "border-green-500 bg-green-50 dark:bg-green-950"
+                  )}>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-xs font-semibold text-primary">Resposta {index + 1}</span>
+                      {copiedIndex === index ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Copy className="h-4 w-4 text-muted-foreground opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                      )}
+                    </div>
+                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{resposta}</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-        
+          ))}
+        </div>
+
         {/* Tags */}
         {entrada.tags && entrada.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 justify-end">
+          <div className="flex flex-wrap gap-1 mt-3 ml-14">
             {entrada.tags.map((tag) => (
               <Badge key={tag} variant="outline" className="text-xs">
                 {tag}
@@ -125,7 +157,7 @@ export function PlaybookChatCard({
         )}
 
         {/* Ações */}
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center gap-1 mt-3 ml-14">
           <Button
             variant="ghost"
             size="sm"
@@ -155,6 +187,7 @@ export function PlaybookChatCard({
               ) : (
                 <Copy className="h-4 w-4" />
               )}
+              <span className="ml-1 text-xs">Copiar todas</span>
             </Button>
           )}
           <Button
