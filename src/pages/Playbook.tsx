@@ -29,7 +29,6 @@ export default function Playbook() {
     categorias,
     entradas,
     loading,
-    isAdmin,
     toggleFavorito,
     addEntrada,
     updateEntrada,
@@ -135,12 +134,10 @@ export default function Playbook() {
               </p>
             </div>
           </div>
-          {isAdmin && (
-            <Button onClick={() => { setEditingEntrada(null); setDialogOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Entrada
-            </Button>
-          )}
+          <Button onClick={() => { setEditingEntrada(null); setDialogOpen(true); }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Entrada
+          </Button>
         </div>
 
         {/* Search and Filters */}
@@ -201,7 +198,6 @@ export default function Playbook() {
                   <PlaybookEntradaCard
                     key={entrada.id}
                     entrada={entrada}
-                    isAdmin={isAdmin}
                     onToggleFavorito={toggleFavorito}
                     onEdit={handleEdit}
                     onDelete={handleDelete}

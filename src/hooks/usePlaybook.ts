@@ -11,22 +11,6 @@ export function usePlaybook() {
   const [entradas, setEntradas] = useState<PlaybookEntrada[]>([]);
   const [favoritos, setFavoritos] = useState<PlaybookFavorito[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  // Check if user is admin
-  useEffect(() => {
-    const checkAdmin = async () => {
-      if (!user) return;
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      setIsAdmin(!!data);
-    };
-    checkAdmin();
-  }, [user]);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -129,7 +113,6 @@ export function usePlaybook() {
     categorias,
     entradas: entradasComFavorito,
     loading,
-    isAdmin,
     toggleFavorito,
     addCategoria,
     addEntrada,
