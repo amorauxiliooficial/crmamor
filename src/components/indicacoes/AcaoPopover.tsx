@@ -101,15 +101,29 @@ export function AcaoPopover({ indicacaoId, onSuccess, trigger }: AcaoPopoverProp
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={true}>
-      <PopoverTrigger asChild>
+      <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
         {trigger || (
-          <Button variant="outline" size="sm" className="h-8 text-xs">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-8 text-xs"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setOpen(true);
+            }}
+          >
             Ação
             <ChevronDown className="h-3 w-3 ml-1" />
           </Button>
         )}
       </PopoverTrigger>
-      <PopoverContent className="w-96 bg-popover border shadow-lg z-[200]" align="end" sideOffset={5}>
+      <PopoverContent 
+        className="w-96 bg-popover border shadow-lg z-[9999]" 
+        align="end" 
+        sideOffset={5}
+        onClick={(e) => e.stopPropagation()}
+      >
         <ScrollArea className="max-h-[400px]">
           <div className="space-y-4 p-1">
             <div className="font-medium text-sm border-b pb-2">Registrar Ação</div>
