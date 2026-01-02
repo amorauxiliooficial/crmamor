@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlaybook } from "@/hooks/usePlaybook";
 import { Header } from "@/components/layout/Header";
-import { PlaybookEntradaCard } from "@/components/playbook/PlaybookEntradaCard";
+import { PlaybookChatCard } from "@/components/playbook/PlaybookChatCard";
 import { PlaybookEntradaDialog } from "@/components/playbook/PlaybookEntradaDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -193,9 +193,9 @@ export default function Playbook() {
                   : "Nenhuma entrada cadastrada nesta categoria"}
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="max-w-2xl mx-auto space-y-6 bg-card rounded-xl p-6 border shadow-sm">
                 {filteredEntradas.map((entrada) => (
-                  <PlaybookEntradaCard
+                  <PlaybookChatCard
                     key={entrada.id}
                     entrada={entrada}
                     onToggleFavorito={toggleFavorito}
