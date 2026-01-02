@@ -197,7 +197,7 @@ export function AcaoPopover({ indicacaoId, onSuccess, trigger }: AcaoPopoverProp
                         {proximaAcaoDate ? format(proximaAcaoDate, "dd/MM/yy", { locale: ptBR }) : "Data"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 z-[400]" align="start">
+                    <PopoverContent className="w-auto p-0 z-[10000]" align="start">
                       <Calendar
                         mode="single"
                         selected={proximaAcaoDate}

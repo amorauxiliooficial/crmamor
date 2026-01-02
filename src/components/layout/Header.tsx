@@ -1,4 +1,4 @@
-import { Heart, Search, Bell, LogOut, UserPlus, BookOpen } from "lucide-react";
+import { Heart, Search, LogOut, UserPlus, BookOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,14 +12,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { IndicacoesNotificacao } from "@/components/indicacoes/IndicacoesNotificacao";
+import { Indicacao } from "@/types/indicacao";
 
 interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onAddMae?: () => void;
+  onSelectIndicacao?: (indicacao: Indicacao) => void;
 }
 
-export function Header({ searchQuery, onSearchChange, onAddMae }: HeaderProps) {
+export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicacao }: HeaderProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -76,9 +79,7 @@ export function Header({ searchQuery, onSearchChange, onAddMae }: HeaderProps) {
             <span className="hidden sm:inline">Playbook</span>
           </Button>
           
-          <Button variant="ghost" size="icon">
-            <Bell className="h-5 w-5" />
-          </Button>
+          <IndicacoesNotificacao onSelectIndicacao={onSelectIndicacao} />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
