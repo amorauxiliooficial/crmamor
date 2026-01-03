@@ -13,8 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { IndicacaoDialog } from "./IndicacaoDialog";
 import { IndicacaoFormDialog } from "./IndicacaoFormDialog";
 import { AcaoPopover } from "./AcaoPopover";
-import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle, CalendarClock, AlertTriangle } from "lucide-react";
-import { format, parseISO, isPast, differenceInMinutes } from "date-fns";
+import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface IndicacoesTabProps {
@@ -116,21 +116,6 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
       concluidos: indicacoes.filter((i) => i.status_abordagem === "concluido").length,
     };
   }, [indicacoes]);
-
-  const getProximaAcaoStatus = (indicacao: Indicacao) => {
-    if (!indicacao.proxima_acao_data) return null;
-    const dataAcao = parseISO(indicacao.proxima_acao_data);
-    const agora = new Date();
-    const minAtrasados = differenceInMinutes(agora, dataAcao);
-    
-    if (minAtrasados >= 5) {
-      return "atrasada";
-    } else if (isPast(dataAcao)) {
-      return "proxima"; // Atrasada menos de 5 min
-    }
-    return "agendada";
-  };
-
 
   const handleRowClick = (indicacao: Indicacao, e: React.MouseEvent) => {
     // Prevent opening dialog when clicking on select or dropdown
@@ -361,32 +346,6 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                         indicacaoId={indicacao.id} 
                         onSuccess={fetchIndicacoes}
                       />
-                      {indicacao.proxima_acao && indicacao.proxima_acao_data && (
-                        <div className="flex items-center gap-1">
-                          {getProximaAcaoStatus(indicacao) === "atrasada" && (
-                            <Badge variant="destructive" className="text-[10px] px-1 py-0 h-5 flex items-center gap-1">
-                              <AlertTriangle className="h-3 w-3" />
-                              ATRASADA
-                            </Badge>
-                          )}
-                          {getProximaAcaoStatus(indicacao) === "proxima" && (
-                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-5 border-amber-500 text-amber-600 flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              EM BREVE
-                            </Badge>
-                          )}
-                          <span className={`text-xs flex items-center gap-1 ${
-                            getProximaAcaoStatus(indicacao) === "atrasada" 
-                              ? "text-destructive font-medium" 
-                              : getProximaAcaoStatus(indicacao) === "proxima"
-                                ? "text-amber-600 font-medium"
-                                : "text-muted-foreground"
-                          }`}>
-                            <CalendarClock className="h-3 w-3" />
-                            {format(parseISO(indicacao.proxima_acao_data), "dd/MM HH:mm", { locale: ptBR })}
-                          </span>
-                        </div>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>

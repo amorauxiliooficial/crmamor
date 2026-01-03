@@ -35,6 +35,8 @@ export function AcaoPopover({ indicacaoId, onSuccess, trigger }: AcaoPopoverProp
   const [proximaAcaoTime, setProximaAcaoTime] = useState("09:00");
   const [proximaAcaoObservacao, setProximaAcaoObservacao] = useState("");
 
+  const [savingProximaAcao, setSavingProximaAcao] = useState(false);
+
   const handleRegistrar = async () => {
     if (!user) return;
     setSaving(true);
@@ -97,6 +99,58 @@ export function AcaoPopover({ indicacaoId, onSuccess, trigger }: AcaoPopoverProp
     setOpen(false);
     onSuccess();
     setSaving(false);
+  };
+
+  const handleSalvarProximaAcao = async () => {
+    if (!user) return;
+    if (!proximaAcao || !proximaAcaoDate) {
+      toast({
+        variant: "destructive",
+        title: "Campos obrigatórios",
+        description: "Selecione o tipo e a data da próxima ação.",
+      });
+      return;
+    }
+
+    setSavingProximaAcao(true);
+
+    const [hours, minutes] = proximaAcaoTime.split(":").map(Number);
+    const dateWithTime = new Date(proximaAcaoDate);
+    dateWithTime.setHours(hours, minutes, 0, 0);
+    const proximaAcaoDatetime = dateWithTime.toISOString();
+
+    const { error: updateError } = await supabase
+      .from("indicacoes")
+      .update({
+        proxima_acao: proximaAcao,
+        proxima_acao_data: proximaAcaoDatetime,
+        proxima_acao_observacao: proximaAcaoObservacao || null,
+      })
+      .eq("id", indicacaoId);
+
+    if (updateError) {
+      logError("salvar_proxima_acao", updateError);
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description: getUserFriendlyError(updateError),
+      });
+      setSavingProximaAcao(false);
+      return;
+    }
+
+    toast({
+      title: "Próxima ação salva",
+      description: "O agendamento foi salvo com sucesso.",
+    });
+
+    setProximaAcao("");
+    setProximaAcaoDate(undefined);
+    setProximaAcaoTime("09:00");
+    setProximaAcaoObservacao("");
+    setOpen(false);
+    onSuccess();
+    setSavingProximaAcao(false);
   };
 
   return (
@@ -230,6 +284,16 @@ export function AcaoPopover({ indicacaoId, onSuccess, trigger }: AcaoPopoverProp
                   placeholder="Detalhes da próxima ação..."
                   className="text-sm"
                 />
+                <Button
+                  onClick={handleSalvarProximaAcao}
+                  disabled={savingProximaAcao || !proximaAcao || !proximaAcaoDate}
+                  variant="secondary"
+                  className="w-full"
+                  size="sm"
+                >
+                  {savingProximaAcao && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Salvar Próxima Ação
+                </Button>
               </div>
             </div>
 
@@ -240,7 +304,7 @@ export function AcaoPopover({ indicacaoId, onSuccess, trigger }: AcaoPopoverProp
               size="sm"
             >
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Registrar
+              Registrar Ação
             </Button>
           </div>
         </ScrollArea>
