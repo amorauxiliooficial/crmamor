@@ -11,11 +11,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { Indicacao, StatusAbordagem, statusAbordagemLabels, MotivoAbordagem, motivoAbordagemLabels, AcaoIndicacao } from "@/types/indicacao";
-import { Loader2, Trash2, History, User, Plus } from "lucide-react";
+import { Loader2, Trash2, History, User } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AcaoPopover } from "./AcaoPopover";
 
 interface IndicacaoDialogProps {
   indicacao: Indicacao | null;
@@ -133,11 +132,10 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
     setLoading(false);
   };
 
-  const handleAcaoSuccess = () => {
+  const refetchAcoes = () => {
     if (indicacao) {
       fetchAcoes(indicacao.id);
     }
-    onSuccess();
   };
 
   if (!indicacao) return null;
@@ -239,18 +237,6 @@ export function IndicacaoDialog({ indicacao, open, onOpenChange, onSuccess }: In
                 rows={2}
               />
             </div>
-
-            {/* Botão Ação com Popover */}
-            <AcaoPopover
-              indicacaoId={indicacao.id}
-              onSuccess={handleAcaoSuccess}
-              trigger={
-                <Button type="button" variant="default" className="w-full flex items-center justify-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  <span>Ação</span>
-                </Button>
-              }
-            />
 
             {/* Histórico de Ações */}
             <div className="space-y-2 border-t pt-4">
