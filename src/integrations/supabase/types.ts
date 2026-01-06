@@ -324,6 +324,7 @@ export type Database = {
           id: string
           ordem: number | null
           requer_assinatura: boolean
+          tempo_estimado: number | null
           tipo: string
           titulo: string
           updated_at: string
@@ -338,6 +339,7 @@ export type Database = {
           id?: string
           ordem?: number | null
           requer_assinatura?: boolean
+          tempo_estimado?: number | null
           tipo?: string
           titulo: string
           updated_at?: string
@@ -352,6 +354,7 @@ export type Database = {
           id?: string
           ordem?: number | null
           requer_assinatura?: boolean
+          tempo_estimado?: number | null
           tipo?: string
           titulo?: string
           updated_at?: string

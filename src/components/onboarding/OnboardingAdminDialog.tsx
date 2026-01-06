@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { OnboardingItem } from "@/types/onboarding";
-import { Plus, Trash2, GripVertical, Loader2, Upload, Play, FileText, PenLine, FileCheck } from "lucide-react";
+import { Plus, Trash2, GripVertical, Loader2, Upload, Play, FileText, PenLine, FileCheck, Clock } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -50,6 +50,7 @@ export function OnboardingAdminDialog({
     url_video: "",
     arquivo_url: "",
     requer_assinatura: false,
+    tempo_estimado: 5,
   });
 
   const fetchItems = async () => {
@@ -130,6 +131,7 @@ export function OnboardingAdminDialog({
       url_video: newItem.url_video || null,
       arquivo_url: newItem.arquivo_url || null,
       requer_assinatura: newItem.requer_assinatura,
+      tempo_estimado: newItem.tempo_estimado,
       ordem: maxOrdem + 1,
     });
 
@@ -152,6 +154,7 @@ export function OnboardingAdminDialog({
         url_video: "",
         arquivo_url: "",
         requer_assinatura: false,
+        tempo_estimado: 5,
       });
       fetchItems();
       onRefresh();
@@ -393,6 +396,27 @@ export function OnboardingAdminDialog({
                 </div>
               )}
 
+              <div className="grid gap-2">
+                <Label htmlFor="tempo_estimado" className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Tempo estimado (minutos)
+                </Label>
+                <Input
+                  id="tempo_estimado"
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={newItem.tempo_estimado}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, tempo_estimado: parseInt(e.target.value) || 5 })
+                  }
+                  placeholder="5"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Usado para calcular o tempo total de conclusão do onboarding
+                </p>
+              </div>
+
               <Button onClick={handleAddItem} disabled={saving} className="w-full">
                 {saving ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -425,6 +449,7 @@ export function OnboardingAdminDialog({
                         <p className="font-medium text-sm truncate">{item.titulo}</p>
                         <p className="text-xs text-muted-foreground">
                           {getCategoryLabel(item.categoria)}
+                          {item.tempo_estimado && ` • ${item.tempo_estimado} min`}
                           {item.url_video && " • Com vídeo"}
                           {item.arquivo_url && " • Com arquivo"}
                           {item.requer_assinatura && " • Requer assinatura"}

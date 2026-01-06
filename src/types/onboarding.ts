@@ -9,6 +9,7 @@ export interface OnboardingItem {
   url_video?: string;
   arquivo_url?: string;
   requer_assinatura: boolean;
+  tempo_estimado?: number; // em minutos
   created_at: string;
   updated_at: string;
 }
