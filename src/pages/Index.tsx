@@ -139,17 +139,27 @@ const Index = () => {
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   };
 
+  const isDppAtiva = (dpp: Date) => {
+    const hoje = new Date();
+    const diasDesdeDpp = Math.floor(
+      (hoje.getTime() - dpp.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    // Inclui gestantes com DPP no futuro e até 30 dias após a DPP
+    return diasDesdeDpp <= 30;
+  };
+
   const filteredMaes = useMemo(() => {
     let filtered = maes;
     
     // Apply gestantes filter
     if (statusFilter === "gestantes") {
       filtered = filtered.filter((mae) => {
+        if (!mae.is_gestante) return false;
         if (mae.data_evento_tipo !== "DPP" || !mae.data_evento) return false;
         const dpp = parseISO(mae.data_evento);
-        return dpp > new Date();
+        return isDppAtiva(dpp);
       });
-    } 
+    }
     // Apply status filter
     else if (statusFilter !== "all") {
       filtered = filtered.filter((mae) => mae.status_processo === statusFilter);
@@ -171,12 +181,13 @@ const Index = () => {
     return filtered;
   }, [searchQuery, maes, statusFilter]);
 
-  // Filter only gestantes (mothers with DPP and future date)
+  // Filter only gestantes (is_gestante = true, DPP no futuro ou até 30 dias após a DPP)
   const gestantes = useMemo(() => {
     return maes.filter((m) => {
+      if (!m.is_gestante) return false;
       if (m.data_evento_tipo !== "DPP" || !m.data_evento) return false;
       const dpp = parseISO(m.data_evento);
-      return dpp > new Date();
+      return isDppAtiva(dpp);
     });
   }, [maes]);
 
