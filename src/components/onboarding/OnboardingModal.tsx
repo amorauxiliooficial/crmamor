@@ -515,10 +515,10 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
 
       {/* Preview Modal */}
       <Dialog open={!!previewUrl} onOpenChange={(open) => !open && setPreviewUrl(null)}>
-        <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
-          <DialogHeader className="p-4 border-b flex-shrink-0">
+        <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0" aria-describedby={undefined}>
+          <div className="p-4 border-b flex-shrink-0">
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-lg">{previewTitle}</DialogTitle>
+              <h2 className="text-lg font-semibold">{previewTitle}</h2>
               <div className="flex items-center gap-2">
                 {previewUrl && (
                   <>
@@ -553,7 +553,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                 </Button>
               </div>
             </div>
-          </DialogHeader>
+          </div>
           
           <div className="flex-1 min-h-0 bg-muted/30">
             {previewType === "pdf" && previewUrl && (
