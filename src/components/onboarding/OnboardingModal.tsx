@@ -25,7 +25,8 @@ import {
   CheckCircle2,
   Trophy,
   ArrowRight,
-  ExternalLink
+  ExternalLink,
+  KeyRound
 } from "lucide-react";
 import { OnboardingItem, OnboardingProgresso } from "@/types/onboarding";
 import confetti from "canvas-confetti";
@@ -239,6 +240,8 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
         return <FileText className="h-4 w-4 text-blue-500" />;
       case "assinatura":
         return <PenLine className="h-4 w-4 text-purple-500" />;
+      case "acesso_sistema":
+        return <KeyRound className="h-4 w-4 text-green-500" />;
       default:
         return <FileCheck className="h-4 w-4 text-muted-foreground" />;
     }
