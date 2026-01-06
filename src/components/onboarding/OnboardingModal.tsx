@@ -26,7 +26,10 @@ import {
   Trophy,
   ArrowRight,
   ExternalLink,
-  KeyRound
+  KeyRound,
+  X,
+  Eye,
+  Maximize2
 } from "lucide-react";
 import { OnboardingItem, OnboardingProgresso } from "@/types/onboarding";
 import confetti from "canvas-confetti";
@@ -45,6 +48,9 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
   const [hasShownConfetti, setHasShownConfetti] = useState(false);
   const [hasNotifiedComplete, setHasNotifiedComplete] = useState(false);
   const prevCompleteRef = useRef(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewType, setPreviewType] = useState<"pdf" | "video" | null>(null);
+  const [previewTitle, setPreviewTitle] = useState<string>("");
 
   const fetchData = async () => {
     if (!user) return;
@@ -349,66 +355,66 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                     {/* Quick action buttons */}
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {item.url_video && (
-                        <a
-                          href={item.url_video}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center h-7 px-2 text-xs gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
-                        >
-                          <Play className="h-3.5 w-3.5" />
-                          Assistir
-                        </a>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewUrl(item.url_video!);
+                              setPreviewType("video");
+                              setPreviewTitle(item.titulo);
+                            }}
+                            className="h-7 px-2 text-xs gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            Ver
+                          </Button>
+                          <a
+                            href={item.url_video}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground rounded-md transition-colors"
+                            title="Abrir em nova aba"
+                          >
+                            <Maximize2 className="h-3 w-3" />
+                          </a>
+                        </>
                       )}
                       {item.arquivo_url && (
-                        <a
-                          href={item.arquivo_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                          Baixar PDF
-                        </a>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewUrl(item.arquivo_url!);
+                              setPreviewType("pdf");
+                              setPreviewTitle(item.titulo);
+                            }}
+                            className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            Ver PDF
+                          </Button>
+                          <a
+                            href={item.arquivo_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground rounded-md transition-colors"
+                            title="Baixar PDF"
+                          >
+                            <Download className="h-3 w-3" />
+                          </a>
+                        </>
                       )}
                     </div>
                   </div>
                   {item.descricao && (
                     <p className="text-xs text-muted-foreground mt-1 ml-6">{item.descricao}</p>
-                  )}
-                  {/* Show clickable links below description */}
-                  {(item.url_video || item.arquivo_url) && (
-                    <div className="ml-6 mt-2 flex flex-wrap gap-2">
-                      {item.url_video && (
-                        <a
-                          href={item.url_video}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          {item.url_video.length > 40 ? item.url_video.substring(0, 40) + "..." : item.url_video}
-                        </a>
-                      )}
-                      {item.arquivo_url && (
-                        <a
-                          href={item.arquivo_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <FileText className="h-3 w-3" />
-                          {item.arquivo_url.includes('/') 
-                            ? decodeURIComponent(item.arquivo_url.split('/').pop() || 'Documento')
-                            : item.arquivo_url.substring(0, 30)}
-                        </a>
-                      )}
-                    </div>
                   )}
                 </div>
               </div>
@@ -506,6 +512,110 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
           )}
         </div>
       </DialogContent>
+
+      {/* Preview Modal */}
+      <Dialog open={!!previewUrl} onOpenChange={(open) => !open && setPreviewUrl(null)}>
+        <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
+          <DialogHeader className="p-4 border-b flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-lg">{previewTitle}</DialogTitle>
+              <div className="flex items-center gap-2">
+                {previewUrl && (
+                  <>
+                    <a
+                      href={previewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted transition-colors"
+                    >
+                      <Maximize2 className="h-3.5 w-3.5" />
+                      Abrir em nova aba
+                    </a>
+                    {previewType === "pdf" && (
+                      <a
+                        href={previewUrl}
+                        download
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted transition-colors"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Baixar
+                      </a>
+                    )}
+                  </>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setPreviewUrl(null)}
+                  className="h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="flex-1 min-h-0 bg-muted/30">
+            {previewType === "pdf" && previewUrl && (
+              <iframe
+                src={`${previewUrl}#toolbar=1&navpanes=0`}
+                className="w-full h-full border-0"
+                title={previewTitle}
+              />
+            )}
+            {previewType === "video" && previewUrl && (
+              <div className="w-full h-full flex items-center justify-center p-4">
+                {previewUrl.includes("youtube.com") || previewUrl.includes("youtu.be") ? (
+                  <iframe
+                    src={getYouTubeEmbedUrl(previewUrl)}
+                    className="w-full h-full rounded-lg"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={previewTitle}
+                  />
+                ) : previewUrl.includes("vimeo.com") ? (
+                  <iframe
+                    src={getVimeoEmbedUrl(previewUrl)}
+                    className="w-full h-full rounded-lg"
+                    allow="autoplay; fullscreen; picture-in-picture"
+                    allowFullScreen
+                    title={previewTitle}
+                  />
+                ) : (
+                  <div className="text-center space-y-4">
+                    <p className="text-muted-foreground">
+                      Visualização não disponível para este tipo de vídeo.
+                    </p>
+                    <a
+                      href={previewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Abrir vídeo em nova aba
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
+
+  function getYouTubeEmbedUrl(url: string): string {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    const videoId = match && match[2].length === 11 ? match[2] : null;
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+  }
+
+  function getVimeoEmbedUrl(url: string): string {
+    const regExp = /vimeo\.com\/(\d+)/;
+    const match = url.match(regExp);
+    const videoId = match ? match[1] : null;
+    return videoId ? `https://player.vimeo.com/video/${videoId}` : url;
+  }
 }
