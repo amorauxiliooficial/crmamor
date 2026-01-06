@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { OnboardingItem } from "@/types/onboarding";
-import { Plus, Trash2, GripVertical, Loader2, Upload, Play, FileText, PenLine, FileCheck, Clock, Pencil, X, Check } from "lucide-react";
+import { Plus, Trash2, GripVertical, Loader2, Upload, Play, FileText, PenLine, FileCheck, Clock, Pencil, X, Check, KeyRound } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
@@ -361,6 +361,8 @@ export function OnboardingAdminDialog({
         return <FileText className="h-4 w-4 text-blue-500" />;
       case "assinatura":
         return <PenLine className="h-4 w-4 text-purple-500" />;
+      case "acesso_sistema":
+        return <KeyRound className="h-4 w-4 text-green-500" />;
       default:
         return <FileCheck className="h-4 w-4 text-muted-foreground" />;
     }
@@ -480,6 +482,12 @@ export function OnboardingAdminDialog({
                       <div className="flex items-center gap-2">
                         <PenLine className="h-4 w-4 text-purple-500" />
                         Documento para assinar
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="acesso_sistema">
+                      <div className="flex items-center gap-2">
+                        <KeyRound className="h-4 w-4 text-green-500" />
+                        Acesso ao sistema
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -661,6 +669,7 @@ export function OnboardingAdminDialog({
                                             <SelectItem value="video">Vídeo</SelectItem>
                                             <SelectItem value="documento">Documento</SelectItem>
                                             <SelectItem value="assinatura">Assinatura</SelectItem>
+                                            <SelectItem value="acesso_sistema">Acesso ao sistema</SelectItem>
                                           </SelectContent>
                                         </Select>
                                       </div>
