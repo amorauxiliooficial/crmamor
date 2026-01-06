@@ -430,25 +430,25 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                     </div>
                   </div>
                   {item.descricao && (
-                    <p className="text-xs text-muted-foreground mt-1 ml-6">{item.descricao}</p>
+                    <p className="text-xs text-muted-foreground mt-1 ml-0 sm:ml-6">{item.descricao}</p>
                   )}
                   {/* Credenciais do sistema com toggle de senha */}
                   {item.tipo === "acesso_sistema" && item.login_sistema && (
-                    <div className="mt-3 ml-6 p-3 bg-muted/50 rounded-lg border overflow-hidden">
+                    <div className="mt-3 ml-0 sm:ml-6 p-2 sm:p-3 bg-muted/50 rounded-lg border max-w-full">
                       <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
                         <KeyRound className="h-3 w-3 flex-shrink-0" />
                         Suas Credenciais
                       </p>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 flex-wrap">
+                      <div className="space-y-2 min-w-0">
+                        <div className="flex items-start gap-2 min-w-0">
                           <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Login:</span>
-                          <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all max-w-full overflow-hidden">
+                          <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all flex-1 min-w-0 overflow-x-auto">
                             {item.login_sistema}
                           </code>
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-start gap-2 min-w-0 flex-wrap">
                           <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Senha:</span>
-                          <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all overflow-hidden">
+                          <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all flex-1 min-w-0 overflow-x-auto">
                             {visiblePasswords[item.id] ? item.senha_sistema : "••••••••"}
                           </code>
                           <Button
@@ -482,7 +482,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="w-[min(96vw,56rem)] max-w-none max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-center gap-3">
             {isComplete ? (
@@ -495,7 +495,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                 {isComplete ? "🎉 Onboarding Concluído!" : "Bem-vindo(a) ao Sistema!"}
               </DialogTitle>
               <DialogDescription>
-                {isComplete 
+                {isComplete
                   ? "Parabéns! Você completou todo o onboarding."
                   : "Complete os itens abaixo para começar a usar o sistema."}
               </DialogDescription>
@@ -525,7 +525,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
         </div>
 
         {/* Items List with visible scrollbar */}
-        <div className="flex-1 min-h-0 max-h-[400px] py-4 overflow-y-scroll scrollbar-always-visible pr-2">
+        <div className="flex-1 min-h-0 py-4 overflow-y-auto overflow-x-hidden scrollbar-always-visible pr-2">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
