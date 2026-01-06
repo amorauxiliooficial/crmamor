@@ -28,7 +28,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import { OnboardingItem, OnboardingProgresso } from "@/types/onboarding";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import confetti from "canvas-confetti";
 
 interface OnboardingModalProps {
@@ -481,6 +481,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
               )}
             </div>
           )}
+          <ScrollBar alwaysVisible className="bg-muted/30" />
         </ScrollArea>
 
         {/* Footer */}
