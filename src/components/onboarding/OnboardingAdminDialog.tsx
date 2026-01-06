@@ -393,21 +393,21 @@ export function OnboardingAdminDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Gerenciar Itens de Onboarding</DialogTitle>
           <DialogDescription>
             Adicione treinamentos, documentos, vídeos e controle de assinaturas.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="add" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="add" className="w-full flex-1 flex flex-col min-h-0 overflow-hidden">
+          <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
             <TabsTrigger value="add">Adicionar Novo</TabsTrigger>
             <TabsTrigger value="manage">Gerenciar Itens</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="add" className="space-y-4 mt-4">
+          <TabsContent value="add" className="space-y-4 mt-4 flex-1 overflow-y-auto pr-2">
             <div className="grid gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
