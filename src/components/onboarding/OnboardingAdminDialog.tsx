@@ -22,8 +22,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { OnboardingItem } from "@/types/onboarding";
 import { Plus, Trash2, GripVertical, Loader2, Upload, Play, FileText, PenLine, FileCheck, Clock } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 interface OnboardingAdminDialogProps {
   open: boolean;
@@ -200,6 +200,53 @@ export function OnboardingAdminDialog({
       fetchItems();
       onRefresh();
     }
+  };
+
+  const handleDragEnd = async (result: DropResult) => {
+    if (!result.destination) return;
+
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    if (sourceIndex === destinationIndex) return;
+
+    // Reorder locally first for immediate UI feedback
+    const reorderedItems = Array.from(items);
+    const [movedItem] = reorderedItems.splice(sourceIndex, 1);
+    reorderedItems.splice(destinationIndex, 0, movedItem);
+
+    // Update local state
+    setItems(reorderedItems);
+
+    // Update order in database
+    const updates = reorderedItems.map((item, index) => ({
+      id: item.id,
+      ordem: index + 1,
+    }));
+
+    for (const update of updates) {
+      const { error } = await supabase
+        .from("onboarding_items")
+        .update({ ordem: update.ordem })
+        .eq("id", update.id);
+
+      if (error) {
+        console.error("Error updating order:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro ao reordenar",
+          description: "Não foi possível salvar a nova ordem.",
+        });
+        fetchItems(); // Revert to original order
+        return;
+      }
+    }
+
+    toast({
+      title: "Ordem atualizada",
+      description: "Os itens foram reordenados com sucesso.",
+    });
+    onRefresh();
   };
 
   const getTypeIcon = (tipo: string) => {
@@ -434,45 +481,63 @@ export function OnboardingAdminDialog({
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <div className="h-[400px] overflow-y-scroll scrollbar-always-visible pr-2">
-                <div className="space-y-2 pr-2">
-                  {items.map((item) => (
-                    <div
-                      key={item.id}
-                      className={`flex items-center gap-3 p-3 border rounded-lg ${
-                        item.ativo ? "bg-background" : "bg-muted/50 opacity-60"
-                      }`}
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="onboarding-items">
+                  {(provided) => (
+                    <div 
+                      className="h-[400px] overflow-y-scroll scrollbar-always-visible pr-2"
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
                     >
-                      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                      {getTypeIcon(item.tipo)}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{item.titulo}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {getCategoryLabel(item.categoria)}
-                          {item.tempo_estimado && ` • ${item.tempo_estimado} min`}
-                          {item.url_video && " • Com vídeo"}
-                          {item.arquivo_url && " • Com arquivo"}
-                          {item.requer_assinatura && " • Requer assinatura"}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={item.ativo}
-                          onCheckedChange={() => handleToggleActive(item)}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(item.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div className="space-y-2 pr-2">
+                        {items.map((item, index) => (
+                          <Draggable key={item.id} draggableId={item.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`flex items-center gap-3 p-3 border rounded-lg transition-shadow ${
+                                  item.ativo ? "bg-background" : "bg-muted/50 opacity-60"
+                                } ${snapshot.isDragging ? "shadow-lg ring-2 ring-primary/20" : ""}`}
+                              >
+                                <div {...provided.dragHandleProps}>
+                                  <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab hover:text-foreground transition-colors" />
+                                </div>
+                                {getTypeIcon(item.tipo)}
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm truncate">{item.titulo}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {getCategoryLabel(item.categoria)}
+                                    {item.tempo_estimado && ` • ${item.tempo_estimado} min`}
+                                    {item.url_video && " • Com vídeo"}
+                                    {item.arquivo_url && " • Com arquivo"}
+                                    {item.requer_assinatura && " • Requer assinatura"}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Switch
+                                    checked={item.ativo}
+                                    onCheckedChange={() => handleToggleActive(item)}
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDelete(item.id)}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             )}
           </TabsContent>
         </Tabs>
