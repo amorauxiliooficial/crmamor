@@ -144,9 +144,12 @@ export function OnboardingCard() {
   const remainingCount = items.length - completedCount;
   const progressPercentage = items.length > 0 ? (completedCount / items.length) * 100 : 0;
   
-  // Tempo estimado: 3 minutos por item restante
-  const MINUTES_PER_ITEM = 3;
-  const estimatedMinutes = remainingCount * MINUTES_PER_ITEM;
+  // Soma o tempo estimado dos itens não concluídos
+  const estimatedMinutes = useMemo(() => {
+    return items
+      .filter((item) => !isItemCompleted(item.id))
+      .reduce((total, item) => total + (item.tempo_estimado || 5), 0);
+  }, [items, progresso]);
   
   const formatEstimatedTime = (minutes: number) => {
     if (minutes === 0) return "Concluído!";
