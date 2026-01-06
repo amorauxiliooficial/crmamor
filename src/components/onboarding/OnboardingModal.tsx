@@ -433,41 +433,60 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                     <p className="text-xs text-muted-foreground mt-1 ml-0 sm:ml-6">{item.descricao}</p>
                   )}
                   {/* Credenciais do sistema com toggle de senha */}
-                  {item.tipo === "acesso_sistema" && item.login_sistema && (
+                  {item.tipo === "acesso_sistema" && (item.login_sistema || item.url_sistema) && (
                     <div className="mt-3 ml-0 sm:ml-6 p-2 sm:p-3 bg-muted/50 rounded-lg border max-w-full">
                       <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
                         <KeyRound className="h-3 w-3 flex-shrink-0" />
                         Suas Credenciais
                       </p>
                       <div className="space-y-2 min-w-0">
-                        <div className="flex items-start gap-2 min-w-0">
-                          <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Login:</span>
-                          <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all flex-1 min-w-0 overflow-x-auto">
-                            {item.login_sistema}
-                          </code>
-                        </div>
-                        <div className="flex items-start gap-2 min-w-0 flex-wrap">
-                          <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Senha:</span>
-                          <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all flex-1 min-w-0 overflow-x-auto">
-                            {visiblePasswords[item.id] ? item.senha_sistema : "••••••••"}
-                          </code>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              togglePasswordVisibility(item.id);
-                            }}
-                            className="h-6 px-2 text-xs gap-1 flex-shrink-0"
-                          >
-                            {visiblePasswords[item.id] ? (
-                              <EyeOff className="h-3 w-3" />
-                            ) : (
-                              <Eye className="h-3 w-3" />
-                            )}
-                            {visiblePasswords[item.id] ? "Ocultar" : "Ver"}
-                          </Button>
-                        </div>
+                        {item.url_sistema && (
+                          <div className="flex items-start gap-2 min-w-0">
+                            <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Link:</span>
+                            <a
+                              href={item.url_sistema}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs text-primary hover:underline flex items-center gap-1 break-all flex-1 min-w-0"
+                            >
+                              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                              Acessar Sistema
+                            </a>
+                          </div>
+                        )}
+                        {item.login_sistema && (
+                          <div className="flex items-start gap-2 min-w-0">
+                            <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Login:</span>
+                            <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all flex-1 min-w-0 overflow-x-auto">
+                              {item.login_sistema}
+                            </code>
+                          </div>
+                        )}
+                        {item.senha_sistema && (
+                          <div className="flex items-start gap-2 min-w-0 flex-wrap">
+                            <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Senha:</span>
+                            <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all flex-1 min-w-0 overflow-x-auto">
+                              {visiblePasswords[item.id] ? item.senha_sistema : "••••••••"}
+                            </code>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                togglePasswordVisibility(item.id);
+                              }}
+                              className="h-6 px-2 text-xs gap-1 flex-shrink-0"
+                            >
+                              {visiblePasswords[item.id] ? (
+                                <EyeOff className="h-3 w-3" />
+                              ) : (
+                                <Eye className="h-3 w-3" />
+                              )}
+                              {visiblePasswords[item.id] ? "Ocultar" : "Ver"}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
