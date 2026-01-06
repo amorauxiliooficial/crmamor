@@ -57,6 +57,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     senha_gov: "",
     verificacao_duas_etapas: false,
     is_gestante: false,
+    mes_gestacao: null as number | null,
   });
 
   useEffect(() => {
@@ -82,6 +83,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
         senha_gov: mae.senha_gov || "",
         verificacao_duas_etapas: mae.verificacao_duas_etapas ?? false,
         is_gestante: mae.is_gestante ?? false,
+        mes_gestacao: mae.mes_gestacao ?? null,
       });
     }
   }, [mae]);
@@ -150,6 +152,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
         senha_gov: formData.senha_gov || null,
         verificacao_duas_etapas: formData.verificacao_duas_etapas,
         is_gestante: formData.is_gestante,
+        mes_gestacao: formData.is_gestante ? formData.mes_gestacao : null,
       })
       .eq("id", mae.id);
 
@@ -420,16 +423,47 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           </div>
 
           {/* Gestante */}
-          <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg">
-            <div>
-              <Label htmlFor="is_gestante" className="font-medium">Gestante</Label>
-              <p className="text-sm text-muted-foreground">A cliente está grávida?</p>
+          <div className="space-y-4 p-4 bg-primary/10 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="is_gestante" className="font-medium">Gestante</Label>
+                <p className="text-sm text-muted-foreground">A cliente está grávida?</p>
+              </div>
+              <Switch
+                id="is_gestante"
+                checked={formData.is_gestante}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_gestante: checked, mes_gestacao: checked ? formData.mes_gestacao : null })}
+              />
             </div>
-            <Switch
-              id="is_gestante"
-              checked={formData.is_gestante}
-              onCheckedChange={(checked) => setFormData({ ...formData, is_gestante: checked })}
-            />
+            
+            {formData.is_gestante && (
+              <div className="space-y-2 pt-2 border-t border-primary/20">
+                <Label htmlFor="mes_gestacao">Mês de Gestação</Label>
+                <Select
+                  value={formData.mes_gestacao?.toString() || "auto"}
+                  onValueChange={(value) => setFormData({ ...formData, mes_gestacao: value === "auto" ? null : parseInt(value) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o mês" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Calcular automaticamente (DPP)</SelectItem>
+                    <SelectItem value="1">1º Mês</SelectItem>
+                    <SelectItem value="2">2º Mês</SelectItem>
+                    <SelectItem value="3">3º Mês</SelectItem>
+                    <SelectItem value="4">4º Mês</SelectItem>
+                    <SelectItem value="5">5º Mês</SelectItem>
+                    <SelectItem value="6">6º Mês</SelectItem>
+                    <SelectItem value="7">7º Mês</SelectItem>
+                    <SelectItem value="8">8º Mês</SelectItem>
+                    <SelectItem value="9">9º Mês</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Se não informado, será calculado com base na DPP
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Contrato */}

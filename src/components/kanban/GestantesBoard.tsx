@@ -16,9 +16,17 @@ interface GestantesBoardProps {
   onRefresh?: () => void;
 }
 
-// Calculate pregnancy month based on DPP (expected delivery date)
-// Pregnancy lasts ~9 months, so we calculate backwards from DPP
-function calcularMesGravidez(dataEvento: string | undefined, dataEventoTipo: string | undefined): number | null {
+// Calculate pregnancy month based on DPP (expected delivery date) or manual setting
+function calcularMesGravidez(mae: MaeProcesso): number | null {
+  // Se tem mês manual definido, usa ele
+  if (mae.mes_gestacao !== null && mae.mes_gestacao !== undefined) {
+    return mae.mes_gestacao;
+  }
+  
+  // Caso contrário, calcula baseado na DPP
+  const dataEvento = mae.data_evento;
+  const dataEventoTipo = mae.data_evento_tipo;
+  
   if (!dataEvento || dataEventoTipo !== "DPP") return null;
   
   const dpp = parseISO(dataEvento);
@@ -54,7 +62,7 @@ export function GestantesBoard({ maes, onCardClick, onRefresh }: GestantesBoardP
     
     maes.forEach((mae) => {
       if (!mae.is_gestante) return;
-      const mes = calcularMesGravidez(mae.data_evento, mae.data_evento_tipo);
+      const mes = calcularMesGravidez(mae);
       if (mes !== null) {
         grupos[mes].push(mae);
       }

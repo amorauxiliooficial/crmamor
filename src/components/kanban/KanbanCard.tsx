@@ -1,9 +1,10 @@
 import { MaeProcesso } from "@/types/mae";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText } from "lucide-react";
+import { Calendar, FileText, Baby } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { differenceInMonths, parseISO } from "date-fns";
 
 interface KanbanCardProps {
   mae: MaeProcesso;
@@ -11,7 +12,31 @@ interface KanbanCardProps {
   isDragging?: boolean;
 }
 
+function calcularMesGravidez(mae: MaeProcesso): number | null {
+  if (!mae.is_gestante) return null;
+  
+  // Se tem mês manual definido, usa ele
+  if (mae.mes_gestacao !== null && mae.mes_gestacao !== undefined) {
+    return mae.mes_gestacao;
+  }
+  
+  // Caso contrário, calcula baseado na DPP
+  if (!mae.data_evento || mae.data_evento_tipo !== "DPP") return null;
+  
+  const dpp = parseISO(mae.data_evento);
+  const hoje = new Date();
+  
+  const diasDesdePartio = Math.floor((hoje.getTime() - dpp.getTime()) / (1000 * 60 * 60 * 24));
+  if (diasDesdePartio > 30) return null;
+  if (dpp < hoje) return 9;
+  
+  const mesesAteParto = differenceInMonths(dpp, hoje);
+  return Math.max(1, Math.min(9, 9 - mesesAteParto));
+}
+
 export function KanbanCard({ mae, onClick, isDragging }: KanbanCardProps) {
+  const mesGestacao = calcularMesGravidez(mae);
+  
   return (
     <Card
       className={cn(
@@ -26,11 +51,19 @@ export function KanbanCard({ mae, onClick, isDragging }: KanbanCardProps) {
             <h4 className="font-medium text-sm leading-tight line-clamp-2">
               {mae.nome_mae}
             </h4>
-            {mae.contrato_assinado && (
-              <Badge variant="secondary" className="shrink-0 text-xs">
-                Contrato
-              </Badge>
-            )}
+            <div className="flex gap-1 shrink-0">
+              {mae.is_gestante && mesGestacao && (
+                <Badge variant="secondary" className="text-xs bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
+                  <Baby className="h-3 w-3 mr-1" />
+                  {mesGestacao}º mês
+                </Badge>
+              )}
+              {mae.contrato_assinado && (
+                <Badge variant="secondary" className="text-xs">
+                  Contrato
+                </Badge>
+              )}
+            </div>
           </div>
 
           <p className="text-xs text-muted-foreground font-mono">
