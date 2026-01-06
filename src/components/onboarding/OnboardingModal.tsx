@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,10 +24,12 @@ import {
   Clock,
   CheckCircle2,
   Trophy,
-  ArrowRight
+  ArrowRight,
+  ExternalLink
 } from "lucide-react";
 import { OnboardingItem, OnboardingProgresso } from "@/types/onboarding";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import confetti from "canvas-confetti";
 
 interface OnboardingModalProps {
   open: boolean;
@@ -40,6 +42,8 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
   const [items, setItems] = useState<OnboardingItem[]>([]);
   const [progresso, setProgresso] = useState<OnboardingProgresso[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasShownConfetti, setHasShownConfetti] = useState(false);
+  const prevCompleteRef = useRef(false);
 
   const fetchData = async () => {
     if (!user) return;
@@ -138,7 +142,41 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
 
   const remainingCount = items.length - completedCount;
   const progressPercentage = items.length > 0 ? (completedCount / items.length) * 100 : 0;
-  const isComplete = progressPercentage === 100;
+  const isComplete = progressPercentage === 100 && items.length > 0;
+
+  // Trigger confetti when completing 100%
+  useEffect(() => {
+    if (isComplete && !hasShownConfetti && prevCompleteRef.current === false) {
+      setHasShownConfetti(true);
+      
+      // Fire confetti from both sides
+      const duration = 3000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+      const interval = setInterval(() => {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+        const particleCount = 50 * (timeLeft / duration);
+        
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+        });
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+        });
+      }, 250);
+    }
+    prevCompleteRef.current = isComplete;
+  }, [isComplete, hasShownConfetti]);
 
   const estimatedMinutes = useMemo(() => {
     return items
@@ -252,29 +290,90 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                   className="mt-0.5"
                 />
                 <div className="flex-1 min-w-0">
-                  <label
-                    htmlFor={item.id}
-                    className={`flex items-center gap-2 cursor-pointer text-sm ${
-                      completed ? "line-through text-muted-foreground" : ""
-                    }`}
-                  >
-                    {getTypeIcon(item.tipo)}
-                    <span className="font-medium">{item.titulo}</span>
-                    {item.tempo_estimado && (
-                      <span className="text-xs text-muted-foreground">({item.tempo_estimado} min)</span>
-                    )}
-                    {item.requer_assinatura && (
-                      <Badge variant="outline" className="text-xs">
-                        Requer assinatura
-                      </Badge>
-                    )}
-                  </label>
+                  <div className="flex items-start justify-between gap-2">
+                    <label
+                      htmlFor={item.id}
+                      className={`flex items-center gap-2 cursor-pointer text-sm ${
+                        completed ? "line-through text-muted-foreground" : ""
+                      }`}
+                    >
+                      {getTypeIcon(item.tipo)}
+                      <span className="font-medium">{item.titulo}</span>
+                      {item.tempo_estimado && (
+                        <span className="text-xs text-muted-foreground">({item.tempo_estimado} min)</span>
+                      )}
+                      {item.requer_assinatura && (
+                        <Badge variant="outline" className="text-xs">
+                          Requer assinatura
+                        </Badge>
+                      )}
+                    </label>
+                    {/* Quick action buttons */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {item.url_video && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(item.url_video, "_blank");
+                          }}
+                          className="h-7 px-2 text-xs gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Play className="h-3.5 w-3.5" />
+                          Assistir
+                        </Button>
+                      )}
+                      {item.arquivo_url && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(item.arquivo_url, "_blank");
+                          }}
+                          className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          Baixar PDF
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                   {item.descricao && (
                     <p className="text-xs text-muted-foreground mt-1 ml-6">{item.descricao}</p>
                   )}
-                  <div className="ml-6">
-                    {renderItemActions(item)}
-                  </div>
+                  {/* Show clickable links below description */}
+                  {(item.url_video || item.arquivo_url) && (
+                    <div className="ml-6 mt-2 flex flex-wrap gap-2">
+                      {item.url_video && (
+                        <a
+                          href={item.url_video}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          {item.url_video.length > 40 ? item.url_video.substring(0, 40) + "..." : item.url_video}
+                        </a>
+                      )}
+                      {item.arquivo_url && (
+                        <a
+                          href={item.arquivo_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <FileText className="h-3 w-3" />
+                          {item.arquivo_url.includes('/') 
+                            ? item.arquivo_url.split('/').pop() 
+                            : item.arquivo_url.substring(0, 30)}
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );
