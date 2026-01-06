@@ -434,8 +434,8 @@ export function OnboardingAdminDialog({
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <ScrollArea className="h-[400px]">
-                <div className="space-y-2 pr-4">
+              <div className="h-[400px] overflow-y-scroll scrollbar-always-visible pr-2">
+                <div className="space-y-2 pr-2">
                   {items.map((item) => (
                     <div
                       key={item.id}
@@ -472,7 +472,7 @@ export function OnboardingAdminDialog({
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
             )}
           </TabsContent>
         </Tabs>
