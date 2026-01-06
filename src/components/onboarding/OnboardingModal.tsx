@@ -349,32 +349,29 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                     {/* Quick action buttons */}
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {item.url_video && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(item.url_video, "_blank");
-                          }}
-                          className="h-7 px-2 text-xs gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        <a
+                          href={item.url_video}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center h-7 px-2 text-xs gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
                         >
                           <Play className="h-3.5 w-3.5" />
                           Assistir
-                        </Button>
+                        </a>
                       )}
                       {item.arquivo_url && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(item.arquivo_url, "_blank");
-                          }}
-                          className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        <a
+                          href={item.arquivo_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
                         >
                           <Download className="h-3.5 w-3.5" />
                           Baixar PDF
-                        </Button>
+                        </a>
                       )}
                     </div>
                   </div>
@@ -401,12 +398,13 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                           href={item.arquivo_url}
                           target="_blank"
                           rel="noopener noreferrer"
+                          download
                           className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <FileText className="h-3 w-3" />
                           {item.arquivo_url.includes('/') 
-                            ? item.arquivo_url.split('/').pop() 
+                            ? decodeURIComponent(item.arquivo_url.split('/').pop() || 'Documento')
                             : item.arquivo_url.substring(0, 30)}
                         </a>
                       )}
