@@ -43,6 +43,7 @@ export interface MaeProcesso {
   senha_gov?: string;
   verificacao_duas_etapas: boolean;
   is_gestante: boolean;
+  mes_gestacao?: number | null;
   data_ultima_atualizacao: string;
 }
 

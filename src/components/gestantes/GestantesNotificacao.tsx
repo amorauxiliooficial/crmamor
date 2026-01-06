@@ -24,7 +24,16 @@ interface VerificacaoRecord {
   observacoes: string | null;
 }
 
-function calcularMesGravidez(dataEvento: string | undefined, dataEventoTipo: string | undefined): number | null {
+function calcularMesGravidez(mae: MaeProcesso): number | null {
+  // Se tem mês manual definido, usa ele
+  if (mae.mes_gestacao !== null && mae.mes_gestacao !== undefined) {
+    return mae.mes_gestacao;
+  }
+  
+  // Caso contrário, calcula baseado na DPP
+  const dataEvento = mae.data_evento;
+  const dataEventoTipo = mae.data_evento_tipo;
+  
   if (!dataEvento || dataEventoTipo !== "DPP") return null;
   
   const dpp = parseISO(dataEvento);
@@ -69,7 +78,7 @@ export function GestantesNotificacao({ maes, onRefresh }: GestantesNotificacaoPr
   const gestantes7Mes = useMemo(() => {
     return maes.filter((mae) => {
       if (!mae.is_gestante) return false;
-      const mes = calcularMesGravidez(mae.data_evento, mae.data_evento_tipo);
+      const mes = calcularMesGravidez(mae);
       return mes === 7;
     });
   }, [maes]);
