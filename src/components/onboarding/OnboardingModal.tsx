@@ -434,21 +434,21 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                   )}
                   {/* Credenciais do sistema com toggle de senha */}
                   {item.tipo === "acesso_sistema" && item.login_sistema && (
-                    <div className="mt-3 ml-6 p-3 bg-muted/50 rounded-lg border">
+                    <div className="mt-3 ml-6 p-3 bg-muted/50 rounded-lg border overflow-hidden">
                       <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                        <KeyRound className="h-3 w-3" />
+                        <KeyRound className="h-3 w-3 flex-shrink-0" />
                         Suas Credenciais
                       </p>
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground w-12">Login:</span>
-                          <code className="text-xs bg-background px-2 py-1 rounded border font-mono">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Login:</span>
+                          <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all max-w-full overflow-hidden">
                             {item.login_sistema}
                           </code>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground w-12">Senha:</span>
-                          <code className="text-xs bg-background px-2 py-1 rounded border font-mono">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Senha:</span>
+                          <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all overflow-hidden">
                             {visiblePasswords[item.id] ? item.senha_sistema : "••••••••"}
                           </code>
                           <Button
@@ -458,7 +458,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                               e.stopPropagation();
                               togglePasswordVisibility(item.id);
                             }}
-                            className="h-6 px-2 text-xs gap-1"
+                            className="h-6 px-2 text-xs gap-1 flex-shrink-0"
                           >
                             {visiblePasswords[item.id] ? (
                               <EyeOff className="h-3 w-3" />
