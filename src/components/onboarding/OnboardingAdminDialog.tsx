@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { OnboardingItem } from "@/types/onboarding";
-import { Plus, Trash2, GripVertical, Loader2, Upload, Play, FileText, PenLine, FileCheck, Clock } from "lucide-react";
+import { Plus, Trash2, GripVertical, Loader2, Upload, Play, FileText, PenLine, FileCheck, Clock, Pencil, X, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
@@ -38,10 +38,13 @@ export function OnboardingAdminDialog({
 }: OnboardingAdminDialogProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<OnboardingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<Partial<OnboardingItem> | null>(null);
   const [newItem, setNewItem] = useState({
     titulo: "",
     descricao: "",
@@ -247,6 +250,107 @@ export function OnboardingAdminDialog({
       description: "Os itens foram reordenados com sucesso.",
     });
     onRefresh();
+  };
+
+  const handleStartEdit = (item: OnboardingItem) => {
+    setEditingId(item.id);
+    setEditingItem({
+      titulo: item.titulo,
+      descricao: item.descricao || "",
+      categoria: item.categoria,
+      tipo: item.tipo,
+      url_video: item.url_video || "",
+      arquivo_url: item.arquivo_url || "",
+      requer_assinatura: item.requer_assinatura,
+      tempo_estimado: item.tempo_estimado || 5,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingItem(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId || !editingItem) return;
+
+    if (!editingItem.titulo?.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "O título é obrigatório.",
+      });
+      return;
+    }
+
+    setSaving(true);
+    const { error } = await supabase
+      .from("onboarding_items")
+      .update({
+        titulo: editingItem.titulo,
+        descricao: editingItem.descricao || null,
+        categoria: editingItem.categoria,
+        tipo: editingItem.tipo,
+        url_video: editingItem.url_video || null,
+        arquivo_url: editingItem.arquivo_url || null,
+        requer_assinatura: editingItem.requer_assinatura,
+        tempo_estimado: editingItem.tempo_estimado,
+      })
+      .eq("id", editingId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: "Item atualizado",
+        description: "As alterações foram salvas com sucesso.",
+      });
+      setEditingId(null);
+      setEditingItem(null);
+      fetchItems();
+      onRefresh();
+    }
+    setSaving(false);
+  };
+
+  const handleEditFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingItem) return;
+
+    setUploading(true);
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `manuais/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("onboarding-files")
+      .upload(filePath, file);
+
+    if (uploadError) {
+      toast({
+        variant: "destructive",
+        title: "Erro no upload",
+        description: uploadError.message,
+      });
+      setUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("onboarding-files")
+      .getPublicUrl(filePath);
+
+    setEditingItem({ ...editingItem, arquivo_url: urlData.publicUrl });
+    toast({
+      title: "Arquivo enviado",
+      description: "O arquivo foi carregado com sucesso.",
+    });
+    setUploading(false);
   };
 
   const getTypeIcon = (tipo: string) => {
@@ -491,43 +595,193 @@ export function OnboardingAdminDialog({
                     >
                       <div className="space-y-2 pr-2">
                         {items.map((item, index) => (
-                          <Draggable key={item.id} draggableId={item.id} index={index}>
+                          <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={editingId === item.id}>
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
-                                className={`flex items-center gap-3 p-3 border rounded-lg transition-shadow ${
+                                className={`border rounded-lg transition-shadow ${
                                   item.ativo ? "bg-background" : "bg-muted/50 opacity-60"
                                 } ${snapshot.isDragging ? "shadow-lg ring-2 ring-primary/20" : ""}`}
                               >
-                                <div {...provided.dragHandleProps}>
-                                  <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab hover:text-foreground transition-colors" />
-                                </div>
-                                {getTypeIcon(item.tipo)}
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-sm truncate">{item.titulo}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {getCategoryLabel(item.categoria)}
-                                    {item.tempo_estimado && ` • ${item.tempo_estimado} min`}
-                                    {item.url_video && " • Com vídeo"}
-                                    {item.arquivo_url && " • Com arquivo"}
-                                    {item.requer_assinatura && " • Requer assinatura"}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Switch
-                                    checked={item.ativo}
-                                    onCheckedChange={() => handleToggleActive(item)}
-                                  />
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDelete(item.id)}
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
+                                {editingId === item.id ? (
+                                  /* Edit Mode */
+                                  <div className="p-4 space-y-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Título</Label>
+                                        <Input
+                                          value={editingItem?.titulo || ""}
+                                          onChange={(e) => setEditingItem({ ...editingItem, titulo: e.target.value })}
+                                          placeholder="Título do item"
+                                          className="h-8 text-sm"
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Categoria</Label>
+                                        <Select
+                                          value={editingItem?.categoria || "geral"}
+                                          onValueChange={(value) => setEditingItem({ ...editingItem, categoria: value as "treinamento" | "documentacao" | "geral" })}
+                                        >
+                                          <SelectTrigger className="h-8 text-sm">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="treinamento">Treinamento</SelectItem>
+                                            <SelectItem value="documentacao">Documentação</SelectItem>
+                                            <SelectItem value="geral">Geral</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Descrição</Label>
+                                      <Textarea
+                                        value={editingItem?.descricao || ""}
+                                        onChange={(e) => setEditingItem({ ...editingItem, descricao: e.target.value })}
+                                        placeholder="Descrição breve"
+                                        rows={2}
+                                        className="text-sm resize-none"
+                                      />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Tipo</Label>
+                                        <Select
+                                          value={editingItem?.tipo || "checklist"}
+                                          onValueChange={(value) => setEditingItem({ ...editingItem, tipo: value as "checklist" | "video" | "documento" | "assinatura" })}
+                                        >
+                                          <SelectTrigger className="h-8 text-sm">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="checklist">Checklist</SelectItem>
+                                            <SelectItem value="video">Vídeo</SelectItem>
+                                            <SelectItem value="documento">Documento</SelectItem>
+                                            <SelectItem value="assinatura">Assinatura</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Tempo (min)</Label>
+                                        <Input
+                                          type="number"
+                                          min={1}
+                                          max={120}
+                                          value={editingItem?.tempo_estimado || 5}
+                                          onChange={(e) => setEditingItem({ ...editingItem, tempo_estimado: parseInt(e.target.value) || 5 })}
+                                          className="h-8 text-sm"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {editingItem?.tipo === "video" && (
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">URL do Vídeo</Label>
+                                        <Input
+                                          value={editingItem?.url_video || ""}
+                                          onChange={(e) => setEditingItem({ ...editingItem, url_video: e.target.value })}
+                                          placeholder="https://youtube.com/..."
+                                          className="h-8 text-sm"
+                                        />
+                                      </div>
+                                    )}
+
+                                    {(editingItem?.tipo === "documento" || editingItem?.tipo === "assinatura") && (
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Arquivo</Label>
+                                        <div className="flex gap-2">
+                                          <Input
+                                            value={editingItem?.arquivo_url || ""}
+                                            onChange={(e) => setEditingItem({ ...editingItem, arquivo_url: e.target.value })}
+                                            placeholder="URL do arquivo"
+                                            className="h-8 text-sm flex-1"
+                                          />
+                                          <input
+                                            ref={editFileInputRef}
+                                            type="file"
+                                            accept=".pdf,.doc,.docx"
+                                            onChange={handleEditFileUpload}
+                                            className="hidden"
+                                          />
+                                          <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => editFileInputRef.current?.click()}
+                                            disabled={uploading}
+                                            className="h-8"
+                                          >
+                                            {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {editingItem?.tipo === "assinatura" && (
+                                      <div className="flex items-center gap-2">
+                                        <Switch
+                                          checked={editingItem?.requer_assinatura || false}
+                                          onCheckedChange={(checked) => setEditingItem({ ...editingItem, requer_assinatura: checked })}
+                                        />
+                                        <Label className="text-xs">Exigir assinatura</Label>
+                                      </div>
+                                    )}
+
+                                    <div className="flex justify-end gap-2 pt-2">
+                                      <Button variant="outline" size="sm" onClick={handleCancelEdit} disabled={saving}>
+                                        <X className="h-3 w-3 mr-1" />
+                                        Cancelar
+                                      </Button>
+                                      <Button size="sm" onClick={handleSaveEdit} disabled={saving}>
+                                        {saving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Check className="h-3 w-3 mr-1" />}
+                                        Salvar
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  /* View Mode */
+                                  <div className="flex items-center gap-3 p-3">
+                                    <div {...provided.dragHandleProps}>
+                                      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab hover:text-foreground transition-colors" />
+                                    </div>
+                                    {getTypeIcon(item.tipo)}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-sm truncate">{item.titulo}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {getCategoryLabel(item.categoria)}
+                                        {item.tempo_estimado && ` • ${item.tempo_estimado} min`}
+                                        {item.url_video && " • Com vídeo"}
+                                        {item.arquivo_url && " • Com arquivo"}
+                                        {item.requer_assinatura && " • Requer assinatura"}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleStartEdit(item)}
+                                        className="h-8 w-8"
+                                      >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                      </Button>
+                                      <Switch
+                                        checked={item.ativo}
+                                        onCheckedChange={() => handleToggleActive(item)}
+                                      />
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDelete(item.id)}
+                                        className="text-destructive hover:text-destructive h-8 w-8"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </Draggable>
