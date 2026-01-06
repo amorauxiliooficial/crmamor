@@ -53,6 +53,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
   const [previewType, setPreviewType] = useState<"pdf" | "video" | null>(null);
   const [previewTitle, setPreviewTitle] = useState<string>("");
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
 
   const fetchData = async () => {
     if (!user) return;
@@ -273,6 +274,13 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
     }));
   };
 
+  const toggleItemExpanded = (itemId: string) => {
+    setExpandedItems(prev => ({
+      ...prev,
+      [itemId]: !prev[itemId]
+    }));
+  };
+
   const renderItemActions = (item: OnboardingItem) => {
     const actions = [];
 
@@ -329,141 +337,157 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
         <div className="space-y-2 pl-4">
           {categoryItems.map((item) => {
             const completed = isItemCompleted(item.id);
+            const isExpanded = expandedItems[item.id];
+            const hasDetails = item.descricao || item.url_video || item.arquivo_url || 
+              (item.tipo === "acesso_sistema" && (item.login_sistema || item.url_sistema));
+            
             return (
               <div
                 key={item.id}
-                className={`flex items-start gap-3 p-3 rounded-md border transition-colors ${
-                  completed ? "bg-primary/5 border-primary/20" : "hover:bg-muted/50 border-border"
+                className={`rounded-md border transition-colors ${
+                  completed ? "bg-primary/5 border-primary/20" : "border-border"
                 }`}
               >
-                <Checkbox
-                  id={item.id}
-                  checked={completed}
-                  onCheckedChange={(checked) => handleToggle(item.id, !!checked)}
-                  className="mt-0.5"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <label
-                      htmlFor={item.id}
-                      className={`flex items-center gap-2 cursor-pointer text-sm ${
-                        completed ? "line-through text-muted-foreground" : ""
-                      }`}
-                    >
-                      {getTypeIcon(item.tipo)}
-                      <span className="font-medium">{item.titulo}</span>
-                      {item.tempo_estimado && (
-                        <span className="text-xs text-muted-foreground">({item.tempo_estimado} min)</span>
-                      )}
-                      {item.requer_assinatura && (
-                        <Badge variant="outline" className="text-xs">
-                          Requer assinatura
-                        </Badge>
-                      )}
-                    </label>
-                    {/* Quick action buttons */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {item.url_video && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(item.url_video!, "_blank", "noopener,noreferrer");
-                          }}
-                          className="h-7 px-2 text-xs gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Play className="h-3.5 w-3.5" />
-                          Assistir
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      )}
-                      {item.arquivo_url && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(item.arquivo_url!, "_blank", "noopener,noreferrer");
-                          }}
-                          className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                          Ver PDF
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      )}
-                      {item.tipo === "acesso_sistema" && item.login_sistema && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-green-600 font-medium">
-                            Credenciais disponíveis
-                          </span>
-                        </div>
+                {/* Header - always visible */}
+                <div 
+                  className={`flex items-start gap-3 p-3 ${hasDetails ? "cursor-pointer hover:bg-muted/50" : ""}`}
+                  onClick={() => hasDetails && toggleItemExpanded(item.id)}
+                >
+                  <Checkbox
+                    id={item.id}
+                    checked={completed}
+                    onCheckedChange={(checked) => handleToggle(item.id, !!checked)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <label
+                        className={`flex items-center gap-2 text-sm ${
+                          completed ? "line-through text-muted-foreground" : ""
+                        } ${hasDetails ? "cursor-pointer" : ""}`}
+                      >
+                        {getTypeIcon(item.tipo)}
+                        <span className="font-medium">{item.titulo}</span>
+                        {item.tempo_estimado && (
+                          <span className="text-xs text-muted-foreground">({item.tempo_estimado} min)</span>
+                        )}
+                        {item.requer_assinatura && (
+                          <Badge variant="outline" className="text-xs">
+                            Requer assinatura
+                          </Badge>
+                        )}
+                      </label>
+                      {hasDetails && (
+                        <ArrowRight className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                       )}
                     </div>
                   </div>
-                  {item.descricao && (
-                    <p className="text-xs text-muted-foreground mt-1 ml-0 sm:ml-6">{item.descricao}</p>
-                  )}
-                  {/* Credenciais do sistema com toggle de senha */}
-                  {item.tipo === "acesso_sistema" && (item.login_sistema || item.url_sistema) && (
-                    <div className="mt-3 ml-0 sm:ml-6 p-2 sm:p-3 bg-muted/50 rounded-lg border max-w-full">
-                      <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                        <KeyRound className="h-3 w-3 flex-shrink-0" />
-                        Suas Credenciais
-                      </p>
-                      <div className="space-y-2 min-w-0">
-                        {item.url_sistema && (
-                          <div className="flex items-start gap-2 min-w-0">
-                            <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Link:</span>
+                </div>
+                
+                {/* Expandable content */}
+                {isExpanded && hasDetails && (
+                  <div className="px-3 pb-3 pt-0 ml-9 space-y-3 border-t">
+                    {item.descricao && (
+                      <p className="text-xs text-muted-foreground pt-3">{item.descricao}</p>
+                    )}
+                    
+                    {/* Links section */}
+                    {(item.url_video || item.arquivo_url) && (
+                      <div className="pt-2 space-y-2">
+                        {item.url_video && (
+                          <div className="flex items-center gap-2">
+                            <Play className="h-3 w-3 text-red-500 flex-shrink-0" />
                             <a
-                              href={item.url_sistema}
+                              href={item.url_video}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="text-xs text-primary hover:underline flex items-center gap-1 break-all flex-1 min-w-0"
+                              className="text-xs text-primary hover:underline flex items-center gap-1"
                             >
                               <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                              Acessar Sistema
+                              Assistir Vídeo
                             </a>
                           </div>
                         )}
-                        {item.login_sistema && (
-                          <div className="flex items-start gap-2 min-w-0">
-                            <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Login:</span>
-                            <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all flex-1 min-w-0 overflow-x-auto">
-                              {item.login_sistema}
-                            </code>
-                          </div>
-                        )}
-                        {item.senha_sistema && (
-                          <div className="flex items-start gap-2 min-w-0 flex-wrap">
-                            <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Senha:</span>
-                            <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all flex-1 min-w-0 overflow-x-auto">
-                              {visiblePasswords[item.id] ? item.senha_sistema : "••••••••"}
-                            </code>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                togglePasswordVisibility(item.id);
-                              }}
-                              className="h-6 px-2 text-xs gap-1 flex-shrink-0"
+                        {item.arquivo_url && (
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                            <a
+                              href={item.arquivo_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs text-primary hover:underline flex items-center gap-1"
                             >
-                              {visiblePasswords[item.id] ? (
-                                <EyeOff className="h-3 w-3" />
-                              ) : (
-                                <Eye className="h-3 w-3" />
-                              )}
-                              {visiblePasswords[item.id] ? "Ocultar" : "Ver"}
-                            </Button>
+                              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                              Ver PDF
+                            </a>
                           </div>
                         )}
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                    
+                    {/* Credenciais do sistema */}
+                    {item.tipo === "acesso_sistema" && (item.login_sistema || item.url_sistema) && (
+                      <div className="p-2 sm:p-3 bg-muted/50 rounded-lg border max-w-full">
+                        <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                          <KeyRound className="h-3 w-3 flex-shrink-0" />
+                          Suas Credenciais
+                        </p>
+                        <div className="space-y-2 min-w-0">
+                          {item.url_sistema && (
+                            <div className="flex items-start gap-2 min-w-0">
+                              <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Link:</span>
+                              <a
+                                href={item.url_sistema}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-xs text-primary hover:underline flex items-center gap-1 break-all flex-1 min-w-0"
+                              >
+                                <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                                Acessar Sistema
+                              </a>
+                            </div>
+                          )}
+                          {item.login_sistema && (
+                            <div className="flex items-start gap-2 min-w-0">
+                              <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Login:</span>
+                              <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all flex-1 min-w-0 overflow-x-auto">
+                                {item.login_sistema}
+                              </code>
+                            </div>
+                          )}
+                          {item.senha_sistema && (
+                            <div className="flex items-start gap-2 min-w-0 flex-wrap">
+                              <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Senha:</span>
+                              <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all flex-1 min-w-0 overflow-x-auto">
+                                {visiblePasswords[item.id] ? item.senha_sistema : "••••••••"}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  togglePasswordVisibility(item.id);
+                                }}
+                                className="h-6 px-2 text-xs gap-1 flex-shrink-0"
+                              >
+                                {visiblePasswords[item.id] ? (
+                                  <EyeOff className="h-3 w-3" />
+                                ) : (
+                                  <Eye className="h-3 w-3" />
+                                )}
+                                {visiblePasswords[item.id] ? "Ocultar" : "Ver"}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
