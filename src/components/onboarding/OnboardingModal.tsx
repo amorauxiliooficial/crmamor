@@ -43,6 +43,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
   const [progresso, setProgresso] = useState<OnboardingProgresso[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasShownConfetti, setHasShownConfetti] = useState(false);
+  const [hasNotifiedComplete, setHasNotifiedComplete] = useState(false);
   const prevCompleteRef = useRef(false);
 
   const fetchData = async () => {
@@ -144,10 +145,45 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
   const progressPercentage = items.length > 0 ? (completedCount / items.length) * 100 : 0;
   const isComplete = progressPercentage === 100 && items.length > 0;
 
-  // Trigger confetti when completing 100%
+  // Send email notification when completing 100%
+  const sendCompletionEmail = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", user.id)
+        .single();
+
+      const response = await supabase.functions.invoke("send-onboarding-complete-email", {
+        body: {
+          user_id: user.id,
+          user_name: profile?.full_name || user.email?.split("@")[0] || "Colaborador",
+          user_email: profile?.email || user.email,
+        },
+      });
+
+      if (response.error) {
+        console.error("Error sending completion email:", response.error);
+      } else {
+        console.log("Completion email sent successfully");
+      }
+    } catch (error) {
+      console.error("Error calling email function:", error);
+    }
+  };
+
+  // Trigger confetti and email when completing 100%
   useEffect(() => {
     if (isComplete && !hasShownConfetti && prevCompleteRef.current === false) {
       setHasShownConfetti(true);
+      
+      // Send email notification
+      if (!hasNotifiedComplete) {
+        setHasNotifiedComplete(true);
+        sendCompletionEmail();
+      }
       
       // Fire confetti from both sides
       const duration = 3000;
@@ -176,7 +212,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
       }, 250);
     }
     prevCompleteRef.current = isComplete;
-  }, [isComplete, hasShownConfetti]);
+  }, [isComplete, hasShownConfetti, hasNotifiedComplete]);
 
   const estimatedMinutes = useMemo(() => {
     return items
@@ -427,8 +463,8 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
           <Progress value={progressPercentage} className="h-3" />
         </div>
 
-        {/* Items List */}
-        <ScrollArea className="flex-1 min-h-0 py-4">
+        {/* Items List with visible scrollbar */}
+        <ScrollArea className="flex-1 min-h-0 max-h-[400px] py-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
@@ -438,6 +474,11 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
               {renderItems(treinamentos, "Treinamentos")}
               {renderItems(documentacao, "Documentação")}
               {renderItems(geral, "Geral")}
+              {items.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Nenhum item de onboarding disponível.
+                </p>
+              )}
             </div>
           )}
         </ScrollArea>
