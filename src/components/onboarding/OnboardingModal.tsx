@@ -29,6 +29,7 @@ import {
   KeyRound,
   X,
   Eye,
+  EyeOff,
   Maximize2
 } from "lucide-react";
 import { OnboardingItem, OnboardingProgresso } from "@/types/onboarding";
@@ -51,6 +52,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<"pdf" | "video" | null>(null);
   const [previewTitle, setPreviewTitle] = useState<string>("");
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
 
   const fetchData = async () => {
     if (!user) return;
@@ -264,6 +266,13 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
     }
   };
 
+  const togglePasswordVisibility = (itemId: string) => {
+    setVisiblePasswords(prev => ({
+      ...prev,
+      [itemId]: !prev[itemId]
+    }));
+  };
+
   const renderItemActions = (item: OnboardingItem) => {
     const actions = [];
 
@@ -411,10 +420,56 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                           </a>
                         </>
                       )}
+                      {item.tipo === "acesso_sistema" && item.login_sistema && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-green-600 font-medium">
+                            Credenciais disponíveis
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   {item.descricao && (
                     <p className="text-xs text-muted-foreground mt-1 ml-6">{item.descricao}</p>
+                  )}
+                  {/* Credenciais do sistema com toggle de senha */}
+                  {item.tipo === "acesso_sistema" && item.login_sistema && (
+                    <div className="mt-3 ml-6 p-3 bg-muted/50 rounded-lg border">
+                      <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                        <KeyRound className="h-3 w-3" />
+                        Suas Credenciais
+                      </p>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground w-12">Login:</span>
+                          <code className="text-xs bg-background px-2 py-1 rounded border font-mono">
+                            {item.login_sistema}
+                          </code>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground w-12">Senha:</span>
+                          <code className="text-xs bg-background px-2 py-1 rounded border font-mono">
+                            {visiblePasswords[item.id] ? item.senha_sistema : "••••••••"}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              togglePasswordVisibility(item.id);
+                            }}
+                            className="h-6 px-2 text-xs gap-1"
+                          >
+                            {visiblePasswords[item.id] ? (
+                              <EyeOff className="h-3 w-3" />
+                            ) : (
+                              <Eye className="h-3 w-3" />
+                            )}
+                            {visiblePasswords[item.id] ? "Ocultar" : "Ver"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

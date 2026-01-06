@@ -322,8 +322,10 @@ export type Database = {
           created_at: string
           descricao: string | null
           id: string
+          login_sistema: string | null
           ordem: number | null
           requer_assinatura: boolean
+          senha_sistema: string | null
           tempo_estimado: number | null
           tipo: string
           titulo: string
@@ -337,8 +339,10 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           id?: string
+          login_sistema?: string | null
           ordem?: number | null
           requer_assinatura?: boolean
+          senha_sistema?: string | null
           tempo_estimado?: number | null
           tipo?: string
           titulo: string
@@ -352,8 +356,10 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           id?: string
+          login_sistema?: string | null
           ordem?: number | null
           requer_assinatura?: boolean
+          senha_sistema?: string | null
           tempo_estimado?: number | null
           tipo?: string
           titulo?: string
