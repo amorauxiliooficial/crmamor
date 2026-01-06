@@ -58,6 +58,7 @@ export function OnboardingAdminDialog({
     tempo_estimado: 5,
     login_sistema: "",
     senha_sistema: "",
+    url_sistema: "",
   });
 
   const fetchItems = async () => {
@@ -141,6 +142,7 @@ export function OnboardingAdminDialog({
       tempo_estimado: newItem.tempo_estimado,
       login_sistema: newItem.login_sistema || null,
       senha_sistema: newItem.senha_sistema || null,
+      url_sistema: newItem.url_sistema || null,
       ordem: maxOrdem + 1,
     });
 
@@ -166,6 +168,7 @@ export function OnboardingAdminDialog({
         tempo_estimado: 5,
         login_sistema: "",
         senha_sistema: "",
+        url_sistema: "",
       });
       fetchItems();
       onRefresh();
@@ -273,6 +276,7 @@ export function OnboardingAdminDialog({
       tempo_estimado: item.tempo_estimado || 5,
       login_sistema: item.login_sistema || "",
       senha_sistema: item.senha_sistema || "",
+      url_sistema: item.url_sistema || "",
     });
   };
 
@@ -307,6 +311,7 @@ export function OnboardingAdminDialog({
         tempo_estimado: editingItem.tempo_estimado,
         login_sistema: editingItem.login_sistema || null,
         senha_sistema: editingItem.senha_sistema || null,
+        url_sistema: editingItem.url_sistema || null,
       })
       .eq("id", editingId);
 
@@ -573,6 +578,17 @@ export function OnboardingAdminDialog({
                     <KeyRound className="h-4 w-4" />
                     Credenciais do Sistema
                   </p>
+                  <div className="grid gap-2">
+                    <Label htmlFor="url_sistema">Link de Acesso</Label>
+                    <Input
+                      id="url_sistema"
+                      value={newItem.url_sistema}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, url_sistema: e.target.value })
+                      }
+                      placeholder="https://sistema.exemplo.com/login"
+                    />
+                  </div>
                   <div className="grid gap-2">
                     <Label htmlFor="login_sistema">Login</Label>
                     <Input

@@ -12,6 +12,7 @@ export interface OnboardingItem {
   tempo_estimado?: number; // em minutos
   login_sistema?: string;
   senha_sistema?: string;
+  url_sistema?: string;
   created_at: string;
   updated_at: string;
 }
