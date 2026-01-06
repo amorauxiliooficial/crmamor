@@ -518,6 +518,17 @@ export function OnboardingAdminDialog({
                     Configuração do Vídeo
                   </p>
                   <div className="grid gap-2">
+                    <Label htmlFor="url_sistema_video">Link de Acesso (opcional)</Label>
+                    <Input
+                      id="url_sistema_video"
+                      value={newItem.url_sistema}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, url_sistema: e.target.value })
+                      }
+                      placeholder="https://plataforma.com/curso"
+                    />
+                  </div>
+                  <div className="grid gap-2">
                     <Label htmlFor="url_video">Link do Vídeo (YouTube, Vimeo, etc.)</Label>
                     <Input
                       id="url_video"
@@ -791,7 +802,16 @@ export function OnboardingAdminDialog({
                                           Configuração do Vídeo
                                         </p>
                                         <div className="space-y-1">
-                                          <Label className="text-xs">Link do Vídeo</Label>
+                                          <Label className="text-xs">Link de Acesso (opcional)</Label>
+                                          <Input
+                                            value={editingItem?.url_sistema || ""}
+                                            onChange={(e) => setEditingItem({ ...editingItem, url_sistema: e.target.value })}
+                                            placeholder="https://plataforma.com/curso"
+                                            className="h-8 text-sm"
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label className="text-xs">Link do Vídeo (YouTube, Vimeo, etc.)</Label>
                                           <Input
                                             value={editingItem?.url_video || ""}
                                             onChange={(e) => setEditingItem({ ...editingItem, url_video: e.target.value })}
