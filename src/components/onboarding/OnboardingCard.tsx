@@ -17,8 +17,10 @@ import {
   Play,
   FileCheck,
   PenLine,
-  ExternalLink,
-  Download
+  Download,
+  Clock,
+  CheckCircle2,
+  Trophy
 } from "lucide-react";
 import { OnboardingItem, OnboardingProgresso } from "@/types/onboarding";
 import { OnboardingAdminDialog } from "./OnboardingAdminDialog";
@@ -139,7 +141,20 @@ export function OnboardingCard() {
     return items.filter((item) => isItemCompleted(item.id)).length;
   }, [items, progresso]);
 
+  const remainingCount = items.length - completedCount;
   const progressPercentage = items.length > 0 ? (completedCount / items.length) * 100 : 0;
+  
+  // Tempo estimado: 3 minutos por item restante
+  const MINUTES_PER_ITEM = 3;
+  const estimatedMinutes = remainingCount * MINUTES_PER_ITEM;
+  
+  const formatEstimatedTime = (minutes: number) => {
+    if (minutes === 0) return "Concluído!";
+    if (minutes < 60) return `~${minutes} min restantes`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `~${hours}h ${mins > 0 ? `${mins}min` : ""} restantes`;
+  };
 
   const treinamentos = items.filter((i) => i.categoria === "treinamento");
   const documentacao = items.filter((i) => i.categoria === "documentacao");
@@ -279,11 +294,12 @@ export function OnboardingCard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-primary" />
+                {progressPercentage === 100 ? (
+                  <Trophy className="h-5 w-5 text-yellow-500" />
+                ) : (
+                  <ClipboardList className="h-5 w-5 text-primary" />
+                )}
                 <CardTitle className="text-lg">Onboarding</CardTitle>
-                <Badge variant={progressPercentage === 100 ? "default" : "secondary"}>
-                  {completedCount}/{items.length}
-                </Badge>
               </div>
               <div className="flex items-center gap-2">
                 {isAdmin && (
@@ -306,10 +322,50 @@ export function OnboardingCard() {
                 </CollapsibleTrigger>
               </div>
             </div>
-            <CardDescription>
-              Complete os itens de onboarding para finalizar sua integração
-            </CardDescription>
-            <Progress value={progressPercentage} className="mt-2" />
+            
+            {/* Progress Section */}
+            <div className="mt-4 space-y-3">
+              {/* Stats Row */}
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{completedCount}</span>
+                    <span className="text-muted-foreground">de {items.length} itens</span>
+                  </div>
+                  <Badge variant={progressPercentage === 100 ? "default" : "secondary"} className="font-mono">
+                    {Math.round(progressPercentage)}%
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span className="text-xs">{formatEstimatedTime(estimatedMinutes)}</span>
+                </div>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="relative">
+                <Progress value={progressPercentage} className="h-3" />
+                {progressPercentage > 0 && progressPercentage < 100 && (
+                  <div 
+                    className="absolute top-0 h-3 flex items-center justify-end pr-1"
+                    style={{ width: `${Math.max(progressPercentage, 10)}%` }}
+                  >
+                    <span className="text-[10px] font-bold text-primary-foreground">
+                      {Math.round(progressPercentage)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Description */}
+              <CardDescription className="text-xs">
+                {progressPercentage === 100 
+                  ? "🎉 Parabéns! Você completou todo o onboarding!"
+                  : `Complete os ${remainingCount} ${remainingCount === 1 ? 'item restante' : 'itens restantes'} para finalizar sua integração`
+                }
+              </CardDescription>
+            </div>
           </CardHeader>
           <CollapsibleContent>
             <CardContent className="space-y-4">
