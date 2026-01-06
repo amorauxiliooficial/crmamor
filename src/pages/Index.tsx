@@ -11,6 +11,7 @@ import { MaeEditDialog } from "@/components/mae/MaeEditDialog";
 import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
 import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
 import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
+import { OnboardingCard } from "@/components/onboarding/OnboardingCard";
 import { Indicacao } from "@/types/indicacao";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -275,6 +276,9 @@ const Index = () => {
       />
 
       <main className="p-6 space-y-6">
+        {/* Onboarding Section */}
+        <OnboardingCard />
+
         {/* Stats Grid */}
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <StatsCard

@@ -314,6 +314,77 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_items: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          created_at: string
+          descricao: string | null
+          id: string
+          ordem: number | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          ordem?: number | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          ordem?: number | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      onboarding_progresso: {
+        Row: {
+          concluido: boolean
+          concluido_em: string | null
+          created_at: string
+          id: string
+          item_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          concluido?: boolean
+          concluido_em?: string | null
+          created_at?: string
+          id?: string
+          item_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          concluido?: boolean
+          concluido_em?: string | null
+          created_at?: string
+          id?: string
+          item_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_progresso_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pagamentos_mae: {
         Row: {
           created_at: string
