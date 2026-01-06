@@ -512,50 +512,73 @@ export function OnboardingAdminDialog({
               </div>
 
               {newItem.tipo === "video" && (
-                <div className="grid gap-2">
-                  <Label htmlFor="url_video">Link do Vídeo</Label>
-                  <Input
-                    id="url_video"
-                    value={newItem.url_video}
-                    onChange={(e) =>
-                      setNewItem({ ...newItem, url_video: e.target.value })
-                    }
-                    placeholder="https://youtube.com/watch?v=..."
-                  />
+                <div className="grid gap-4 p-4 border rounded-lg bg-muted/30">
+                  <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Play className="h-4 w-4 text-red-500" />
+                    Configuração do Vídeo
+                  </p>
+                  <div className="grid gap-2">
+                    <Label htmlFor="url_video">Link do Vídeo (YouTube, Vimeo, etc.)</Label>
+                    <Input
+                      id="url_video"
+                      value={newItem.url_video}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, url_video: e.target.value })
+                      }
+                      placeholder="https://youtube.com/watch?v=..."
+                    />
+                  </div>
                 </div>
               )}
 
               {(newItem.tipo === "documento" || newItem.tipo === "assinatura") && (
-                <div className="grid gap-2">
-                  <Label>Arquivo (PDF)</Label>
-                  <div className="flex items-center gap-2">
+                <div className="grid gap-4 p-4 border rounded-lg bg-muted/30">
+                  <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-blue-500" />
+                    Configuração do Documento
+                  </p>
+                  <div className="grid gap-2">
+                    <Label htmlFor="url_sistema_doc">Link de Acesso (opcional)</Label>
                     <Input
-                      value={newItem.arquivo_url}
+                      id="url_sistema_doc"
+                      value={newItem.url_sistema}
                       onChange={(e) =>
-                        setNewItem({ ...newItem, arquivo_url: e.target.value })
+                        setNewItem({ ...newItem, url_sistema: e.target.value })
                       }
-                      placeholder="URL do arquivo ou faça upload"
-                      className="flex-1"
+                      placeholder="https://link-do-documento.com"
                     />
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
-                    >
-                      {uploading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Upload className="h-4 w-4" />
-                      )}
-                    </Button>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Arquivo (PDF) - opcional</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={newItem.arquivo_url}
+                        onChange={(e) =>
+                          setNewItem({ ...newItem, arquivo_url: e.target.value })
+                        }
+                        placeholder="URL do arquivo ou faça upload"
+                        className="flex-1"
+                      />
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                      >
+                        {uploading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -762,44 +785,65 @@ export function OnboardingAdminDialog({
                                     </div>
 
                                     {editingItem?.tipo === "video" && (
-                                      <div className="space-y-1">
-                                        <Label className="text-xs">URL do Vídeo</Label>
-                                        <Input
-                                          value={editingItem?.url_video || ""}
-                                          onChange={(e) => setEditingItem({ ...editingItem, url_video: e.target.value })}
-                                          placeholder="https://youtube.com/..."
-                                          className="h-8 text-sm"
-                                        />
+                                      <div className="grid gap-2 p-3 border rounded-lg bg-muted/30">
+                                        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                                          <Play className="h-3 w-3 text-red-500" />
+                                          Configuração do Vídeo
+                                        </p>
+                                        <div className="space-y-1">
+                                          <Label className="text-xs">Link do Vídeo</Label>
+                                          <Input
+                                            value={editingItem?.url_video || ""}
+                                            onChange={(e) => setEditingItem({ ...editingItem, url_video: e.target.value })}
+                                            placeholder="https://youtube.com/..."
+                                            className="h-8 text-sm"
+                                          />
+                                        </div>
                                       </div>
                                     )}
 
                                     {(editingItem?.tipo === "documento" || editingItem?.tipo === "assinatura") && (
-                                      <div className="space-y-1">
-                                        <Label className="text-xs">Arquivo</Label>
-                                        <div className="flex gap-2">
+                                      <div className="grid gap-2 p-3 border rounded-lg bg-muted/30">
+                                        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                                          <FileText className="h-3 w-3 text-blue-500" />
+                                          Configuração do Documento
+                                        </p>
+                                        <div className="space-y-1">
+                                          <Label className="text-xs">Link de Acesso (opcional)</Label>
                                           <Input
-                                            value={editingItem?.arquivo_url || ""}
-                                            onChange={(e) => setEditingItem({ ...editingItem, arquivo_url: e.target.value })}
-                                            placeholder="URL do arquivo"
-                                            className="h-8 text-sm flex-1"
+                                            value={editingItem?.url_sistema || ""}
+                                            onChange={(e) => setEditingItem({ ...editingItem, url_sistema: e.target.value })}
+                                            placeholder="https://link-do-documento.com"
+                                            className="h-8 text-sm"
                                           />
-                                          <input
-                                            ref={editFileInputRef}
-                                            type="file"
-                                            accept=".pdf,.doc,.docx"
-                                            onChange={handleEditFileUpload}
-                                            className="hidden"
-                                          />
-                                          <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => editFileInputRef.current?.click()}
-                                            disabled={uploading}
-                                            className="h-8"
-                                          >
-                                            {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-                                          </Button>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label className="text-xs">Arquivo (PDF) - opcional</Label>
+                                          <div className="flex gap-2">
+                                            <Input
+                                              value={editingItem?.arquivo_url || ""}
+                                              onChange={(e) => setEditingItem({ ...editingItem, arquivo_url: e.target.value })}
+                                              placeholder="URL do arquivo"
+                                              className="h-8 text-sm flex-1"
+                                            />
+                                            <input
+                                              ref={editFileInputRef}
+                                              type="file"
+                                              accept=".pdf,.doc,.docx"
+                                              onChange={handleEditFileUpload}
+                                              className="hidden"
+                                            />
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() => editFileInputRef.current?.click()}
+                                              disabled={uploading}
+                                              className="h-8"
+                                            >
+                                              {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                                            </Button>
+                                          </div>
                                         </div>
                                       </div>
                                     )}

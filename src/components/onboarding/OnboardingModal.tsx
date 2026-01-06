@@ -338,8 +338,8 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
           {categoryItems.map((item) => {
             const completed = isItemCompleted(item.id);
             const isExpanded = expandedItems[item.id];
-            const hasDetails = item.descricao || item.url_video || item.arquivo_url || 
-              (item.tipo === "acesso_sistema" && (item.login_sistema || item.url_sistema));
+            const hasDetails = item.descricao || item.url_video || item.arquivo_url || item.url_sistema ||
+              (item.tipo === "acesso_sistema" && item.login_sistema);
             
             return (
               <div
@@ -393,32 +393,59 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                     )}
                     
                     {/* Links section */}
-                    {(item.url_video || item.arquivo_url) && (
-                      <div className="pt-2 space-y-2">
-                        {item.url_video && (
-                          <div className="flex items-center gap-2">
+                    {(item.url_video || item.arquivo_url || (item.tipo !== "acesso_sistema" && item.url_sistema)) && (
+                      <div className="p-2 sm:p-3 bg-muted/50 rounded-lg border max-w-full space-y-2">
+                        {item.tipo === "video" && (
+                          <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
                             <Play className="h-3 w-3 text-red-500 flex-shrink-0" />
+                            Acesso ao Vídeo
+                          </p>
+                        )}
+                        {(item.tipo === "documento" || item.tipo === "assinatura") && (
+                          <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                            <FileText className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                            Acesso ao Documento
+                          </p>
+                        )}
+                        {item.url_video && (
+                          <div className="flex items-start gap-2 min-w-0">
+                            <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Link:</span>
                             <a
                               href={item.url_video}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="text-xs text-primary hover:underline flex items-center gap-1"
+                              className="text-xs text-primary hover:underline flex items-center gap-1 break-all flex-1 min-w-0"
                             >
                               <ExternalLink className="h-3 w-3 flex-shrink-0" />
                               Assistir Vídeo
                             </a>
                           </div>
                         )}
+                        {item.tipo !== "acesso_sistema" && item.url_sistema && (
+                          <div className="flex items-start gap-2 min-w-0">
+                            <span className="text-xs text-muted-foreground w-12 flex-shrink-0">Link:</span>
+                            <a
+                              href={item.url_sistema}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs text-primary hover:underline flex items-center gap-1 break-all flex-1 min-w-0"
+                            >
+                              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                              Acessar Documento
+                            </a>
+                          </div>
+                        )}
                         {item.arquivo_url && (
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                          <div className="flex items-start gap-2 min-w-0">
+                            <span className="text-xs text-muted-foreground w-12 flex-shrink-0">PDF:</span>
                             <a
                               href={item.arquivo_url}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="text-xs text-primary hover:underline flex items-center gap-1"
+                              className="text-xs text-primary hover:underline flex items-center gap-1 break-all flex-1 min-w-0"
                             >
                               <ExternalLink className="h-3 w-3 flex-shrink-0" />
                               Ver PDF
