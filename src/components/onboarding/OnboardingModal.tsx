@@ -464,13 +464,13 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
         </div>
 
         {/* Items List with visible scrollbar */}
-        <ScrollArea className="flex-1 min-h-0 max-h-[400px] py-4">
+        <ScrollArea className="flex-1 min-h-0 max-h-[400px] py-4 relative">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
             </div>
           ) : (
-            <div className="space-y-6 pr-4">
+            <div className="space-y-6 pr-6">
               {renderItems(treinamentos, "Treinamentos")}
               {renderItems(documentacao, "Documentação")}
               {renderItems(geral, "Geral")}
@@ -481,7 +481,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
               )}
             </div>
           )}
-          <ScrollBar alwaysVisible className="bg-muted/30" />
+          <ScrollBar orientation="vertical" alwaysVisible className="bg-muted/50 w-2" />
         </ScrollArea>
 
         {/* Footer */}
