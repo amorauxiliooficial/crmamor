@@ -24,8 +24,12 @@ function calcularMesGravidez(dataEvento: string | undefined, dataEventoTipo: str
   const dpp = parseISO(dataEvento);
   const hoje = new Date();
   
-  // If DPP already passed, baby was born
-  if (dpp < hoje) return null;
+  // Se DPP passou há mais de 30 dias, provavelmente bebê já nasceu
+  const diasDesdePartio = Math.floor((hoje.getTime() - dpp.getTime()) / (1000 * 60 * 60 * 24));
+  if (diasDesdePartio > 30) return null;
+  
+  // Se DPP passou recentemente (até 30 dias), considera 9º mês
+  if (dpp < hoje) return 9;
   
   // Calculate months until delivery
   const mesesAteParto = differenceInMonths(dpp, hoje);
