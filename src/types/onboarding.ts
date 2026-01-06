@@ -3,8 +3,12 @@ export interface OnboardingItem {
   titulo: string;
   descricao?: string;
   categoria: 'treinamento' | 'documentacao' | 'geral';
+  tipo: 'checklist' | 'video' | 'documento' | 'assinatura';
   ordem: number;
   ativo: boolean;
+  url_video?: string;
+  arquivo_url?: string;
+  requer_assinatura: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -15,6 +19,8 @@ export interface OnboardingProgresso {
   item_id: string;
   concluido: boolean;
   concluido_em?: string;
+  assinado_em?: string;
+  documento_assinado_url?: string;
   created_at: string;
   updated_at: string;
 }

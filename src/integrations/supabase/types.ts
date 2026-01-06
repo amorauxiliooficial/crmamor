@@ -316,60 +316,78 @@ export type Database = {
       }
       onboarding_items: {
         Row: {
+          arquivo_url: string | null
           ativo: boolean
           categoria: string
           created_at: string
           descricao: string | null
           id: string
           ordem: number | null
+          requer_assinatura: boolean
+          tipo: string
           titulo: string
           updated_at: string
+          url_video: string | null
         }
         Insert: {
+          arquivo_url?: string | null
           ativo?: boolean
           categoria?: string
           created_at?: string
           descricao?: string | null
           id?: string
           ordem?: number | null
+          requer_assinatura?: boolean
+          tipo?: string
           titulo: string
           updated_at?: string
+          url_video?: string | null
         }
         Update: {
+          arquivo_url?: string | null
           ativo?: boolean
           categoria?: string
           created_at?: string
           descricao?: string | null
           id?: string
           ordem?: number | null
+          requer_assinatura?: boolean
+          tipo?: string
           titulo?: string
           updated_at?: string
+          url_video?: string | null
         }
         Relationships: []
       }
       onboarding_progresso: {
         Row: {
+          assinado_em: string | null
           concluido: boolean
           concluido_em: string | null
           created_at: string
+          documento_assinado_url: string | null
           id: string
           item_id: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          assinado_em?: string | null
           concluido?: boolean
           concluido_em?: string | null
           created_at?: string
+          documento_assinado_url?: string | null
           id?: string
           item_id: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          assinado_em?: string | null
           concluido?: boolean
           concluido_em?: string | null
           created_at?: string
+          documento_assinado_url?: string | null
           id?: string
           item_id?: string
           updated_at?: string
