@@ -11,7 +11,7 @@ import { MaeEditDialog } from "@/components/mae/MaeEditDialog";
 import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
 import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
 import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
-import { OnboardingCard } from "@/components/onboarding/OnboardingCard";
+import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { Indicacao } from "@/types/indicacao";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,6 +69,8 @@ const Index = () => {
   const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all" | "gestantes">("all");
   const [viewMode, setViewMode] = useState<"kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes">("kanban");
   const [selectedIndicacaoFromNotification, setSelectedIndicacaoFromNotification] = useState<Indicacao | null>(null);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [showOnboardingOnLoad, setShowOnboardingOnLoad] = useState(false);
 
   const handleNotificationClick = (indicacao: Indicacao) => {
     setViewMode("indicacoes");
@@ -81,6 +83,48 @@ const Index = () => {
       navigate("/auth");
     }
   }, [user, authLoading, navigate]);
+
+  // Check if should show onboarding modal on first load
+  useEffect(() => {
+    const checkOnboardingStatus = async () => {
+      if (!user) return;
+      
+      // Check if user is admin
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      
+      const isAdmin = !!roleData;
+      
+      // For non-admin users, check if they have incomplete onboarding
+      if (!isAdmin) {
+        const { data: items } = await supabase
+          .from("onboarding_items")
+          .select("id")
+          .eq("ativo", true);
+        
+        if (items && items.length > 0) {
+          const { data: progress } = await supabase
+            .from("onboarding_progresso")
+            .select("item_id, concluido")
+            .eq("user_id", user.id);
+          
+          const completedIds = new Set(progress?.filter(p => p.concluido).map(p => p.item_id) || []);
+          const hasIncomplete = items.some(item => !completedIds.has(item.id));
+          
+          if (hasIncomplete) {
+            setShowOnboardingOnLoad(true);
+            setOnboardingOpen(true);
+          }
+        }
+      }
+    };
+    
+    checkOnboardingStatus();
+  }, [user]);
 
   // Fetch processes from database
   const fetchMaes = async () => {
@@ -273,11 +317,10 @@ const Index = () => {
         onSearchChange={setSearchQuery} 
         onAddMae={() => setFormDialogOpen(true)}
         onSelectIndicacao={handleNotificationClick}
+        onOpenOnboarding={() => setOnboardingOpen(true)}
       />
 
-      <main className="p-6 space-y-6">
-        {/* Onboarding Section */}
-        <OnboardingCard />
+      <main className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-x-hidden">
 
         {/* Stats Grid */}
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -496,6 +539,11 @@ const Index = () => {
             setEditDialogOpen(true);
           }
         }}
+      />
+
+      <OnboardingModal
+        open={onboardingOpen}
+        onOpenChange={setOnboardingOpen}
       />
     </div>
   );
