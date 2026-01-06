@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Heart, Search, LogOut, UserPlus, BookOpen, Settings } from "lucide-react";
+import { Heart, Search, LogOut, UserPlus, BookOpen, Settings, ClipboardList } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,9 +23,10 @@ interface HeaderProps {
   onSearchChange: (query: string) => void;
   onAddMae?: () => void;
   onSelectIndicacao?: (indicacao: Indicacao) => void;
+  onOpenOnboarding?: () => void;
 }
 
-export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicacao }: HeaderProps) {
+export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicacao, onOpenOnboarding }: HeaderProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -98,7 +99,7 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
             <span className="hidden sm:inline">Playbook</span>
           </Button>
 
-          {isAdmin && (
+          {isAdmin ? (
             <Button 
               variant="outline" 
               size="sm" 
@@ -106,6 +107,16 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
               onClick={() => setAdminDialogOpen(true)}
             >
               <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Admin Onboarding</span>
+            </Button>
+          ) : onOpenOnboarding && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+              onClick={onOpenOnboarding}
+            >
+              <ClipboardList className="h-4 w-4" />
               <span className="hidden sm:inline">Onboarding</span>
             </Button>
           )}
