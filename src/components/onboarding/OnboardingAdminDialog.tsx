@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { OnboardingItem } from "@/types/onboarding";
-import { Plus, Trash2, GripVertical, Loader2, Upload, Play, FileText, PenLine, FileCheck, Clock, Pencil, X, Check, KeyRound } from "lucide-react";
+import { Plus, Trash2, GripVertical, Loader2, Upload, Play, FileText, PenLine, FileCheck, Clock, Pencil, X, Check, KeyRound, Eye, EyeOff } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
@@ -45,15 +45,19 @@ export function OnboardingAdminDialog({
   const [uploading, setUploading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<Partial<OnboardingItem> | null>(null);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const [newItem, setNewItem] = useState({
     titulo: "",
     descricao: "",
     categoria: "treinamento" as "treinamento" | "documentacao" | "geral",
-    tipo: "checklist" as "checklist" | "video" | "documento" | "assinatura",
+    tipo: "checklist" as "checklist" | "video" | "documento" | "assinatura" | "acesso_sistema",
     url_video: "",
     arquivo_url: "",
     requer_assinatura: false,
     tempo_estimado: 5,
+    login_sistema: "",
+    senha_sistema: "",
   });
 
   const fetchItems = async () => {
@@ -135,6 +139,8 @@ export function OnboardingAdminDialog({
       arquivo_url: newItem.arquivo_url || null,
       requer_assinatura: newItem.requer_assinatura,
       tempo_estimado: newItem.tempo_estimado,
+      login_sistema: newItem.login_sistema || null,
+      senha_sistema: newItem.senha_sistema || null,
       ordem: maxOrdem + 1,
     });
 
@@ -158,6 +164,8 @@ export function OnboardingAdminDialog({
         arquivo_url: "",
         requer_assinatura: false,
         tempo_estimado: 5,
+        login_sistema: "",
+        senha_sistema: "",
       });
       fetchItems();
       onRefresh();
@@ -263,6 +271,8 @@ export function OnboardingAdminDialog({
       arquivo_url: item.arquivo_url || "",
       requer_assinatura: item.requer_assinatura,
       tempo_estimado: item.tempo_estimado || 5,
+      login_sistema: item.login_sistema || "",
+      senha_sistema: item.senha_sistema || "",
     });
   };
 
@@ -295,6 +305,8 @@ export function OnboardingAdminDialog({
         arquivo_url: editingItem.arquivo_url || null,
         requer_assinatura: editingItem.requer_assinatura,
         tempo_estimado: editingItem.tempo_estimado,
+        login_sistema: editingItem.login_sistema || null,
+        senha_sistema: editingItem.senha_sistema || null,
       })
       .eq("id", editingId);
 
@@ -555,6 +567,53 @@ export function OnboardingAdminDialog({
                 </div>
               )}
 
+              {newItem.tipo === "acesso_sistema" && (
+                <div className="grid gap-4 p-4 border rounded-lg bg-muted/30">
+                  <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <KeyRound className="h-4 w-4" />
+                    Credenciais do Sistema
+                  </p>
+                  <div className="grid gap-2">
+                    <Label htmlFor="login_sistema">Login</Label>
+                    <Input
+                      id="login_sistema"
+                      value={newItem.login_sistema}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, login_sistema: e.target.value })
+                      }
+                      placeholder="nome.usuario ou email"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="senha_sistema">Senha</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="senha_sistema"
+                        type={showNewPassword ? "text" : "password"}
+                        value={newItem.senha_sistema}
+                        onChange={(e) =>
+                          setNewItem({ ...newItem, senha_sistema: e.target.value })
+                        }
+                        placeholder="••••••••"
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                      >
+                        {showNewPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid gap-2">
                 <Label htmlFor="tempo_estimado" className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
@@ -736,6 +795,45 @@ export function OnboardingAdminDialog({
                                           onCheckedChange={(checked) => setEditingItem({ ...editingItem, requer_assinatura: checked })}
                                         />
                                         <Label className="text-xs">Exigir assinatura</Label>
+                                      </div>
+                                    )}
+
+                                    {editingItem?.tipo === "acesso_sistema" && (
+                                      <div className="grid gap-2 p-3 border rounded-lg bg-muted/30">
+                                        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                                          <KeyRound className="h-3 w-3" />
+                                          Credenciais
+                                        </p>
+                                        <div className="space-y-1">
+                                          <Label className="text-xs">Login</Label>
+                                          <Input
+                                            value={editingItem?.login_sistema || ""}
+                                            onChange={(e) => setEditingItem({ ...editingItem, login_sistema: e.target.value })}
+                                            placeholder="nome.usuario"
+                                            className="h-8 text-sm"
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label className="text-xs">Senha</Label>
+                                          <div className="flex gap-1">
+                                            <Input
+                                              type={showEditPassword ? "text" : "password"}
+                                              value={editingItem?.senha_sistema || ""}
+                                              onChange={(e) => setEditingItem({ ...editingItem, senha_sistema: e.target.value })}
+                                              placeholder="••••••••"
+                                              className="h-8 text-sm flex-1"
+                                            />
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() => setShowEditPassword(!showEditPassword)}
+                                              className="h-8 w-8 p-0"
+                                            >
+                                              {showEditPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                                            </Button>
+                                          </div>
+                                        </div>
                                       </div>
                                     )}
 
