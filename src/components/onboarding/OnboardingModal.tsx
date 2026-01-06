@@ -364,61 +364,34 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
                     {/* Quick action buttons */}
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {item.url_video && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPreviewUrl(item.url_video!);
-                              setPreviewType("video");
-                              setPreviewTitle(item.titulo);
-                            }}
-                            className="h-7 px-2 text-xs gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                            Ver
-                          </Button>
-                          <a
-                            href={item.url_video}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground rounded-md transition-colors"
-                            title="Abrir em nova aba"
-                          >
-                            <Maximize2 className="h-3 w-3" />
-                          </a>
-                        </>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(item.url_video!, "_blank", "noopener,noreferrer");
+                          }}
+                          className="h-7 px-2 text-xs gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Play className="h-3.5 w-3.5" />
+                          Assistir
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
                       )}
                       {item.arquivo_url && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPreviewUrl(item.arquivo_url!);
-                              setPreviewType("pdf");
-                              setPreviewTitle(item.titulo);
-                            }}
-                            className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                            Ver PDF
-                          </Button>
-                          <a
-                            href={item.arquivo_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            download
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground rounded-md transition-colors"
-                            title="Baixar PDF"
-                          >
-                            <Download className="h-3 w-3" />
-                          </a>
-                        </>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(item.arquivo_url!, "_blank", "noopener,noreferrer");
+                          }}
+                          className="h-7 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          Ver PDF
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
                       )}
                       {item.tipo === "acesso_sistema" && item.login_sistema && (
                         <div className="flex items-center gap-1">
