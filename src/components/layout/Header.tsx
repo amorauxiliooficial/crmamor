@@ -1,4 +1,5 @@
-import { Heart, Search, LogOut, UserPlus, BookOpen } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Heart, Search, LogOut, UserPlus, BookOpen, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +15,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { IndicacoesNotificacao } from "@/components/indicacoes/IndicacoesNotificacao";
 import { Indicacao } from "@/types/indicacao";
+import { OnboardingAdminDialog } from "@/components/onboarding/OnboardingAdminDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface HeaderProps {
   searchQuery: string;
@@ -25,6 +28,22 @@ interface HeaderProps {
 export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicacao }: HeaderProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      setIsAdmin(!!data);
+    };
+    checkAdmin();
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -78,6 +97,18 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
             <BookOpen className="h-4 w-4" />
             <span className="hidden sm:inline">Playbook</span>
           </Button>
+
+          {isAdmin && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+              onClick={() => setAdminDialogOpen(true)}
+            >
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Onboarding</span>
+            </Button>
+          )}
           
           <IndicacoesNotificacao onSelectIndicacao={onSelectIndicacao} />
 
@@ -109,6 +140,14 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
           </DropdownMenu>
         </div>
       </div>
+
+      {isAdmin && (
+        <OnboardingAdminDialog
+          open={adminDialogOpen}
+          onOpenChange={setAdminDialogOpen}
+          onRefresh={() => {}}
+        />
+      )}
     </header>
   );
 }
