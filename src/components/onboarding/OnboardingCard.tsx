@@ -7,7 +7,19 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { ClipboardList, BookOpen, FileText, ChevronDown, ChevronUp, Settings } from "lucide-react";
+import { 
+  ClipboardList, 
+  BookOpen, 
+  FileText, 
+  ChevronDown, 
+  ChevronUp, 
+  Settings,
+  Play,
+  FileCheck,
+  PenLine,
+  ExternalLink,
+  Download
+} from "lucide-react";
 import { OnboardingItem, OnboardingProgresso } from "@/types/onboarding";
 import { OnboardingAdminDialog } from "./OnboardingAdminDialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -75,7 +87,6 @@ export function OnboardingCard() {
     const existingProgress = progresso.find((p) => p.item_id === itemId);
 
     if (existingProgress) {
-      // Update existing record
       const { error } = await supabase
         .from("onboarding_progresso")
         .update({
@@ -93,7 +104,6 @@ export function OnboardingCard() {
         return;
       }
     } else {
-      // Create new record
       const { error } = await supabase.from("onboarding_progresso").insert({
         user_id: user.id,
         item_id: itemId,
@@ -111,7 +121,6 @@ export function OnboardingCard() {
       }
     }
 
-    // Refresh data
     fetchData();
 
     if (isCompleted) {
@@ -136,6 +145,19 @@ export function OnboardingCard() {
   const documentacao = items.filter((i) => i.categoria === "documentacao");
   const geral = items.filter((i) => i.categoria === "geral");
 
+  const getTypeIcon = (tipo: string) => {
+    switch (tipo) {
+      case "video":
+        return <Play className="h-4 w-4 text-red-500" />;
+      case "documento":
+        return <FileText className="h-4 w-4 text-blue-500" />;
+      case "assinatura":
+        return <PenLine className="h-4 w-4 text-purple-500" />;
+      default:
+        return <FileCheck className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
   const getCategoryIcon = (categoria: string) => {
     switch (categoria) {
       case "treinamento":
@@ -145,6 +167,50 @@ export function OnboardingCard() {
       default:
         return <ClipboardList className="h-4 w-4" />;
     }
+  };
+
+  const renderItemActions = (item: OnboardingItem) => {
+    const actions = [];
+
+    if (item.url_video) {
+      actions.push(
+        <Button
+          key="video"
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            window.open(item.url_video, "_blank");
+          }}
+          className="h-7 text-xs gap-1"
+        >
+          <Play className="h-3 w-3" />
+          Assistir
+        </Button>
+      );
+    }
+
+    if (item.arquivo_url) {
+      actions.push(
+        <Button
+          key="arquivo"
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            window.open(item.arquivo_url, "_blank");
+          }}
+          className="h-7 text-xs gap-1"
+        >
+          <Download className="h-3 w-3" />
+          Baixar
+        </Button>
+      );
+    }
+
+    return actions.length > 0 ? (
+      <div className="flex items-center gap-1 mt-1">{actions}</div>
+    ) : null;
   };
 
   const renderItems = (categoryItems: OnboardingItem[], title: string) => {
@@ -162,8 +228,8 @@ export function OnboardingCard() {
             return (
               <div
                 key={item.id}
-                className={`flex items-start gap-3 p-2 rounded-md transition-colors ${
-                  completed ? "bg-primary/5" : "hover:bg-muted/50"
+                className={`flex items-start gap-3 p-3 rounded-md border transition-colors ${
+                  completed ? "bg-primary/5 border-primary/20" : "hover:bg-muted/50 border-transparent"
                 }`}
               >
                 <Checkbox
@@ -172,17 +238,28 @@ export function OnboardingCard() {
                   onCheckedChange={(checked) => handleToggle(item.id, !!checked)}
                   className="mt-0.5"
                 />
-                <label
-                  htmlFor={item.id}
-                  className={`flex-1 cursor-pointer text-sm ${
-                    completed ? "line-through text-muted-foreground" : ""
-                  }`}
-                >
-                  <span className="font-medium">{item.titulo}</span>
+                <div className="flex-1 min-w-0">
+                  <label
+                    htmlFor={item.id}
+                    className={`flex items-center gap-2 cursor-pointer text-sm ${
+                      completed ? "line-through text-muted-foreground" : ""
+                    }`}
+                  >
+                    {getTypeIcon(item.tipo)}
+                    <span className="font-medium">{item.titulo}</span>
+                    {item.requer_assinatura && (
+                      <Badge variant="outline" className="text-xs">
+                        Requer assinatura
+                      </Badge>
+                    )}
+                  </label>
                   {item.descricao && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{item.descricao}</p>
+                    <p className="text-xs text-muted-foreground mt-1 ml-6">{item.descricao}</p>
                   )}
-                </label>
+                  <div className="ml-6">
+                    {renderItemActions(item)}
+                  </div>
+                </div>
               </div>
             );
           })}

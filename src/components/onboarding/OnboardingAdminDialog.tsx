@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,8 +21,9 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { OnboardingItem } from "@/types/onboarding";
-import { Plus, Trash2, GripVertical, Loader2 } from "lucide-react";
+import { Plus, Trash2, GripVertical, Loader2, Upload, Play, FileText, PenLine, FileCheck } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface OnboardingAdminDialogProps {
   open: boolean;
@@ -36,13 +37,19 @@ export function OnboardingAdminDialog({
   onRefresh,
 }: OnboardingAdminDialogProps) {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<OnboardingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [newItem, setNewItem] = useState({
     titulo: "",
     descricao: "",
-    categoria: "geral" as "treinamento" | "documentacao" | "geral",
+    categoria: "treinamento" as "treinamento" | "documentacao" | "geral",
+    tipo: "checklist" as "checklist" | "video" | "documento" | "assinatura",
+    url_video: "",
+    arquivo_url: "",
+    requer_assinatura: false,
   });
 
   const fetchItems = async () => {
@@ -66,6 +73,42 @@ export function OnboardingAdminDialog({
     }
   }, [open]);
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `manuais/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("onboarding-files")
+      .upload(filePath, file);
+
+    if (uploadError) {
+      toast({
+        variant: "destructive",
+        title: "Erro no upload",
+        description: uploadError.message,
+      });
+      setUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("onboarding-files")
+      .getPublicUrl(filePath);
+
+    setNewItem({ ...newItem, arquivo_url: urlData.publicUrl });
+    toast({
+      title: "Arquivo enviado",
+      description: "O arquivo foi carregado com sucesso.",
+    });
+    setUploading(false);
+  };
+
   const handleAddItem = async () => {
     if (!newItem.titulo.trim()) {
       toast({
@@ -83,6 +126,10 @@ export function OnboardingAdminDialog({
       titulo: newItem.titulo,
       descricao: newItem.descricao || null,
       categoria: newItem.categoria,
+      tipo: newItem.tipo,
+      url_video: newItem.url_video || null,
+      arquivo_url: newItem.arquivo_url || null,
+      requer_assinatura: newItem.requer_assinatura,
       ordem: maxOrdem + 1,
     });
 
@@ -97,7 +144,15 @@ export function OnboardingAdminDialog({
         title: "Item adicionado",
         description: "O item de onboarding foi criado com sucesso.",
       });
-      setNewItem({ titulo: "", descricao: "", categoria: "geral" });
+      setNewItem({
+        titulo: "",
+        descricao: "",
+        categoria: "treinamento",
+        tipo: "checklist",
+        url_video: "",
+        arquivo_url: "",
+        requer_assinatura: false,
+      });
       fetchItems();
       onRefresh();
     }
@@ -144,6 +199,19 @@ export function OnboardingAdminDialog({
     }
   };
 
+  const getTypeIcon = (tipo: string) => {
+    switch (tipo) {
+      case "video":
+        return <Play className="h-4 w-4 text-red-500" />;
+      case "documento":
+        return <FileText className="h-4 w-4 text-blue-500" />;
+      case "assinatura":
+        return <PenLine className="h-4 w-4 text-purple-500" />;
+      default:
+        return <FileCheck className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
   const getCategoryLabel = (categoria: string) => {
     switch (categoria) {
       case "treinamento":
@@ -157,32 +225,59 @@ export function OnboardingAdminDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
+      <DialogContent className="max-w-3xl max-h-[85vh]">
         <DialogHeader>
           <DialogTitle>Gerenciar Itens de Onboarding</DialogTitle>
           <DialogDescription>
-            Adicione, edite ou remova itens do checklist de onboarding.
+            Adicione treinamentos, documentos, vídeos e controle de assinaturas.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Add new item form */}
-          <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
-            <h4 className="font-medium">Adicionar novo item</h4>
+        <Tabs defaultValue="add" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="add">Adicionar Novo</TabsTrigger>
+            <TabsTrigger value="manage">Gerenciar Itens</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="add" className="space-y-4 mt-4">
             <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="titulo">Título</Label>
-                <Input
-                  id="titulo"
-                  value={newItem.titulo}
-                  onChange={(e) =>
-                    setNewItem({ ...newItem, titulo: e.target.value })
-                  }
-                  placeholder="Ex: Treinamento de segurança"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="titulo">Título *</Label>
+                  <Input
+                    id="titulo"
+                    value={newItem.titulo}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, titulo: e.target.value })
+                    }
+                    placeholder="Ex: Treinamento de segurança"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="categoria">Categoria</Label>
+                  <Select
+                    value={newItem.categoria}
+                    onValueChange={(value) =>
+                      setNewItem({
+                        ...newItem,
+                        categoria: value as "treinamento" | "documentacao" | "geral",
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="treinamento">Treinamento</SelectItem>
+                      <SelectItem value="documentacao">Documentação</SelectItem>
+                      <SelectItem value="geral">Geral</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
               <div className="grid gap-2">
-                <Label htmlFor="descricao">Descrição (opcional)</Label>
+                <Label htmlFor="descricao">Descrição</Label>
                 <Textarea
                   id="descricao"
                   value={newItem.descricao}
@@ -193,14 +288,15 @@ export function OnboardingAdminDialog({
                   rows={2}
                 />
               </div>
+
               <div className="grid gap-2">
-                <Label htmlFor="categoria">Categoria</Label>
+                <Label htmlFor="tipo">Tipo do Item</Label>
                 <Select
-                  value={newItem.categoria}
+                  value={newItem.tipo}
                   onValueChange={(value) =>
                     setNewItem({
                       ...newItem,
-                      categoria: value as "treinamento" | "documentacao" | "geral",
+                      tipo: value as "checklist" | "video" | "documento" | "assinatura",
                     })
                   }
                 >
@@ -208,13 +304,96 @@ export function OnboardingAdminDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="treinamento">Treinamento</SelectItem>
-                    <SelectItem value="documentacao">Documentação</SelectItem>
-                    <SelectItem value="geral">Geral</SelectItem>
+                    <SelectItem value="checklist">
+                      <div className="flex items-center gap-2">
+                        <FileCheck className="h-4 w-4" />
+                        Checklist simples
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="video">
+                      <div className="flex items-center gap-2">
+                        <Play className="h-4 w-4 text-red-500" />
+                        Vídeo (YouTube, Vimeo, etc.)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="documento">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-blue-500" />
+                        Documento/Manual (PDF)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="assinatura">
+                      <div className="flex items-center gap-2">
+                        <PenLine className="h-4 w-4 text-purple-500" />
+                        Documento para assinar
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleAddItem} disabled={saving}>
+
+              {newItem.tipo === "video" && (
+                <div className="grid gap-2">
+                  <Label htmlFor="url_video">Link do Vídeo</Label>
+                  <Input
+                    id="url_video"
+                    value={newItem.url_video}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, url_video: e.target.value })
+                    }
+                    placeholder="https://youtube.com/watch?v=..."
+                  />
+                </div>
+              )}
+
+              {(newItem.tipo === "documento" || newItem.tipo === "assinatura") && (
+                <div className="grid gap-2">
+                  <Label>Arquivo (PDF)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={newItem.arquivo_url}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, arquivo_url: e.target.value })
+                      }
+                      placeholder="URL do arquivo ou faça upload"
+                      className="flex-1"
+                    />
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      {uploading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {newItem.tipo === "assinatura" && (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={newItem.requer_assinatura}
+                    onCheckedChange={(checked) =>
+                      setNewItem({ ...newItem, requer_assinatura: checked })
+                    }
+                  />
+                  <Label>Exigir confirmação de assinatura</Label>
+                </div>
+              )}
+
+              <Button onClick={handleAddItem} disabled={saving} className="w-full">
                 {saving ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (
@@ -223,18 +402,16 @@ export function OnboardingAdminDialog({
                 Adicionar item
               </Button>
             </div>
-          </div>
+          </TabsContent>
 
-          {/* Existing items list */}
-          <div className="space-y-2">
-            <h4 className="font-medium">Itens existentes</h4>
+          <TabsContent value="manage" className="mt-4">
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <ScrollArea className="h-[300px]">
-                <div className="space-y-2">
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-2 pr-4">
                   {items.map((item) => (
                     <div
                       key={item.id}
@@ -243,10 +420,14 @@ export function OnboardingAdminDialog({
                       }`}
                     >
                       <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+                      {getTypeIcon(item.tipo)}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{item.titulo}</p>
                         <p className="text-xs text-muted-foreground">
                           {getCategoryLabel(item.categoria)}
+                          {item.url_video && " • Com vídeo"}
+                          {item.arquivo_url && " • Com arquivo"}
+                          {item.requer_assinatura && " • Requer assinatura"}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -268,8 +449,8 @@ export function OnboardingAdminDialog({
                 </div>
               </ScrollArea>
             )}
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
