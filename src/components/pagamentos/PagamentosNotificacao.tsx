@@ -15,10 +15,12 @@ import { ptBR } from "date-fns/locale";
 
 interface UpcomingPayment {
   id: string;
+  pagamento_id: string;
   numero_parcela: number;
   valor: number | null;
   data_pagamento: string;
   nome_mae: string;
+  mae_id: string;
   total_parcelas: number | null;
 }
 
@@ -52,6 +54,7 @@ export function PagamentosNotificacao() {
         pagamentos_mae!inner (
           id,
           total_parcelas,
+          mae_id,
           mae_processo!inner (
             nome_mae
           )
@@ -65,10 +68,12 @@ export function PagamentosNotificacao() {
     } else if (data) {
       const payments: UpcomingPayment[] = data.map((p: any) => ({
         id: p.id,
+        pagamento_id: p.pagamento_id,
         numero_parcela: p.numero_parcela,
         valor: p.valor,
         data_pagamento: p.data_pagamento,
         nome_mae: p.pagamentos_mae?.mae_processo?.nome_mae || "N/A",
+        mae_id: p.pagamentos_mae?.mae_id || "",
         total_parcelas: p.pagamentos_mae?.total_parcelas,
       }));
       setUpcomingPayments(payments);
@@ -115,9 +120,15 @@ export function PagamentosNotificacao() {
     setDismissed((prev) => [...prev, id]);
   };
 
-  const handlePaymentClick = () => {
+  const handlePaymentClick = (payment: UpcomingPayment) => {
     setOpen(false);
-    navigate("/pagamentos");
+    navigate("/pagamentos", { 
+      state: { 
+        openPagamentoId: payment.pagamento_id,
+        maeId: payment.mae_id,
+        maeNome: payment.nome_mae
+      } 
+    });
   };
 
   const totalValue = visiblePayments.reduce(
@@ -174,7 +185,7 @@ export function PagamentosNotificacao() {
                 <div
                   key={payment.id}
                   className="p-3 hover:bg-muted/50 transition-colors cursor-pointer"
-                  onClick={handlePaymentClick}
+                  onClick={() => handlePaymentClick(payment)}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
