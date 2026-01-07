@@ -123,8 +123,8 @@ export function OnboardingCard() {
       }
     }
 
-    fetchData();
-
+    await fetchData();
+    window.dispatchEvent(new CustomEvent("onboarding-progress-updated"));
     if (isCompleted) {
       toast({
         title: "Item concluído!",
