@@ -403,27 +403,27 @@ const Index = () => {
                 value={viewMode}
                 onValueChange={(value) => value && setViewMode(value as "kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes")}
               >
-                <ToggleGroupItem value="kanban" aria-label="Visualização Kanban">
+                <ToggleGroupItem value="kanban" aria-label="Visualização Kanban" className="tour-view-kanban">
                   <LayoutGrid className="h-4 w-4 mr-2" />
                   Processos
                 </ToggleGroupItem>
-                <ToggleGroupItem value="table" aria-label="Visualização Tabela">
+                <ToggleGroupItem value="table" aria-label="Visualização Tabela" className="tour-view-table">
                   <List className="h-4 w-4 mr-2" />
                   Tabela
                 </ToggleGroupItem>
-                <ToggleGroupItem value="gestantes" aria-label="Gestantes">
+                <ToggleGroupItem value="gestantes" aria-label="Gestantes" className="tour-view-gestantes">
                   <Baby className="h-4 w-4 mr-2" />
                   Gestantes
                 </ToggleGroupItem>
-                <ToggleGroupItem value="conferencia" aria-label="Conferência INSS">
+                <ToggleGroupItem value="conferencia" aria-label="Conferência INSS" className="tour-view-conferencia">
                   <ClipboardCheck className="h-4 w-4 mr-2" />
                   Conferência INSS
                 </ToggleGroupItem>
-                <ToggleGroupItem value="pagamentos" aria-label="Pagamentos">
+                <ToggleGroupItem value="pagamentos" aria-label="Pagamentos" className="tour-view-pagamentos">
                   <DollarSign className="h-4 w-4 mr-2" />
                   Pagamentos
                 </ToggleGroupItem>
-                <ToggleGroupItem value="indicacoes" aria-label="Indicações">
+                <ToggleGroupItem value="indicacoes" aria-label="Indicações" className="tour-view-indicacoes">
                   <UserPlus className="h-4 w-4 mr-2" />
                   Indicações
                 </ToggleGroupItem>
