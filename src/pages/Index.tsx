@@ -12,8 +12,10 @@ import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
 import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
 import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
+import { GuidedTour } from "@/components/tour/GuidedTour";
 import { Indicacao } from "@/types/indicacao";
 import { useAuth } from "@/hooks/useAuth";
+import { useTour } from "@/hooks/useTour";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso } from "@/types/mae";
 import {
@@ -29,12 +31,14 @@ import {
   ClipboardCheck,
   DollarSign,
   UserPlus,
+  HelpCircle,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { getUserFriendlyError, logError } from "@/lib/errorHandler";
+import { logError, getUserFriendlyError } from "@/lib/errorHandler";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { differenceInMonths, parseISO } from "date-fns";
 
 // Map database status to display status with emoji
@@ -58,6 +62,7 @@ const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { run: tourRun, stepIndex, setStepIndex, stopTour, startTour } = useTour();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMae, setSelectedMae] = useState<MaeProcesso | null>(null);
@@ -312,6 +317,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <GuidedTour
+        run={tourRun}
+        stepIndex={stepIndex}
+        onStepChange={setStepIndex}
+        onFinish={stopTour}
+      />
+      
       <Header 
         searchQuery={searchQuery} 
         onSearchChange={setSearchQuery} 
@@ -323,7 +335,7 @@ const Index = () => {
       <main className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-x-hidden">
 
         {/* Stats Grid */}
-        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 tour-stats">
           <StatsCard
             title="Total de Processos"
             value={stats.total}
@@ -385,7 +397,7 @@ const Index = () => {
                 </Badge>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 tour-view-toggle">
               <ToggleGroup
                 type="single"
                 value={viewMode}
@@ -416,6 +428,15 @@ const Index = () => {
                   Indicações
                 </ToggleGroupItem>
               </ToggleGroup>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={startTour}
+                className="ml-2"
+                title="Iniciar tour guiado"
+              >
+                <HelpCircle className="h-4 w-4" />
+              </Button>
             </div>
           </div>
 
@@ -455,7 +476,7 @@ const Index = () => {
               </TabsList>
 
               <TabsContent value="all" className="mt-0">
-                <div className="rounded-lg border bg-muted/30 min-h-[500px]">
+                <div className="rounded-lg border bg-muted/30 min-h-[500px] tour-kanban">
                   <KanbanBoard 
                     maes={filteredMaes} 
                     onCardClick={handleCardClick} 
