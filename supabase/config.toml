@@ -1,1 +1,7 @@
 project_id = "rfrqemafmqcmmbgctrtt"
+
+[functions.send-onboarding-complete-email]
+verify_jwt = false
+
+[functions.payment-reminder]
+verify_jwt = false
