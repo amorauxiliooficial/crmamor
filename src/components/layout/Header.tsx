@@ -34,6 +34,28 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [onboardingProgress, setOnboardingProgress] = useState<number | null>(null);
 
+  const fetchOnboardingProgress = async () => {
+    if (!user) return;
+    
+    const { data: items } = await supabase
+      .from("onboarding_items")
+      .select("id")
+      .eq("ativo", true);
+    
+    if (items && items.length > 0) {
+      const { data: progress } = await supabase
+        .from("onboarding_progresso")
+        .select("item_id, concluido")
+        .eq("user_id", user.id);
+      
+      const completedCount = progress?.filter(p => p.concluido).length || 0;
+      const percentage = Math.round((completedCount / items.length) * 100);
+      setOnboardingProgress(percentage);
+    } else {
+      setOnboardingProgress(100);
+    }
+  };
+
   useEffect(() => {
     const checkAdminAndProgress = async () => {
       if (!user) return;
@@ -49,27 +71,36 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
 
       // If not admin, check onboarding progress
       if (!roleData) {
-        const { data: items } = await supabase
-          .from("onboarding_items")
-          .select("id")
-          .eq("ativo", true);
-        
-        if (items && items.length > 0) {
-          const { data: progress } = await supabase
-            .from("onboarding_progresso")
-            .select("item_id, concluido")
-            .eq("user_id", user.id);
-          
-          const completedCount = progress?.filter(p => p.concluido).length || 0;
-          const percentage = Math.round((completedCount / items.length) * 100);
-          setOnboardingProgress(percentage);
-        } else {
-          setOnboardingProgress(100);
-        }
+        fetchOnboardingProgress();
       }
     };
     checkAdminAndProgress();
   }, [user]);
+
+  // Realtime subscription for onboarding progress updates
+  useEffect(() => {
+    if (!user || isAdmin) return;
+
+    const channel = supabase
+      .channel('onboarding-progress-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'onboarding_progresso',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchOnboardingProgress();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, isAdmin]);
 
   const handleSignOut = async () => {
     await signOut();
