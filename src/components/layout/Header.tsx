@@ -57,7 +57,7 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
   return (
     <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="flex h-16 items-center justify-between px-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 tour-logo">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
             <Heart className="h-5 w-5 text-primary-foreground" />
           </div>
@@ -69,7 +69,7 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
           </div>
         </div>
 
-        <div className="flex-1 max-w-md mx-8">
+        <div className="flex-1 max-w-md mx-8 tour-search">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -83,7 +83,7 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
 
         <div className="flex items-center gap-2">
           {onAddMae && (
-            <Button onClick={onAddMae} size="sm" className="gap-2">
+            <Button onClick={onAddMae} size="sm" className="gap-2 tour-add-mae">
               <UserPlus className="h-4 w-4" />
               <span className="hidden sm:inline">Nova Mãe</span>
             </Button>
@@ -92,7 +92,7 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
           <Button 
             variant="outline" 
             size="sm" 
-            className="gap-2"
+            className="gap-2 tour-playbook"
             onClick={() => navigate("/playbook")}
           >
             <BookOpen className="h-4 w-4" />
@@ -103,7 +103,7 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
             <Button 
               variant="outline" 
               size="sm" 
-              className="gap-2"
+              className="gap-2 tour-onboarding"
               onClick={() => setAdminDialogOpen(true)}
             >
               <Settings className="h-4 w-4" />
@@ -113,7 +113,7 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
             <Button 
               variant="outline" 
               size="sm" 
-              className="gap-2"
+              className="gap-2 tour-onboarding"
               onClick={onOpenOnboarding}
             >
               <ClipboardList className="h-4 w-4" />
@@ -121,11 +121,13 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
             </Button>
           )}
           
-          <IndicacoesNotificacao onSelectIndicacao={onSelectIndicacao} />
+          <div className="tour-notifications">
+            <IndicacoesNotificacao onSelectIndicacao={onSelectIndicacao} />
+          </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
+              <Button variant="ghost" size="icon" className="rounded-full tour-user-menu">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-primary/10 text-primary text-xs">
                     {userInitials}
