@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Heart, Search, LogOut, UserPlus, BookOpen, Settings, ClipboardList } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import {
@@ -31,19 +32,43 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [onboardingProgress, setOnboardingProgress] = useState<number | null>(null);
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    const checkAdminAndProgress = async () => {
       if (!user) return;
-      const { data } = await supabase
+      
+      // Check if admin
+      const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
         .eq("role", "admin")
         .maybeSingle();
-      setIsAdmin(!!data);
+      setIsAdmin(!!roleData);
+
+      // If not admin, check onboarding progress
+      if (!roleData) {
+        const { data: items } = await supabase
+          .from("onboarding_items")
+          .select("id")
+          .eq("ativo", true);
+        
+        if (items && items.length > 0) {
+          const { data: progress } = await supabase
+            .from("onboarding_progresso")
+            .select("item_id, concluido")
+            .eq("user_id", user.id);
+          
+          const completedCount = progress?.filter(p => p.concluido).length || 0;
+          const percentage = Math.round((completedCount / items.length) * 100);
+          setOnboardingProgress(percentage);
+        } else {
+          setOnboardingProgress(100);
+        }
+      }
     };
-    checkAdmin();
+    checkAdminAndProgress();
   }, [user]);
 
   const handleSignOut = async () => {
@@ -113,11 +138,19 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
             <Button 
               variant="outline" 
               size="sm" 
-              className="gap-2 tour-onboarding"
+              className="gap-2 tour-onboarding relative"
               onClick={onOpenOnboarding}
             >
               <ClipboardList className="h-4 w-4" />
               <span className="hidden sm:inline">Onboarding</span>
+              {onboardingProgress !== null && onboardingProgress < 100 && (
+                <Badge 
+                  variant="destructive" 
+                  className="ml-1 h-5 px-1.5 text-[10px] font-semibold"
+                >
+                  {onboardingProgress}%
+                </Badge>
+              )}
             </Button>
           )}
           
