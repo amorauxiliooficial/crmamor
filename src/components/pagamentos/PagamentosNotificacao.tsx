@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Bell, X, DollarSign, Calendar } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { X, DollarSign, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -23,6 +24,7 @@ interface UpcomingPayment {
 
 export function PagamentosNotificacao() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [upcomingPayments, setUpcomingPayments] = useState<UpcomingPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -108,8 +110,14 @@ export function PagamentosNotificacao() {
     return "secondary";
   };
 
-  const dismissPayment = (id: string) => {
+  const dismissPayment = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     setDismissed((prev) => [...prev, id]);
+  };
+
+  const handlePaymentClick = () => {
+    setOpen(false);
+    navigate("/pagamentos");
   };
 
   const totalValue = visiblePayments.reduce(
@@ -165,7 +173,8 @@ export function PagamentosNotificacao() {
               {visiblePayments.map((payment) => (
                 <div
                   key={payment.id}
-                  className="p-3 hover:bg-muted/50 transition-colors"
+                  className="p-3 hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={handlePaymentClick}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
@@ -189,7 +198,7 @@ export function PagamentosNotificacao() {
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6 shrink-0"
-                      onClick={() => dismissPayment(payment.id)}
+                      onClick={(e) => dismissPayment(payment.id, e)}
                     >
                       <X className="h-3 w-3" />
                     </Button>
