@@ -146,7 +146,7 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
               {onboardingProgress !== null && onboardingProgress < 100 && (
                 <Badge 
                   variant="destructive" 
-                  className="ml-1 h-5 px-1.5 text-[10px] font-semibold"
+                  className="ml-1 h-5 px-1.5 text-[10px] font-semibold animate-pulse"
                 >
                   {onboardingProgress}%
                 </Badge>
