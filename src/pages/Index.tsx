@@ -89,47 +89,8 @@ const Index = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Check if should show onboarding modal on first load
-  useEffect(() => {
-    const checkOnboardingStatus = async () => {
-      if (!user) return;
-      
-      // Check if user is admin
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      
-      const isAdmin = !!roleData;
-      
-      // For non-admin users, check if they have incomplete onboarding
-      if (!isAdmin) {
-        const { data: items } = await supabase
-          .from("onboarding_items")
-          .select("id")
-          .eq("ativo", true);
-        
-        if (items && items.length > 0) {
-          const { data: progress } = await supabase
-            .from("onboarding_progresso")
-            .select("item_id, concluido")
-            .eq("user_id", user.id);
-          
-          const completedIds = new Set(progress?.filter(p => p.concluido).map(p => p.item_id) || []);
-          const hasIncomplete = items.some(item => !completedIds.has(item.id));
-          
-          if (hasIncomplete) {
-            setShowOnboardingOnLoad(true);
-            setOnboardingOpen(true);
-          }
-        }
-      }
-    };
-    
-    checkOnboardingStatus();
-  }, [user]);
+  // Onboarding modal is now opened manually via header button only
+  // Removed automatic popup on first load
 
   // Fetch processes from database
   const fetchMaes = async () => {
