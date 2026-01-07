@@ -2,16 +2,18 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlaybook } from "@/hooks/usePlaybook";
+import { usePlaybookTour } from "@/hooks/usePlaybookTour";
 import { Header } from "@/components/layout/Header";
 import { PlaybookChatCard } from "@/components/playbook/PlaybookChatCard";
 import { PlaybookEntradaDialog } from "@/components/playbook/PlaybookEntradaDialog";
 import { PlaybookImportDialog } from "@/components/playbook/PlaybookImportDialog";
+import { PlaybookTour } from "@/components/tour/PlaybookTour";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Loader2, Plus, Search, Star, ArrowLeft, Upload, FileText, ChevronDown } from "lucide-react";
+import { Loader2, Plus, Search, Star, ArrowLeft, Upload, FileText, ChevronDown, HelpCircle } from "lucide-react";
 import { PlaybookEntrada } from "@/types/playbook";
 import {
   AlertDialog,
@@ -37,6 +39,7 @@ export default function Playbook() {
     updateEntrada,
     deleteEntrada,
   } = usePlaybook();
+  const { run: tourRun, stepIndex, setStepIndex, stopTour, startTour } = usePlaybookTour();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategoria, setSelectedCategoria] = useState<string>("all");
@@ -124,11 +127,17 @@ export default function Playbook() {
 
   return (
     <div className="min-h-screen bg-background">
+      <PlaybookTour
+        run={tourRun}
+        stepIndex={stepIndex}
+        onStepChange={setStepIndex}
+        onFinish={stopTour}
+      />
       <Header searchQuery="" onSearchChange={() => {}} onAddMae={() => {}} />
 
       <main className="p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between tour-playbook-header">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
               <ArrowLeft className="h-5 w-5" />
@@ -140,30 +149,40 @@ export default function Playbook() {
               </p>
             </div>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar
-                <ChevronDown className="h-4 w-4 ml-2" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => { setEditingEntrada(null); setDialogOpen(true); }}>
-                <FileText className="h-4 w-4 mr-2" />
-                Entrada Manual
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setImportDialogOpen(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                Importar Várias
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={startTour}
+              title="Iniciar tour guiado"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="tour-playbook-add">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => { setEditingEntrada(null); setDialogOpen(true); }}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Entrada Manual
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setImportDialogOpen(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importar Várias
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
+          <div className="relative flex-1 tour-playbook-search">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar perguntas, respostas ou tags..."
@@ -175,7 +194,7 @@ export default function Playbook() {
           <Button
             variant={showFavoritos ? "default" : "outline"}
             onClick={() => setShowFavoritos(!showFavoritos)}
-            className="gap-2"
+            className="gap-2 tour-playbook-favoritos"
           >
             <Star className={showFavoritos ? "fill-current" : ""} />
             Favoritos
@@ -184,7 +203,7 @@ export default function Playbook() {
 
         {/* Categories Tabs */}
         <Tabs value={selectedCategoria} onValueChange={setSelectedCategoria}>
-          <TabsList className="flex-wrap h-auto gap-1">
+          <TabsList className="flex-wrap h-auto gap-1 tour-playbook-categories">
             <TabsTrigger value="all">
               Todas
               <Badge variant="secondary" className="ml-2">
@@ -215,14 +234,15 @@ export default function Playbook() {
               </div>
             ) : (
               <div className="max-w-2xl mx-auto space-y-6 bg-card rounded-xl p-6 border shadow-sm">
-                {filteredEntradas.map((entrada) => (
-                  <PlaybookChatCard
-                    key={entrada.id}
-                    entrada={entrada}
-                    onToggleFavorito={toggleFavorito}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
+                {filteredEntradas.map((entrada, index) => (
+                  <div key={entrada.id} className={index === 0 ? "tour-playbook-card" : ""}>
+                    <PlaybookChatCard
+                      entrada={entrada}
+                      onToggleFavorito={toggleFavorito}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                    />
+                  </div>
                 ))}
               </div>
             )}
