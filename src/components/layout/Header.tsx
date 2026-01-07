@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { IndicacoesNotificacao } from "@/components/indicacoes/IndicacoesNotificacao";
+import { PagamentosNotificacao } from "@/components/pagamentos/PagamentosNotificacao";
 import { Indicacao } from "@/types/indicacao";
 import { OnboardingAdminDialog } from "@/components/onboarding/OnboardingAdminDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -201,7 +202,8 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
             </Button>
           )}
           
-          <div className="tour-notifications">
+          <div className="tour-notifications flex items-center gap-1">
+            <PagamentosNotificacao />
             <IndicacoesNotificacao onSelectIndicacao={onSelectIndicacao} />
           </div>
 
