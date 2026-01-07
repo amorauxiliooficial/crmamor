@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Heart, Search, LogOut, UserPlus, BookOpen, Settings, ClipboardList } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,32 +34,36 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [onboardingProgress, setOnboardingProgress] = useState<number | null>(null);
 
-  const fetchOnboardingProgress = async () => {
+  const fetchOnboardingProgress = useCallback(async () => {
     if (!user) return;
-    
+
     const { data: items } = await supabase
       .from("onboarding_items")
       .select("id")
       .eq("ativo", true);
-    
-    if (items && items.length > 0) {
-      const { data: progress } = await supabase
-        .from("onboarding_progresso")
-        .select("item_id, concluido")
-        .eq("user_id", user.id);
-      
-      const completedCount = progress?.filter(p => p.concluido).length || 0;
-      const percentage = Math.round((completedCount / items.length) * 100);
-      setOnboardingProgress(percentage);
-    } else {
+
+    if (!items || items.length === 0) {
       setOnboardingProgress(100);
+      return;
     }
-  };
+
+    const { data: progress } = await supabase
+      .from("onboarding_progresso")
+      .select("item_id, concluido")
+      .eq("user_id", user.id);
+
+    const completedIds = new Set(
+      (progress ?? []).filter((p) => p.concluido).map((p) => p.item_id)
+    );
+
+    const percentage = Math.round((completedIds.size / items.length) * 100);
+    setOnboardingProgress(percentage);
+  }, [user]);
 
   useEffect(() => {
     const checkAdminAndProgress = async () => {
       if (!user) return;
-      
+
       // Check if admin
       const { data: roleData } = await supabase
         .from("user_roles")
@@ -75,20 +79,32 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
       }
     };
     checkAdminAndProgress();
-  }, [user]);
+  }, [user, fetchOnboardingProgress]);
+
+  // Update progress when onboarding UI changes it (same tab)
+  useEffect(() => {
+    if (!user || isAdmin) return;
+
+    const handler = () => fetchOnboardingProgress();
+    window.addEventListener("onboarding-progress-updated", handler);
+
+    return () => {
+      window.removeEventListener("onboarding-progress-updated", handler);
+    };
+  }, [user, isAdmin, fetchOnboardingProgress]);
 
   // Realtime subscription for onboarding progress updates
   useEffect(() => {
     if (!user || isAdmin) return;
 
     const channel = supabase
-      .channel('onboarding-progress-changes')
+      .channel("onboarding-progress-changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'onboarding_progresso',
+          event: "*",
+          schema: "public",
+          table: "onboarding_progresso",
           filter: `user_id=eq.${user.id}`,
         },
         () => {
@@ -100,7 +116,7 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, isAdmin]);
+  }, [user, isAdmin, fetchOnboardingProgress]);
 
   const handleSignOut = async () => {
     await signOut();
