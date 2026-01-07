@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,6 +59,7 @@ interface PagamentoComMae {
 const Pagamentos = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -131,6 +132,24 @@ const Pagamentos = () => {
       fetchPagamentos();
     }
   }, [user]);
+
+  // Handle navigation state to open specific payment dialog
+  useEffect(() => {
+    const state = location.state as { 
+      openPagamentoId?: string; 
+      maeId?: string; 
+      maeNome?: string 
+    } | null;
+    
+    if (state?.openPagamentoId && state?.maeId) {
+      setSelectedMaeId(state.maeId);
+      setSelectedMaeNome(state.maeNome || "");
+      setEditingPagamentoId(state.openPagamentoId);
+      setDialogOpen(true);
+      // Clear the state to prevent reopening on refresh
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.state, navigate, location.pathname]);
 
   const stats = useMemo(() => {
     let totalParcelas = 0;
