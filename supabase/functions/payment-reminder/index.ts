@@ -158,7 +158,7 @@ serve(async (req: Request): Promise<Response> => {
 
     // Send email
     const emailResponse = await resend.emails.send({
-      from: "AAM <onboarding@resend.dev>",
+      from: "AAM <notificacoes@amorauxiliomaternidade.com.br>",
       to: RECIPIENTS,
       subject: `💰 Lembrete: ${parcelas.length} pagamento(s) amanhã - Total ${totalFormatted}`,
       html: emailHtml,

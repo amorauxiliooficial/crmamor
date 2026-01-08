@@ -31,7 +31,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email to user
     const userEmailResponse = await resend.emails.send({
-      from: "Sistema <onboarding@resend.dev>",
+      from: "AAM <notificacoes@amorauxiliomaternidade.com.br>",
       to: [user_email],
       subject: "🎉 Parabéns! Você completou o Onboarding!",
       html: `
@@ -83,7 +83,7 @@ const handler = async (req: Request): Promise<Response> => {
         
         if (adminEmails.length > 0) {
           const adminEmailResponse = await resend.emails.send({
-            from: "Sistema <onboarding@resend.dev>",
+            from: "AAM <notificacoes@amorauxiliomaternidade.com.br>",
             to: adminEmails,
             subject: `✅ ${user_name || 'Colaborador'} completou o Onboarding`,
             html: `
