@@ -48,7 +48,7 @@ export function KanbanMobileList({
   }, [groupedMaes, visibleStatuses]);
 
   return (
-    <Accordion type="multiple" defaultValue={defaultOpen} className="space-y-2 p-2">
+    <Accordion type="multiple" defaultValue={defaultOpen} className="space-y-2 px-1 py-2">
       {visibleStatuses.map((status) => {
         const statusLabel = status.split(" ").slice(1).join(" ") || status;
         const emoji = status.split(" ")[0];
@@ -59,22 +59,22 @@ export function KanbanMobileList({
             key={status}
             value={status}
             className={cn(
-              "border rounded-lg overflow-hidden",
+              "border rounded-xl overflow-hidden shadow-sm",
               STATUS_COLORS[status]
             )}
           >
-            <AccordionTrigger className="px-4 py-3 hover:no-underline">
-              <div className="flex items-center gap-2 flex-1">
-                <span className="text-lg">{emoji}</span>
-                <span className="font-semibold text-sm">{statusLabel}</span>
-                <Badge variant="secondary" className="ml-auto mr-2">
+            <AccordionTrigger className="px-3 py-2.5 hover:no-underline active:bg-muted/50">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="text-base shrink-0">{emoji}</span>
+                <span className="font-semibold text-sm truncate">{statusLabel}</span>
+                <Badge variant="secondary" className="ml-auto mr-2 text-xs h-5 px-1.5">
                   {count}
                 </Badge>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-2 pb-2">
               {count === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">
+                <p className="py-6 text-center text-sm text-muted-foreground">
                   Nenhum processo
                 </p>
               ) : (

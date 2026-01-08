@@ -90,38 +90,38 @@ export function MobileSidebar({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden">
+        <Button variant="ghost" size="icon" className="md:hidden h-9 w-9">
           <Menu className="h-5 w-5" />
           <span className="sr-only">Menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[280px] p-0">
-        <SheetHeader className="p-4 border-b">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
-              <Heart className="h-5 w-5 text-primary-foreground" />
+      <SheetContent side="left" className="w-[85vw] max-w-[300px] p-0">
+        <SheetHeader className="p-3 border-b">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
+              <Heart className="h-4 w-4 text-primary-foreground" />
             </div>
             <div>
-              <SheetTitle className="text-left">AAM</SheetTitle>
-              <p className="text-xs text-muted-foreground">
+              <SheetTitle className="text-left text-base">AAM</SheetTitle>
+              <p className="text-[11px] text-muted-foreground">
                 Amor Auxílio Maternidade
               </p>
             </div>
           </div>
         </SheetHeader>
 
-        <ScrollArea className="flex-1 h-[calc(100vh-180px)]">
-          <div className="p-4 space-y-1">
-            <p className="text-xs font-medium text-muted-foreground mb-2 px-2">
-              VISUALIZAÇÕES
+        <ScrollArea className="flex-1 h-[calc(100vh-160px)]">
+          <div className="p-3 space-y-0.5">
+            <p className="text-[10px] font-semibold text-muted-foreground mb-2 px-2 uppercase tracking-wider">
+              Visualizações
             </p>
             {navigationItems.map((item) => (
               <Button
                 key={item.id}
                 variant={currentView === item.id ? "secondary" : "ghost"}
                 className={cn(
-                  "w-full justify-start gap-3",
-                  currentView === item.id && "bg-primary/10 text-primary"
+                  "w-full justify-start gap-2.5 h-10 text-sm",
+                  currentView === item.id && "bg-primary/10 text-primary font-medium"
                 )}
                 onClick={() => handleNavigate(item.id)}
               >
@@ -133,13 +133,13 @@ export function MobileSidebar({
 
           <Separator className="my-2" />
 
-          <div className="p-4 space-y-1">
-            <p className="text-xs font-medium text-muted-foreground mb-2 px-2">
-              FERRAMENTAS
+          <div className="p-3 space-y-0.5">
+            <p className="text-[10px] font-semibold text-muted-foreground mb-2 px-2 uppercase tracking-wider">
+              Ferramentas
             </p>
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3"
+              className="w-full justify-start gap-2.5 h-10 text-sm"
               onClick={handlePlaybook}
             >
               <BookOpen className="h-4 w-4" />
@@ -147,7 +147,7 @@ export function MobileSidebar({
             </Button>
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 relative"
+              className="w-full justify-start gap-2.5 h-10 text-sm relative"
               onClick={handleOnboarding}
             >
               {isAdmin ? (
@@ -173,10 +173,10 @@ export function MobileSidebar({
           </div>
         </ScrollArea>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-background">
+        <div className="absolute bottom-0 left-0 right-0 p-3 border-t bg-background">
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+            className="w-full justify-start gap-2.5 h-10 text-sm text-destructive hover:text-destructive hover:bg-destructive/10"
             onClick={handleSignOut}
           >
             <LogOut className="h-4 w-4" />
