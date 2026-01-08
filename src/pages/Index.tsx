@@ -16,6 +16,7 @@ import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { GuidedTour } from "@/components/tour/GuidedTour";
 import { MobileViewSelector } from "@/components/layout/MobileViewSelector";
+import { ViewTransition } from "@/components/layout/ViewTransition";
 import { Indicacao } from "@/types/indicacao";
 import { useAuth } from "@/hooks/useAuth";
 import { useTour } from "@/hooks/useTour";
@@ -425,37 +426,38 @@ const Index = () => {
             </div>
           </div>
 
-          {viewMode === "indicacoes" ? (
-            <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-              <IndicacoesTab 
-                searchQuery={searchQuery} 
-                externalSelectedIndicacao={selectedIndicacaoFromNotification}
-                onClearExternalSelection={() => setSelectedIndicacaoFromNotification(null)}
-              />
-            </div>
-          ) : viewMode === "conferencia" ? (
-            <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-              <ConferenciaTab searchQuery={searchQuery} />
-            </div>
-          ) : viewMode === "pagamentos" ? (
-            <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-              <PagamentosTab searchQuery={searchQuery} />
-            </div>
-          ) : viewMode === "gestantes" ? (
-            <div className="rounded-lg border bg-muted/30 min-h-[500px]">
-              <GestantesBoard
-                maes={statusFilter === "gestantes" ? filteredMaes : gestantes}
-                onCardClick={handleCardClick}
-                onRefresh={fetchMaes}
-              />
-            </div>
-          ) : viewMode === "table" ? (
-            isMobile ? (
-              <MaeCardList maes={filteredMaes} onCardClick={handleCardClick} />
+          <ViewTransition viewKey={viewMode}>
+            {viewMode === "indicacoes" ? (
+              <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
+                <IndicacoesTab 
+                  searchQuery={searchQuery} 
+                  externalSelectedIndicacao={selectedIndicacaoFromNotification}
+                  onClearExternalSelection={() => setSelectedIndicacaoFromNotification(null)}
+                />
+              </div>
+            ) : viewMode === "conferencia" ? (
+              <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
+                <ConferenciaTab searchQuery={searchQuery} />
+              </div>
+            ) : viewMode === "pagamentos" ? (
+              <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
+                <PagamentosTab searchQuery={searchQuery} />
+              </div>
+            ) : viewMode === "gestantes" ? (
+              <div className="rounded-lg border bg-muted/30 min-h-[500px]">
+                <GestantesBoard
+                  maes={statusFilter === "gestantes" ? filteredMaes : gestantes}
+                  onCardClick={handleCardClick}
+                  onRefresh={fetchMaes}
+                />
+              </div>
+            ) : viewMode === "table" ? (
+              isMobile ? (
+                <MaeCardList maes={filteredMaes} onCardClick={handleCardClick} />
+              ) : (
+                <MaeTable maes={filteredMaes} onRowClick={handleCardClick} />
+              )
             ) : (
-              <MaeTable maes={filteredMaes} onRowClick={handleCardClick} />
-            )
-          ) : (
             <Tabs defaultValue="all" className="w-full">
               <ScrollArea className="w-full">
                 <TabsList className="mb-4 w-max md:w-auto">
@@ -524,7 +526,8 @@ const Index = () => {
                 </div>
               </TabsContent>
             </Tabs>
-          )}
+            )}
+          </ViewTransition>
         </section>
       </main>
 
