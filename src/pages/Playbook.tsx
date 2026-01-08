@@ -135,35 +135,37 @@ export default function Playbook() {
       />
       <Header searchQuery="" onSearchChange={() => {}} onAddMae={() => {}} />
 
-      <main className="p-6 space-y-6">
+      <main className="p-3 md:p-6 space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between tour-playbook-header">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-              <ArrowLeft className="h-5 w-5" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 tour-playbook-header">
+          <div className="flex items-center gap-2 md:gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="h-8 w-8 md:h-10 md:w-10">
+              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">Playbook de Vendas</h1>
-              <p className="text-muted-foreground">
-                Respostas para objeções e dúvidas frequentes
+              <h1 className="text-lg md:text-2xl font-bold">Playbook de Vendas</h1>
+              <p className="text-xs md:text-sm text-muted-foreground">
+                Respostas para objeções e dúvidas
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-end sm:self-auto">
             <Button
               variant="ghost"
               size="sm"
               onClick={startTour}
               title="Iniciar tour guiado"
+              className="h-8 w-8 p-0"
             >
               <HelpCircle className="h-4 w-4" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="tour-playbook-add">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar
-                  <ChevronDown className="h-4 w-4 ml-2" />
+                <Button className="tour-playbook-add h-8 md:h-9 text-sm">
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  <span className="hidden sm:inline">Adicionar</span>
+                  <span className="sm:hidden">Novo</span>
+                  <ChevronDown className="h-3.5 w-3.5 ml-1.5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -181,51 +183,53 @@ export default function Playbook() {
         </div>
 
         {/* Search and Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
           <div className="relative flex-1 tour-playbook-search">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar perguntas, respostas ou tags..."
+              placeholder="Buscar perguntas, respostas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-9 md:h-10"
             />
           </div>
           <Button
             variant={showFavoritos ? "default" : "outline"}
             onClick={() => setShowFavoritos(!showFavoritos)}
-            className="gap-2 tour-playbook-favoritos"
+            className="gap-2 tour-playbook-favoritos h-9 md:h-10 shrink-0"
           >
-            <Star className={showFavoritos ? "fill-current" : ""} />
-            Favoritos
+            <Star className={`h-4 w-4 ${showFavoritos ? "fill-current" : ""}`} />
+            <span className="hidden sm:inline">Favoritos</span>
           </Button>
         </div>
 
         {/* Categories Tabs */}
         <Tabs value={selectedCategoria} onValueChange={setSelectedCategoria}>
-          <TabsList className="flex-wrap h-auto gap-1 tour-playbook-categories">
-            <TabsTrigger value="all">
-              Todas
-              <Badge variant="secondary" className="ml-2">
-                {entradas.length}
-              </Badge>
-            </TabsTrigger>
-            {categorias.map((cat) => {
-              const count = entradas.filter((e) => e.categoria_id === cat.id).length;
-              return (
-                <TabsTrigger key={cat.id} value={cat.id}>
-                  {cat.nome}
-                  <Badge variant="secondary" className="ml-2">
-                    {count}
-                  </Badge>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+          <div className="overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
+            <TabsList className="inline-flex h-auto gap-1 tour-playbook-categories whitespace-nowrap">
+              <TabsTrigger value="all" className="text-xs md:text-sm px-2 md:px-3 h-8 md:h-9">
+                Todas
+                <Badge variant="secondary" className="ml-1.5 text-[10px] md:text-xs h-4 md:h-5 px-1 md:px-1.5">
+                  {entradas.length}
+                </Badge>
+              </TabsTrigger>
+              {categorias.map((cat) => {
+                const count = entradas.filter((e) => e.categoria_id === cat.id).length;
+                return (
+                  <TabsTrigger key={cat.id} value={cat.id} className="text-xs md:text-sm px-2 md:px-3 h-8 md:h-9">
+                    {cat.nome}
+                    <Badge variant="secondary" className="ml-1.5 text-[10px] md:text-xs h-4 md:h-5 px-1 md:px-1.5">
+                      {count}
+                    </Badge>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </div>
 
-          <TabsContent value={selectedCategoria} className="mt-6">
+          <TabsContent value={selectedCategoria} className="mt-4 md:mt-6">
             {filteredEntradas.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
+              <div className="text-center py-12 text-muted-foreground text-sm">
                 {searchQuery
                   ? "Nenhum resultado encontrado para sua busca"
                   : showFavoritos
@@ -233,7 +237,7 @@ export default function Playbook() {
                   : "Nenhuma entrada cadastrada nesta categoria"}
               </div>
             ) : (
-              <div className="max-w-2xl mx-auto space-y-6 bg-card rounded-xl p-6 border shadow-sm">
+              <div className="max-w-2xl mx-auto space-y-4 md:space-y-6 bg-card rounded-xl p-3 md:p-6 border shadow-sm">
                 {filteredEntradas.map((entrada, index) => (
                   <div key={entrada.id} className={index === 0 ? "tour-playbook-card" : ""}>
                     <PlaybookChatCard

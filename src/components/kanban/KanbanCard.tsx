@@ -40,26 +40,26 @@ export function KanbanCard({ mae, onClick, isDragging }: KanbanCardProps) {
   return (
     <Card
       className={cn(
-        "cursor-pointer transition-all hover:shadow-md hover:ring-2 hover:ring-primary/20",
+        "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20",
         isDragging && "shadow-lg ring-2 ring-primary rotate-2"
       )}
       onClick={onClick}
     >
-      <CardContent className="p-3">
-        <div className="space-y-2">
-          <div className="flex items-start justify-between gap-2">
+      <CardContent className="p-2.5 md:p-3">
+        <div className="space-y-1.5 md:space-y-2">
+          <div className="flex items-start justify-between gap-1.5">
             <h4 className="font-medium text-sm leading-tight line-clamp-2">
               {mae.nome_mae}
             </h4>
-            <div className="flex gap-1 shrink-0">
+            <div className="flex gap-0.5 shrink-0">
               {mae.is_gestante && mesGestacao && (
-                <Badge variant="secondary" className="text-xs bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
-                  <Baby className="h-3 w-3 mr-1" />
-                  {mesGestacao}º mês
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
+                  <Baby className="h-2.5 w-2.5 mr-0.5" />
+                  {mesGestacao}º
                 </Badge>
               )}
               {mae.contrato_assinado && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 hidden sm:flex">
                   Contrato
                 </Badge>
               )}
@@ -71,17 +71,17 @@ export function KanbanCard({ mae, onClick, isDragging }: KanbanCardProps) {
           </p>
 
           <div className="flex flex-wrap gap-1">
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
               {mae.tipo_evento}
             </Badge>
             {mae.uf && (
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
                 {mae.uf}
               </Badge>
             )}
           </div>
 
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
             {mae.data_evento && (
               <span className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
@@ -97,7 +97,7 @@ export function KanbanCard({ mae, onClick, isDragging }: KanbanCardProps) {
           </div>
 
           {mae.observacoes && (
-            <p className="text-xs text-muted-foreground italic line-clamp-2 border-t pt-2">
+            <p className="text-[11px] text-muted-foreground italic line-clamp-2 border-t pt-1.5">
               {mae.observacoes}
             </p>
           )}

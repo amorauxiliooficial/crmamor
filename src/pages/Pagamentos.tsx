@@ -252,56 +252,107 @@ const Pagamentos = () => {
         onSearchChange={setSearchQuery}
       />
 
-      <main className="p-6 space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-            <ArrowLeft className="h-5 w-5" />
+      <main className="p-3 md:p-6 space-y-4 md:space-y-6">
+        <div className="flex items-center gap-2 md:gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="h-8 w-8 md:h-10 md:w-10">
+            <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
           </Button>
-          <h1 className="text-2xl font-bold">Controle de Pagamentos</h1>
+          <h1 className="text-lg md:text-2xl font-bold">Controle de Pagamentos</h1>
         </div>
 
         {/* Stats Cards */}
-        <section className="grid gap-4 md:grid-cols-4">
+        <section className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Parcelas</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2 md:pt-4 md:px-4">
+              <CardTitle className="text-xs md:text-sm font-medium">Total Parcelas</CardTitle>
+              <DollarSign className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalParcelas}</div>
+            <CardContent className="p-3 pt-0 md:px-4 md:pb-4">
+              <div className="text-xl md:text-2xl font-bold">{stats.totalParcelas}</div>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-emerald-500">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pagas</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2 md:pt-4 md:px-4">
+              <CardTitle className="text-xs md:text-sm font-medium">Pagas</CardTitle>
+              <CheckCircle2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-emerald-500" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-emerald-600">{stats.pagas}</div>
+            <CardContent className="p-3 pt-0 md:px-4 md:pb-4">
+              <div className="text-xl md:text-2xl font-bold text-emerald-600">{stats.pagas}</div>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-amber-500">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
-              <Clock className="h-4 w-4 text-amber-500" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2 md:pt-4 md:px-4">
+              <CardTitle className="text-xs md:text-sm font-medium">Pendentes</CardTitle>
+              <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 text-amber-500" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-amber-600">{stats.pendentes}</div>
+            <CardContent className="p-3 pt-0 md:px-4 md:pb-4">
+              <div className="text-xl md:text-2xl font-bold text-amber-600">{stats.pendentes}</div>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-destructive">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Inadimplentes</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-destructive" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2 md:pt-4 md:px-4">
+              <CardTitle className="text-xs md:text-sm font-medium">Inadimplentes</CardTitle>
+              <AlertTriangle className="h-3.5 w-3.5 md:h-4 md:w-4 text-destructive" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-destructive">{stats.inadimplentes}</div>
+            <CardContent className="p-3 pt-0 md:px-4 md:pb-4">
+              <div className="text-xl md:text-2xl font-bold text-destructive">{stats.inadimplentes}</div>
             </CardContent>
           </Card>
         </section>
 
-        {/* Table */}
-        <Card>
+        {/* Mobile Card List */}
+        <div className="md:hidden space-y-2">
+          {filteredPagamentos.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhum pagamento encontrado
+            </div>
+          ) : (
+            filteredPagamentos.map((pag) => (
+              <Card key={pag.id} className="overflow-hidden">
+                <CardContent className="p-3">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-sm truncate">{pag.mae_nome}</h3>
+                      <p className="text-xs text-muted-foreground font-mono">{formatCpf(pag.mae_cpf)}</p>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] shrink-0">
+                      {pag.tipo_pagamento === "a_vista" ? "À Vista" : `${pag.total_parcelas}x`}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1.5">
+                    {pag.parcelas.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{p.numero_parcela}ª: {formatDate(p.data_pagamento)}</span>
+                        {getStatusBadge(p.status)}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end gap-1 mt-2 pt-2 border-t">
+                    <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleEdit(pag)}>
+                      <Edit className="h-3.5 w-3.5 mr-1" />
+                      Editar
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 px-2 text-destructive hover:text-destructive"
+                      onClick={() => {
+                        setPagamentoToDelete(pag.id);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />
+                      Excluir
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table */}
+        <Card className="hidden md:block">
           <CardContent className="p-0">
             <Table>
               <TableHeader>

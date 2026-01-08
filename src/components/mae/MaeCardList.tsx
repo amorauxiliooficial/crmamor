@@ -68,7 +68,7 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 px-1">
       {maes.map((mae) => {
         const mesGestacao = calcularMesGravidez(mae);
         const statusLabel = mae.status_processo.split(" ").slice(1).join(" ") || mae.status_processo;
@@ -77,36 +77,36 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
         return (
           <Card
             key={mae.id}
-            className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99]"
+            className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99] rounded-xl"
             onClick={() => onCardClick(mae)}
           >
-            <CardContent className="p-4">
+            <CardContent className="p-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-base truncate">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <h3 className="font-semibold text-sm truncate">
                       {mae.nome_mae}
                     </h3>
                     {mae.is_gestante && mesGestacao && (
                       <Badge
                         variant="secondary"
-                        className="shrink-0 text-xs bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300"
+                        className="shrink-0 text-[10px] px-1.5 py-0 h-4 bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300"
                       >
-                        <Baby className="h-3 w-3 mr-1" />
+                        <Baby className="h-2.5 w-2.5 mr-0.5" />
                         {mesGestacao}º
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground font-mono">
+                  <p className="text-xs text-muted-foreground font-mono">
                     {formatCpf(mae.cpf)}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <MoreVertical className="h-3.5 w-3.5" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -137,34 +137,34 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1.5 mt-3">
-                <Badge variant={getStatusBadgeVariant(mae.status_processo)} className="text-xs">
+              <div className="flex flex-wrap gap-1 mt-2">
+                <Badge variant={getStatusBadgeVariant(mae.status_processo)} className="text-[10px] px-1.5 py-0 h-5">
                   {emoji} {statusLabel}
                 </Badge>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
                   {mae.tipo_evento}
                 </Badge>
                 {mae.uf && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
                     {mae.uf}
                   </Badge>
                 )}
                 {mae.contrato_assinado && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
                     Contrato ✓
                   </Badge>
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-3 mt-2 text-[11px] text-muted-foreground">
                 {mae.data_evento && (
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    {format(parseISO(mae.data_evento), "dd/MM/yyyy")}
+                    {format(parseISO(mae.data_evento), "dd/MM/yy")}
                   </span>
                 )}
                 {mae.telefone && (
