@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import { KanbanMobileList } from "@/components/kanban/KanbanMobileList";
 import { GestantesBoard } from "@/components/kanban/GestantesBoard";
 import { MaeTable } from "@/components/mae/MaeTable";
+import { MaeCardList } from "@/components/mae/MaeCardList";
 import { MaeDetailDialog } from "@/components/mae/MaeDetailDialog";
 import { MaeFormDialog } from "@/components/mae/MaeFormDialog";
 import { MaeEditDialog } from "@/components/mae/MaeEditDialog";
@@ -13,9 +15,11 @@ import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
 import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { GuidedTour } from "@/components/tour/GuidedTour";
+import { MobileViewSelector } from "@/components/layout/MobileViewSelector";
 import { Indicacao } from "@/types/indicacao";
 import { useAuth } from "@/hooks/useAuth";
 import { useTour } from "@/hooks/useTour";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso } from "@/types/mae";
 import {
@@ -39,6 +43,7 @@ import { logError, getUserFriendlyError } from "@/lib/errorHandler";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { differenceInMonths, parseISO } from "date-fns";
 
 // Map database status to display status with emoji
@@ -63,6 +68,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { run: tourRun, stepIndex, setStepIndex, stopTour, startTour } = useTour();
+  const isMobile = useIsMobile();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMae, setSelectedMae] = useState<MaeProcesso | null>(null);
@@ -291,74 +297,92 @@ const Index = () => {
         onAddMae={() => setFormDialogOpen(true)}
         onSelectIndicacao={handleNotificationClick}
         onOpenOnboarding={() => setOnboardingOpen(true)}
+        onViewChange={(view) => setViewMode(view as typeof viewMode)}
+        currentView={viewMode}
       />
 
-      <main className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-x-hidden">
+      <main className="p-3 md:p-6 space-y-3 md:space-y-6 overflow-x-hidden">
 
-        {/* Stats Grid */}
-        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 tour-stats">
-          <StatsCard
-            title="Total de Processos"
-            value={stats.total}
-            icon={Users}
-            description="Todas as mães cadastradas"
-            onClick={() => handleStatsClick("all")}
-            isActive={statusFilter === "all"}
-          />
-          <StatsCard
-            title="Aprovadas"
-            value={stats.aprovadas}
-            icon={CheckCircle2}
-            className="border-l-4 border-l-emerald-500"
-            onClick={() => handleStatsClick("✅ Aprovada")}
-            isActive={statusFilter === "✅ Aprovada"}
-          />
-          <StatsCard
-            title="Indeferidas"
-            value={stats.indeferidas}
-            icon={XCircle}
-            className="border-l-4 border-l-destructive"
-            onClick={() => handleStatsClick("❌ Indeferida")}
-            isActive={statusFilter === "❌ Indeferida"}
-          />
-          <StatsCard
-            title="Em Análise"
-            value={stats.emAnalise}
-            icon={Clock}
-            className="border-l-4 border-l-primary"
-            onClick={() => handleStatsClick("🔎 Em Análise")}
-            isActive={statusFilter === "🔎 Em Análise"}
-          />
-          <StatsCard
-            title="Pendências"
-            value={stats.pendencias}
-            icon={AlertTriangle}
-            className="border-l-4 border-l-accent-foreground"
-            onClick={() => handleStatsClick("⚠️ Pendência Documental")}
-            isActive={statusFilter === "⚠️ Pendência Documental"}
-          />
-          <StatsCard
-            title="Gestantes"
-            value={gestantesCount}
-            icon={Baby}
-            className="border-l-4 border-l-pink-500"
-            onClick={() => handleStatsClick("gestantes")}
-            isActive={statusFilter === "gestantes"}
-          />
+        {/* Stats Grid - Horizontal scroll on mobile */}
+        <section className="tour-stats">
+          <ScrollArea className="w-full md:w-auto">
+            <div className="flex gap-3 pb-2 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 md:gap-4">
+              <StatsCard
+                title="Total"
+                value={stats.total}
+                icon={Users}
+                description="Processos"
+                onClick={() => handleStatsClick("all")}
+                isActive={statusFilter === "all"}
+                className="min-w-[140px] md:min-w-0"
+              />
+              <StatsCard
+                title="Aprovadas"
+                value={stats.aprovadas}
+                icon={CheckCircle2}
+                className="border-l-4 border-l-emerald-500 min-w-[140px] md:min-w-0"
+                onClick={() => handleStatsClick("✅ Aprovada")}
+                isActive={statusFilter === "✅ Aprovada"}
+              />
+              <StatsCard
+                title="Indeferidas"
+                value={stats.indeferidas}
+                icon={XCircle}
+                className="border-l-4 border-l-destructive min-w-[140px] md:min-w-0"
+                onClick={() => handleStatsClick("❌ Indeferida")}
+                isActive={statusFilter === "❌ Indeferida"}
+              />
+              <StatsCard
+                title="Em Análise"
+                value={stats.emAnalise}
+                icon={Clock}
+                className="border-l-4 border-l-primary min-w-[140px] md:min-w-0"
+                onClick={() => handleStatsClick("🔎 Em Análise")}
+                isActive={statusFilter === "🔎 Em Análise"}
+              />
+              <StatsCard
+                title="Pendências"
+                value={stats.pendencias}
+                icon={AlertTriangle}
+                className="border-l-4 border-l-accent-foreground min-w-[140px] md:min-w-0"
+                onClick={() => handleStatsClick("⚠️ Pendência Documental")}
+                isActive={statusFilter === "⚠️ Pendência Documental"}
+              />
+              <StatsCard
+                title="Gestantes"
+                value={gestantesCount}
+                icon={Baby}
+                className="border-l-4 border-l-pink-500 min-w-[140px] md:min-w-0"
+                onClick={() => handleStatsClick("gestantes")}
+                isActive={statusFilter === "gestantes"}
+              />
+            </div>
+            <ScrollBar orientation="horizontal" className="md:hidden" />
+          </ScrollArea>
         </section>
 
         {/* View Toggle and Content */}
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold">Processos</h2>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2 md:gap-3">
+              <h2 className="text-base md:text-lg font-semibold">Processos</h2>
               {searchQuery.trim() && (
-                <Badge variant="secondary" className="gap-1">
-                  Buscando: "{searchQuery}" ({filteredMaes.length} resultado{filteredMaes.length !== 1 ? 's' : ''})
+                <Badge variant="secondary" className="gap-1 text-xs">
+                  "{searchQuery}" ({filteredMaes.length})
                 </Badge>
               )}
             </div>
-            <div className="flex items-center gap-2 tour-view-toggle">
+            
+            {/* Mobile View Selector */}
+            <div className="md:hidden">
+              <MobileViewSelector
+                value={viewMode}
+                onValueChange={(value) => setViewMode(value as typeof viewMode)}
+              />
+            </div>
+            
+            {/* Desktop View Toggle */}
+            <div className="hidden md:flex items-center gap-2 tour-view-toggle">
               <ToggleGroup
                 type="single"
                 value={viewMode}
@@ -426,23 +450,34 @@ const Index = () => {
               />
             </div>
           ) : viewMode === "table" ? (
-            <MaeTable maes={filteredMaes} onRowClick={handleCardClick} />
+            isMobile ? (
+              <MaeCardList maes={filteredMaes} onCardClick={handleCardClick} />
+            ) : (
+              <MaeTable maes={filteredMaes} onRowClick={handleCardClick} />
+            )
           ) : (
             <Tabs defaultValue="all" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="all">Todos os Status</TabsTrigger>
-                <TabsTrigger value="active">Em Andamento</TabsTrigger>
-                <TabsTrigger value="pending">Pendências</TabsTrigger>
-                <TabsTrigger value="completed">Finalizados</TabsTrigger>
-              </TabsList>
+              <ScrollArea className="w-full">
+                <TabsList className="mb-4 w-max md:w-auto">
+                  <TabsTrigger value="all">Todos</TabsTrigger>
+                  <TabsTrigger value="active">Andamento</TabsTrigger>
+                  <TabsTrigger value="pending">Pendências</TabsTrigger>
+                  <TabsTrigger value="completed">Finalizados</TabsTrigger>
+                </TabsList>
+                <ScrollBar orientation="horizontal" className="md:hidden" />
+              </ScrollArea>
 
               <TabsContent value="all" className="mt-0">
-                <div className="rounded-lg border bg-muted/30 min-h-[500px] tour-kanban">
-                  <KanbanBoard 
-                    maes={filteredMaes} 
-                    onCardClick={handleCardClick} 
-                    onStatusChange={handleStatusChange}
-                  />
+                <div className="rounded-lg border bg-muted/30 min-h-[400px] md:min-h-[500px] tour-kanban">
+                  {isMobile ? (
+                    <KanbanMobileList maes={filteredMaes} onCardClick={handleCardClick} />
+                  ) : (
+                    <KanbanBoard 
+                      maes={filteredMaes} 
+                      onCardClick={handleCardClick} 
+                      onStatusChange={handleStatusChange}
+                    />
+                  )}
                 </div>
               </TabsContent>
 
