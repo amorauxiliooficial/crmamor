@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Heart, Search, LogOut, UserPlus, BookOpen, Settings, ClipboardList } from "lucide-react";
+import { Heart, Search, LogOut, UserPlus, BookOpen, Settings, ClipboardList, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,8 @@ import { PagamentosNotificacao } from "@/components/pagamentos/PagamentosNotific
 import { Indicacao } from "@/types/indicacao";
 import { OnboardingAdminDialog } from "@/components/onboarding/OnboardingAdminDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { MobileSidebar } from "./MobileSidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface HeaderProps {
   searchQuery: string;
@@ -26,11 +28,23 @@ interface HeaderProps {
   onAddMae?: () => void;
   onSelectIndicacao?: (indicacao: Indicacao) => void;
   onOpenOnboarding?: () => void;
+  onViewChange?: (view: string) => void;
+  currentView?: string;
 }
 
-export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicacao, onOpenOnboarding }: HeaderProps) {
+export function Header({ 
+  searchQuery, 
+  onSearchChange, 
+  onAddMae, 
+  onSelectIndicacao, 
+  onOpenOnboarding,
+  onViewChange,
+  currentView = "kanban",
+}: HeaderProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [onboardingProgress, setOnboardingProgress] = useState<number | null>(null);
@@ -129,68 +143,120 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
 
   return (
     <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-      <div className="flex h-16 items-center justify-between px-6">
-        <div className="flex items-center gap-3 tour-logo">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
-            <Heart className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="font-bold text-lg">AAM</h1>
-            <p className="text-xs text-muted-foreground">
-              Amor Auxílio Maternidade
-            </p>
-          </div>
-        </div>
-
-        <div className="flex-1 max-w-md mx-8 tour-search">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome ou CPF..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-        </div>
-
+      <div className="flex h-14 md:h-16 items-center justify-between px-3 md:px-6">
+        {/* Left: Mobile Menu + Logo */}
         <div className="flex items-center gap-2">
+          <MobileSidebar
+            onNavigate={onViewChange}
+            currentView={currentView}
+            onOpenOnboarding={onOpenOnboarding}
+            isAdmin={isAdmin}
+            onboardingProgress={onboardingProgress}
+            onAdminClick={() => setAdminDialogOpen(true)}
+          />
+          
+          <div className="flex items-center gap-2 tour-logo">
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-primary">
+              <Heart className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
+            </div>
+            <div className="hidden sm:block">
+              <h1 className="font-bold text-lg">AAM</h1>
+              <p className="text-xs text-muted-foreground">
+                Amor Auxílio Maternidade
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Center: Search (Desktop) or expanded mobile search */}
+        {mobileSearchOpen ? (
+          <div className="absolute inset-x-0 top-0 h-14 md:h-16 flex items-center px-3 bg-card z-10 md:hidden">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome ou CPF..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="pl-9 pr-10"
+                autoFocus
+              />
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-2"
+              onClick={() => {
+                setMobileSearchOpen(false);
+                onSearchChange("");
+              }}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        ) : (
+          <div className="hidden md:flex flex-1 max-w-md mx-4 lg:mx-8 tour-search">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome ou CPF..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1 md:gap-2">
+          {/* Mobile search trigger */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setMobileSearchOpen(true)}
+          >
+            <Search className="h-5 w-5" />
+          </Button>
+
+          {/* Add button - always visible */}
           {onAddMae && (
-            <Button onClick={onAddMae} size="sm" className="gap-2 tour-add-mae">
+            <Button onClick={onAddMae} size="sm" className="gap-2 tour-add-mae h-8 md:h-9 px-2 md:px-3">
               <UserPlus className="h-4 w-4" />
-              <span className="hidden sm:inline">Nova Mãe</span>
+              <span className="hidden lg:inline">Nova Mãe</span>
             </Button>
           )}
           
+          {/* Desktop only buttons */}
           <Button 
             variant="outline" 
             size="sm" 
-            className="gap-2 tour-playbook"
+            className="hidden md:flex gap-2 tour-playbook"
             onClick={() => navigate("/playbook")}
           >
             <BookOpen className="h-4 w-4" />
-            <span className="hidden sm:inline">Playbook</span>
+            <span className="hidden lg:inline">Playbook</span>
           </Button>
 
           {isAdmin ? (
             <Button 
               variant="outline" 
               size="sm" 
-              className="gap-2 tour-onboarding"
+              className="hidden md:flex gap-2 tour-onboarding"
               onClick={() => setAdminDialogOpen(true)}
             >
               <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Admin Onboarding</span>
+              <span className="hidden lg:inline">Admin Onboarding</span>
             </Button>
           ) : onOpenOnboarding && (
             <Button 
               variant="outline" 
               size="sm" 
-              className="gap-2 tour-onboarding relative"
+              className="hidden md:flex gap-2 tour-onboarding relative"
               onClick={onOpenOnboarding}
             >
               <ClipboardList className="h-4 w-4" />
-              <span className="hidden sm:inline">Onboarding</span>
+              <span className="hidden lg:inline">Onboarding</span>
               {onboardingProgress !== null && onboardingProgress < 100 && (
                 <Badge 
                   variant="destructive" 
@@ -202,15 +268,15 @@ export function Header({ searchQuery, onSearchChange, onAddMae, onSelectIndicaca
             </Button>
           )}
           
-          <div className="tour-notifications flex items-center gap-1">
+          <div className="tour-notifications flex items-center gap-0.5 md:gap-1">
             <PagamentosNotificacao />
             <IndicacoesNotificacao onSelectIndicacao={onSelectIndicacao} />
           </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full tour-user-menu">
-                <Avatar className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="rounded-full tour-user-menu h-8 w-8 md:h-10 md:w-10">
+                <Avatar className="h-7 w-7 md:h-8 md:w-8">
                   <AvatarFallback className="bg-primary/10 text-primary text-xs">
                     {userInitials}
                   </AvatarFallback>
