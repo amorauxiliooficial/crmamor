@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Conferencia from "./pages/Conferencia";
 import Pagamentos from "./pages/Pagamentos";
 import Playbook from "./pages/Playbook";
+import Senhas from "./pages/Senhas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/conferencia" element={<Conferencia />} />
             <Route path="/pagamentos" element={<Pagamentos />} />
             <Route path="/playbook" element={<Playbook />} />
+            <Route path="/senhas" element={<Senhas />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

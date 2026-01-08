@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Heart, Search, LogOut, UserPlus, BookOpen, Settings, ClipboardList, X } from "lucide-react";
+import { Heart, Search, LogOut, UserPlus, BookOpen, Settings, ClipboardList, X, Key } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -292,6 +292,11 @@ export function Header({
                   </p>
                 </div>
               </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/senhas")}>
+                <Key className="mr-2 h-4 w-4" />
+                Senhas de Sistemas
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
