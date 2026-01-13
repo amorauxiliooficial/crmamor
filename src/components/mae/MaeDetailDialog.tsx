@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,13 +20,13 @@ import {
   ClipboardList,
   MessageSquare,
   Copy,
-  Check,
   Key,
   ShieldCheck,
+  FolderOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
 import { toast } from "sonner";
+import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
 
 interface MaeDetailDialogProps {
   mae: MaeProcesso | null;
@@ -47,6 +48,8 @@ export function MaeDetailDialog({
   open,
   onOpenChange,
 }: MaeDetailDialogProps) {
+  const [documentosDialogOpen, setDocumentosDialogOpen] = useState(false);
+
   if (!mae) return null;
 
   return (
@@ -77,20 +80,31 @@ export function MaeDetailDialog({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Status Badge */}
-          <div className="flex items-center gap-2">
-            <Badge
-              className={cn(
-                "text-sm px-3 py-1",
-                STATUS_COLORS[mae.status_processo]
+          {/* Status Badge and Actions */}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Badge
+                className={cn(
+                  "text-sm px-3 py-1",
+                  STATUS_COLORS[mae.status_processo]
+                )}
+                variant="outline"
+              >
+                {mae.status_processo}
+              </Badge>
+              {mae.contrato_assinado && (
+                <Badge variant="secondary">Contrato Assinado</Badge>
               )}
+            </div>
+            <Button
               variant="outline"
+              size="sm"
+              onClick={() => setDocumentosDialogOpen(true)}
+              className="gap-2"
             >
-              {mae.status_processo}
-            </Badge>
-            {mae.contrato_assinado && (
-              <Badge variant="secondary">Contrato Assinado</Badge>
-            )}
+              <FolderOpen className="h-4 w-4" />
+              Documentos
+            </Button>
           </div>
 
           <Separator />
@@ -207,6 +221,15 @@ export function MaeDetailDialog({
             </span>
           </div>
         </div>
+
+        <DocumentosDialog
+          open={documentosDialogOpen}
+          onOpenChange={setDocumentosDialogOpen}
+          maeId={mae.id}
+          maeNome={mae.nome_mae}
+          linkDocumentos={mae.link_documentos || null}
+          onSuccess={() => {}}
+        />
       </DialogContent>
     </Dialog>
   );

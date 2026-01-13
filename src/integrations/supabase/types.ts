@@ -238,6 +238,7 @@ export type Database = {
           email: string | null
           id: string
           is_gestante: boolean
+          link_documentos: string | null
           mes_gestacao: number | null
           nome_mae: string
           observacoes: string | null
@@ -267,6 +268,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_gestante?: boolean
+          link_documentos?: string | null
           mes_gestacao?: number | null
           nome_mae: string
           observacoes?: string | null
@@ -296,6 +298,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_gestante?: boolean
+          link_documentos?: string | null
           mes_gestacao?: number | null
           nome_mae?: string
           observacoes?: string | null
