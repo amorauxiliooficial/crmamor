@@ -6,13 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, DollarSign } from "lucide-react";
+import { Loader2, Save, DollarSign, FolderOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
-
+import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
 interface MaeEditDialogProps {
   mae: MaeProcesso | null;
   open: boolean;
@@ -35,6 +35,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [pagamentoDialogOpen, setPagamentoDialogOpen] = useState(false);
+  const [documentosDialogOpen, setDocumentosDialogOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     nome_mae: "",
@@ -492,16 +493,27 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           </div>
 
           {/* Submit */}
-          <div className="flex justify-between gap-3">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => setPagamentoDialogOpen(true)}
-              className="gap-2"
-            >
-              <DollarSign className="h-4 w-4" />
-              Gerenciar Pagamentos
-            </Button>
+          <div className="flex flex-wrap justify-between gap-3">
+            <div className="flex gap-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setPagamentoDialogOpen(true)}
+                className="gap-2"
+              >
+                <DollarSign className="h-4 w-4" />
+                Pagamentos
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setDocumentosDialogOpen(true)}
+                className="gap-2"
+              >
+                <FolderOpen className="h-4 w-4" />
+                Documentos
+              </Button>
+            </div>
             <div className="flex gap-3">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
@@ -525,13 +537,23 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       </DialogContent>
 
       {mae && (
-        <PagamentoDialog
-          open={pagamentoDialogOpen}
-          onOpenChange={setPagamentoDialogOpen}
-          maeId={mae.id}
-          maeNome={mae.nome_mae}
-          onSuccess={() => {}}
-        />
+        <>
+          <PagamentoDialog
+            open={pagamentoDialogOpen}
+            onOpenChange={setPagamentoDialogOpen}
+            maeId={mae.id}
+            maeNome={mae.nome_mae}
+            onSuccess={() => {}}
+          />
+          <DocumentosDialog
+            open={documentosDialogOpen}
+            onOpenChange={setDocumentosDialogOpen}
+            maeId={mae.id}
+            maeNome={mae.nome_mae}
+            linkDocumentos={(mae as MaeProcesso & { link_documentos?: string | null }).link_documentos || null}
+            onSuccess={onSuccess}
+          />
+        </>
       )}
     </Dialog>
   );
