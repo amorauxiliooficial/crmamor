@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -97,6 +98,43 @@ export function usePagamentos() {
     staleTime: 1000 * 60 * 5, // 5 minutes cache
     gcTime: 1000 * 60 * 10, // 10 minutes garbage collection
   });
+
+  // Real-time subscription for pagamentos_mae and parcelas_pagamento
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel("pagamentos-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "pagamentos_mae",
+        },
+        () => {
+          // Invalidate and refetch when pagamentos change
+          queryClient.invalidateQueries({ queryKey: ["pagamentos"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "parcelas_pagamento",
+        },
+        () => {
+          // Invalidate and refetch when parcelas change
+          queryClient.invalidateQueries({ queryKey: ["pagamentos"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
 
   const refetch = () => {
     queryClient.invalidateQueries({ queryKey: ["pagamentos"] });
