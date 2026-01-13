@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { format, differenceInMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Settings2, Check, X, ArrowUpDown, Filter, MoreHorizontal, Copy, Baby } from "lucide-react";
+import { Settings2, Check, X, ArrowUpDown, Filter, MoreHorizontal, Copy, Baby, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 
 interface MaeTableProps {
@@ -37,7 +37,7 @@ interface MaeTableProps {
 }
 
 interface Column {
-  id: keyof MaeProcesso | "acoes" | "mes_gravidez";
+  id: keyof MaeProcesso | "acoes" | "mes_gravidez" | "documentos";
   label: string;
   visible: boolean;
   sortable: boolean;
@@ -79,6 +79,7 @@ const defaultColumns: Column[] = [
   { id: "acoes", label: "Ações", visible: true, sortable: false },
   { id: "nome_mae", label: "Nome", visible: true, sortable: true },
   { id: "cpf", label: "CPF", visible: true, sortable: true },
+  { id: "documentos", label: "Docs", visible: true, sortable: false },
   { id: "mes_gravidez", label: "Mês Gravidez", visible: true, sortable: true },
   { id: "telefone", label: "Telefone", visible: true, sortable: false },
   { id: "email", label: "Email", visible: false, sortable: true },
@@ -181,7 +182,19 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
     );
   };
 
-  const renderCellContent = (mae: MaeProcesso, columnId: keyof MaeProcesso | "mes_gravidez") => {
+  const renderCellContent = (mae: MaeProcesso, columnId: keyof MaeProcesso | "mes_gravidez" | "documentos") => {
+    // Handle special documentos column
+    if (columnId === "documentos") {
+      if (mae.link_documentos) {
+        return (
+          <span title="Documentos anexados">
+            <FolderOpen className="h-4 w-4 text-primary fill-primary/20" />
+          </span>
+        );
+      }
+      return <span className="text-muted-foreground">-</span>;
+    }
+
     // Handle special mes_gravidez column
     if (columnId === "mes_gravidez") {
       const mes = calcularMesGravidez(mae.data_evento, mae.data_evento_tipo);
@@ -362,7 +375,7 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       ) : (
-                        renderCellContent(mae, column.id as keyof MaeProcesso | "mes_gravidez")
+                        renderCellContent(mae, column.id as keyof MaeProcesso | "mes_gravidez" | "documentos")
                       )}
                     </TableCell>
                   ))}
