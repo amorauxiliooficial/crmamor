@@ -26,11 +26,17 @@ import {
   CheckCircle2,
   Clock,
   RefreshCw,
+  FileText,
+  Building2,
+  Settings,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
+import { ComunicadoDialog } from "@/components/pagamentos/ComunicadoDialog";
+import { BancosDialog } from "@/components/pagamentos/BancosDialog";
+import { TemplatesDialog } from "@/components/pagamentos/TemplatesDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +47,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Pagamentos = () => {
   const { user, loading: authLoading } = useAuth();
@@ -56,6 +68,13 @@ const Pagamentos = () => {
   const [editingPagamentoId, setEditingPagamentoId] = useState<string | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pagamentoToDelete, setPagamentoToDelete] = useState<string | null>(null);
+  
+  // Dialog states for comunicado feature
+  const [comunicadoDialogOpen, setComunicadoDialogOpen] = useState(false);
+  const [selectedPagamentoForComunicado, setSelectedPagamentoForComunicado] = useState<PagamentoComMae | null>(null);
+  const [maeCepMap, setMaeCepMap] = useState<Record<string, string>>({});
+  const [bancosDialogOpen, setBancosDialogOpen] = useState(false);
+  const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -80,6 +99,34 @@ const Pagamentos = () => {
       navigate(location.pathname, { replace: true });
     }
   }, [location.state, navigate, location.pathname]);
+
+  // Fetch CEP for all mães when pagamentos load
+  useEffect(() => {
+    const fetchCeps = async () => {
+      if (pagamentos.length === 0) return;
+      
+      const maeIds = [...new Set(pagamentos.map((p) => p.mae_id))];
+      const { data } = await supabase
+        .from("mae_processo")
+        .select("id, cep")
+        .in("id", maeIds);
+      
+      if (data) {
+        const cepMap: Record<string, string> = {};
+        data.forEach((m: { id: string; cep: string | null }) => {
+          if (m.cep) cepMap[m.id] = m.cep;
+        });
+        setMaeCepMap(cepMap);
+      }
+    };
+    
+    fetchCeps();
+  }, [pagamentos]);
+
+  const handleOpenComunicado = (pagamento: PagamentoComMae) => {
+    setSelectedPagamentoForComunicado(pagamento);
+    setComunicadoDialogOpen(true);
+  };
 
   const stats = useMemo(() => {
     let totalParcelas = 0;
@@ -193,16 +240,36 @@ const Pagamentos = () => {
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             )}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="h-8"
-          >
-            <RefreshCw className={`h-4 w-4 mr-1 ${isFetching ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Atualizar</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8">
+                  <Settings className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">Configurar</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setBancosDialogOpen(true)}>
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Gerenciar Bancos
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTemplatesDialogOpen(true)}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Gerenciar Templates
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="h-8"
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${isFetching ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Atualizar</span>
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -272,7 +339,11 @@ const Pagamentos = () => {
                       </div>
                     ))}
                   </div>
-                  <div className="flex justify-end gap-1 mt-2 pt-2 border-t">
+                  <div className="flex flex-wrap justify-end gap-1 mt-2 pt-2 border-t">
+                    <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleOpenComunicado(pag)}>
+                      <FileText className="h-3.5 w-3.5 mr-1" />
+                      Comunicado
+                    </Button>
                     <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleEdit(pag)}>
                       <Edit className="h-3.5 w-3.5 mr-1" />
                       Editar
@@ -351,7 +422,16 @@ const Pagamentos = () => {
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => handleOpenComunicado(pag)}
+                            title="Gerar Comunicado"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleEdit(pag)}
+                            title="Editar"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -362,6 +442,7 @@ const Pagamentos = () => {
                               setPagamentoToDelete(pag.id);
                               setDeleteDialogOpen(true);
                             }}
+                            title="Excluir"
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -407,6 +488,31 @@ const Pagamentos = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Comunicado Dialog */}
+      {selectedPagamentoForComunicado && (
+        <ComunicadoDialog
+          open={comunicadoDialogOpen}
+          onOpenChange={(open) => {
+            setComunicadoDialogOpen(open);
+            if (!open) setSelectedPagamentoForComunicado(null);
+          }}
+          pagamento={selectedPagamentoForComunicado}
+          maeCep={maeCepMap[selectedPagamentoForComunicado.mae_id]}
+        />
+      )}
+
+      {/* Bancos Dialog */}
+      <BancosDialog
+        open={bancosDialogOpen}
+        onOpenChange={setBancosDialogOpen}
+      />
+
+      {/* Templates Dialog */}
+      <TemplatesDialog
+        open={templatesDialogOpen}
+        onOpenChange={setTemplatesDialogOpen}
+      />
     </div>
   );
 };
