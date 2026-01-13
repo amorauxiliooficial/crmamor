@@ -141,6 +141,7 @@ const Index = () => {
         is_gestante: item.is_gestante ?? false,
         mes_gestacao: item.mes_gestacao ?? null,
         data_ultima_atualizacao: item.data_ultima_atualizacao,
+        link_documentos: item.link_documentos || null,
       }));
       setMaes(mappedData);
     }

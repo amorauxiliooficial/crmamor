@@ -1,7 +1,7 @@
 import { MaeProcesso } from "@/types/mae";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Baby } from "lucide-react";
+import { Calendar, FileText, Baby, FolderOpen } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { differenceInMonths, parseISO } from "date-fns";
@@ -92,6 +92,11 @@ export function KanbanCard({ mae, onClick, isDragging }: KanbanCardProps) {
               <span className="flex items-center gap-1">
                 <FileText className="h-3 w-3" />
                 Protocolo
+              </span>
+            )}
+            {mae.link_documentos && (
+              <span className="flex items-center gap-1 text-primary" title="Documentos anexados">
+                <FolderOpen className="h-3 w-3 fill-current" />
               </span>
             )}
           </div>
