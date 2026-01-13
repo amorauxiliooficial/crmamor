@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { usePagamentos, type PagamentoComMae } from "@/hooks/usePagamentos";
 import {
   Table,
   TableBody,
@@ -24,6 +25,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
+  RefreshCw,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { format, parseISO } from "date-fns";
@@ -40,30 +42,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface PagamentoComMae {
-  id: string;
-  mae_id: string;
-  tipo_pagamento: string;
-  total_parcelas: number;
-  mae_nome: string;
-  mae_cpf: string;
-  parcelas: {
-    id: string;
-    numero_parcela: number;
-    data_pagamento: string | null;
-    status: string;
-    observacoes: string | null;
-  }[];
-}
-
 const Pagamentos = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { pagamentos, isLoading, isFetching, refetch } = usePagamentos();
 
-  const [loading, setLoading] = useState(true);
-  const [pagamentos, setPagamentos] = useState<PagamentoComMae[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedMaeId, setSelectedMaeId] = useState<string | null>(null);
@@ -77,61 +62,6 @@ const Pagamentos = () => {
       navigate("/auth");
     }
   }, [user, authLoading, navigate]);
-
-  const fetchPagamentos = async () => {
-    setLoading(true);
-
-    const { data: pagamentosData, error: pagError } = await supabase
-      .from("pagamentos_mae")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (pagError) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao carregar pagamentos",
-        description: pagError.message,
-      });
-      setLoading(false);
-      return;
-    }
-
-    // Fetch mae info and parcelas for each pagamento
-    const pagamentosCompletos: PagamentoComMae[] = [];
-
-    for (const pag of pagamentosData || []) {
-      const { data: mae } = await supabase
-        .from("mae_processo")
-        .select("nome_mae, cpf")
-        .eq("id", pag.mae_id)
-        .single();
-
-      const { data: parcelas } = await supabase
-        .from("parcelas_pagamento")
-        .select("*")
-        .eq("pagamento_id", pag.id)
-        .order("numero_parcela", { ascending: true });
-
-      pagamentosCompletos.push({
-        id: pag.id,
-        mae_id: pag.mae_id,
-        tipo_pagamento: pag.tipo_pagamento,
-        total_parcelas: pag.total_parcelas,
-        mae_nome: mae?.nome_mae || "N/A",
-        mae_cpf: mae?.cpf || "",
-        parcelas: parcelas || [],
-      });
-    }
-
-    setPagamentos(pagamentosCompletos);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (user) {
-      fetchPagamentos();
-    }
-  }, [user]);
 
   // Handle navigation state to open specific payment dialog
   useEffect(() => {
@@ -206,7 +136,7 @@ const Pagamentos = () => {
         title: "Sucesso",
         description: "Pagamento excluído com sucesso",
       });
-      fetchPagamentos();
+      refetch();
     }
 
     setDeleteDialogOpen(false);
@@ -233,7 +163,7 @@ const Pagamentos = () => {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -253,11 +183,26 @@ const Pagamentos = () => {
       />
 
       <main className="p-3 md:p-6 space-y-4 md:space-y-6">
-        <div className="flex items-center gap-2 md:gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="h-8 w-8 md:h-10 md:w-10">
-            <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="h-8 w-8 md:h-10 md:w-10">
+              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
+            </Button>
+            <h1 className="text-lg md:text-2xl font-bold">Controle de Pagamentos</h1>
+            {isFetching && !isLoading && (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="h-8"
+          >
+            <RefreshCw className={`h-4 w-4 mr-1 ${isFetching ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Atualizar</span>
           </Button>
-          <h1 className="text-lg md:text-2xl font-bold">Controle de Pagamentos</h1>
         </div>
 
         {/* Stats Cards */}
@@ -443,7 +388,7 @@ const Pagamentos = () => {
           }}
           maeId={selectedMaeId}
           maeNome={selectedMaeNome}
-          onSuccess={fetchPagamentos}
+          onSuccess={refetch}
           existingPagamentoId={editingPagamentoId}
         />
       )}
