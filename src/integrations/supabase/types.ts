@@ -49,6 +49,36 @@ export type Database = {
           },
         ]
       }
+      bancos: {
+        Row: {
+          cidade: string | null
+          created_at: string
+          endereco: string
+          id: string
+          nome: string
+          uf: string | null
+          updated_at: string
+        }
+        Insert: {
+          cidade?: string | null
+          created_at?: string
+          endereco: string
+          id?: string
+          nome: string
+          uf?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cidade?: string | null
+          created_at?: string
+          endereco?: string
+          id?: string
+          nome?: string
+          uf?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       checklist_mae: {
         Row: {
           carencia_cumprida: boolean
@@ -227,6 +257,7 @@ export type Database = {
       mae_processo: {
         Row: {
           categoria_previdenciaria: Database["public"]["Enums"]["categoria_previdenciaria"]
+          cep: string | null
           contrato_assinado: boolean
           cpf: string
           created_at: string
@@ -257,6 +288,7 @@ export type Database = {
         }
         Insert: {
           categoria_previdenciaria?: Database["public"]["Enums"]["categoria_previdenciaria"]
+          cep?: string | null
           contrato_assinado?: boolean
           cpf: string
           created_at?: string
@@ -287,6 +319,7 @@ export type Database = {
         }
         Update: {
           categoria_previdenciaria?: Database["public"]["Enums"]["categoria_previdenciaria"]
+          cep?: string | null
           contrato_assinado?: boolean
           cpf?: string
           created_at?: string
@@ -650,6 +683,36 @@ export type Database = {
           login?: string
           nome_sistema?: string
           senha?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      templates_comunicado: {
+        Row: {
+          ativo: boolean
+          conteudo: string
+          created_at: string
+          created_by: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          conteudo: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          conteudo?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string
           updated_at?: string
         }
         Relationships: []
