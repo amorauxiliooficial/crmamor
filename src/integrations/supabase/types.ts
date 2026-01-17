@@ -158,6 +158,62 @@ export type Database = {
           },
         ]
       }
+      criativos: {
+        Row: {
+          arquivo_url: string | null
+          created_at: string
+          data_postagem: string
+          descricao: string | null
+          horario_postagem: string | null
+          id: string
+          legenda: string | null
+          status: string
+          tipo_conteudo_id: string | null
+          tipo_instagram: string
+          titulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          arquivo_url?: string | null
+          created_at?: string
+          data_postagem: string
+          descricao?: string | null
+          horario_postagem?: string | null
+          id?: string
+          legenda?: string | null
+          status?: string
+          tipo_conteudo_id?: string | null
+          tipo_instagram?: string
+          titulo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          arquivo_url?: string | null
+          created_at?: string
+          data_postagem?: string
+          descricao?: string | null
+          horario_postagem?: string | null
+          id?: string
+          legenda?: string | null
+          status?: string
+          tipo_conteudo_id?: string | null
+          tipo_instagram?: string
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "criativos_tipo_conteudo_id_fkey"
+            columns: ["tipo_conteudo_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_conteudo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decisao_processo: {
         Row: {
           created_at: string
@@ -713,6 +769,36 @@ export type Database = {
           created_by?: string | null
           id?: string
           nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tipos_conteudo: {
+        Row: {
+          ativo: boolean
+          cor: string
+          created_at: string
+          id: string
+          nome: string
+          plataforma: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cor?: string
+          created_at?: string
+          id?: string
+          nome: string
+          plataforma?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cor?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          plataforma?: string
           updated_at?: string
         }
         Relationships: []
