@@ -227,18 +227,8 @@ export function Header({
             </Button>
           )}
           
-          {/* Desktop only buttons */}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="hidden md:flex gap-2 tour-playbook"
-            onClick={() => navigate("/playbook")}
-          >
-            <BookOpen className="h-4 w-4" />
-            <span className="hidden lg:inline">Playbook</span>
-          </Button>
-
-          {isAdmin ? (
+          {/* Admin onboarding button - only for admins */}
+          {isAdmin && (
             <Button 
               variant="outline" 
               size="sm" 
@@ -246,25 +236,7 @@ export function Header({
               onClick={() => setAdminDialogOpen(true)}
             >
               <Settings className="h-4 w-4" />
-              <span className="hidden lg:inline">Admin Onboarding</span>
-            </Button>
-          ) : onOpenOnboarding && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="hidden md:flex gap-2 tour-onboarding relative"
-              onClick={onOpenOnboarding}
-            >
-              <ClipboardList className="h-4 w-4" />
-              <span className="hidden lg:inline">Onboarding</span>
-              {onboardingProgress !== null && onboardingProgress < 100 && (
-                <Badge 
-                  variant="destructive" 
-                  className="ml-1 h-5 px-1.5 text-[10px] font-semibold animate-pulse shadow-[0_0_10px_hsl(var(--destructive))]"
-                >
-                  {onboardingProgress}%
-                </Badge>
-              )}
+              <span className="hidden lg:inline">Admin</span>
             </Button>
           )}
           
