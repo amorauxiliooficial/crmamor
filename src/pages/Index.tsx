@@ -37,6 +37,7 @@ import {
   DollarSign,
   UserPlus,
   HelpCircle,
+  Megaphone,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -413,6 +414,10 @@ const Index = () => {
                 <ToggleGroupItem value="indicacoes" aria-label="Indicações" className="tour-view-indicacoes">
                   <UserPlus className="h-4 w-4 mr-2" />
                   Indicações
+                </ToggleGroupItem>
+                <ToggleGroupItem value="marketing" aria-label="Marketing" onClick={() => navigate("/marketing")}>
+                  <Megaphone className="h-4 w-4 mr-2" />
+                  Marketing
                 </ToggleGroupItem>
               </ToggleGroup>
               <Button
