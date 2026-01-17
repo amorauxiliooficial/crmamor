@@ -387,81 +387,124 @@ const Index = () => {
               />
             </div>
             
-            {/* Desktop View Toggle */}
-            <div className="hidden md:flex items-center gap-2 tour-view-toggle">
-              <ToggleGroup
-                type="single"
-                value={viewMode}
-                onValueChange={(value) => value && setViewMode(value as "kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes")}
-              >
-                <ToggleGroupItem value="kanban" aria-label="Visualização Kanban" className="tour-view-kanban">
-                  <LayoutGrid className="h-4 w-4 mr-2" />
-                  Processos
-                </ToggleGroupItem>
-                <ToggleGroupItem value="table" aria-label="Visualização Tabela" className="tour-view-table">
-                  <List className="h-4 w-4 mr-2" />
-                  Tabela
-                </ToggleGroupItem>
-                <ToggleGroupItem value="gestantes" aria-label="Gestantes" className="tour-view-gestantes">
-                  <Baby className="h-4 w-4 mr-2" />
-                  Gestantes
-                </ToggleGroupItem>
-                <ToggleGroupItem value="conferencia" aria-label="Conferência INSS" className="tour-view-conferencia">
-                  <ClipboardCheck className="h-4 w-4 mr-2" />
-                  Conferência INSS
-                </ToggleGroupItem>
-                <ToggleGroupItem value="pagamentos" aria-label="Pagamentos" className="tour-view-pagamentos">
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  Pagamentos
-                </ToggleGroupItem>
-                <ToggleGroupItem value="indicacoes" aria-label="Indicações" className="tour-view-indicacoes">
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Indicações
-                </ToggleGroupItem>
-              </ToggleGroup>
-              
-              <Separator orientation="vertical" className="h-8 mx-2" />
-              
-              {/* Ferramentas: Playbook, Onboarding, Marketing */}
+            {/* Desktop Navigation Menu */}
+            <nav className="hidden md:flex items-center tour-view-toggle">
+              {/* Processos Section */}
+              <div className="flex items-center bg-muted/50 rounded-lg p-1 gap-0.5">
+                <span className="text-xs font-medium text-muted-foreground px-2 uppercase tracking-wide">Processos</span>
+                <ToggleGroup
+                  type="single"
+                  value={viewMode}
+                  onValueChange={(value) => value && setViewMode(value as "kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes")}
+                  className="gap-0.5"
+                >
+                  <ToggleGroupItem 
+                    value="kanban" 
+                    aria-label="Visualização Kanban" 
+                    className="tour-view-kanban data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-3 py-1.5 text-sm font-medium transition-all"
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                    <span className="hidden lg:inline ml-1.5">Kanban</span>
+                  </ToggleGroupItem>
+                  <ToggleGroupItem 
+                    value="table" 
+                    aria-label="Visualização Tabela" 
+                    className="tour-view-table data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-3 py-1.5 text-sm font-medium transition-all"
+                  >
+                    <List className="h-4 w-4" />
+                    <span className="hidden lg:inline ml-1.5">Tabela</span>
+                  </ToggleGroupItem>
+                  <ToggleGroupItem 
+                    value="gestantes" 
+                    aria-label="Gestantes" 
+                    className="tour-view-gestantes data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-3 py-1.5 text-sm font-medium transition-all"
+                  >
+                    <Baby className="h-4 w-4" />
+                    <span className="hidden lg:inline ml-1.5">Gestantes</span>
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+
+              <Separator orientation="vertical" className="h-6 mx-3" />
+
+              {/* Financeiro Section */}
+              <div className="flex items-center bg-muted/50 rounded-lg p-1 gap-0.5">
+                <span className="text-xs font-medium text-muted-foreground px-2 uppercase tracking-wide">Financeiro</span>
+                <ToggleGroup
+                  type="single"
+                  value={viewMode}
+                  onValueChange={(value) => value && setViewMode(value as "kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes")}
+                  className="gap-0.5"
+                >
+                  <ToggleGroupItem 
+                    value="conferencia" 
+                    aria-label="Conferência INSS" 
+                    className="tour-view-conferencia data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-3 py-1.5 text-sm font-medium transition-all"
+                  >
+                    <ClipboardCheck className="h-4 w-4" />
+                    <span className="hidden lg:inline ml-1.5">Conferência</span>
+                  </ToggleGroupItem>
+                  <ToggleGroupItem 
+                    value="pagamentos" 
+                    aria-label="Pagamentos" 
+                    className="tour-view-pagamentos data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-3 py-1.5 text-sm font-medium transition-all"
+                  >
+                    <DollarSign className="h-4 w-4" />
+                    <span className="hidden lg:inline ml-1.5">Pagamentos</span>
+                  </ToggleGroupItem>
+                  <ToggleGroupItem 
+                    value="indicacoes" 
+                    aria-label="Indicações" 
+                    className="tour-view-indicacoes data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-3 py-1.5 text-sm font-medium transition-all"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    <span className="hidden lg:inline ml-1.5">Indicações</span>
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+
+              <Separator orientation="vertical" className="h-6 mx-3" />
+
+              {/* Ferramentas Section */}
               <div className="flex items-center gap-1">
                 <Button
-                  variant={viewMode === "playbook" as any ? "secondary" : "ghost"}
+                  variant="ghost"
                   size="sm"
-                  className="gap-2 tour-playbook"
+                  className="gap-1.5 text-sm font-medium hover:bg-muted/80 tour-playbook"
                   onClick={() => navigate("/playbook")}
                 >
                   <BookOpen className="h-4 w-4" />
-                  <span className="hidden lg:inline">Playbook</span>
+                  <span className="hidden xl:inline">Playbook</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="gap-2 tour-onboarding"
+                  className="gap-1.5 text-sm font-medium hover:bg-muted/80 tour-onboarding"
                   onClick={() => setOnboardingOpen(true)}
                 >
                   <ClipboardList className="h-4 w-4" />
-                  <span className="hidden lg:inline">Onboarding</span>
+                  <span className="hidden xl:inline">Onboarding</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="gap-2"
+                  className="gap-1.5 text-sm font-medium hover:bg-muted/80"
                   onClick={() => navigate("/marketing")}
                 >
                   <Megaphone className="h-4 w-4" />
-                  <span className="hidden lg:inline">Marketing</span>
+                  <span className="hidden xl:inline">Marketing</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={startTour}
+                  className="ml-1 h-8 w-8"
+                  title="Iniciar tour guiado"
+                >
+                  <HelpCircle className="h-4 w-4" />
                 </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={startTour}
-                className="ml-2"
-                title="Iniciar tour guiado"
-              >
-                <HelpCircle className="h-4 w-4" />
-              </Button>
-            </div>
+            </nav>
           </div>
 
           <ViewTransition viewKey={viewMode}>
