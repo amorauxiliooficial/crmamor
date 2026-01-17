@@ -25,6 +25,7 @@ import {
   ClipboardList,
   LogOut,
   X,
+  Megaphone,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ const navigationItems = [
   { id: "conferencia", label: "Conferência INSS", icon: ClipboardCheck },
   { id: "pagamentos", label: "Pagamentos", icon: DollarSign },
   { id: "indicacoes", label: "Indicações", icon: UserPlus },
+  { id: "marketing", label: "Marketing", icon: Megaphone, isPage: true },
 ];
 
 export function MobileSidebar({
@@ -60,9 +62,11 @@ export function MobileSidebar({
   const location = useLocation();
   const { signOut } = useAuth();
 
-  const handleNavigate = (view: string) => {
-    if (onNavigate) {
-      onNavigate(view);
+  const handleNavigate = (item: typeof navigationItems[0]) => {
+    if ((item as any).isPage) {
+      navigate(`/${item.id}`);
+    } else if (onNavigate) {
+      onNavigate(item.id);
     }
     setOpen(false);
   };
@@ -123,7 +127,7 @@ export function MobileSidebar({
                   "w-full justify-start gap-2.5 h-10 text-sm",
                   currentView === item.id && "bg-primary/10 text-primary font-medium"
                 )}
-                onClick={() => handleNavigate(item.id)}
+                onClick={() => handleNavigate(item)}
               >
                 <item.icon className="h-4 w-4" />
                 {item.label}
