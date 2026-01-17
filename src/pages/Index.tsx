@@ -38,6 +38,8 @@ import {
   UserPlus,
   HelpCircle,
   Megaphone,
+  BookOpen,
+  ClipboardList,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +48,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { differenceInMonths, parseISO } from "date-fns";
 
 // Map database status to display status with emoji
@@ -415,11 +418,40 @@ const Index = () => {
                   <UserPlus className="h-4 w-4 mr-2" />
                   Indicações
                 </ToggleGroupItem>
-                <ToggleGroupItem value="marketing" aria-label="Marketing" onClick={() => navigate("/marketing")}>
-                  <Megaphone className="h-4 w-4 mr-2" />
-                  Marketing
-                </ToggleGroupItem>
               </ToggleGroup>
+              
+              <Separator orientation="vertical" className="h-8 mx-2" />
+              
+              {/* Ferramentas: Playbook, Onboarding, Marketing */}
+              <div className="flex items-center gap-1">
+                <Button
+                  variant={viewMode === "playbook" as any ? "secondary" : "ghost"}
+                  size="sm"
+                  className="gap-2 tour-playbook"
+                  onClick={() => navigate("/playbook")}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span className="hidden lg:inline">Playbook</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 tour-onboarding"
+                  onClick={() => setOnboardingOpen(true)}
+                >
+                  <ClipboardList className="h-4 w-4" />
+                  <span className="hidden lg:inline">Onboarding</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => navigate("/marketing")}
+                >
+                  <Megaphone className="h-4 w-4" />
+                  <span className="hidden lg:inline">Marketing</span>
+                </Button>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
