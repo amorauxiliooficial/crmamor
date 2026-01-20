@@ -38,6 +38,14 @@ interface ParcelaForm {
   valor: string;
 }
 
+const DEFAULT_PARCELA: ParcelaForm = {
+  numero_parcela: 1,
+  data_pagamento: "",
+  status: "pendente",
+  observacoes: "",
+  valor: "",
+};
+
 export function PagamentoDialog({
   open,
   onOpenChange,
@@ -51,16 +59,16 @@ export function PagamentoDialog({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tipoPagamento, setTipoPagamento] = useState<TipoPagamento>("parcelado");
-  const [parcelas, setParcelas] = useState<ParcelaForm[]>([
-    { numero_parcela: 1, data_pagamento: "", status: "pendente", observacoes: "", valor: "" },
-  ]);
+  const [percentualComissao, setPercentualComissao] = useState("");
+  const [parcelas, setParcelas] = useState<ParcelaForm[]>([{ ...DEFAULT_PARCELA }]);
 
   useEffect(() => {
     if (open && existingPagamentoId) {
       loadExistingPagamento();
     } else if (open && !existingPagamentoId) {
       setTipoPagamento("parcelado");
-      setParcelas([{ numero_parcela: 1, data_pagamento: "", status: "pendente", observacoes: "", valor: "" }]);
+      setPercentualComissao("");
+      setParcelas([{ ...DEFAULT_PARCELA }]);
     }
   }, [open, existingPagamentoId]);
 
@@ -101,6 +109,7 @@ export function PagamentoDialog({
     }
 
     setTipoPagamento(pagamento.tipo_pagamento as TipoPagamento);
+    setPercentualComissao(pagamento.percentual_comissao?.toString() || "");
     if (parcelasData && parcelasData.length > 0) {
       setParcelas(
         parcelasData.map((p: any) => ({
@@ -164,6 +173,7 @@ export function PagamentoDialog({
             tipo_pagamento: tipoPagamento,
             total_parcelas: parcelas.length,
             valor_total: valorTotal || null,
+            percentual_comissao: percentualComissao ? parseFloat(percentualComissao) : null,
           })
           .eq("id", existingPagamentoId);
 
@@ -196,6 +206,7 @@ export function PagamentoDialog({
             tipo_pagamento: tipoPagamento,
             total_parcelas: parcelas.length,
             valor_total: valorTotal || null,
+            percentual_comissao: percentualComissao ? parseFloat(percentualComissao) : null,
           })
           .select()
           .single();
@@ -264,17 +275,32 @@ export function PagamentoDialog({
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="space-y-2">
-              <Label>Tipo de Pagamento</Label>
-              <Select value={tipoPagamento} onValueChange={handleTipoPagamentoChange}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="a_vista">Mãe Única</SelectItem>
-                  <SelectItem value="parcelado">Mãe Parcelada</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tipo de Pagamento</Label>
+                <Select value={tipoPagamento} onValueChange={handleTipoPagamentoChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="a_vista">Mãe Única</SelectItem>
+                    <SelectItem value="parcelado">Mãe Parcelada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Comissão (%)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={percentualComissao}
+                  onChange={(e) => setPercentualComissao(e.target.value)}
+                  placeholder="Ex: 10"
+                />
+              </div>
             </div>
 
             <div className="space-y-4">

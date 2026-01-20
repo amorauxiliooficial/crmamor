@@ -334,6 +334,7 @@ export type Database = {
           observacoes: string | null
           origem: string | null
           parcelas: string | null
+          percentual_comissao: number | null
           precisa_gps: string | null
           protocolo_inss: string | null
           segurada: string | null
@@ -365,6 +366,7 @@ export type Database = {
           observacoes?: string | null
           origem?: string | null
           parcelas?: string | null
+          percentual_comissao?: number | null
           precisa_gps?: string | null
           protocolo_inss?: string | null
           segurada?: string | null
@@ -396,6 +398,7 @@ export type Database = {
           observacoes?: string | null
           origem?: string | null
           parcelas?: string | null
+          percentual_comissao?: number | null
           precisa_gps?: string | null
           protocolo_inss?: string | null
           segurada?: string | null
@@ -515,6 +518,7 @@ export type Database = {
           created_at: string
           id: string
           mae_id: string
+          percentual_comissao: number | null
           tipo_pagamento: string
           total_parcelas: number | null
           updated_at: string
@@ -525,6 +529,7 @@ export type Database = {
           created_at?: string
           id?: string
           mae_id: string
+          percentual_comissao?: number | null
           tipo_pagamento?: string
           total_parcelas?: number | null
           updated_at?: string
@@ -535,6 +540,7 @@ export type Database = {
           created_at?: string
           id?: string
           mae_id?: string
+          percentual_comissao?: number | null
           tipo_pagamento?: string
           total_parcelas?: number | null
           updated_at?: string
@@ -562,6 +568,7 @@ export type Database = {
           status: string
           updated_at: string
           valor: number | null
+          valor_comissao: number | null
         }
         Insert: {
           created_at?: string
@@ -573,6 +580,7 @@ export type Database = {
           status?: string
           updated_at?: string
           valor?: number | null
+          valor_comissao?: number | null
         }
         Update: {
           created_at?: string
@@ -584,6 +592,7 @@ export type Database = {
           status?: string
           updated_at?: string
           valor?: number | null
+          valor_comissao?: number | null
         }
         Relationships: [
           {
