@@ -177,54 +177,64 @@ export default function Indicar() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="py-6 px-4 flex justify-center border-b">
-        <img src={logoAmor} alt="Amor Auxílio Maternidade" className="h-12" />
+    <div className="min-h-screen flex flex-col bg-white">
+      {/* Header with subtle gradient */}
+      <header className="py-8 px-4 flex flex-col items-center bg-gradient-to-b from-primary/5 to-transparent">
+        <img src={logoAmor} alt="Amor Auxílio Maternidade" className="h-16 animate-fade-in" />
       </header>
 
-      <main className="flex-1 flex flex-col items-center px-4 py-8">
-        <div className="w-full max-w-sm space-y-8 animate-fade-in">
+      <main className="flex-1 flex flex-col items-center px-4 py-6">
+        <div className="w-full max-w-md space-y-6 animate-fade-in">
           
-          {/* Title */}
-          <div className="text-center space-y-2">
-            <h1 className="text-xl font-semibold text-foreground">
-              Indique uma Mãe
+          {/* Hero Section */}
+          <div className="text-center space-y-3">
+            <h1 className="text-2xl font-bold text-foreground">
+              Indique uma Mãe 💜
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Ganhe até R$200 por indicação aprovada
+            <p className="text-muted-foreground">
+              Ajude outras mães a conquistarem seus direitos
             </p>
           </div>
 
-          {/* Rewards - Minimal */}
-          <div className="flex justify-center gap-6 text-center">
-            <div>
-              <p className="text-2xl font-bold text-primary">R$100</p>
-              <p className="text-xs text-muted-foreground">Aprovação INSS</p>
+          {/* Rewards Card */}
+          <div className="bg-gradient-to-r from-primary/10 via-pink-50 to-primary/5 rounded-2xl p-5 border border-primary/10">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Gift className="h-5 w-5 text-primary" />
+              <span className="font-semibold text-foreground">Ganhe até R$200!</span>
             </div>
-            <div className="w-px bg-border" />
-            <div>
-              <p className="text-2xl font-bold text-primary">+R$100</p>
-              <p className="text-xs text-muted-foreground">Seguindo Instagram</p>
-              <a
-                href="https://www.instagram.com/amorauxiliomaternidade"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
-              >
-                <Instagram className="h-3 w-3" />
-                @amorauxiliomaternidade
-              </a>
+            <div className="flex justify-center gap-4">
+              <div className="flex-1 bg-white rounded-xl p-4 text-center shadow-sm">
+                <p className="text-2xl font-bold text-primary">R$100</p>
+                <p className="text-xs text-muted-foreground mt-1">Aprovação INSS</p>
+              </div>
+              <div className="flex-1 bg-white rounded-xl p-4 text-center shadow-sm">
+                <p className="text-2xl font-bold text-primary">+R$100</p>
+                <p className="text-xs text-muted-foreground mt-1">Seguindo Instagram</p>
+                <a
+                  href="https://www.instagram.com/amorauxiliomaternidade"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+                >
+                  <Instagram className="h-3 w-3" />
+                  Seguir agora
+                </a>
+              </div>
             </div>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Form Card */}
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl border shadow-sm p-6 space-y-6">
             {/* Indicada Section */}
             <div className="space-y-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Pessoa indicada
-              </p>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-xs font-bold text-primary">1</span>
+                </div>
+                <p className="text-sm font-medium text-foreground">
+                  Quem você quer indicar?
+                </p>
+              </div>
               
               <div className="space-y-1.5">
                 <Label htmlFor="nome_indicada">Nome completo *</Label>
@@ -235,11 +245,12 @@ export default function Indicar() {
                   onChange={(e) => setFormData(prev => ({ ...prev, nome_indicada: e.target.value }))}
                   maxLength={200}
                   required
+                  className="h-12"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="telefone_indicada">WhatsApp</Label>
+                <Label htmlFor="telefone_indicada">WhatsApp dela</Label>
                 <Input
                   id="telefone_indicada"
                   placeholder="(00) 00000-0000"
@@ -247,15 +258,23 @@ export default function Indicar() {
                   onChange={(e) => handlePhoneChange("telefone_indicada", e.target.value)}
                   maxLength={16}
                   inputMode="tel"
+                  className="h-12"
                 />
               </div>
             </div>
 
+            <div className="h-px bg-border" />
+
             {/* Indicadora Section */}
             <div className="space-y-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Seus dados
-              </p>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-xs font-bold text-primary">2</span>
+                </div>
+                <p className="text-sm font-medium text-foreground">
+                  Seus dados (para receber a recompensa)
+                </p>
+              </div>
               
               <div className="space-y-1.5">
                 <Label htmlFor="nome_indicadora">Seu nome</Label>
@@ -265,6 +284,7 @@ export default function Indicar() {
                   value={formData.nome_indicadora}
                   onChange={(e) => setFormData(prev => ({ ...prev, nome_indicadora: e.target.value }))}
                   maxLength={200}
+                  className="h-12"
                 />
               </div>
 
@@ -277,24 +297,28 @@ export default function Indicar() {
                   onChange={(e) => handlePhoneChange("telefone_indicadora", e.target.value)}
                   maxLength={16}
                   inputMode="tel"
+                  className="h-12"
                 />
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full h-12 text-base font-medium" disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Enviando...
                 </>
               ) : (
-                "Enviar indicação"
+                <>
+                  <Heart className="mr-2 h-5 w-5" />
+                  Enviar indicação
+                </>
               )}
             </Button>
           </form>
 
           {/* Footer */}
-          <div className="text-center space-y-3 pt-4 border-t">
+          <div className="text-center py-4">
             <a
               href="https://www.instagram.com/amorauxiliomaternidade"
               target="_blank"
