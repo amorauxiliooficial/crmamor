@@ -166,24 +166,15 @@ const Index = () => {
     setLoading(false);
   };
 
-  // Fetch users (profiles) for user selector
+  // Fetch all users (profiles) for user selector
   const fetchUsers = async () => {
-    // Get unique user_ids from processes
-    const { data: maesData } = await supabase
-      .from("mae_processo")
-      .select("user_id");
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .order("full_name", { ascending: true, nullsFirst: false });
     
-    if (maesData) {
-      const uniqueUserIds = [...new Set(maesData.map((m) => m.user_id))];
-      
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", uniqueUserIds);
-      
-      if (profiles) {
-        setUsers(profiles);
-      }
+    if (profiles) {
+      setUsers(profiles);
     }
   };
 
