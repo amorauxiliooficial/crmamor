@@ -65,7 +65,15 @@ export default function Indicar() {
       }
 
       if (data?.error) {
-        toast.error(data.error);
+        // Check if it's a duplicate error - show friendly message
+        if (data.duplicate) {
+          toast.info("Esta pessoa já foi indicada! 💜", {
+            description: "Obrigada pelo carinho, mas ela já está na nossa lista.",
+            duration: 5000,
+          });
+        } else {
+          toast.error(data.error);
+        }
         return;
       }
 
