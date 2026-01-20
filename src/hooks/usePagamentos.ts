@@ -6,18 +6,26 @@ import { useAuth } from "@/hooks/useAuth";
 export interface PagamentoComMae {
   id: string;
   mae_id: string;
+  user_id: string;
   tipo_pagamento: string;
   total_parcelas: number;
+  valor_total: number | null;
+  percentual_comissao: number | null;
   mae_nome: string;
   mae_cpf: string;
   parcelas: {
     id: string;
     numero_parcela: number;
     valor: number | null;
+    valor_comissao: number | null;
     data_pagamento: string | null;
     status: string;
     observacoes: string | null;
   }[];
+  // Calculated commission fields
+  comissao_total: number;
+  comissao_recebida: number;
+  comissao_pendente: number;
 }
 
 async function fetchPagamentos(): Promise<PagamentoComMae[]> {
@@ -68,21 +76,43 @@ async function fetchPagamentos(): Promise<PagamentoComMae[]> {
     const mae = maeMap.get(pag.mae_id);
     const parcelas = parcelasMap.get(pag.id) || [];
 
+    // Calculate commission totals
+    let comissao_recebida = 0;
+    let comissao_pendente = 0;
+
+    parcelas.forEach((p) => {
+      const comissao = p.valor_comissao || 0;
+      if (p.status === "pago") {
+        comissao_recebida += comissao;
+      } else {
+        comissao_pendente += comissao;
+      }
+    });
+
+    const comissao_total = comissao_recebida + comissao_pendente;
+
     return {
       id: pag.id,
       mae_id: pag.mae_id,
+      user_id: pag.user_id,
       tipo_pagamento: pag.tipo_pagamento,
       total_parcelas: pag.total_parcelas || 0,
+      valor_total: pag.valor_total,
+      percentual_comissao: pag.percentual_comissao,
       mae_nome: mae?.nome_mae || "N/A",
       mae_cpf: mae?.cpf || "",
       parcelas: parcelas.map((p) => ({
         id: p.id,
         numero_parcela: p.numero_parcela,
         valor: p.valor,
+        valor_comissao: p.valor_comissao,
         data_pagamento: p.data_pagamento,
         status: p.status,
         observacoes: p.observacoes,
       })),
+      comissao_total,
+      comissao_recebida,
+      comissao_pendente,
     };
   });
 }

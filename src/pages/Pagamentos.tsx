@@ -29,6 +29,8 @@ import {
   FileText,
   Building2,
   Settings,
+  TrendingUp,
+  Percent,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { format, parseISO } from "date-fns";
@@ -133,8 +135,15 @@ const Pagamentos = () => {
     let pagas = 0;
     let pendentes = 0;
     let inadimplentes = 0;
+    let comissaoTotal = 0;
+    let comissaoRecebida = 0;
+    let comissaoPendente = 0;
 
     pagamentos.forEach((pag) => {
+      comissaoTotal += pag.comissao_total;
+      comissaoRecebida += pag.comissao_recebida;
+      comissaoPendente += pag.comissao_pendente;
+      
       pag.parcelas.forEach((p) => {
         totalParcelas++;
         if (p.status === "pago") pagas++;
@@ -143,8 +152,15 @@ const Pagamentos = () => {
       });
     });
 
-    return { totalParcelas, pagas, pendentes, inadimplentes };
+    return { totalParcelas, pagas, pendentes, inadimplentes, comissaoTotal, comissaoRecebida, comissaoPendente };
   }, [pagamentos]);
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
 
   const filteredPagamentos = useMemo(() => {
     if (!searchQuery.trim()) return pagamentos;
@@ -193,7 +209,7 @@ const Pagamentos = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pago":
-        return <Badge className="bg-emerald-500/20 text-emerald-700">Pago</Badge>;
+        return <Badge className="bg-primary/20 text-primary">Pago</Badge>;
       case "inadimplente":
         return <Badge variant="destructive">Inadimplente</Badge>;
       default:
@@ -272,7 +288,7 @@ const Pagamentos = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards - Parcelas */}
         <section className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2 md:pt-4 md:px-4">
@@ -283,22 +299,22 @@ const Pagamentos = () => {
               <div className="text-xl md:text-2xl font-bold">{stats.totalParcelas}</div>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-emerald-500">
+          <Card className="border-l-4 border-l-primary">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2 md:pt-4 md:px-4">
               <CardTitle className="text-xs md:text-sm font-medium">Pagas</CardTitle>
-              <CheckCircle2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-emerald-500" />
+              <CheckCircle2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
             </CardHeader>
             <CardContent className="p-3 pt-0 md:px-4 md:pb-4">
-              <div className="text-xl md:text-2xl font-bold text-emerald-600">{stats.pagas}</div>
+              <div className="text-xl md:text-2xl font-bold text-primary">{stats.pagas}</div>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-amber-500">
+          <Card className="border-l-4 border-l-muted-foreground">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2 md:pt-4 md:px-4">
               <CardTitle className="text-xs md:text-sm font-medium">Pendentes</CardTitle>
-              <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 text-amber-500" />
+              <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent className="p-3 pt-0 md:px-4 md:pb-4">
-              <div className="text-xl md:text-2xl font-bold text-amber-600">{stats.pendentes}</div>
+              <div className="text-xl md:text-2xl font-bold text-muted-foreground">{stats.pendentes}</div>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-destructive">
@@ -308,6 +324,40 @@ const Pagamentos = () => {
             </CardHeader>
             <CardContent className="p-3 pt-0 md:px-4 md:pb-4">
               <div className="text-xl md:text-2xl font-bold text-destructive">{stats.inadimplentes}</div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Stats Cards - Comissões */}
+        <section className="grid grid-cols-1 gap-2 md:grid-cols-3 md:gap-4">
+          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2 md:pt-4 md:px-4">
+              <CardTitle className="text-xs md:text-sm font-medium">Comissão Total</CardTitle>
+              <TrendingUp className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
+            </CardHeader>
+            <CardContent className="p-3 pt-0 md:px-4 md:pb-4">
+              <div className="text-xl md:text-2xl font-bold text-primary">{formatCurrency(stats.comissaoTotal)}</div>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Soma de todas as comissões</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-primary">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2 md:pt-4 md:px-4">
+              <CardTitle className="text-xs md:text-sm font-medium">Recebido</CardTitle>
+              <CheckCircle2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
+            </CardHeader>
+            <CardContent className="p-3 pt-0 md:px-4 md:pb-4">
+              <div className="text-xl md:text-2xl font-bold text-primary">{formatCurrency(stats.comissaoRecebida)}</div>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Parcelas pagas</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-muted-foreground">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2 md:pt-4 md:px-4">
+              <CardTitle className="text-xs md:text-sm font-medium">A Receber</CardTitle>
+              <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="p-3 pt-0 md:px-4 md:pb-4">
+              <div className="text-xl md:text-2xl font-bold text-muted-foreground">{formatCurrency(stats.comissaoPendente)}</div>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Parcelas pendentes</p>
             </CardContent>
           </Card>
         </section>
@@ -327,15 +377,47 @@ const Pagamentos = () => {
                       <h3 className="font-semibold text-sm truncate">{pag.mae_nome}</h3>
                       <p className="text-xs text-muted-foreground font-mono">{formatCpf(pag.mae_cpf)}</p>
                     </div>
-                    <Badge variant="outline" className="text-[10px] shrink-0">
-                      {pag.tipo_pagamento === "a_vista" ? "À Vista" : `${pag.total_parcelas}x`}
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant="outline" className="text-[10px] shrink-0">
+                        {pag.tipo_pagamento === "a_vista" ? "À Vista" : `${pag.total_parcelas}x`}
+                      </Badge>
+                      {pag.percentual_comissao && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          <Percent className="h-2.5 w-2.5 mr-0.5" />
+                          {pag.percentual_comissao}%
+                        </Badge>
+                      )}
+                    </div>
                   </div>
+                  
+                  {/* Commission Summary */}
+                  {pag.comissao_total > 0 && (
+                    <div className="bg-muted/50 rounded-md p-2 mb-2 space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Comissão Total:</span>
+                        <span className="font-medium">{formatCurrency(pag.comissao_total)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Recebido:</span>
+                        <span className="font-medium text-primary">{formatCurrency(pag.comissao_recebida)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">A Receber:</span>
+                        <span className="font-medium">{formatCurrency(pag.comissao_pendente)}</span>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="space-y-1.5">
                     {pag.parcelas.map((p) => (
-                      <div key={p.id} className="flex items-center justify-between text-xs">
+                      <div key={p.id} className="flex items-center justify-between text-xs gap-2">
                         <span className="text-muted-foreground">{p.numero_parcela}ª: {formatDate(p.data_pagamento)}</span>
-                        {getStatusBadge(p.status)}
+                        <div className="flex items-center gap-1.5">
+                          {p.valor_comissao != null && p.valor_comissao > 0 && (
+                            <span className="text-muted-foreground text-[10px]">{formatCurrency(p.valor_comissao)}</span>
+                          )}
+                          {getStatusBadge(p.status)}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -374,48 +456,64 @@ const Pagamentos = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Mãe</TableHead>
-                  <TableHead>CPF</TableHead>
                   <TableHead>Tipo</TableHead>
-                  <TableHead>Parcelas</TableHead>
-                  <TableHead>Datas de Pagamento</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="text-center">%</TableHead>
+                  <TableHead>Parcelas / Datas</TableHead>
+                  <TableHead className="text-right">Comissão</TableHead>
+                  <TableHead className="text-right">Recebido</TableHead>
+                  <TableHead className="text-right">A Receber</TableHead>
                   <TableHead className="w-[100px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredPagamentos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Nenhum pagamento encontrado
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredPagamentos.map((pag) => (
                     <TableRow key={pag.id}>
-                      <TableCell className="font-medium">{pag.mae_nome}</TableCell>
-                      <TableCell className="font-mono text-sm">{formatCpf(pag.mae_cpf)}</TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{pag.mae_nome}</div>
+                          <div className="font-mono text-xs text-muted-foreground">{formatCpf(pag.mae_cpf)}</div>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">
                           {pag.tipo_pagamento === "a_vista" ? "À Vista" : `${pag.total_parcelas}x`}
                         </Badge>
                       </TableCell>
-                      <TableCell>{pag.total_parcelas}</TableCell>
+                      <TableCell className="text-center">
+                        {pag.percentual_comissao ? (
+                          <Badge variant="secondary" className="text-xs">
+                            {pag.percentual_comissao}%
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
                           {pag.parcelas.map((p) => (
                             <div key={p.id} className="flex items-center gap-2 text-sm">
                               <span className="text-muted-foreground">{p.numero_parcela}ª:</span>
                               <span>{formatDate(p.data_pagamento)}</span>
+                              {getStatusBadge(p.status)}
                             </div>
                           ))}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          {pag.parcelas.map((p) => (
-                            <div key={p.id}>{getStatusBadge(p.status)}</div>
-                          ))}
-                        </div>
+                      <TableCell className="text-right font-medium">
+                        {pag.comissao_total > 0 ? formatCurrency(pag.comissao_total) : "-"}
+                      </TableCell>
+                      <TableCell className="text-right text-primary font-medium">
+                        {pag.comissao_recebida > 0 ? formatCurrency(pag.comissao_recebida) : "-"}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {pag.comissao_pendente > 0 ? formatCurrency(pag.comissao_pendente) : "-"}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
