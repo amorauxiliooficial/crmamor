@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CheckCircle, Loader2, Instagram, Heart, Gift } from "lucide-react";
+import { CheckCircle, Loader2, Instagram, Heart, Gift, UserPlus, Phone, DollarSign } from "lucide-react";
 import logoAmor from "@/assets/logo-amor.png";
 import confetti from "canvas-confetti";
 
@@ -36,6 +36,13 @@ export default function Indicar() {
     
     if (!formData.nome_indicada.trim()) {
       toast.error("Por favor, informe o nome da pessoa indicada");
+      return;
+    }
+
+    // Validate WhatsApp - must have at least 10 digits
+    const phoneDigits = formData.telefone_indicada.replace(/\D/g, "");
+    if (phoneDigits.length < 10) {
+      toast.error("Por favor, informe o WhatsApp da pessoa indicada");
       return;
     }
 
@@ -196,6 +203,38 @@ export default function Indicar() {
             </p>
           </div>
 
+          {/* How it works */}
+          <div className="bg-muted/30 rounded-2xl p-5 space-y-4">
+            <p className="text-sm font-semibold text-center text-foreground">Como funciona?</p>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <UserPlus className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">1. Indique uma mãe</p>
+                <p className="text-xs text-muted-foreground">Preencha os dados dela abaixo</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <Phone className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">2. Entramos em contato</p>
+                <p className="text-xs text-muted-foreground">Nossa equipe vai conversar com ela</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <DollarSign className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">3. Você recebe</p>
+                <p className="text-xs text-muted-foreground">R$100 na aprovação + R$100 seguindo nosso Instagram</p>
+              </div>
+            </div>
+          </div>
+
           {/* Rewards Card */}
           <div className="bg-gradient-to-r from-primary/10 via-pink-50 to-primary/5 rounded-2xl p-5 border border-primary/10">
             <div className="flex items-center justify-center gap-2 mb-4">
@@ -250,7 +289,7 @@ export default function Indicar() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="telefone_indicada">WhatsApp dela</Label>
+                <Label htmlFor="telefone_indicada">WhatsApp dela *</Label>
                 <Input
                   id="telefone_indicada"
                   placeholder="(00) 00000-0000"
@@ -258,6 +297,7 @@ export default function Indicar() {
                   onChange={(e) => handlePhoneChange("telefone_indicada", e.target.value)}
                   maxLength={16}
                   inputMode="tel"
+                  required
                   className="h-12"
                 />
               </div>
