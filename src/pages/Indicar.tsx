@@ -185,9 +185,11 @@ export default function Indicar() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* Header with subtle gradient */}
-      <header className="py-8 px-4 flex flex-col items-center bg-gradient-to-b from-primary/5 to-transparent">
-        <img src={logoAmor} alt="Amor Auxílio Maternidade" className="h-16 animate-fade-in" />
+      {/* Header with white band */}
+      <header className="bg-white border-b shadow-sm">
+        <div className="py-6 px-4 flex justify-center">
+          <img src={logoAmor} alt="Amor Auxílio Maternidade" className="h-14 animate-fade-in" />
+        </div>
       </header>
 
       <main className="flex-1 flex flex-col items-center px-4 py-6">
