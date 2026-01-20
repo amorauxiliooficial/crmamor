@@ -24,7 +24,7 @@ serve(async (req) => {
     console.log('Received public indication:', body);
 
     // Validate required fields
-    const { nome_indicada, telefone_indicada, nome_indicadora } = body;
+    const { nome_indicada, telefone_indicada, nome_indicadora, telefone_indicadora } = body;
 
     if (!nome_indicada || nome_indicada.trim().length === 0) {
       return new Response(
@@ -79,6 +79,7 @@ serve(async (req) => {
         nome_indicada: nome_indicada.trim(),
         telefone_indicada: telefone_indicada?.trim() || null,
         nome_indicadora: nome_indicadora?.trim() || null,
+        telefone_indicadora: telefone_indicadora?.trim() || null,
         status_abordagem: 'aguardando_aprovacao',
         origem_indicacao: 'externa',
         user_id: systemUserId,
