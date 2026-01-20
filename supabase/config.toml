@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.payment-reminder]
 verify_jwt = false
+
+[functions.conferencia-inss-reminder]
+verify_jwt = false
+
+[functions.public-indicacao]
+verify_jwt = false

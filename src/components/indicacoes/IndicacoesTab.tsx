@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { Indicacao, StatusAbordagem, statusAbordagemLabels, motivoAbordagemLabels, MotivoAbordagem } from "@/types/indicacao";
+import { Indicacao, StatusAbordagem, statusAbordagemLabels, motivoAbordagemLabels, MotivoAbordagem, origemIndicacaoLabels, origemIndicacaoColors, OrigemIndicacao } from "@/types/indicacao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { IndicacaoDialog } from "./IndicacaoDialog";
 import { IndicacaoFormDialog } from "./IndicacaoFormDialog";
 import { AcaoPopover } from "./AcaoPopover";
-import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle } from "lucide-react";
+import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle, AlertCircle, ExternalLink } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -111,9 +111,11 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   const stats = useMemo(() => {
     return {
       total: indicacoes.length,
+      aguardandoAprovacao: indicacoes.filter((i) => i.status_abordagem === "aguardando_aprovacao").length,
       pendentes: indicacoes.filter((i) => i.status_abordagem === "pendente").length,
       emAndamento: indicacoes.filter((i) => i.status_abordagem === "em_andamento").length,
       concluidos: indicacoes.filter((i) => i.status_abordagem === "concluido").length,
+      externas: indicacoes.filter((i) => i.origem_indicacao === "externa").length,
     };
   }, [indicacoes]);
 
@@ -191,7 +193,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -201,6 +203,20 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-amber-500">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              Aguardando
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.aguardandoAprovacao}</div>
+            {stats.externas > 0 && (
+              <p className="text-xs text-muted-foreground">{stats.externas} externas</p>
+            )}
           </CardContent>
         </Card>
         <Card className="border-l-4 border-l-muted-foreground">
@@ -262,6 +278,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
             <TableRow>
               <TableHead>Data</TableHead>
               <TableHead>Indicada</TableHead>
+              <TableHead>Origem</TableHead>
               <TableHead>Telefone</TableHead>
               <TableHead>Indicadora</TableHead>
               <TableHead>Status</TableHead>
@@ -272,84 +289,96 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
           <TableBody>
             {filteredIndicacoes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   Nenhuma indicação encontrada
                 </TableCell>
               </TableRow>
             ) : (
-              filteredIndicacoes.map((indicacao) => (
-                <TableRow
-                  key={indicacao.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={(e) => handleRowClick(indicacao, e)}
-                >
-                  <TableCell className="whitespace-nowrap">
-                    {format(parseISO(indicacao.data_indicacao), "dd/MM/yyyy", { locale: ptBR })}
-                  </TableCell>
-                  <TableCell className="font-medium">{indicacao.nome_indicada}</TableCell>
-                  <TableCell>
-                    {indicacao.telefone_indicada && (
-                      <a
-                        href={`https://wa.me/${indicacao.telefone_indicada.replace(/\D/g, "")}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-emerald-600 hover:underline"
-                        onClick={(e) => e.stopPropagation()}
+              filteredIndicacoes.map((indicacao) => {
+                const origem = (indicacao.origem_indicacao || "interna") as OrigemIndicacao;
+                return (
+                  <TableRow
+                    key={indicacao.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={(e) => handleRowClick(indicacao, e)}
+                  >
+                    <TableCell className="whitespace-nowrap">
+                      {format(parseISO(indicacao.data_indicacao), "dd/MM/yyyy", { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="font-medium">{indicacao.nome_indicada}</TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant="secondary" 
+                        className={`text-xs ${origemIndicacaoColors[origem]}`}
                       >
-                        <Phone className="h-3 w-3" />
-                        {indicacao.telefone_indicada}
-                      </a>
-                    )}
-                  </TableCell>
-                  <TableCell>{indicacao.nome_indicadora || "-"}</TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={indicacao.status_abordagem}
-                      onValueChange={(value) => handleStatusChange(indicacao.id, value as StatusAbordagem)}
-                    >
-                      <SelectTrigger className="w-[130px] h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(statusAbordagemLabels).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={indicacao.motivo_abordagem || ""}
-                      onValueChange={(value) => handleMotivoChange(indicacao.id, value as MotivoAbordagem)}
-                    >
-                      <SelectTrigger className="w-[140px] h-8 text-xs">
-                        <SelectValue placeholder="Selecionar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(motivoAbordagemLabels).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <div 
-                      className="flex flex-col gap-1"
-                      onClick={(e) => e.stopPropagation()}
-                      onMouseDown={(e) => e.stopPropagation()}
-                    >
-                      <AcaoPopover 
-                        indicacaoId={indicacao.id} 
-                        onSuccess={fetchIndicacoes}
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+                        {origem === "externa" && <ExternalLink className="h-3 w-3 mr-1" />}
+                        {origemIndicacaoLabels[origem]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {indicacao.telefone_indicada && (
+                        <a
+                          href={`https://wa.me/${indicacao.telefone_indicada.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-emerald-600 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Phone className="h-3 w-3" />
+                          {indicacao.telefone_indicada}
+                        </a>
+                      )}
+                    </TableCell>
+                    <TableCell>{indicacao.nome_indicadora || "-"}</TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Select
+                        value={indicacao.status_abordagem}
+                        onValueChange={(value) => handleStatusChange(indicacao.id, value as StatusAbordagem)}
+                      >
+                        <SelectTrigger className="w-[150px] h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(statusAbordagemLabels).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Select
+                        value={indicacao.motivo_abordagem || ""}
+                        onValueChange={(value) => handleMotivoChange(indicacao.id, value as MotivoAbordagem)}
+                      >
+                        <SelectTrigger className="w-[140px] h-8 text-xs">
+                          <SelectValue placeholder="Selecionar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(motivoAbordagemLabels).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <div 
+                        className="flex flex-col gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      >
+                        <AcaoPopover 
+                          indicacaoId={indicacao.id} 
+                          onSuccess={fetchIndicacoes}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

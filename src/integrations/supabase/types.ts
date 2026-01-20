@@ -265,6 +265,7 @@ export type Database = {
           nome_indicada: string
           nome_indicadora: string | null
           observacoes: string | null
+          origem_indicacao: string | null
           proxima_acao: string | null
           proxima_acao_data: string | null
           proxima_acao_observacao: string | null
@@ -282,6 +283,7 @@ export type Database = {
           nome_indicada: string
           nome_indicadora?: string | null
           observacoes?: string | null
+          origem_indicacao?: string | null
           proxima_acao?: string | null
           proxima_acao_data?: string | null
           proxima_acao_observacao?: string | null
@@ -299,6 +301,7 @@ export type Database = {
           nome_indicada?: string
           nome_indicadora?: string | null
           observacoes?: string | null
+          origem_indicacao?: string | null
           proxima_acao?: string | null
           proxima_acao_data?: string | null
           proxima_acao_observacao?: string | null

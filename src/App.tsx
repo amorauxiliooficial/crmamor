@@ -11,6 +11,7 @@ import Pagamentos from "./pages/Pagamentos";
 import Playbook from "./pages/Playbook";
 import Senhas from "./pages/Senhas";
 import Marketing from "./pages/Marketing";
+import Indicar from "./pages/Indicar";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/playbook" element={<Playbook />} />
             <Route path="/senhas" element={<Senhas />} />
             <Route path="/marketing" element={<Marketing />} />
+            <Route path="/indicar" element={<Indicar />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
