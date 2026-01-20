@@ -26,6 +26,7 @@ import {
   LogOut,
   X,
   Megaphone,
+  PiggyBank,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ const navigationItems = [
   { id: "pagamentos", label: "Pagamentos", icon: DollarSign },
   { id: "indicacoes", label: "Indicações", icon: UserPlus },
   { id: "marketing", label: "Marketing", icon: Megaphone, isPage: true },
+  { id: "comissoes", label: "Comissões", icon: PiggyBank, isPage: true },
 ];
 
 export function MobileSidebar({

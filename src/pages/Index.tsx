@@ -96,7 +96,7 @@ const Index = () => {
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [showOnboardingOnLoad, setShowOnboardingOnLoad] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>("all");
-  const [users, setUsers] = useState<{ id: string; full_name: string | null }[]>([]);
+  const [users, setUsers] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
 
   const handleNotificationClick = (indicacao: Indicacao) => {
     setViewMode("indicacoes");
@@ -178,13 +178,20 @@ const Index = () => {
       
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name")
+        .select("id, full_name, email")
         .in("id", uniqueUserIds);
       
       if (profiles) {
         setUsers(profiles);
       }
     }
+  };
+
+  // Helper to get display name for user
+  const getUserDisplayName = (u: { id: string; full_name: string | null; email: string | null }) => {
+    if (u.full_name) return u.full_name;
+    if (u.email) return u.email.split("@")[0];
+    return "Sem nome";
   };
 
   useEffect(() => {
@@ -362,14 +369,14 @@ const Index = () => {
               <SelectItem value="all">Todos os usuários</SelectItem>
               {users.map((u) => (
                 <SelectItem key={u.id} value={u.id}>
-                  {u.full_name || "Sem nome"}
+                  {getUserDisplayName(u)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           {selectedUserId !== "all" && (
             <Badge variant="secondary" className="gap-1">
-              {users.find((u) => u.id === selectedUserId)?.full_name || "Usuário"}
+              {getUserDisplayName(users.find((u) => u.id === selectedUserId) || { id: "", full_name: null, email: null })}
             </Badge>
           )}
         </section>
@@ -533,6 +540,15 @@ const Index = () => {
                   title="Marketing"
                 >
                   <Megaphone className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => navigate("/comissoes")}
+                  title="Comissões"
+                >
+                  <DollarSign className="h-4 w-4" />
                 </Button>
               </div>
 
