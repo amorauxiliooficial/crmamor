@@ -562,15 +562,16 @@ const Index = () => {
                   searchQuery={searchQuery} 
                   externalSelectedIndicacao={selectedIndicacaoFromNotification}
                   onClearExternalSelection={() => setSelectedIndicacaoFromNotification(null)}
+                  selectedUserId={selectedUserId}
                 />
               </div>
             ) : viewMode === "conferencia" ? (
               <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-                <ConferenciaTab searchQuery={searchQuery} />
+                <ConferenciaTab searchQuery={searchQuery} selectedUserId={selectedUserId} />
               </div>
             ) : viewMode === "pagamentos" ? (
               <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-                <PagamentosTab searchQuery={searchQuery} />
+                <PagamentosTab searchQuery={searchQuery} selectedUserId={selectedUserId} />
               </div>
             ) : viewMode === "gestantes" ? (
               <div className="rounded-lg border bg-muted/30 min-h-[500px]">

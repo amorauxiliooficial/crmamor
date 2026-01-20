@@ -21,9 +21,10 @@ interface IndicacoesTabProps {
   searchQuery?: string;
   externalSelectedIndicacao?: Indicacao | null;
   onClearExternalSelection?: () => void;
+  selectedUserId?: string;
 }
 
-export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onClearExternalSelection }: IndicacoesTabProps) {
+export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onClearExternalSelection, selectedUserId }: IndicacoesTabProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [indicacoes, setIndicacoes] = useState<Indicacao[]>([]);
@@ -90,34 +91,45 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   };
 
   const filteredIndicacoes = useMemo(() => {
+    let filtered = indicacoes;
+    
+    // Filter by user if selected
+    if (selectedUserId && selectedUserId !== "all") {
+      filtered = filtered.filter((ind) => ind.user_id === selectedUserId);
+    }
+    
+    // Filter by search query
     const query = removeAccents((searchQuery || localSearch).toLowerCase().trim());
-    if (!query) return indicacoes;
+    if (query) {
+      filtered = filtered.filter((ind) => {
+        const normalizedNomeIndicada = removeAccents(ind.nome_indicada?.toLowerCase() || "");
+        const normalizedNomeIndicadora = removeAccents(ind.nome_indicadora?.toLowerCase() || "");
+        const phoneIndicada = ind.telefone_indicada?.replace(/\D/g, "") || "";
+        const phoneIndicadora = ind.telefone_indicadora?.replace(/\D/g, "") || "";
+        const queryDigits = query.replace(/\D/g, "");
 
-    return indicacoes.filter((ind) => {
-      const normalizedNomeIndicada = removeAccents(ind.nome_indicada?.toLowerCase() || "");
-      const normalizedNomeIndicadora = removeAccents(ind.nome_indicadora?.toLowerCase() || "");
-      const phoneIndicada = ind.telefone_indicada?.replace(/\D/g, "") || "";
-      const phoneIndicadora = ind.telefone_indicadora?.replace(/\D/g, "") || "";
-      const queryDigits = query.replace(/\D/g, "");
-
-      return (
-        normalizedNomeIndicada.includes(query) ||
-        normalizedNomeIndicadora.includes(query) ||
-        (queryDigits.length > 0 && (phoneIndicada.includes(queryDigits) || phoneIndicadora.includes(queryDigits)))
-      );
-    });
-  }, [indicacoes, searchQuery, localSearch]);
+        return (
+          normalizedNomeIndicada.includes(query) ||
+          normalizedNomeIndicadora.includes(query) ||
+          (queryDigits.length > 0 && (phoneIndicada.includes(queryDigits) || phoneIndicadora.includes(queryDigits)))
+        );
+      });
+    }
+    
+    return filtered;
+  }, [indicacoes, searchQuery, localSearch, selectedUserId]);
 
   const stats = useMemo(() => {
+    const dataToCount = filteredIndicacoes;
     return {
-      total: indicacoes.length,
-      aguardandoAprovacao: indicacoes.filter((i) => i.status_abordagem === "aguardando_aprovacao").length,
-      pendentes: indicacoes.filter((i) => i.status_abordagem === "pendente").length,
-      emAndamento: indicacoes.filter((i) => i.status_abordagem === "em_andamento").length,
-      concluidos: indicacoes.filter((i) => i.status_abordagem === "concluido").length,
-      externas: indicacoes.filter((i) => i.origem_indicacao === "externa").length,
+      total: dataToCount.length,
+      aguardandoAprovacao: dataToCount.filter((i) => i.status_abordagem === "aguardando_aprovacao").length,
+      pendentes: dataToCount.filter((i) => i.status_abordagem === "pendente").length,
+      emAndamento: dataToCount.filter((i) => i.status_abordagem === "em_andamento").length,
+      concluidos: dataToCount.filter((i) => i.status_abordagem === "concluido").length,
+      externas: dataToCount.filter((i) => i.origem_indicacao === "externa").length,
     };
-  }, [indicacoes]);
+  }, [filteredIndicacoes]);
 
   const handleRowClick = (indicacao: Indicacao, e: React.MouseEvent) => {
     // Prevent opening dialog when clicking on select or dropdown

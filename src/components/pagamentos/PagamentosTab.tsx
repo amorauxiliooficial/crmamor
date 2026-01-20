@@ -57,6 +57,7 @@ interface PagamentoComMae {
   valor_total: number | null;
   mae_nome: string;
   mae_cpf: string;
+  user_id: string;
   parcelas: {
     id: string;
     numero_parcela: number;
@@ -73,6 +74,7 @@ interface MaeAprovada {
   cpf: string;
   temPagamento: boolean;
   pagamentoId?: string;
+  user_id: string;
   statusParcelas: {
     pagas: number;
     pendentes: number;
@@ -83,9 +85,10 @@ interface MaeAprovada {
 
 interface PagamentosTabProps {
   searchQuery: string;
+  selectedUserId?: string;
 }
 
-export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
+export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProps) {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -117,7 +120,7 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
     // Fetch mães aprovadas
     const { data: maesData, error: maesError } = await supabase
       .from("mae_processo")
-      .select("id, nome_mae, cpf")
+      .select("id, nome_mae, cpf, user_id")
       .eq("status_processo", "Aprovada")
       .order("nome_mae", { ascending: true });
 
@@ -178,6 +181,7 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
         cpf: mae.cpf,
         temPagamento: maePaymentMap.has(mae.id),
         pagamentoId: paymentInfo?.pagamentoId,
+        user_id: mae.user_id,
         statusParcelas,
       };
     });
@@ -189,7 +193,7 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
     for (const pag of pagamentosData || []) {
       const { data: mae } = await supabase
         .from("mae_processo")
-        .select("nome_mae, cpf")
+        .select("nome_mae, cpf, user_id")
         .eq("id", pag.mae_id)
         .single();
 
@@ -207,6 +211,7 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
         valor_total: pag.valor_total,
         mae_nome: mae?.nome_mae || "N/A",
         mae_cpf: mae?.cpf || "",
+        user_id: mae?.user_id || "",
         parcelas: (parcelas || []).map((p: any) => ({
           id: p.id,
           numero_parcela: p.numero_parcela,
@@ -228,6 +233,17 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
     }
   }, [user]);
 
+  // First filter by user, then calculate stats
+  const userFilteredPagamentos = useMemo(() => {
+    if (!selectedUserId || selectedUserId === "all") return pagamentos;
+    return pagamentos.filter((p) => p.user_id === selectedUserId);
+  }, [pagamentos, selectedUserId]);
+
+  const userFilteredMaesAprovadas = useMemo(() => {
+    if (!selectedUserId || selectedUserId === "all") return maesAprovadas;
+    return maesAprovadas.filter((m) => m.user_id === selectedUserId);
+  }, [maesAprovadas, selectedUserId]);
+
   const stats = useMemo(() => {
     let totalParcelas = 0;
     let pagas = 0;
@@ -238,7 +254,7 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
     let valorPendente = 0;
     let valorMesSelecionado = 0;
 
-    pagamentos.forEach((pag) => {
+    userFilteredPagamentos.forEach((pag) => {
       pag.parcelas.forEach((p) => {
         totalParcelas++;
         const valor = p.valor || 0;
@@ -266,7 +282,7 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
       });
     });
 
-    const maesSemPagamento = maesAprovadas.filter(m => !m.temPagamento).length;
+    const maesSemPagamento = userFilteredMaesAprovadas.filter(m => !m.temPagamento).length;
 
     return { 
       totalParcelas, 
@@ -279,29 +295,37 @@ export function PagamentosTab({ searchQuery }: PagamentosTabProps) {
       valorPendente,
       valorMesSelecionado,
     };
-  }, [pagamentos, maesAprovadas, selectedMonth, selectedYear]);
+  }, [userFilteredPagamentos, userFilteredMaesAprovadas, selectedMonth, selectedYear]);
 
   const filteredPagamentos = useMemo(() => {
-    if (!searchQuery.trim()) return pagamentos;
-
-    const query = searchQuery.toLowerCase();
-    return pagamentos.filter(
-      (p) =>
-        p.mae_nome.toLowerCase().includes(query) ||
-        p.mae_cpf.replace(/\D/g, "").includes(query.replace(/\D/g, ""))
-    );
-  }, [pagamentos, searchQuery]);
+    let filtered = userFilteredPagamentos;
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.mae_nome.toLowerCase().includes(query) ||
+          p.mae_cpf.replace(/\D/g, "").includes(query.replace(/\D/g, ""))
+      );
+    }
+    
+    return filtered;
+  }, [userFilteredPagamentos, searchQuery]);
 
   const filteredMaesAprovadas = useMemo(() => {
-    if (!searchQuery.trim()) return maesAprovadas;
-
-    const query = searchQuery.toLowerCase();
-    return maesAprovadas.filter(
-      (m) =>
-        m.nome_mae.toLowerCase().includes(query) ||
-        m.cpf.replace(/\D/g, "").includes(query.replace(/\D/g, ""))
-    );
-  }, [maesAprovadas, searchQuery]);
+    let filtered = userFilteredMaesAprovadas;
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (m) =>
+          m.nome_mae.toLowerCase().includes(query) ||
+          m.cpf.replace(/\D/g, "").includes(query.replace(/\D/g, ""))
+      );
+    }
+    
+    return filtered;
+  }, [userFilteredMaesAprovadas, searchQuery]);
 
   const handleEdit = (pagamento: PagamentoComMae) => {
     setSelectedMaeId(pagamento.mae_id);

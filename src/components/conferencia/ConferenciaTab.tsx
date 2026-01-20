@@ -41,15 +41,17 @@ interface MaeEmAnalise {
   ultima_conferencia?: string;
   dias_sem_conferencia: number;
   precisa_conferencia: boolean;
+  user_id: string;
 }
 
 const CONFERENCIA_INTERVALO_DIAS = 2;
 
 interface ConferenciaTabProps {
   searchQuery: string;
+  selectedUserId?: string;
 }
 
-export function ConferenciaTab({ searchQuery }: ConferenciaTabProps) {
+export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [maes, setMaes] = useState<MaeEmAnalise[]>([]);
@@ -62,7 +64,7 @@ export function ConferenciaTab({ searchQuery }: ConferenciaTabProps) {
 
     const { data: maesData, error: maesError } = await supabase
       .from("mae_processo")
-      .select("id, nome_mae, cpf, status_processo, data_ultima_atualizacao")
+      .select("id, nome_mae, cpf, status_processo, data_ultima_atualizacao, user_id")
       .eq("status_processo", "Em Análise")
       .order("data_ultima_atualizacao", { ascending: true });
 
@@ -97,6 +99,7 @@ export function ConferenciaTab({ searchQuery }: ConferenciaTabProps) {
           ultima_conferencia: ultimaConferencia,
           dias_sem_conferencia: diasSemConferencia,
           precisa_conferencia: precisaConferencia,
+          user_id: mae.user_id,
         };
       })
     );
@@ -118,21 +121,32 @@ export function ConferenciaTab({ searchQuery }: ConferenciaTabProps) {
   }, [user]);
 
   const filteredMaes = useMemo(() => {
-    if (!searchQuery.trim()) return maes;
-
-    const query = searchQuery.toLowerCase();
-    return maes.filter(
-      (mae) =>
-        mae.nome_mae.toLowerCase().includes(query) ||
-        mae.cpf.includes(query)
-    );
-  }, [maes, searchQuery]);
+    let filtered = maes;
+    
+    // Filter by user if selected
+    if (selectedUserId && selectedUserId !== "all") {
+      filtered = filtered.filter((mae) => mae.user_id === selectedUserId);
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (mae) =>
+          mae.nome_mae.toLowerCase().includes(query) ||
+          mae.cpf.includes(query)
+      );
+    }
+    
+    return filtered;
+  }, [maes, searchQuery, selectedUserId]);
 
   const stats = useMemo(() => {
-    const pendentes = maes.filter((m) => m.precisa_conferencia).length;
-    const emDia = maes.filter((m) => !m.precisa_conferencia).length;
-    return { pendentes, emDia, total: maes.length };
-  }, [maes]);
+    const dataToCount = filteredMaes;
+    const pendentes = dataToCount.filter((m) => m.precisa_conferencia).length;
+    const emDia = dataToCount.filter((m) => !m.precisa_conferencia).length;
+    return { pendentes, emDia, total: dataToCount.length };
+  }, [filteredMaes]);
 
   const handleConferencia = (mae: MaeEmAnalise) => {
     setSelectedMae(mae);
