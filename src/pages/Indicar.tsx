@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CheckCircle, Loader2, Instagram } from "lucide-react";
+import { CheckCircle, Loader2, Instagram, Heart, Gift } from "lucide-react";
 import logoAmor from "@/assets/logo-amor.png";
+import confetti from "canvas-confetti";
 
 // Phone mask helper
 const formatPhone = (value: string) => {
@@ -71,43 +72,105 @@ export default function Indicar() {
     }
   };
 
+  // Trigger confetti on success
+  useEffect(() => {
+    if (success) {
+      // First burst
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#ec4899', '#f472b6', '#f9a8d4', '#3b82f6', '#60a5fa']
+      });
+      
+      // Second burst after delay
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ['#ec4899', '#f472b6', '#f9a8d4']
+        });
+        confetti({
+          particleCount: 50,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ['#3b82f6', '#60a5fa', '#93c5fd']
+        });
+      }, 250);
+    }
+  }, [success]);
+
   if (success) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 py-8">
-        <div className="w-full max-w-sm text-center space-y-6 animate-fade-in">
-          <img src={logoAmor} alt="Amor Auxílio Maternidade" className="h-16 mx-auto" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white px-4 py-8">
+        <div className="w-full max-w-md text-center space-y-8 animate-fade-in">
+          {/* Logo */}
+          <img src={logoAmor} alt="Amor Auxílio Maternidade" className="h-20 mx-auto animate-scale-in" />
           
-          <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-            <CheckCircle className="h-8 w-8 text-primary" />
+          {/* Success Icon with animation */}
+          <div className="relative">
+            <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary/20 to-pink-100 flex items-center justify-center animate-scale-in">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-pink-400 flex items-center justify-center shadow-lg">
+                <CheckCircle className="h-10 w-10 text-white" />
+              </div>
+            </div>
+            {/* Floating hearts */}
+            <Heart className="absolute -top-2 -right-4 h-6 w-6 text-pink-300 animate-pulse" />
+            <Heart className="absolute top-8 -left-6 h-4 w-4 text-pink-200 animate-pulse" style={{ animationDelay: '0.5s' }} />
           </div>
           
-          <div className="space-y-2">
-            <h1 className="text-xl font-semibold text-foreground">Indicação enviada!</h1>
-            <p className="text-sm text-muted-foreground">
-              Obrigada! Entraremos em contato em breve.
+          {/* Success Message */}
+          <div className="space-y-3">
+            <h1 className="text-2xl font-bold text-foreground">
+              🎉 Indicação Enviada!
+            </h1>
+            <p className="text-muted-foreground">
+              Obrigada por indicar! Entraremos em contato com ela em breve.
             </p>
           </div>
 
-          <a
-            href="https://www.instagram.com/amorauxiliomaternidade"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
-          >
-            <Instagram className="h-4 w-4" />
-            Siga-nos para garantir +R$100
-          </a>
+          {/* Reward reminder card */}
+          <div className="bg-gradient-to-r from-primary/5 to-pink-50 rounded-2xl p-6 space-y-4 border border-primary/10">
+            <div className="flex items-center justify-center gap-2">
+              <Gift className="h-5 w-5 text-primary" />
+              <span className="font-semibold text-foreground">Suas Recompensas</span>
+            </div>
+            <div className="flex justify-center gap-4 text-center">
+              <div className="bg-white rounded-xl px-4 py-3 shadow-sm">
+                <p className="text-xl font-bold text-primary">R$100</p>
+                <p className="text-xs text-muted-foreground">Aprovação INSS</p>
+              </div>
+              <div className="bg-white rounded-xl px-4 py-3 shadow-sm">
+                <p className="text-xl font-bold text-primary">+R$100</p>
+                <p className="text-xs text-muted-foreground">Seguindo Instagram</p>
+              </div>
+            </div>
+            <a
+              href="https://www.instagram.com/amorauxiliomaternidade"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white font-medium py-3 px-4 rounded-xl hover:opacity-90 transition-opacity"
+            >
+              <Instagram className="h-5 w-5" />
+              Seguir no Instagram
+            </a>
+          </div>
 
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => {
-              setSuccess(false);
-              setFormData({ nome_indicada: "", telefone_indicada: "", nome_indicadora: "", telefone_indicadora: "" });
-            }}
-          >
-            Indicar outra pessoa
-          </Button>
+          {/* Action buttons */}
+          <div className="space-y-3">
+            <Button 
+              className="w-full"
+              onClick={() => {
+                setSuccess(false);
+                setFormData({ nome_indicada: "", telefone_indicada: "", nome_indicadora: "", telefone_indicadora: "" });
+              }}
+            >
+              Indicar outra pessoa
+            </Button>
+          </div>
         </div>
       </div>
     );
