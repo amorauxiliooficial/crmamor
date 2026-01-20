@@ -50,6 +50,13 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { differenceInMonths, parseISO } from "date-fns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Map database status to display status with emoji
 const mapDbStatusToDisplay = (status: string): StatusProcesso => {
@@ -81,12 +88,15 @@ const Index = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [maes, setMaes] = useState<MaeProcesso[]>([]);
+  const [allMaesRaw, setAllMaesRaw] = useState<{ id: string; user_id: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all" | "gestantes">("all");
   const [viewMode, setViewMode] = useState<"kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes">("kanban");
   const [selectedIndicacaoFromNotification, setSelectedIndicacaoFromNotification] = useState<Indicacao | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [showOnboardingOnLoad, setShowOnboardingOnLoad] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string>("all");
+  const [users, setUsers] = useState<{ id: string; full_name: string | null }[]>([]);
 
   const handleNotificationClick = (indicacao: Indicacao) => {
     setViewMode("indicacoes");
@@ -121,8 +131,12 @@ const Index = () => {
         description: getUserFriendlyError(error),
       });
     } else if (data) {
+      // Store raw data for user extraction
+      setAllMaesRaw(data.map((item) => ({ id: item.id, user_id: item.user_id })));
+      
       const mappedData: MaeProcesso[] = data.map((item) => ({
         id: item.id,
+        user_id: item.user_id,
         nome_mae: item.nome_mae,
         cpf: item.cpf,
         telefone: item.telefone || undefined,
@@ -152,9 +166,31 @@ const Index = () => {
     setLoading(false);
   };
 
+  // Fetch users (profiles) for user selector
+  const fetchUsers = async () => {
+    // Get unique user_ids from processes
+    const { data: maesData } = await supabase
+      .from("mae_processo")
+      .select("user_id");
+    
+    if (maesData) {
+      const uniqueUserIds = [...new Set(maesData.map((m) => m.user_id))];
+      
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", uniqueUserIds);
+      
+      if (profiles) {
+        setUsers(profiles);
+      }
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchMaes();
+      fetchUsers();
     }
   }, [user]);
 
@@ -172,8 +208,14 @@ const Index = () => {
     return diasDesdeDpp <= 30;
   };
 
+  // Filter by user first
+  const maesFilteredByUser = useMemo(() => {
+    if (selectedUserId === "all") return maes;
+    return maes.filter((mae) => mae.user_id === selectedUserId);
+  }, [maes, selectedUserId]);
+
   const filteredMaes = useMemo(() => {
-    let filtered = maes;
+    let filtered = maesFilteredByUser;
     
     // Apply gestantes filter
     if (statusFilter === "gestantes") {
@@ -203,37 +245,37 @@ const Index = () => {
     }
     
     return filtered;
-  }, [searchQuery, maes, statusFilter]);
+  }, [searchQuery, maesFilteredByUser, statusFilter]);
 
   // Filter only gestantes (is_gestante = true, DPP no futuro ou até 30 dias após a DPP)
   const gestantes = useMemo(() => {
-    return maes.filter((m) => {
+    return maesFilteredByUser.filter((m) => {
       if (!m.is_gestante) return false;
       if (m.data_evento_tipo !== "DPP" || !m.data_evento) return false;
       const dpp = parseISO(m.data_evento);
       return isDppAtiva(dpp);
     });
-  }, [maes]);
+  }, [maesFilteredByUser]);
 
   const gestantesCount = gestantes.length;
 
   const stats = useMemo(() => {
-    const total = maes.length;
-    const aprovadas = maes.filter(
+    const total = maesFilteredByUser.length;
+    const aprovadas = maesFilteredByUser.filter(
       (m) => m.status_processo === "✅ Aprovada"
     ).length;
-    const indeferidas = maes.filter(
+    const indeferidas = maesFilteredByUser.filter(
       (m) => m.status_processo === "❌ Indeferida"
     ).length;
-    const emAnalise = maes.filter(
+    const emAnalise = maesFilteredByUser.filter(
       (m) => m.status_processo === "🔎 Em Análise"
     ).length;
-    const pendencias = maes.filter(
+    const pendencias = maesFilteredByUser.filter(
       (m) => m.status_processo === "⚠️ Pendência Documental"
     ).length;
 
     return { total, aprovadas, indeferidas, emAnalise, pendencias };
-  }, [maes]);
+  }, [maesFilteredByUser]);
 
   const handleStatsClick = (filter: StatusProcesso | "all" | "gestantes") => {
     setStatusFilter(statusFilter === filter ? "all" : filter);
@@ -308,6 +350,29 @@ const Index = () => {
       />
 
       <main className="p-3 md:p-6 space-y-3 md:space-y-6 overflow-x-hidden">
+
+        {/* User Selector */}
+        <section className="flex items-center gap-3">
+          <span className="text-sm font-medium text-muted-foreground">Usuário:</span>
+          <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Todos os usuários" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os usuários</SelectItem>
+              {users.map((u) => (
+                <SelectItem key={u.id} value={u.id}>
+                  {u.full_name || "Sem nome"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedUserId !== "all" && (
+            <Badge variant="secondary" className="gap-1">
+              {users.find((u) => u.id === selectedUserId)?.full_name || "Usuário"}
+            </Badge>
+          )}
+        </section>
 
         {/* Stats Grid - Horizontal scroll on mobile */}
         <section className="tour-stats">

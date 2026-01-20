@@ -23,6 +23,7 @@ export type CategoriaPrevidenciaria =
 
 export interface MaeProcesso {
   id: string;
+  user_id?: string;
   nome_mae: string;
   cpf: string;
   telefone?: string;
