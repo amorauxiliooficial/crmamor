@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -33,23 +33,44 @@ export interface ComissaoResumoUsuario {
   user_id: string;
   usuario_nome: string | null;
   usuario_email: string | null;
-  total_maes: number;
-  maes_aprovadas: number;
+  total_processos: number;
+  processos_entrada_documentos: number;
+  processos_em_analise: number;
+  processos_pendencia: number;
+  processos_elegiveis: number;
+  processos_protocolo_inss: number;
+  processos_aguardando_inss: number;
+  processos_aprovados: number;
+  processos_indeferidos: number;
+  processos_recurso: number;
+  processos_encerrados: number;
   valor_total_pagamentos: number;
   comissao_total: number;
   comissao_recebida: number;
   comissao_pendente: number;
 }
 
+const STATUS_MAP: Record<string, keyof ComissaoResumoUsuario> = {
+  "Entrada de Documentos": "processos_entrada_documentos",
+  "Em Análise": "processos_em_analise",
+  "Pendência Documental": "processos_pendencia",
+  "Elegível (Análise Positiva)": "processos_elegiveis",
+  "Protocolo INSS": "processos_protocolo_inss",
+  "Aguardando Análise INSS": "processos_aguardando_inss",
+  "Aprovada": "processos_aprovados",
+  "Indeferida": "processos_indeferidos",
+  "Recurso / Judicial": "processos_recurso",
+  "Processo Encerrado": "processos_encerrados",
+};
+
 async function fetchComissoes(): Promise<{
   maesComComissao: ComissaoMae[];
   resumoPorUsuario: ComissaoResumoUsuario[];
 }> {
-  // Fetch all mae_processo with status Aprovada
+  // Fetch ALL mae_processo (not just Aprovada)
   const { data: maesData, error: maesError } = await supabase
     .from("mae_processo")
     .select("id, nome_mae, cpf, status_processo, percentual_comissao, user_id")
-    .eq("status_processo", "Aprovada")
     .order("nome_mae", { ascending: true });
 
   if (maesError) throw new Error(maesError.message);
@@ -161,8 +182,7 @@ async function fetchComissoes(): Promise<{
     };
   });
 
-  // Group by user
-  const resumoPorUsuario: ComissaoResumoUsuario[] = [];
+  // Group by user with all status counts
   const userGroupMap = new Map<string, ComissaoResumoUsuario>();
 
   maesComComissao.forEach((mae) => {
@@ -171,8 +191,17 @@ async function fetchComissoes(): Promise<{
         user_id: mae.user_id,
         usuario_nome: mae.usuario_nome,
         usuario_email: mae.usuario_email,
-        total_maes: 0,
-        maes_aprovadas: 0,
+        total_processos: 0,
+        processos_entrada_documentos: 0,
+        processos_em_analise: 0,
+        processos_pendencia: 0,
+        processos_elegiveis: 0,
+        processos_protocolo_inss: 0,
+        processos_aguardando_inss: 0,
+        processos_aprovados: 0,
+        processos_indeferidos: 0,
+        processos_recurso: 0,
+        processos_encerrados: 0,
         valor_total_pagamentos: 0,
         comissao_total: 0,
         comissao_recebida: 0,
@@ -181,17 +210,30 @@ async function fetchComissoes(): Promise<{
     }
 
     const group = userGroupMap.get(mae.user_id)!;
-    group.total_maes += 1;
-    group.maes_aprovadas += 1;
-    group.valor_total_pagamentos += mae.valor_total_pagamento;
-    group.comissao_total += mae.comissao_calculada;
-    group.comissao_recebida += mae.comissao_recebida;
-    group.comissao_pendente += mae.comissao_pendente;
+    group.total_processos += 1;
+
+    // Increment status counter
+    const statusKey = STATUS_MAP[mae.status_processo];
+    if (statusKey && typeof group[statusKey] === "number") {
+      (group[statusKey] as number) += 1;
+    }
+
+    // Only count commission values for approved processes
+    if (mae.status_processo === "Aprovada") {
+      group.valor_total_pagamentos += mae.valor_total_pagamento;
+      group.comissao_total += mae.comissao_calculada;
+      group.comissao_recebida += mae.comissao_recebida;
+      group.comissao_pendente += mae.comissao_pendente;
+    }
   });
 
+  const resumoPorUsuario: ComissaoResumoUsuario[] = [];
   userGroupMap.forEach((value) => {
     resumoPorUsuario.push(value);
   });
+
+  // Sort by total_processos descending
+  resumoPorUsuario.sort((a, b) => b.total_processos - a.total_processos);
 
   return { maesComComissao, resumoPorUsuario };
 }
