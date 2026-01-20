@@ -1,0 +1,121 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    if (req.method !== 'POST') {
+      return new Response(
+        JSON.stringify({ error: 'Method not allowed' }),
+        { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const body = await req.json();
+    console.log('Received public indication:', body);
+
+    // Validate required fields
+    const { nome_indicada, telefone_indicada, nome_indicadora } = body;
+
+    if (!nome_indicada || nome_indicada.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Nome da indicada é obrigatório' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (nome_indicada.trim().length > 200) {
+      return new Response(
+        JSON.stringify({ error: 'Nome da indicada muito longo' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate phone format (optional but if provided, must be valid)
+    if (telefone_indicada && telefone_indicada.length > 20) {
+      return new Response(
+        JSON.stringify({ error: 'Telefone inválido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create Supabase client with service role
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
+
+    // Get a system user ID (first admin user) or use a placeholder
+    const { data: adminUsers } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'admin')
+      .limit(1);
+
+    const systemUserId = adminUsers?.[0]?.user_id;
+
+    if (!systemUserId) {
+      console.error('No admin user found for system attribution');
+      return new Response(
+        JSON.stringify({ error: 'Sistema não configurado corretamente' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Insert the indication with special status and origin
+    const { data: indicacao, error: insertError } = await supabaseAdmin
+      .from('indicacoes')
+      .insert({
+        nome_indicada: nome_indicada.trim(),
+        telefone_indicada: telefone_indicada?.trim() || null,
+        nome_indicadora: nome_indicadora?.trim() || null,
+        status_abordagem: 'aguardando_aprovacao',
+        origem_indicacao: 'externa',
+        user_id: systemUserId,
+        observacoes: 'Indicação recebida via formulário público'
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Error inserting indication:', insertError);
+      return new Response(
+        JSON.stringify({ error: 'Erro ao registrar indicação' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Log the action
+    await supabaseAdmin
+      .from('acoes_indicacao')
+      .insert({
+        indicacao_id: indicacao.id,
+        tipo_acao: 'Indicação recebida via formulário público',
+        user_id: systemUserId
+      });
+
+    console.log('Public indication created successfully:', indicacao.id);
+
+    return new Response(
+      JSON.stringify({ success: true, message: 'Indicação registrada com sucesso!' }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('Error processing public indication:', error);
+    return new Response(
+      JSON.stringify({ error: 'Erro interno do servidor' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
