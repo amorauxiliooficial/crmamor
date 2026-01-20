@@ -143,6 +143,15 @@ export default function Indicar() {
             <div>
               <p className="text-2xl font-bold text-primary">+R$100</p>
               <p className="text-xs text-muted-foreground">Seguindo Instagram</p>
+              <a
+                href="https://www.instagram.com/amorauxiliomaternidade"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+              >
+                <Instagram className="h-3 w-3" />
+                @amorauxiliomaternidade
+              </a>
             </div>
           </div>
 
