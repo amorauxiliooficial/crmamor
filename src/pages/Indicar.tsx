@@ -39,10 +39,23 @@ export default function Indicar() {
       return;
     }
 
-    // Validate WhatsApp - must have at least 10 digits
-    const phoneDigits = formData.telefone_indicada.replace(/\D/g, "");
-    if (phoneDigits.length < 10) {
+    // Validate WhatsApp indicada - must have at least 10 digits
+    const phoneIndicadaDigits = formData.telefone_indicada.replace(/\D/g, "");
+    if (phoneIndicadaDigits.length < 10) {
       toast.error("Por favor, informe o WhatsApp da pessoa indicada");
+      return;
+    }
+
+    // Validate indicadora data (required for reward)
+    if (!formData.nome_indicadora.trim()) {
+      toast.error("Por favor, informe seu nome para receber a recompensa");
+      return;
+    }
+
+    // Validate WhatsApp indicadora - must have at least 10 digits
+    const phoneIndicadoraDigits = formData.telefone_indicadora.replace(/\D/g, "");
+    if (phoneIndicadoraDigits.length < 10) {
+      toast.error("Por favor, informe seu WhatsApp para receber a recompensa");
       return;
     }
 
@@ -327,19 +340,20 @@ export default function Indicar() {
               </div>
               
               <div className="space-y-1.5">
-                <Label htmlFor="nome_indicadora">Seu nome</Label>
+                <Label htmlFor="nome_indicadora">Seu nome *</Label>
                 <Input
                   id="nome_indicadora"
                   placeholder="Seu nome completo"
                   value={formData.nome_indicadora}
                   onChange={(e) => setFormData(prev => ({ ...prev, nome_indicadora: e.target.value }))}
                   maxLength={200}
+                  required
                   className="h-12"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="telefone_indicadora">Seu WhatsApp</Label>
+                <Label htmlFor="telefone_indicadora">Seu WhatsApp *</Label>
                 <Input
                   id="telefone_indicadora"
                   placeholder="(00) 00000-0000"
@@ -347,6 +361,7 @@ export default function Indicar() {
                   onChange={(e) => handlePhoneChange("telefone_indicadora", e.target.value)}
                   maxLength={16}
                   inputMode="tel"
+                  required
                   className="h-12"
                 />
               </div>
