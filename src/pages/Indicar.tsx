@@ -194,11 +194,11 @@ export default function Indicar() {
         <div className="w-full max-w-md space-y-6 animate-fade-in">
           
           {/* Hero Section */}
-          <div className="text-center space-y-3">
-            <h1 className="text-2xl font-bold text-foreground">
-              Indique uma Mãe 💜
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-bold text-primary">
+              Indique uma Mãe
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-foreground/70">
               Ajude outras mães a conquistarem seus direitos
             </p>
           </div>
