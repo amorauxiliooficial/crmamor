@@ -303,7 +303,12 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                     onClick={(e) => handleRowClick(indicacao, e)}
                   >
                     <TableCell className="whitespace-nowrap">
-                      {format(parseISO(indicacao.data_indicacao), "dd/MM/yyyy", { locale: ptBR })}
+                      <div className="flex flex-col">
+                        <span>{format(parseISO(indicacao.data_indicacao), "dd/MM/yyyy", { locale: ptBR })}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(parseISO(indicacao.data_indicacao), "HH:mm", { locale: ptBR })}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell className="font-medium">{indicacao.nome_indicada}</TableCell>
                     <TableCell>
