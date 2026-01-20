@@ -55,6 +55,40 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    // Check for duplicate indication (same phone number for indicada)
+    if (telefone_indicada && telefone_indicada.trim().length > 0) {
+      // Normalize phone number for comparison (remove non-digits)
+      const normalizedPhone = telefone_indicada.replace(/\D/g, '');
+      
+      // Check if this phone already exists in indicacoes
+      const { data: existingIndicacoes, error: checkError } = await supabaseAdmin
+        .from('indicacoes')
+        .select('id, nome_indicada, telefone_indicada')
+        .not('telefone_indicada', 'is', null);
+
+      if (checkError) {
+        console.error('Error checking for duplicates:', checkError);
+      } else if (existingIndicacoes && existingIndicacoes.length > 0) {
+        // Check if any existing indication has the same normalized phone
+        const isDuplicate = existingIndicacoes.some((ind) => {
+          if (!ind.telefone_indicada) return false;
+          const existingNormalized = ind.telefone_indicada.replace(/\D/g, '');
+          return existingNormalized === normalizedPhone;
+        });
+
+        if (isDuplicate) {
+          console.log('Duplicate indication attempt blocked for phone:', telefone_indicada);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Esta pessoa já foi indicada anteriormente. Obrigado pelo interesse!',
+              duplicate: true 
+            }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    }
+
     // Get a system user ID (first admin user) or use a placeholder
     const { data: adminUsers } = await supabaseAdmin
       .from('user_roles')
