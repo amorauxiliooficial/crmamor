@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { PreAnaliseHistoricoDialog } from "@/components/preanalise/PreAnaliseHistoricoDialog";
 import { NovaPreAnaliseForm } from "@/components/preanalise/NovaPreAnaliseForm";
+import { MaeFormDialog } from "@/components/mae/MaeFormDialog";
 import {
   STATUS_ANALISE_LABELS,
   STATUS_ANALISE_COLORS,
@@ -53,7 +54,9 @@ import type { MaeProcesso } from "@/types/mae";
 
 interface AnaliseComMae {
   id: string;
-  mae_id: string;
+  mae_id: string | null;
+  session_id?: string | null;
+  nome_temporario?: string | null;
   status_analise: string;
   categoria_identificada: string | null;
   riscos_identificados: { nivel: string; motivo: string }[];
@@ -62,7 +65,14 @@ interface AnaliseComMae {
   versao: number;
   created_at: string;
   processado_em: string | null;
-  mae_processo: {
+  dados_entrada?: {
+    documentos?: {
+      cnis_url?: string;
+      ctps_url?: string;
+      certidao_url?: string;
+    };
+  };
+  mae_processo?: {
     nome_mae: string;
     cpf: string;
     categoria_previdenciaria: string;
@@ -77,7 +87,7 @@ interface AnaliseComMae {
     contrato_assinado: boolean;
     verificacao_duas_etapas: boolean;
     data_ultima_atualizacao: string;
-  };
+  } | null;
 }
 
 export default function PreAnalises() {
@@ -92,6 +102,10 @@ export default function PreAnalises() {
   const [riscoFilter, setRiscoFilter] = useState<string>("all");
   const [selectedMaeHistorico, setSelectedMaeHistorico] = useState<MaeProcesso | null>(null);
   const [historicoDialogOpen, setHistoricoDialogOpen] = useState(false);
+  
+  // State for standalone registration
+  const [selectedAnaliseForRegister, setSelectedAnaliseForRegister] = useState<AnaliseComMae | null>(null);
+  const [maeDialogOpen, setMaeDialogOpen] = useState(false);
 
   // Shared state
   const [isLoading, setIsLoading] = useState(true);
@@ -112,18 +126,24 @@ export default function PreAnalises() {
   const fetchAnalises = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch analyses WITH mae_processo (linked to a mae)
+      const { data: linkedData, error: linkedError } = await supabase
         .from("pre_analise")
         .select(`
           id,
           mae_id,
+          session_id,
+          nome_temporario,
           status_analise,
           categoria_identificada,
           riscos_identificados,
+          resultado_atendente,
+          motivo_curto,
           versao,
           created_at,
           processado_em,
-          mae_processo!inner (
+          dados_entrada,
+          mae_processo (
             id,
             nome_mae,
             cpf,
@@ -142,29 +162,40 @@ export default function PreAnalises() {
         `)
         .order("processado_em", { ascending: false });
 
-      if (error) throw error;
+      if (linkedError) throw linkedError;
 
+      const allAnalises: AnaliseComMae[] = [];
       const latestByMae = new Map<string, AnaliseComMae>();
-      (data || []).forEach((item: any) => {
-        const existing = latestByMae.get(item.mae_id);
-        if (!existing || item.versao > existing.versao) {
-          let resultado_atendente = item.resultado_atendente;
-          if (!resultado_atendente) {
-            const status = item.status_analise?.toUpperCase();
-            if (status === "APROVADA") resultado_atendente = "APROVADO";
-            else if (status === "NAO_APROVAVEL") resultado_atendente = "REPROVADO";
-            else resultado_atendente = "JURIDICO";
+
+      (linkedData || []).forEach((item: any) => {
+        let resultado_atendente = item.resultado_atendente;
+        if (!resultado_atendente) {
+          const status = item.status_analise?.toUpperCase();
+          if (status === "APROVADA") resultado_atendente = "APROVADO";
+          else if (status === "NAO_APROVAVEL") resultado_atendente = "REPROVADO";
+          else resultado_atendente = "JURIDICO";
+        }
+
+        const analise: AnaliseComMae = {
+          ...item,
+          resultado_atendente,
+          motivo_curto: item.motivo_curto || "",
+        };
+
+        // Standalone analyses (mae_id is null)
+        if (!item.mae_id) {
+          allAnalises.push(analise);
+        } else {
+          // Linked analyses - keep latest by mae_id
+          const existing = latestByMae.get(item.mae_id);
+          if (!existing || item.versao > existing.versao) {
+            latestByMae.set(item.mae_id, analise);
           }
-          
-          latestByMae.set(item.mae_id, {
-            ...item,
-            resultado_atendente,
-            motivo_curto: item.motivo_curto || "",
-          } as AnaliseComMae);
         }
       });
 
-      setAnalises(Array.from(latestByMae.values()));
+      // Combine standalone + latest linked
+      setAnalises([...allAnalises, ...Array.from(latestByMae.values())]);
     } catch (error) {
       console.error("Erro ao buscar análises:", error);
     } finally {
@@ -176,10 +207,13 @@ export default function PreAnalises() {
   const filteredAnalises = useMemo(() => {
     return analises.filter((analise) => {
       const searchLower = searchQuery.toLowerCase();
+      const nomeMae = analise.mae_processo?.nome_mae || analise.nome_temporario || "";
+      const cpf = analise.mae_processo?.cpf || "";
+      
       const matchesSearch =
         !searchQuery ||
-        analise.mae_processo.nome_mae.toLowerCase().includes(searchLower) ||
-        analise.mae_processo.cpf.includes(searchQuery.replace(/\D/g, ""));
+        nomeMae.toLowerCase().includes(searchLower) ||
+        cpf.includes(searchQuery.replace(/\D/g, ""));
 
       const normalizedStatus = analise.status_analise?.toUpperCase();
       const matchesStatus = statusFilter === "all" || normalizedStatus === statusFilter;
@@ -244,6 +278,17 @@ export default function PreAnalises() {
   };
 
   const handleRowClickAdmin = (analise: AnaliseComMae) => {
+    // Standalone analysis (no mae linked) - offer to register
+    if (!analise.mae_id || !analise.mae_processo) {
+      // Can only register if APROVADO or JURIDICO
+      if (analise.resultado_atendente === "APROVADO" || analise.resultado_atendente === "JURIDICO") {
+        setSelectedAnaliseForRegister(analise);
+        setMaeDialogOpen(true);
+      }
+      return;
+    }
+
+    // Linked analysis - show history
     const mae: MaeProcesso = {
       id: analise.mae_processo.id,
       nome_mae: analise.mae_processo.nome_mae,
@@ -262,6 +307,13 @@ export default function PreAnalises() {
     };
     setSelectedMaeHistorico(mae);
     setHistoricoDialogOpen(true);
+  };
+
+  const handleMaeRegistered = async () => {
+    setMaeDialogOpen(false);
+    setSelectedAnaliseForRegister(null);
+    // Refresh the list
+    fetchAnalises();
   };
 
   if (authLoading || isAdminLoading) {
@@ -479,17 +531,35 @@ export default function PreAnalises() {
                     const alertas = analise.riscos_identificados?.filter(
                       (r) => r.nivel === "ALERTA"
                     ).length || 0;
+                    
+                    const isStandalone = !analise.mae_id;
+                    const nomeMae = analise.mae_processo?.nome_mae || analise.nome_temporario || "Análise Avulsa";
+                    const cpf = analise.mae_processo?.cpf || "";
+                    const canRegister = isStandalone && 
+                      (analise.resultado_atendente === "APROVADO" || analise.resultado_atendente === "JURIDICO");
 
                     return (
                       <TableRow
                         key={analise.id}
-                        className="cursor-pointer hover:bg-muted/50"
+                        className={`cursor-pointer hover:bg-muted/50 ${isStandalone ? "bg-primary/5" : ""}`}
                         onClick={() => handleRowClickAdmin(analise)}
                       >
                         <TableCell className="font-medium">
-                          {analise.mae_processo.nome_mae}
+                          <div className="flex items-center gap-2">
+                            {nomeMae}
+                            {isStandalone && (
+                              <Badge variant="outline" className="text-xs border-primary/50 text-primary">
+                                Avulsa
+                              </Badge>
+                            )}
+                            {canRegister && (
+                              <Badge className="text-xs bg-primary/20 text-primary hover:bg-primary/30">
+                                Cadastrar
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
-                        <TableCell>{formatCpf(analise.mae_processo.cpf)}</TableCell>
+                        <TableCell>{cpf ? formatCpf(cpf) : "-"}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {getStatusIcon(analise.status_analise)}
@@ -549,6 +619,13 @@ export default function PreAnalises() {
           mae={selectedMaeHistorico}
         />
       )}
+
+      {/* Dialog para cadastrar mãe de análise avulsa */}
+      <MaeFormDialog
+        open={maeDialogOpen}
+        onOpenChange={setMaeDialogOpen}
+        onSuccess={handleMaeRegistered}
+      />
     </div>
   );
 }
