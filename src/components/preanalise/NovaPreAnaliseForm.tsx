@@ -3,17 +3,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { 
   Loader2, 
   Brain, 
@@ -25,15 +14,11 @@ import {
   AlertCircle,
   Sparkles,
   ArrowRight,
-  User,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUploadField } from "./DocumentUploadField";
 import type { ResultadoAtendente, ProximaAcaoAnalise } from "@/types/preAnalise";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface NovaPreAnaliseFormProps {
   onSuccess?: () => void;
@@ -45,45 +30,11 @@ const PROXIMA_ACAO_LABELS: Record<string, string> = {
   SOLICITAR_DOCS: "Solicitar documentos faltantes",
 };
 
-const CATEGORIA_OPTIONS = [
-  { value: "empregada_clt", label: "Empregada CLT" },
-  { value: "contribuinte_individual", label: "Contribuinte Individual" },
-  { value: "mei", label: "MEI" },
-  { value: "facultativa", label: "Facultativa" },
-  { value: "desempregada", label: "Desempregada" },
-  { value: "segurada_especial", label: "Segurada Especial (Rural)" },
-];
-
-const EVENTO_OPTIONS = [
-  { value: "parto", label: "Parto" },
-  { value: "adocao", label: "Adoção" },
-  { value: "guarda_judicial", label: "Guarda Judicial" },
-];
-
 export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [showDadosAvancados, setShowDadosAvancados] = useState(false);
   
   const [sessionId] = useState(() => crypto.randomUUID());
-  
-  // Dados da segurada
-  const [dadosSegurada, setDadosSegurada] = useState({
-    nome: "",
-    cpf: "",
-    categoria: "",
-    gestante: false,
-    evento: "parto",
-    data_evento: "",
-    ultimo_vinculo_data_fim: "",
-    total_contribuicoes: 0,
-    teve_120_contribuicoes: false,
-    recebeu_seguro_desemprego: false,
-    mei_ativo: false,
-    competencias_em_atraso: false,
-    observacoes_atendente: "",
-  });
-
   const [documentos, setDocumentos] = useState<{
     cnis: string | null;
     ctps: string | null;
@@ -100,31 +51,24 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
     resultado_atendente: ResultadoAtendente;
     motivo_curto: string;
     proxima_acao: ProximaAcaoAnalise;
-    resposta_completa?: unknown;
   } | null>(null);
 
-  // Validações: CNIS ou CTPS + Certidão obrigatórios + dados mínimos
+  // Validações: CNIS ou CTPS + Certidão obrigatórios
   const hasContribuicaoDoc = documentos.cnis || documentos.ctps;
   const hasCertidao = !!documentos.certidao;
-  const hasDadosMinimos = dadosSegurada.categoria !== "";
-  const isReadyToAnalyze = hasContribuicaoDoc && hasCertidao && hasDadosMinimos;
+  const isReadyToAnalyze = hasContribuicaoDoc && hasCertidao;
   
   const docsObrigatoriosCount = [hasContribuicaoDoc, hasCertidao].filter(Boolean).length;
-
-  const updateDadosSegurada = (field: string, value: unknown) => {
-    setDadosSegurada(prev => ({ ...prev, [field]: value }));
-  };
 
   const handleGerarAnalise = async () => {
     if (!isReadyToAnalyze) {
       const missing: string[] = [];
       if (!hasContribuicaoDoc) missing.push("CNIS ou CTPS");
       if (!hasCertidao) missing.push("Certidão");
-      if (!hasDadosMinimos) missing.push("Categoria previdenciária");
       
       setResultado({
         resultado_atendente: "REPROVADO",
-        motivo_curto: `Falta: ${missing.join(", ")}`,
+        motivo_curto: `Falta: ${missing.join(" e ")}`,
         proxima_acao: "SOLICITAR_DOCS",
       });
       return;
@@ -136,18 +80,17 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
         body: {
           mae_id: null,
           dados_entrada: {
-            cpf: dadosSegurada.cpf || "000.000.000-00",
-            nome: dadosSegurada.nome || "Análise Avulsa",
-            categoria: dadosSegurada.categoria,
-            gestante: dadosSegurada.gestante,
-            evento: dadosSegurada.evento,
-            data_evento: dadosSegurada.data_evento || new Date().toISOString().split("T")[0],
-            ultimo_vinculo_data_fim: dadosSegurada.ultimo_vinculo_data_fim || undefined,
-            total_contribuicoes: dadosSegurada.total_contribuicoes,
-            teve_120_contribuicoes: dadosSegurada.teve_120_contribuicoes,
-            recebeu_seguro_desemprego: dadosSegurada.recebeu_seguro_desemprego,
-            mei_ativo: dadosSegurada.mei_ativo,
-            competencias_em_atraso: dadosSegurada.competencias_em_atraso,
+            cpf: "",
+            nome: "Análise Avulsa",
+            categoria: "",
+            gestante: false,
+            evento: "parto",
+            data_evento: "",
+            total_contribuicoes: 0,
+            teve_120_contribuicoes: false,
+            recebeu_seguro_desemprego: false,
+            mei_ativo: false,
+            competencias_em_atraso: false,
             documentos: {
               cnis: !!documentos.cnis,
               ctps: !!documentos.ctps,
@@ -159,7 +102,7 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
               certidao_url: documentos.certidao || undefined,
               comprov_endereco_url: documentos.comprov_endereco || undefined,
             },
-            observacoes_atendente: dadosSegurada.observacoes_atendente,
+            observacoes_atendente: "",
           },
           motivo_reanalise: "primeiro_registro",
           session_id: sessionId,
@@ -173,7 +116,6 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
           resultado_atendente: data.analise.resultado_atendente || "JURIDICO",
           motivo_curto: data.analise.motivo_curto || "Análise realizada",
           proxima_acao: data.analise.proxima_acao || "ENCAMINHAR_JURIDICO",
-          resposta_completa: data.analise.resposta_estruturada,
         });
         onSuccess?.();
       }
@@ -196,23 +138,7 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
       certidao: null,
       comprov_endereco: null,
     });
-    setDadosSegurada({
-      nome: "",
-      cpf: "",
-      categoria: "",
-      gestante: false,
-      evento: "parto",
-      data_evento: "",
-      ultimo_vinculo_data_fim: "",
-      total_contribuicoes: 0,
-      teve_120_contribuicoes: false,
-      recebeu_seguro_desemprego: false,
-      mei_ativo: false,
-      competencias_em_atraso: false,
-      observacoes_atendente: "",
-    });
     setResultado(null);
-    setShowDadosAvancados(false);
   };
 
   // ========== RESULTADO ==========
@@ -306,237 +232,10 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
             <div>
               <h2 className="text-xl font-semibold">Análise de Elegibilidade</h2>
               <p className="text-muted-foreground text-sm">
-                Preencha os dados e anexe os documentos para verificar o direito ao salário-maternidade
+                Anexe os documentos para verificar o direito ao salário-maternidade
               </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Dados da Segurada */}
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <User className="h-5 w-5 text-primary" />
-            <span className="font-medium">Dados da Segurada</span>
-            <Badge variant={hasDadosMinimos ? "default" : "secondary"} className="ml-auto">
-              {hasDadosMinimos ? "Preenchido" : "Obrigatório"}
-            </Badge>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* Nome (opcional) */}
-            <div className="space-y-2">
-              <Label htmlFor="nome" className="text-sm">
-                Nome <span className="text-muted-foreground">(opcional)</span>
-              </Label>
-              <Input
-                id="nome"
-                placeholder="Nome da segurada"
-                value={dadosSegurada.nome}
-                onChange={(e) => updateDadosSegurada("nome", e.target.value)}
-              />
-            </div>
-
-            {/* CPF (opcional) */}
-            <div className="space-y-2">
-              <Label htmlFor="cpf" className="text-sm">
-                CPF <span className="text-muted-foreground">(opcional)</span>
-              </Label>
-              <Input
-                id="cpf"
-                placeholder="000.000.000-00"
-                value={dadosSegurada.cpf}
-                onChange={(e) => updateDadosSegurada("cpf", e.target.value)}
-              />
-            </div>
-
-            {/* Categoria - OBRIGATÓRIO */}
-            <div className="space-y-2">
-              <Label htmlFor="categoria" className="text-sm">
-                Categoria Previdenciária <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={dadosSegurada.categoria}
-                onValueChange={(value) => updateDadosSegurada("categoria", value)}
-              >
-                <SelectTrigger id="categoria">
-                  <SelectValue placeholder="Selecione a categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIA_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Tipo de Evento */}
-            <div className="space-y-2">
-              <Label htmlFor="evento" className="text-sm">
-                Tipo de Evento
-              </Label>
-              <Select
-                value={dadosSegurada.evento}
-                onValueChange={(value) => updateDadosSegurada("evento", value)}
-              >
-                <SelectTrigger id="evento">
-                  <SelectValue placeholder="Selecione o evento" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EVENTO_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Data do Evento */}
-            <div className="space-y-2">
-              <Label htmlFor="data_evento" className="text-sm">
-                Data do Evento
-              </Label>
-              <Input
-                id="data_evento"
-                type="date"
-                value={dadosSegurada.data_evento}
-                onChange={(e) => updateDadosSegurada("data_evento", e.target.value)}
-              />
-            </div>
-
-            {/* Total de Contribuições */}
-            <div className="space-y-2">
-              <Label htmlFor="contribuicoes" className="text-sm">
-                Total de Contribuições
-              </Label>
-              <Input
-                id="contribuicoes"
-                type="number"
-                min="0"
-                placeholder="0"
-                value={dadosSegurada.total_contribuicoes || ""}
-                onChange={(e) => updateDadosSegurada("total_contribuicoes", parseInt(e.target.value) || 0)}
-              />
-            </div>
-          </div>
-
-          {/* Dados avançados (colapsável) */}
-          <Collapsible open={showDadosAvancados} onOpenChange={setShowDadosAvancados}>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="w-full gap-2">
-                {showDadosAvancados ? (
-                  <>
-                    <ChevronUp className="h-4 w-4" />
-                    Ocultar dados avançados
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-4 w-4" />
-                    Mostrar dados avançados
-                  </>
-                )}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 pt-4">
-              {/* Data fim último vínculo (para desempregadas) */}
-              {(dadosSegurada.categoria === "desempregada" || showDadosAvancados) && (
-                <div className="space-y-2">
-                  <Label htmlFor="ultimo_vinculo" className="text-sm">
-                    Data Fim do Último Vínculo
-                  </Label>
-                  <Input
-                    id="ultimo_vinculo"
-                    type="date"
-                    value={dadosSegurada.ultimo_vinculo_data_fim}
-                    onChange={(e) => updateDadosSegurada("ultimo_vinculo_data_fim", e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Importante para cálculo do período de graça
-                  </p>
-                </div>
-              )}
-
-              {/* Checkboxes */}
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="gestante"
-                    checked={dadosSegurada.gestante}
-                    onCheckedChange={(checked) => updateDadosSegurada("gestante", checked)}
-                  />
-                  <Label htmlFor="gestante" className="text-sm font-normal">
-                    É gestante (ainda não teve o parto)
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="teve_120"
-                    checked={dadosSegurada.teve_120_contribuicoes}
-                    onCheckedChange={(checked) => updateDadosSegurada("teve_120_contribuicoes", checked)}
-                  />
-                  <Label htmlFor="teve_120" className="text-sm font-normal">
-                    Teve +120 contribuições (+12 meses de graça)
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="seguro_desemprego"
-                    checked={dadosSegurada.recebeu_seguro_desemprego}
-                    onCheckedChange={(checked) => updateDadosSegurada("recebeu_seguro_desemprego", checked)}
-                  />
-                  <Label htmlFor="seguro_desemprego" className="text-sm font-normal">
-                    Recebeu seguro-desemprego (+12 meses)
-                  </Label>
-                </div>
-
-                {dadosSegurada.categoria === "mei" && (
-                  <>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="mei_ativo"
-                        checked={dadosSegurada.mei_ativo}
-                        onCheckedChange={(checked) => updateDadosSegurada("mei_ativo", checked)}
-                      />
-                      <Label htmlFor="mei_ativo" className="text-sm font-normal">
-                        MEI ativo
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="atraso"
-                        checked={dadosSegurada.competencias_em_atraso}
-                        onCheckedChange={(checked) => updateDadosSegurada("competencias_em_atraso", checked)}
-                      />
-                      <Label htmlFor="atraso" className="text-sm font-normal text-destructive">
-                        Competências em atraso
-                      </Label>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Observações */}
-              <div className="space-y-2">
-                <Label htmlFor="observacoes" className="text-sm">
-                  Observações do Atendente
-                </Label>
-                <Textarea
-                  id="observacoes"
-                  placeholder="Informações adicionais relevantes para a análise..."
-                  value={dadosSegurada.observacoes_atendente}
-                  onChange={(e) => updateDadosSegurada("observacoes_atendente", e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
         </CardContent>
       </Card>
 
@@ -651,15 +350,11 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
           <div className="bg-muted/50 rounded-lg p-3 flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
             <p className="text-sm text-muted-foreground">
-              {!hasDadosMinimos && !hasContribuicaoDoc && !hasCertidao 
-                ? "Selecione a categoria, anexe CNIS ou CTPS e a Certidão"
-                : !hasDadosMinimos 
-                  ? "Selecione a categoria previdenciária"
-                  : !hasContribuicaoDoc && !hasCertidao 
-                    ? "Anexe CNIS ou CTPS e a Certidão para continuar"
-                    : !hasContribuicaoDoc 
-                      ? "Anexe o CNIS ou CTPS para continuar"
-                      : "Anexe a Certidão de Nascimento/Adoção para continuar"
+              {!hasContribuicaoDoc && !hasCertidao 
+                ? "Anexe CNIS ou CTPS e a Certidão para continuar"
+                : !hasContribuicaoDoc 
+                  ? "Anexe o CNIS ou CTPS para continuar"
+                  : "Anexe a Certidão de Nascimento/Adoção para continuar"
               }
             </p>
           </div>
