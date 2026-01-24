@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -17,10 +19,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Brain, Plus, X } from "lucide-react";
+import { Loader2, Brain } from "lucide-react";
 import { usePreAnalise } from "@/hooks/usePreAnalise";
 import {
   CATEGORIA_SEGURADA_OPTIONS,
+  TIPO_EVENTO_OPTIONS,
   MOTIVO_REANALISE_LABELS,
   type DadosEntradaAnalise,
   type MotivoReanalise,
@@ -36,6 +39,50 @@ interface PreAnaliseFormDialogProps {
   onSuccess?: (analise: PreAnalise) => void;
 }
 
+const getEmptyFormData = (mae: MaeProcesso): DadosEntradaAnalise => ({
+  cpf: mae.cpf.replace(/\D/g, ""),
+  nome: mae.nome_mae,
+  categoria: mapCategoria(mae.categoria_previdenciaria),
+  gestante: mae.is_gestante,
+  evento: mapEvento(mae.tipo_evento),
+  data_evento: mae.data_evento || "",
+  ultimo_vinculo_data_fim: "",
+  total_contribuicoes: 0,
+  teve_120_contribuicoes: false,
+  recebeu_seguro_desemprego: false,
+  mei_ativo: false,
+  competencias_em_atraso: false,
+  documentos: {
+    cnis: false,
+    ctps: false,
+    certidao: false,
+    comprov_endereco: false,
+    outros: [],
+  },
+  observacoes_atendente: mae.observacoes || "",
+});
+
+// Mapear categoria do mae_processo para o enum
+const mapCategoria = (cat: string): string => {
+  const map: Record<string, string> = {
+    "CLT": "empregada",
+    "MEI": "mei",
+    "Contribuinte Individual": "individual",
+    "Desempregada": "desempregada",
+    "Não informado": "",
+  };
+  return map[cat] || "";
+};
+
+const mapEvento = (evento: string): string => {
+  const map: Record<string, string> = {
+    "Parto": "parto",
+    "Adoção": "adocao",
+    "Guarda judicial": "adocao",
+  };
+  return map[evento] || "parto";
+};
+
 export function PreAnaliseFormDialog({
   open,
   onOpenChange,
@@ -45,46 +92,15 @@ export function PreAnaliseFormDialog({
 }: PreAnaliseFormDialogProps) {
   const { isLoading, executarAnalise } = usePreAnalise();
   
-  const [formData, setFormData] = useState<DadosEntradaAnalise>({
-    categoria_segurada: "",
-    data_evento: "",
-    tipo_evento: mae.tipo_evento || "Parto",
-    data_ultima_contribuicao: "",
-    quantidade_contribuicoes: undefined,
-    vinculos_ativos: [],
-    vinculos_inativos: [],
-    gaps_contribuicao: [],
-    documentos_anexados: [],
-    observacoes_adicionais: "",
-    dados_cnis: "",
-  });
-
+  const [formData, setFormData] = useState<DadosEntradaAnalise>(() => getEmptyFormData(mae));
   const [motivoReanalise, setMotivoReanalise] = useState<MotivoReanalise>("documento_novo");
   const [observacaoReanalise, setObservacaoReanalise] = useState("");
-  const [novoVinculo, setNovoVinculo] = useState("");
-  const [novoDocumento, setNovoDocumento] = useState("");
-
-  // Mapear categoria do mae_processo para o enum
-  const mapCategoria = (cat: string): string => {
-    const map: Record<string, string> = {
-      "CLT": "empregada_clt",
-      "MEI": "mei",
-      "Contribuinte Individual": "contribuinte_individual",
-      "Desempregada": "desempregada",
-    };
-    return map[cat] || "";
-  };
 
   useEffect(() => {
-    if (mae) {
-      setFormData(prev => ({
-        ...prev,
-        categoria_segurada: mapCategoria(mae.categoria_previdenciaria),
-        data_evento: mae.data_evento || "",
-        tipo_evento: mae.tipo_evento || "Parto",
-      }));
+    if (mae && open) {
+      setFormData(getEmptyFormData(mae));
     }
-  }, [mae]);
+  }, [mae, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,37 +118,11 @@ export function PreAnaliseFormDialog({
     }
   };
 
-  const addVinculo = (tipo: "ativos" | "inativos") => {
-    if (!novoVinculo.trim()) return;
-    const key = tipo === "ativos" ? "vinculos_ativos" : "vinculos_inativos";
+  const updateDocumento = (key: keyof DadosEntradaAnalise["documentos"], value: boolean) => {
+    if (key === "outros") return;
     setFormData(prev => ({
       ...prev,
-      [key]: [...(prev[key] || []), novoVinculo.trim()],
-    }));
-    setNovoVinculo("");
-  };
-
-  const removeVinculo = (tipo: "ativos" | "inativos", index: number) => {
-    const key = tipo === "ativos" ? "vinculos_ativos" : "vinculos_inativos";
-    setFormData(prev => ({
-      ...prev,
-      [key]: (prev[key] || []).filter((_, i) => i !== index),
-    }));
-  };
-
-  const addDocumento = () => {
-    if (!novoDocumento.trim()) return;
-    setFormData(prev => ({
-      ...prev,
-      documentos_anexados: [...(prev.documentos_anexados || []), novoDocumento.trim()],
-    }));
-    setNovoDocumento("");
-  };
-
-  const removeDocumento = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      documentos_anexados: (prev.documentos_anexados || []).filter((_, i) => i !== index),
+      documentos: { ...prev.documentos, [key]: value },
     }));
   };
 
@@ -188,8 +178,8 @@ export function PreAnaliseFormDialog({
               <div className="space-y-2">
                 <Label>Categoria Previdenciária *</Label>
                 <Select
-                  value={formData.categoria_segurada}
-                  onValueChange={(v) => setFormData(prev => ({ ...prev, categoria_segurada: v }))}
+                  value={formData.categoria}
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, categoria: v }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione..." />
@@ -207,16 +197,18 @@ export function PreAnaliseFormDialog({
               <div className="space-y-2">
                 <Label>Tipo de Evento *</Label>
                 <Select
-                  value={formData.tipo_evento}
-                  onValueChange={(v) => setFormData(prev => ({ ...prev, tipo_evento: v }))}
+                  value={formData.evento}
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, evento: v }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Parto">Parto</SelectItem>
-                    <SelectItem value="Adoção">Adoção</SelectItem>
-                    <SelectItem value="Guarda judicial">Guarda Judicial</SelectItem>
+                    {TIPO_EVENTO_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -232,74 +224,98 @@ export function PreAnaliseFormDialog({
               </div>
 
               <div className="space-y-2">
-                <Label>Data da Última Contribuição</Label>
+                <Label>Fim do Último Vínculo</Label>
                 <Input
                   type="date"
-                  value={formData.data_ultima_contribuicao || ""}
-                  onChange={(e) => setFormData(prev => ({ ...prev, data_ultima_contribuicao: e.target.value }))}
+                  value={formData.ultimo_vinculo_data_fim || ""}
+                  onChange={(e) => setFormData(prev => ({ ...prev, ultimo_vinculo_data_fim: e.target.value }))}
                 />
               </div>
 
-              <div className="space-y-2 col-span-2">
-                <Label>Quantidade de Contribuições</Label>
+              <div className="space-y-2">
+                <Label>Total de Contribuições</Label>
                 <Input
                   type="number"
                   min="0"
                   placeholder="Ex: 12"
-                  value={formData.quantidade_contribuicoes || ""}
+                  value={formData.total_contribuicoes || ""}
                   onChange={(e) => setFormData(prev => ({ 
                     ...prev, 
-                    quantidade_contribuicoes: e.target.value ? parseInt(e.target.value) : undefined 
+                    total_contribuicoes: parseInt(e.target.value) || 0
                   }))}
                 />
+              </div>
+
+              <div className="flex items-center gap-2 pt-6">
+                <Switch
+                  id="gestante"
+                  checked={formData.gestante}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, gestante: checked }))}
+                />
+                <Label htmlFor="gestante">Gestante</Label>
               </div>
             </div>
           </div>
 
-          {/* Vínculos */}
+          {/* Situação Contributiva */}
           <div className="space-y-4">
             <h3 className="font-medium text-sm text-muted-foreground uppercase">
-              Vínculos Empregatícios
+              Situação Contributiva
             </h3>
             
-            <div className="flex gap-2">
-              <Input
-                placeholder="Ex: Empresa ABC - 01/2020 a 12/2023"
-                value={novoVinculo}
-                onChange={(e) => setNovoVinculo(e.target.value)}
-              />
-              <Button type="button" variant="outline" size="icon" onClick={() => addVinculo("ativos")}>
-                <Plus className="h-4 w-4" />
-              </Button>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="teve_120"
+                  checked={formData.teve_120_contribuicoes}
+                  onCheckedChange={(checked) => 
+                    setFormData(prev => ({ ...prev, teve_120_contribuicoes: !!checked }))
+                  }
+                />
+                <Label htmlFor="teve_120" className="text-sm">
+                  Teve 120+ contribuições (período de graça estendido)
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="seguro_desemprego"
+                  checked={formData.recebeu_seguro_desemprego}
+                  onCheckedChange={(checked) => 
+                    setFormData(prev => ({ ...prev, recebeu_seguro_desemprego: !!checked }))
+                  }
+                />
+                <Label htmlFor="seguro_desemprego" className="text-sm">
+                  Recebeu Seguro-Desemprego
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="mei_ativo"
+                  checked={formData.mei_ativo}
+                  onCheckedChange={(checked) => 
+                    setFormData(prev => ({ ...prev, mei_ativo: !!checked }))
+                  }
+                />
+                <Label htmlFor="mei_ativo" className="text-sm">
+                  MEI Ativo
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="competencias_atraso"
+                  checked={formData.competencias_em_atraso}
+                  onCheckedChange={(checked) => 
+                    setFormData(prev => ({ ...prev, competencias_em_atraso: !!checked }))
+                  }
+                />
+                <Label htmlFor="competencias_atraso" className="text-sm text-destructive">
+                  Competências em Atraso
+                </Label>
+              </div>
             </div>
-
-            {(formData.vinculos_ativos?.length ?? 0) > 0 && (
-              <div className="space-y-1">
-                <Label className="text-xs">Vínculos Ativos:</Label>
-                <div className="flex flex-wrap gap-2">
-                  {formData.vinculos_ativos?.map((v, i) => (
-                    <Badge key={i} variant="secondary" className="gap-1">
-                      {v}
-                      <X className="h-3 w-3 cursor-pointer" onClick={() => removeVinculo("ativos", i)} />
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {(formData.vinculos_inativos?.length ?? 0) > 0 && (
-              <div className="space-y-1">
-                <Label className="text-xs">Vínculos Inativos:</Label>
-                <div className="flex flex-wrap gap-2">
-                  {formData.vinculos_inativos?.map((v, i) => (
-                    <Badge key={i} variant="outline" className="gap-1">
-                      {v}
-                      <X className="h-3 w-3 cursor-pointer" onClick={() => removeVinculo("inativos", i)} />
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Documentos */}
@@ -308,47 +324,53 @@ export function PreAnaliseFormDialog({
               Documentos Anexados
             </h3>
             
-            <div className="flex gap-2">
-              <Input
-                placeholder="Ex: Certidão de Nascimento"
-                value={novoDocumento}
-                onChange={(e) => setNovoDocumento(e.target.value)}
-              />
-              <Button type="button" variant="outline" size="icon" onClick={addDocumento}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {(formData.documentos_anexados?.length ?? 0) > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {formData.documentos_anexados?.map((d, i) => (
-                  <Badge key={i} variant="secondary" className="gap-1">
-                    {d}
-                    <X className="h-3 w-3 cursor-pointer" onClick={() => removeDocumento(i)} />
-                  </Badge>
-                ))}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="doc_cnis"
+                  checked={formData.documentos.cnis}
+                  onCheckedChange={(checked) => updateDocumento("cnis", !!checked)}
+                />
+                <Label htmlFor="doc_cnis" className="text-sm">CNIS</Label>
               </div>
-            )}
-          </div>
 
-          {/* CNIS */}
-          <div className="space-y-2">
-            <Label>Dados do CNIS (copiar e colar)</Label>
-            <Textarea
-              placeholder="Cole aqui os dados do CNIS da segurada..."
-              rows={6}
-              value={formData.dados_cnis || ""}
-              onChange={(e) => setFormData(prev => ({ ...prev, dados_cnis: e.target.value }))}
-            />
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="doc_ctps"
+                  checked={formData.documentos.ctps}
+                  onCheckedChange={(checked) => updateDocumento("ctps", !!checked)}
+                />
+                <Label htmlFor="doc_ctps" className="text-sm">CTPS</Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="doc_certidao"
+                  checked={formData.documentos.certidao}
+                  onCheckedChange={(checked) => updateDocumento("certidao", !!checked)}
+                />
+                <Label htmlFor="doc_certidao" className="text-sm">Certidão (Nascimento/Adoção)</Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="doc_comprov"
+                  checked={formData.documentos.comprov_endereco}
+                  onCheckedChange={(checked) => updateDocumento("comprov_endereco", !!checked)}
+                />
+                <Label htmlFor="doc_comprov" className="text-sm">Comprovante de Endereço</Label>
+              </div>
+            </div>
           </div>
 
           {/* Observações */}
           <div className="space-y-2">
-            <Label>Observações Adicionais</Label>
+            <Label>Observações do Atendente</Label>
             <Textarea
               placeholder="Informações adicionais relevantes para a análise..."
-              value={formData.observacoes_adicionais || ""}
-              onChange={(e) => setFormData(prev => ({ ...prev, observacoes_adicionais: e.target.value }))}
+              rows={4}
+              value={formData.observacoes_atendente || ""}
+              onChange={(e) => setFormData(prev => ({ ...prev, observacoes_atendente: e.target.value }))}
             />
           </div>
 
@@ -362,7 +384,7 @@ export function PreAnaliseFormDialog({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading || !formData.categoria_segurada || !formData.data_evento}>
+            <Button type="submit" disabled={isLoading || !formData.categoria || !formData.data_evento}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -371,7 +393,7 @@ export function PreAnaliseFormDialog({
               ) : (
                 <>
                   <Brain className="mr-2 h-4 w-4" />
-                  Executar Análise
+                  Gerar Pré-Análise
                 </>
               )}
             </Button>

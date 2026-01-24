@@ -1,16 +1,18 @@
 export type StatusPreAnalise = 
-  | "aprovada"
-  | "aprovada_com_ressalvas"
-  | "nao_aprovavel"
-  | "erro_processamento";
+  | "APROVADA"
+  | "APROVADA_COM_RESSALVAS"
+  | "NAO_APROVAVEL"
+  | "ERRO_PROCESSAMENTO";
 
 export type CategoriaSeguraraAnalise =
-  | "empregada_clt"
-  | "contribuinte_individual"
-  | "mei"
+  | "empregada"
   | "desempregada"
-  | "segurada_especial"
-  | "facultativa";
+  | "mei"
+  | "individual"
+  | "facultativa"
+  | "rural";
+
+export type TipoEvento = "parto" | "adocao" | "aborto_legal";
 
 export type MotivoReanalise =
   | "primeiro_registro"
@@ -19,26 +21,81 @@ export type MotivoReanalise =
   | "atualizacao_cnis"
   | "solicitacao_manual";
 
-export interface RiscoIdentificado {
-  tipo: string;
-  descricao: string;
-  gravidade: "alta" | "media" | "baixa";
+export type NivelRisco = "ALERTA" | "BLOQUEIO";
+
+export type StatusDocumento = "OK" | "FALTA";
+
+// Documentos anexados
+export interface DocumentosAnexados {
+  cnis: boolean;
+  ctps: boolean;
+  certidao: boolean;
+  comprov_endereco: boolean;
+  outros: string[];
 }
 
+// JSON de ENTRADA padronizado
 export interface DadosEntradaAnalise {
-  categoria_segurada: CategoriaSeguraraAnalise | string;
+  case_id?: string;
+  cpf: string;
+  nome: string;
+  categoria: CategoriaSeguraraAnalise | string;
+  gestante: boolean;
+  evento: TipoEvento | string;
   data_evento: string;
-  tipo_evento: string;
-  data_ultima_contribuicao?: string;
-  quantidade_contribuicoes?: number;
-  vinculos_ativos?: string[];
-  vinculos_inativos?: string[];
-  gaps_contribuicao?: string[];
-  documentos_anexados?: string[];
-  observacoes_adicionais?: string;
-  dados_cnis?: string;
+  ultimo_vinculo_data_fim?: string;
+  total_contribuicoes: number;
+  teve_120_contribuicoes: boolean;
+  recebeu_seguro_desemprego: boolean;
+  mei_ativo: boolean;
+  competencias_em_atraso: boolean;
+  documentos: DocumentosAnexados;
+  observacoes_atendente?: string;
 }
 
+// Estruturas de resposta da IA
+export interface CarenciaAnalise {
+  exigida: boolean;
+  regra: string;
+  cumprida: boolean;
+  detalhe: string;
+}
+
+export interface PeriodoGracaAnalise {
+  regra: string;
+  data_limite: string;
+  dentro: boolean;
+  detalhe: string;
+}
+
+export interface CnisAnalise {
+  ok: boolean;
+  pontos_de_atencao: string[];
+}
+
+export interface RiscoIdentificado {
+  nivel: NivelRisco;
+  motivo: string;
+}
+
+export interface ChecklistDocumento {
+  doc: string;
+  status: StatusDocumento;
+}
+
+// JSON de SAÍDA padronizado
+export interface RespostaAnaliseIA {
+  status: StatusPreAnalise;
+  categoria_identificada: string;
+  carencia: CarenciaAnalise;
+  periodo_de_graca: PeriodoGracaAnalise;
+  cnis: CnisAnalise;
+  riscos: RiscoIdentificado[];
+  conclusao: string;
+  checklist_documentos: ChecklistDocumento[];
+}
+
+// Registro completo de pré-análise
 export interface PreAnalise {
   id: string;
   mae_id: string;
@@ -46,12 +103,12 @@ export interface PreAnalise {
   dados_entrada: DadosEntradaAnalise;
   status_analise: StatusPreAnalise;
   categoria_identificada?: string;
-  carencia_status?: string;
-  periodo_graca_status?: string;
-  situacao_cnis?: string;
-  riscos_identificados: RiscoIdentificado[];
-  conclusao_detalhada?: string;
-  recomendacoes: string[];
+  carencia?: CarenciaAnalise;
+  periodo_de_graca?: PeriodoGracaAnalise;
+  cnis?: CnisAnalise;
+  riscos: RiscoIdentificado[];
+  conclusao?: string;
+  checklist_documentos?: ChecklistDocumento[];
   versao: number;
   motivo_reanalise: MotivoReanalise;
   observacao_reanalise?: string;
@@ -63,17 +120,17 @@ export interface PreAnalise {
 }
 
 export const STATUS_ANALISE_LABELS: Record<StatusPreAnalise, string> = {
-  aprovada: "Aprovada",
-  aprovada_com_ressalvas: "Aprovada com Ressalvas",
-  nao_aprovavel: "Não Aprovável",
-  erro_processamento: "Erro no Processamento",
+  APROVADA: "Aprovada",
+  APROVADA_COM_RESSALVAS: "Aprovada com Ressalvas",
+  NAO_APROVAVEL: "Não Aprovável",
+  ERRO_PROCESSAMENTO: "Erro no Processamento",
 };
 
 export const STATUS_ANALISE_COLORS: Record<StatusPreAnalise, string> = {
-  aprovada: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
-  aprovada_com_ressalvas: "bg-amber-500/20 text-amber-700 dark:text-amber-400",
-  nao_aprovavel: "bg-destructive/20 text-destructive",
-  erro_processamento: "bg-muted text-muted-foreground",
+  APROVADA: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
+  APROVADA_COM_RESSALVAS: "bg-chart-1/20 text-chart-1",
+  NAO_APROVAVEL: "bg-destructive/20 text-destructive",
+  ERRO_PROCESSAMENTO: "bg-muted text-muted-foreground",
 };
 
 export const MOTIVO_REANALISE_LABELS: Record<MotivoReanalise, string> = {
@@ -85,10 +142,16 @@ export const MOTIVO_REANALISE_LABELS: Record<MotivoReanalise, string> = {
 };
 
 export const CATEGORIA_SEGURADA_OPTIONS = [
-  { value: "empregada_clt", label: "Empregada CLT" },
-  { value: "contribuinte_individual", label: "Contribuinte Individual" },
-  { value: "mei", label: "MEI" },
+  { value: "empregada", label: "Empregada CLT" },
   { value: "desempregada", label: "Desempregada" },
-  { value: "segurada_especial", label: "Segurada Especial" },
+  { value: "mei", label: "MEI" },
+  { value: "individual", label: "Contribuinte Individual" },
   { value: "facultativa", label: "Facultativa" },
+  { value: "rural", label: "Segurada Especial (Rural)" },
+];
+
+export const TIPO_EVENTO_OPTIONS = [
+  { value: "parto", label: "Parto" },
+  { value: "adocao", label: "Adoção" },
+  { value: "aborto_legal", label: "Aborto Legal" },
 ];

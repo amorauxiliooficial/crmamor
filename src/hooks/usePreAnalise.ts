@@ -1,24 +1,47 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { PreAnalise, DadosEntradaAnalise, MotivoReanalise, RiscoIdentificado } from "@/types/preAnalise";
+import type { 
+  PreAnalise, 
+  DadosEntradaAnalise, 
+  MotivoReanalise, 
+  RiscoIdentificado,
+  CarenciaAnalise,
+  PeriodoGracaAnalise,
+  CnisAnalise,
+  ChecklistDocumento
+} from "@/types/preAnalise";
 
 // Helper to safely cast database response to PreAnalise
 const mapDbToPreAnalise = (row: unknown): PreAnalise => {
   const data = row as Record<string, unknown>;
+  
+  // Parse JSON fields that are stored as strings
+  const parseJsonField = <T>(field: unknown): T | undefined => {
+    if (!field) return undefined;
+    if (typeof field === 'string') {
+      try {
+        return JSON.parse(field) as T;
+      } catch {
+        return undefined;
+      }
+    }
+    return field as T;
+  };
+
   return {
     id: data.id as string,
     mae_id: data.mae_id as string,
     user_id: data.user_id as string,
     dados_entrada: data.dados_entrada as DadosEntradaAnalise,
-    status_analise: data.status_analise as PreAnalise["status_analise"],
+    status_analise: (data.status_analise as string)?.toUpperCase().replace(/_/g, "_") as PreAnalise["status_analise"],
     categoria_identificada: data.categoria_identificada as string | undefined,
-    carencia_status: data.carencia_status as string | undefined,
-    periodo_graca_status: data.periodo_graca_status as string | undefined,
-    situacao_cnis: data.situacao_cnis as string | undefined,
-    riscos_identificados: (data.riscos_identificados || []) as RiscoIdentificado[],
-    conclusao_detalhada: data.conclusao_detalhada as string | undefined,
-    recomendacoes: (data.recomendacoes || []) as string[],
+    carencia: parseJsonField<CarenciaAnalise>(data.carencia_status),
+    periodo_de_graca: parseJsonField<PeriodoGracaAnalise>(data.periodo_graca_status),
+    cnis: parseJsonField<CnisAnalise>(data.situacao_cnis),
+    riscos: (data.riscos_identificados || []) as RiscoIdentificado[],
+    conclusao: data.conclusao_detalhada as string | undefined,
+    checklist_documentos: parseJsonField<ChecklistDocumento[]>(data.recomendacoes),
     versao: data.versao as number,
     motivo_reanalise: data.motivo_reanalise as PreAnalise["motivo_reanalise"],
     observacao_reanalise: data.observacao_reanalise as string | undefined,
@@ -78,7 +101,7 @@ export function usePreAnalise() {
         description: `Resultado: ${result.analise.status_analise.replace(/_/g, " ")}`,
       });
 
-      return result.analise as PreAnalise;
+      return mapDbToPreAnalise(result.analise);
     } catch (error) {
       console.error("Erro na pré-análise:", error);
       toast({

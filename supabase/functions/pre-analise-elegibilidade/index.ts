@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Prompt jurídico fixo - NÃO EDITÁVEL por usuários
+// Prompt jurídico fixo - NÃO EDITÁVEL por usuários (apenas admin no código)
 const PROMPT_ANALISE_ELEGIBILIDADE = `Você é um especialista jurídico em direito previdenciário brasileiro, especializado em análise de elegibilidade para salário-maternidade.
 
 TAREFA: Analise os dados fornecidos e determine a elegibilidade da segurada para o benefício de salário-maternidade com base na legislação vigente (Lei 8.213/91, Decreto 3.048/99 e IN INSS 128/2022).
@@ -13,65 +13,96 @@ TAREFA: Analise os dados fornecidos e determine a elegibilidade da segurada para
 REGRAS DE ANÁLISE:
 
 1. CATEGORIA E CARÊNCIA:
-- Empregada CLT: Sem carência
+- Empregada CLT: Sem carência (dispensa de carência)
 - Contribuinte Individual: 10 contribuições mensais
 - MEI: 10 contribuições mensais  
 - Facultativa: 10 contribuições mensais
-- Segurada Especial: 10 meses de atividade rural
-- Desempregada: Verificar período de graça
+- Segurada Especial (Rural): 10 meses de atividade rural comprovada
+- Desempregada: Verificar período de graça + carência anterior
 
-2. PERÍODO DE GRAÇA:
+2. PERÍODO DE GRAÇA (Art. 15, Lei 8.213/91):
 - 12 meses após última contribuição (regra geral)
-- 24 meses se mais de 120 contribuições
-- 36 meses se desempregada comprovada
+- 24 meses se mais de 120 contribuições (teve_120_contribuicoes = true)
+- +12 meses se recebeu seguro-desemprego (recebeu_seguro_desemprego = true)
+- Máximo: 36 meses
 
-3. PRAZOS LEGAIS:
+3. MEI:
+- Se mei_ativo = true e competencias_em_atraso = true → ALERTA
+- MEI precisa estar em dia para manter qualidade de segurada
+
+4. PRAZOS LEGAIS:
 - Pode requerer até 5 anos após o parto/adoção
-- Início do benefício: data do parto ou 28 dias antes
+- Início do benefício: data do parto ou 28 dias antes (se gestante)
 
-4. ANÁLISE DO CNIS:
-- Verificar vínculos ativos/inativos
-- Verificar contribuições em dia
-- Identificar gaps de contribuição
-- Verificar qualidade de segurada
+5. DOCUMENTAÇÃO MÍNIMA:
+- CNIS obrigatório
+- Certidão de nascimento/adoção obrigatório
+- CTPS recomendado para empregadas
+- Comprovante de endereço para correspondência
 
 VOCÊ DEVE RESPONDER EXCLUSIVAMENTE NO FORMATO JSON ABAIXO:
 
 {
+  "status": "APROVADA|APROVADA_COM_RESSALVAS|NAO_APROVAVEL",
   "categoria_identificada": "string - categoria previdenciária identificada",
-  "carencia_status": "string - situação da carência (cumprida/não cumprida/parcialmente cumprida)",
-  "periodo_graca_status": "string - situação do período de graça se aplicável",
-  "situacao_cnis": "string - análise resumida do CNIS",
-  "riscos_identificados": [
-    {
-      "tipo": "string - tipo do risco",
-      "descricao": "string - descrição do risco",
-      "gravidade": "alta | media | baixa"
-    }
+  "carencia": {
+    "exigida": true,
+    "regra": "string - qual regra de carência se aplica",
+    "cumprida": true,
+    "detalhe": "string - explicação sobre carência"
+  },
+  "periodo_de_graca": {
+    "regra": "string - qual regra de período de graça",
+    "data_limite": "YYYY-MM-DD",
+    "dentro": true,
+    "detalhe": "string - explicação"
+  },
+  "cnis": {
+    "ok": true,
+    "pontos_de_atencao": ["lista de pontos que merecem atenção no CNIS"]
+  },
+  "riscos": [
+    { "nivel": "ALERTA|BLOQUEIO", "motivo": "string - descrição do risco" }
   ],
-  "conclusao": "aprovada | aprovada_com_ressalvas | nao_aprovavel",
-  "conclusao_detalhada": "string - explicação detalhada da conclusão",
-  "recomendacoes": ["string - lista de recomendações para o caso"]
+  "conclusao": "string - conclusão detalhada e fundamentada",
+  "checklist_documentos": [
+    { "doc": "CNIS", "status": "OK|FALTA" },
+    { "doc": "CTPS", "status": "OK|FALTA" },
+    { "doc": "CERTIDAO", "status": "OK|FALTA" },
+    { "doc": "COMPROVANTE_ENDERECO", "status": "OK|FALTA" }
+  ]
 }
 
 IMPORTANTE:
 - Seja objetivo e técnico
-- Fundamente em legislação
+- Fundamente em legislação (cite artigos quando aplicável)
 - Identifique TODOS os riscos de indeferimento
-- Não invente informações que não estão nos dados fornecidos`;
+- BLOQUEIO = impede aprovação / ALERTA = ponto de atenção mas não impede
+- Não invente informações que não estão nos dados fornecidos
+- Se documentação essencial estiver faltando, marque como risco de BLOQUEIO`;
 
 interface DadosEntrada {
-  categoria_segurada: string;
+  case_id?: string;
+  cpf: string;
+  nome: string;
+  categoria: string;
+  gestante: boolean;
+  evento: string;
   data_evento: string;
-  tipo_evento: string;
-  data_ultima_contribuicao?: string;
-  quantidade_contribuicoes?: number;
-  vinculos_ativos?: string[];
-  vinculos_inativos?: string[];
-  gaps_contribuicao?: string[];
-  documentos_anexados?: string[];
-  observacoes_adicionais?: string;
-  dados_cnis?: string;
+  ultimo_vinculo_data_fim?: string;
+  total_contribuicoes: number;
+  teve_120_contribuicoes: boolean;
+  recebeu_seguro_desemprego: boolean;
+  mei_ativo: boolean;
+  competencias_em_atraso: boolean;
+  documentos: {
+    cnis: boolean;
+    ctps: boolean;
+    certidao: boolean;
+    comprov_endereco: boolean;
+    outros: string[];
+  };
+  observacoes_atendente?: string;
 }
 
 interface RequestBody {
@@ -139,34 +170,24 @@ Deno.serve(async (req) => {
     const versao = versionData || 1;
     console.log(`[PRE-ANALISE] Versão da análise: ${versao}`);
 
-    // Format dados for AI
-    const dadosFormatados = `
-DADOS DA SEGURADA PARA ANÁLISE:
-
-1. CATEGORIA PREVIDENCIÁRIA: ${dados_entrada.categoria_segurada}
-
-2. EVENTO:
-- Tipo: ${dados_entrada.tipo_evento}
-- Data do evento: ${dados_entrada.data_evento}
-
-3. CONTRIBUIÇÕES:
-- Última contribuição: ${dados_entrada.data_ultima_contribuicao || "Não informado"}
-- Quantidade de contribuições: ${dados_entrada.quantidade_contribuicoes || "Não informado"}
-
-4. VÍNCULOS:
-- Ativos: ${dados_entrada.vinculos_ativos?.join(", ") || "Nenhum"}
-- Inativos: ${dados_entrada.vinculos_inativos?.join(", ") || "Nenhum"}
-
-5. GAPS DE CONTRIBUIÇÃO: ${dados_entrada.gaps_contribuicao?.join(", ") || "Nenhum identificado"}
-
-6. DOCUMENTOS ANEXADOS: ${dados_entrada.documentos_anexados?.join(", ") || "Não informados"}
-
-7. DADOS DO CNIS:
-${dados_entrada.dados_cnis || "Não fornecido"}
-
-8. OBSERVAÇÕES ADICIONAIS:
-${dados_entrada.observacoes_adicionais || "Nenhuma"}
-`;
+    // Format dados for AI - JSON estruturado conforme contrato
+    const dadosFormatados = JSON.stringify({
+      case_id: mae_id,
+      cpf: dados_entrada.cpf,
+      nome: dados_entrada.nome,
+      categoria: dados_entrada.categoria,
+      gestante: dados_entrada.gestante,
+      evento: dados_entrada.evento,
+      data_evento: dados_entrada.data_evento,
+      ultimo_vinculo_data_fim: dados_entrada.ultimo_vinculo_data_fim || null,
+      total_contribuicoes: dados_entrada.total_contribuicoes,
+      teve_120_contribuicoes: dados_entrada.teve_120_contribuicoes,
+      recebeu_seguro_desemprego: dados_entrada.recebeu_seguro_desemprego,
+      mei_ativo: dados_entrada.mei_ativo,
+      competencias_em_atraso: dados_entrada.competencias_em_atraso,
+      documentos: dados_entrada.documentos,
+      observacoes_atendente: dados_entrada.observacoes_atendente || ""
+    }, null, 2);
 
     console.log(`[PRE-ANALISE] Chamando Lovable AI Gateway...`);
 
@@ -186,7 +207,7 @@ ${dados_entrada.observacoes_adicionais || "Nenhuma"}
           },
           {
             role: "user",
-            content: dadosFormatados,
+            content: `Analise o seguinte caso e retorne APENAS o JSON de resposta conforme o formato especificado:\n\n${dadosFormatados}`,
           },
         ],
         temperature: 0.1, // Baixa temperatura para respostas mais determinísticas
@@ -219,14 +240,11 @@ ${dados_entrada.observacoes_adicionais || "Nenhuma"}
       throw new Error("Resposta da IA em formato inválido");
     }
 
-    // Map conclusion to enum
-    const statusMap: Record<string, string> = {
-      "aprovada": "aprovada",
-      "aprovada_com_ressalvas": "aprovada_com_ressalvas",
-      "nao_aprovavel": "nao_aprovavel",
-    };
-    
-    const statusAnalise = statusMap[analiseResult.conclusao] || "erro_processamento";
+    // Validate status
+    const validStatuses = ["APROVADA", "APROVADA_COM_RESSALVAS", "NAO_APROVAVEL"];
+    const statusAnalise = validStatuses.includes(analiseResult.status) 
+      ? analiseResult.status 
+      : "ERRO_PROCESSAMENTO";
 
     // Save to database
     const { data: insertData, error: insertError } = await supabase
@@ -235,18 +253,21 @@ ${dados_entrada.observacoes_adicionais || "Nenhuma"}
         mae_id,
         user_id: user.id,
         dados_entrada,
-        status_analise: statusAnalise,
+        status_analise: statusAnalise.toLowerCase().replace(/_/g, "_"), // Normalize for enum
         categoria_identificada: analiseResult.categoria_identificada,
-        carencia_status: analiseResult.carencia_status,
-        periodo_graca_status: analiseResult.periodo_graca_status,
-        situacao_cnis: analiseResult.situacao_cnis,
-        riscos_identificados: analiseResult.riscos_identificados || [],
-        conclusao_detalhada: analiseResult.conclusao_detalhada,
-        recomendacoes: analiseResult.recomendacoes || [],
+        carencia_status: JSON.stringify(analiseResult.carencia),
+        periodo_graca_status: JSON.stringify(analiseResult.periodo_de_graca),
+        situacao_cnis: JSON.stringify(analiseResult.cnis),
+        riscos_identificados: analiseResult.riscos || [],
+        conclusao_detalhada: analiseResult.conclusao,
+        recomendacoes: analiseResult.checklist_documentos?.map((d: {doc: string, status: string}) => `${d.doc}: ${d.status}`) || [],
         versao,
         motivo_reanalise: versao === 1 ? "primeiro_registro" : (motivo_reanalise || "solicitacao_manual"),
         observacao_reanalise,
-        resposta_ia_raw: aiData,
+        resposta_ia_raw: {
+          ...aiData,
+          parsed_response: analiseResult
+        },
         modelo_ia_utilizado: "google/gemini-2.5-flash",
         tokens_utilizados: tokensUtilizados,
         processado_em: new Date().toISOString(),
@@ -261,10 +282,14 @@ ${dados_entrada.observacoes_adicionais || "Nenhuma"}
 
     console.log(`[PRE-ANALISE] Análise salva com sucesso: ${insertData.id}`);
 
+    // Return both the DB record and the structured AI response
     return new Response(
       JSON.stringify({
         success: true,
-        analise: insertData,
+        analise: {
+          ...insertData,
+          resposta_estruturada: analiseResult
+        },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
