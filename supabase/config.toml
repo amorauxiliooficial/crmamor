@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.public-indicacao]
 verify_jwt = false
+
+[functions.pre-analise-elegibilidade]
+verify_jwt = false
