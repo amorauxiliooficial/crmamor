@@ -12,6 +12,7 @@ import {
   FileText,
   Shield,
   History,
+  FileCheck,
 } from "lucide-react";
 import {
   type PreAnalise,
@@ -27,30 +28,31 @@ interface PreAnaliseResultCardProps {
 
 export function PreAnaliseResultCard({ analise, showHeader = true }: PreAnaliseResultCardProps) {
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "aprovada":
+    const normalizedStatus = status?.toUpperCase();
+    switch (normalizedStatus) {
+      case "APROVADA":
         return <CheckCircle2 className="h-5 w-5 text-emerald-600" />;
-      case "aprovada_com_ressalvas":
-        return <AlertTriangle className="h-5 w-5 text-amber-600" />;
-      case "nao_aprovavel":
+      case "APROVADA_COM_RESSALVAS":
+        return <AlertTriangle className="h-5 w-5 text-chart-1" />;
+      case "NAO_APROVAVEL":
         return <XCircle className="h-5 w-5 text-destructive" />;
       default:
         return <AlertCircle className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
-  const getGravidadeColor = (gravidade: string) => {
-    switch (gravidade) {
-      case "alta":
+  const getNivelColor = (nivel: string) => {
+    switch (nivel) {
+      case "BLOQUEIO":
         return "bg-destructive/20 text-destructive";
-      case "media":
+      case "ALERTA":
         return "bg-chart-1/20 text-chart-1";
-      case "baixa":
-        return "bg-primary/20 text-primary";
       default:
         return "bg-muted text-muted-foreground";
     }
   };
+
+  const normalizedStatus = analise.status_analise?.toUpperCase() as keyof typeof STATUS_ANALISE_LABELS;
 
   return (
     <Card>
@@ -66,8 +68,8 @@ export function PreAnaliseResultCard({ analise, showHeader = true }: PreAnaliseR
                 <History className="h-3 w-3" />
                 v{analise.versao}
               </Badge>
-              <Badge className={STATUS_ANALISE_COLORS[analise.status_analise]}>
-                {STATUS_ANALISE_LABELS[analise.status_analise]}
+              <Badge className={STATUS_ANALISE_COLORS[normalizedStatus] || "bg-muted"}>
+                {STATUS_ANALISE_LABELS[normalizedStatus] || analise.status_analise}
               </Badge>
             </div>
           </div>
@@ -89,42 +91,73 @@ export function PreAnaliseResultCard({ analise, showHeader = true }: PreAnaliseR
             <p className="text-xs font-medium text-muted-foreground uppercase">Categoria</p>
             <p className="text-sm">{analise.categoria_identificada || "Não identificada"}</p>
           </div>
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase">Carência</p>
-            <p className="text-sm">{analise.carencia_status || "Não avaliada"}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase">Período de Graça</p>
-            <p className="text-sm">{analise.periodo_graca_status || "Não aplicável"}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase">Situação CNIS</p>
-            <p className="text-sm">{analise.situacao_cnis || "Não analisado"}</p>
-          </div>
+          
+          {analise.carencia && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase">Carência</p>
+              <div className="flex items-center gap-2">
+                {analise.carencia.cumprida ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-destructive" />
+                )}
+                <span className="text-sm">{analise.carencia.detalhe || analise.carencia.regra}</span>
+              </div>
+            </div>
+          )}
+
+          {analise.periodo_de_graca && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase">Período de Graça</p>
+              <div className="flex items-center gap-2">
+                {analise.periodo_de_graca.dentro ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-destructive" />
+                )}
+                <span className="text-sm">
+                  {analise.periodo_de_graca.detalhe || `Até ${analise.periodo_de_graca.data_limite}`}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {analise.cnis && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase">CNIS</p>
+              <div className="flex items-center gap-2">
+                {analise.cnis.ok ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4 text-chart-1" />
+                )}
+                <span className="text-sm">
+                  {analise.cnis.ok ? "OK" : `${analise.cnis.pontos_de_atencao?.length || 0} pontos de atenção`}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         <Separator />
 
         {/* Riscos Identificados */}
-        {analise.riscos_identificados && analise.riscos_identificados.length > 0 && (
+        {analise.riscos && analise.riscos.length > 0 && (
           <div className="space-y-3">
             <h4 className="text-sm font-medium flex items-center gap-2">
-              <Shield className="h-4 w-4 text-amber-600" />
-              Riscos Identificados ({analise.riscos_identificados.length})
+              <Shield className="h-4 w-4 text-chart-1" />
+              Riscos Identificados ({analise.riscos.length})
             </h4>
             <div className="space-y-2">
-              {analise.riscos_identificados.map((risco, index) => (
+              {analise.riscos.map((risco, index) => (
                 <div
                   key={index}
                   className="p-3 rounded-lg bg-muted/50 border"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-medium">{risco.tipo}</p>
-                      <p className="text-sm text-muted-foreground mt-1">{risco.descricao}</p>
-                    </div>
-                    <Badge className={getGravidadeColor(risco.gravidade)}>
-                      {risco.gravidade.charAt(0).toUpperCase() + risco.gravidade.slice(1)}
+                    <p className="text-sm">{risco.motivo}</p>
+                    <Badge className={getNivelColor(risco.nivel)}>
+                      {risco.nivel}
                     </Badge>
                   </div>
                 </div>
@@ -133,34 +166,42 @@ export function PreAnaliseResultCard({ analise, showHeader = true }: PreAnaliseR
           </div>
         )}
 
-        <Separator />
+        {analise.riscos && analise.riscos.length > 0 && <Separator />}
 
         {/* Conclusão Detalhada */}
         <div className="space-y-2">
           <h4 className="text-sm font-medium flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Conclusão Detalhada
+            Conclusão
           </h4>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-            {analise.conclusao_detalhada || "Sem detalhes disponíveis."}
+            {analise.conclusao || "Sem detalhes disponíveis."}
           </p>
         </div>
 
-        {/* Recomendações */}
-        {analise.recomendacoes && analise.recomendacoes.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4" />
-              Recomendações
-            </h4>
-            <ul className="list-disc list-inside space-y-1">
-              {analise.recomendacoes.map((rec, index) => (
-                <li key={index} className="text-sm text-muted-foreground">
-                  {rec}
-                </li>
-              ))}
-            </ul>
-          </div>
+        {/* Checklist de Documentos */}
+        {analise.checklist_documentos && analise.checklist_documentos.length > 0 && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium flex items-center gap-2">
+                <FileCheck className="h-4 w-4" />
+                Checklist de Documentos
+              </h4>
+              <div className="grid grid-cols-2 gap-2">
+                {analise.checklist_documentos.map((doc, index) => (
+                  <div key={index} className="flex items-center gap-2 text-sm">
+                    {doc.status === "OK" ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-destructive" />
+                    )}
+                    <span>{doc.doc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
         )}
 
         {/* Metadados */}
