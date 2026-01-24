@@ -26,8 +26,6 @@ import {
   LogOut,
   X,
   Megaphone,
-  PiggyBank,
-  Brain,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -48,9 +46,7 @@ const navigationItems = [
   { id: "conferencia", label: "Conferência INSS", icon: ClipboardCheck },
   { id: "pagamentos", label: "Pagamentos", icon: DollarSign },
   { id: "indicacoes", label: "Indicações", icon: UserPlus },
-  { id: "pre-analises", label: "Pré-Análises", icon: Brain, isPage: true },
   { id: "marketing", label: "Marketing", icon: Megaphone, isPage: true },
-  { id: "comissoes", label: "Comissões", icon: PiggyBank, isPage: true },
 ];
 
 export function MobileSidebar({
