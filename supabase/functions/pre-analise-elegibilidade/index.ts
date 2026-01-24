@@ -34,11 +34,13 @@ REGRAS DE ANÁLISE:
 - Pode requerer até 5 anos após o parto/adoção
 - Início do benefício: data do parto ou 28 dias antes (se gestante)
 
-5. DOCUMENTAÇÃO MÍNIMA:
-- CNIS obrigatório
-- Certidão de nascimento/adoção obrigatório
-- CTPS recomendado para empregadas
-- Comprovante de endereço para correspondência
+5. DOCUMENTAÇÃO MÍNIMA PARA ELEGIBILIDADE:
+- CNIS obrigatório (histórico de contribuições)
+- Certidão de nascimento/adoção obrigatório (comprova o evento gerador)
+- CTPS recomendado para empregadas CLT
+
+IMPORTANTE: Comprovante de endereço NÃO é requisito legal para salário-maternidade.
+Não deve influenciar a decisão de elegibilidade.
 
 VOCÊ DEVE RESPONDER EXCLUSIVAMENTE NO FORMATO JSON ABAIXO:
 
@@ -67,9 +69,8 @@ VOCÊ DEVE RESPONDER EXCLUSIVAMENTE NO FORMATO JSON ABAIXO:
   "conclusao": "string - conclusão detalhada e fundamentada",
   "checklist_documentos": [
     { "doc": "CNIS", "status": "OK|FALTA" },
-    { "doc": "CTPS", "status": "OK|FALTA" },
-    { "doc": "CERTIDAO", "status": "OK|FALTA" },
-    { "doc": "COMPROVANTE_ENDERECO", "status": "OK|FALTA" }
+    { "doc": "CTPS", "status": "OK|FALTA|NAO_APLICAVEL" },
+    { "doc": "CERTIDAO", "status": "OK|FALTA" }
   ],
   "resultado_atendente": {
     "resultado": "APROVADO|REPROVADO|JURIDICO",
