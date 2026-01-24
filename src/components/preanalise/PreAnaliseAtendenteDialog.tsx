@@ -83,6 +83,16 @@ export function PreAnaliseAtendenteDialog({
   }, [open]);
 
   const handleGerarAnalise = async () => {
+    // Validação: se não tem CNIS nem CTPS, retornar reprovado imediatamente
+    if (!hasMinDocs) {
+      setResultado({
+        resultado_atendente: "REPROVADO",
+        motivo_curto: "Documentos obrigatórios não anexados (CNIS ou CTPS)",
+        proxima_acao: "SOLICITAR_DOCS",
+      });
+      return;
+    }
+
     const dadosEntrada: DadosEntradaAnalise = {
       cpf: mae.cpf.replace(/\D/g, ""),
       nome: mae.nome_mae,
@@ -216,7 +226,7 @@ export function PreAnaliseAtendenteDialog({
               size="lg"
               className="w-full h-14 text-lg gap-2"
               onClick={handleGerarAnalise}
-              disabled={isLoading || !hasMinDocs}
+              disabled={isLoading}
             >
               {isLoading ? (
                 <>
@@ -230,6 +240,12 @@ export function PreAnaliseAtendenteDialog({
                 </>
               )}
             </Button>
+            
+            {!hasMinDocs && (
+              <p className="text-xs text-destructive text-center">
+                ⚠️ Sem CNIS ou CTPS a análise será reprovada automaticamente
+              </p>
+            )}
           </div>
         ) : (
           /* Resultado simplificado */

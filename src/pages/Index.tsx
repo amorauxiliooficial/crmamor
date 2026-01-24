@@ -40,6 +40,7 @@ import {
   Megaphone,
   BookOpen,
   ClipboardList,
+  Brain,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -531,6 +532,15 @@ const Index = () => {
                   title="Marketing"
                 >
                   <Megaphone className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => navigate("/pre-analises")}
+                  title="Pré-Análises"
+                >
+                  <Brain className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
