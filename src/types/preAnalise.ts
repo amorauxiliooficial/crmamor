@@ -41,6 +41,11 @@ export interface DocumentosAnexados {
   certidao: boolean;
   comprov_endereco: boolean;
   outros: string[];
+  // URLs dos documentos anexados (opcional)
+  cnis_url?: string;
+  ctps_url?: string;
+  certidao_url?: string;
+  comprov_endereco_url?: string;
 }
 
 // JSON de ENTRADA padronizado
