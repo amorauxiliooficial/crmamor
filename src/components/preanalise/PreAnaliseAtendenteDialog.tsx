@@ -6,12 +6,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, FileUp, Brain, CheckCircle2 } from "lucide-react";
+import { Loader2, FileUp, Brain } from "lucide-react";
 import { usePreAnalise } from "@/hooks/usePreAnalise";
 import { PreAnaliseSimplificadaCard } from "./PreAnaliseSimplificadaCard";
+import { DocumentUploadField } from "./DocumentUploadField";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -60,11 +59,17 @@ export function PreAnaliseAtendenteDialog({
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   
-  const [documentos, setDocumentos] = useState({
-    cnis: false,
-    ctps: false,
-    certidao: false,
-    comprov_endereco: false,
+  // URLs dos documentos anexados
+  const [documentos, setDocumentos] = useState<{
+    cnis: string | null;
+    ctps: string | null;
+    certidao: string | null;
+    comprov_endereco: string | null;
+  }>({
+    cnis: null,
+    ctps: null,
+    certidao: null,
+    comprov_endereco: null,
   });
   
   const [resultado, setResultado] = useState<{
@@ -77,17 +82,17 @@ export function PreAnaliseAtendenteDialog({
   useEffect(() => {
     if (open) {
       setDocumentos({
-        cnis: false,
-        ctps: false,
-        certidao: false,
-        comprov_endereco: false,
+        cnis: null,
+        ctps: null,
+        certidao: null,
+        comprov_endereco: null,
       });
       setResultado(null);
     }
   }, [open]);
 
   const handleGerarAnalise = async () => {
-    // Validação: se não tem CNIS nem CTPS, salvar reprovação no banco
+    // Validação: se não tem CNIS nem CTPS anexado, salvar reprovação no banco
     if (!hasMinDocs) {
       setIsSaving(true);
       try {
@@ -116,7 +121,12 @@ export function PreAnaliseAtendenteDialog({
             dados_entrada: {
               cpf: mae.cpf.replace(/\D/g, ""),
               nome: mae.nome_mae,
-              documentos: { cnis: false, ctps: false, certidao: false, comprov_endereco: false, outros: [] },
+              documentos: { 
+                cnis: null, 
+                ctps: null, 
+                certidao: null, 
+                comprov_endereco: null,
+              },
             },
             status_analise: "nao_aprovavel",
             resultado_atendente: "REPROVADO",
@@ -166,8 +176,16 @@ export function PreAnaliseAtendenteDialog({
       mei_ativo: mae.categoria_previdenciaria === "MEI",
       competencias_em_atraso: false,
       documentos: {
-        ...documentos,
+        cnis: !!documentos.cnis,
+        ctps: !!documentos.ctps,
+        certidao: !!documentos.certidao,
+        comprov_endereco: !!documentos.comprov_endereco,
         outros: [],
+        // Salvar URLs dos documentos
+        cnis_url: documentos.cnis || undefined,
+        ctps_url: documentos.ctps || undefined,
+        certidao_url: documentos.certidao || undefined,
+        comprov_endereco_url: documentos.comprov_endereco || undefined,
       },
       observacoes_atendente: mae.observacoes || "",
     };
@@ -185,8 +203,6 @@ export function PreAnaliseAtendenteDialog({
   };
 
   const handleProximaAcao = () => {
-    // Aqui você pode implementar a ação específica
-    // Por agora apenas fecha o dialog
     onOpenChange(false);
   };
 
@@ -208,73 +224,49 @@ export function PreAnaliseAtendenteDialog({
 
         {!resultado ? (
           <div className="space-y-6">
-            {/* Checklist de documentos - simples */}
+            {/* Upload de documentos */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <FileUp className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm font-medium">Documentos Anexados</p>
+                <p className="text-sm font-medium">Anexar Documentos</p>
               </div>
               
               <div className="grid gap-3">
-                <div className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                  <Checkbox
-                    id="doc_cnis"
-                    checked={documentos.cnis}
-                    onCheckedChange={(checked) => 
-                      setDocumentos(prev => ({ ...prev, cnis: !!checked }))
-                    }
-                  />
-                  <Label htmlFor="doc_cnis" className="flex-1 cursor-pointer">
-                    CNIS
-                  </Label>
-                  {documentos.cnis && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                </div>
+                <DocumentUploadField
+                  label="CNIS"
+                  docType="cnis"
+                  maeId={mae.id}
+                  uploadedUrl={documentos.cnis}
+                  onUpload={(url) => setDocumentos(prev => ({ ...prev, cnis: url }))}
+                />
 
-                <div className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                  <Checkbox
-                    id="doc_ctps"
-                    checked={documentos.ctps}
-                    onCheckedChange={(checked) => 
-                      setDocumentos(prev => ({ ...prev, ctps: !!checked }))
-                    }
-                  />
-                  <Label htmlFor="doc_ctps" className="flex-1 cursor-pointer">
-                    CTPS
-                  </Label>
-                  {documentos.ctps && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                </div>
+                <DocumentUploadField
+                  label="CTPS"
+                  docType="ctps"
+                  maeId={mae.id}
+                  uploadedUrl={documentos.ctps}
+                  onUpload={(url) => setDocumentos(prev => ({ ...prev, ctps: url }))}
+                />
 
-                <div className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                  <Checkbox
-                    id="doc_certidao"
-                    checked={documentos.certidao}
-                    onCheckedChange={(checked) => 
-                      setDocumentos(prev => ({ ...prev, certidao: !!checked }))
-                    }
-                  />
-                  <Label htmlFor="doc_certidao" className="flex-1 cursor-pointer">
-                    Certidão (Nascimento/Adoção)
-                  </Label>
-                  {documentos.certidao && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                </div>
+                <DocumentUploadField
+                  label="Certidão (Nascimento/Adoção)"
+                  docType="certidao"
+                  maeId={mae.id}
+                  uploadedUrl={documentos.certidao}
+                  onUpload={(url) => setDocumentos(prev => ({ ...prev, certidao: url }))}
+                />
 
-                <div className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                  <Checkbox
-                    id="doc_comprov"
-                    checked={documentos.comprov_endereco}
-                    onCheckedChange={(checked) => 
-                      setDocumentos(prev => ({ ...prev, comprov_endereco: !!checked }))
-                    }
-                  />
-                  <Label htmlFor="doc_comprov" className="flex-1 cursor-pointer">
-                    Comprovante de Endereço
-                  </Label>
-                  {documentos.comprov_endereco && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                </div>
+                <DocumentUploadField
+                  label="Comprovante de Endereço"
+                  docType="comprov_endereco"
+                  maeId={mae.id}
+                  uploadedUrl={documentos.comprov_endereco}
+                  onUpload={(url) => setDocumentos(prev => ({ ...prev, comprov_endereco: url }))}
+                />
               </div>
 
               <p className="text-xs text-muted-foreground">
-                {totalDocs} documento{totalDocs !== 1 ? "s" : ""} marcado{totalDocs !== 1 ? "s" : ""}
+                {totalDocs} documento{totalDocs !== 1 ? "s" : ""} anexado{totalDocs !== 1 ? "s" : ""}
                 {!hasMinDocs && " • CNIS ou CTPS obrigatório"}
               </p>
             </div>
@@ -303,7 +295,7 @@ export function PreAnaliseAtendenteDialog({
             
             {!hasMinDocs && (
               <p className="text-xs text-destructive text-center">
-                ⚠️ Sem CNIS ou CTPS a análise será reprovada automaticamente
+                ⚠️ Sem CNIS ou CTPS anexado, a análise será reprovada automaticamente
               </p>
             )}
           </div>
