@@ -282,7 +282,7 @@ Deno.serve(async (req) => {
 
     console.log(`[PRE-ANALISE] Resultado atendente: ${JSON.stringify(resultadoAtendente)}`);
 
-    // Save to database
+    // Save to database with simplified result columns
     const { data: insertData, error: insertError } = await supabase
       .from("pre_analise")
       .insert({
@@ -307,6 +307,10 @@ Deno.serve(async (req) => {
         modelo_ia_utilizado: "google/gemini-2.5-flash",
         tokens_utilizados: tokensUtilizados,
         processado_em: new Date().toISOString(),
+        // New simplified result columns for attendant view
+        resultado_atendente: resultadoAtendente.resultado,
+        motivo_curto: resultadoAtendente.motivo_curto,
+        proxima_acao: resultadoAtendente.proxima_acao,
       })
       .select()
       .single();
