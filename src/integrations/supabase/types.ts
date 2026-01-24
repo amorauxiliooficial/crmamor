@@ -709,10 +709,11 @@ export type Database = {
           created_at: string
           dados_entrada: Json
           id: string
-          mae_id: string
+          mae_id: string | null
           modelo_ia_utilizado: string | null
           motivo_curto: string | null
           motivo_reanalise: Database["public"]["Enums"]["motivo_reanalise"]
+          nome_temporario: string | null
           observacao_reanalise: string | null
           periodo_graca_status: string | null
           processado_em: string | null
@@ -721,6 +722,7 @@ export type Database = {
           resposta_ia_raw: Json | null
           resultado_atendente: string | null
           riscos_identificados: Json | null
+          session_id: string | null
           situacao_cnis: string | null
           status_analise: Database["public"]["Enums"]["status_pre_analise"]
           tokens_utilizados: number | null
@@ -734,10 +736,11 @@ export type Database = {
           created_at?: string
           dados_entrada: Json
           id?: string
-          mae_id: string
+          mae_id?: string | null
           modelo_ia_utilizado?: string | null
           motivo_curto?: string | null
           motivo_reanalise?: Database["public"]["Enums"]["motivo_reanalise"]
+          nome_temporario?: string | null
           observacao_reanalise?: string | null
           periodo_graca_status?: string | null
           processado_em?: string | null
@@ -746,6 +749,7 @@ export type Database = {
           resposta_ia_raw?: Json | null
           resultado_atendente?: string | null
           riscos_identificados?: Json | null
+          session_id?: string | null
           situacao_cnis?: string | null
           status_analise: Database["public"]["Enums"]["status_pre_analise"]
           tokens_utilizados?: number | null
@@ -759,10 +763,11 @@ export type Database = {
           created_at?: string
           dados_entrada?: Json
           id?: string
-          mae_id?: string
+          mae_id?: string | null
           modelo_ia_utilizado?: string | null
           motivo_curto?: string | null
           motivo_reanalise?: Database["public"]["Enums"]["motivo_reanalise"]
+          nome_temporario?: string | null
           observacao_reanalise?: string | null
           periodo_graca_status?: string | null
           processado_em?: string | null
@@ -771,6 +776,7 @@ export type Database = {
           resposta_ia_raw?: Json | null
           resultado_atendente?: string | null
           riscos_identificados?: Json | null
+          session_id?: string | null
           situacao_cnis?: string | null
           status_analise?: Database["public"]["Enums"]["status_pre_analise"]
           tokens_utilizados?: number | null

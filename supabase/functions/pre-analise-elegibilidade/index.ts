@@ -206,54 +206,86 @@ Deno.serve(async (req) => {
       const hasCnisOrCtps = docs.cnis || docs.ctps;
       const hasCertidao = docs.certidao;
       
-      // Document validation only - not eligibility
+      // Build result based on document validation
+      let resultadoAtendente: string;
+      let motivoCurto: string;
+      let proximaAcao: string;
+      let statusAnalise: string;
+      
       if (hasCnisOrCtps && hasCertidao) {
+        resultadoAtendente = "APROVADO";
+        motivoCurto = "Documentação completa - pronta para cadastro";
+        proximaAcao = "PROTOCOLO_INSS";
+        statusAnalise = "aprovada";
         console.log(`[PRE-ANALISE] Documentos completos - pronta para cadastro`);
-        return new Response(
-          JSON.stringify({
-            success: true,
-            analise: {
-              resultado_atendente: "APROVADO",
-              motivo_curto: "Documentação completa - pronta para cadastro",
-              proxima_acao: "PROTOCOLO_INSS",
-              resposta_estruturada: {
-                status: "DOCUMENTACAO_COMPLETA",
-                checklist_documentos: [
-                  { doc: "CNIS/CTPS", status: hasCnisOrCtps ? "OK" : "FALTA" },
-                  { doc: "CERTIDAO", status: hasCertidao ? "OK" : "FALTA" },
-                ],
-                conclusao: "Documentação obrigatória anexada. Pronta para cadastro no sistema.",
-              },
-            },
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
       } else {
         const missing: string[] = [];
         if (!hasCnisOrCtps) missing.push("CNIS ou CTPS");
         if (!hasCertidao) missing.push("Certidão");
         
+        resultadoAtendente = "REPROVADO";
+        motivoCurto = `Falta: ${missing.join(" e ")}`;
+        proximaAcao = "SOLICITAR_DOCS";
+        statusAnalise = "nao_aprovavel";
         console.log(`[PRE-ANALISE] Documentos faltantes: ${missing.join(", ")}`);
-        return new Response(
-          JSON.stringify({
-            success: true,
-            analise: {
-              resultado_atendente: "REPROVADO",
-              motivo_curto: `Falta: ${missing.join(" e ")}`,
-              proxima_acao: "SOLICITAR_DOCS",
-              resposta_estruturada: {
-                status: "DOCUMENTACAO_INCOMPLETA",
-                checklist_documentos: [
-                  { doc: "CNIS/CTPS", status: hasCnisOrCtps ? "OK" : "FALTA" },
-                  { doc: "CERTIDAO", status: hasCertidao ? "OK" : "FALTA" },
-                ],
-                conclusao: `Documentação incompleta. Falta: ${missing.join(" e ")}`,
-              },
-            },
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
       }
+
+      // Save standalone analysis to database
+      const { data: insertData, error: insertError } = await supabase
+        .from("pre_analise")
+        .insert({
+          mae_id: null, // Standalone - no mae yet
+          session_id: session_id || null,
+          user_id: user.id,
+          nome_temporario: dados_entrada.nome || "Análise Avulsa",
+          dados_entrada,
+          status_analise: statusAnalise,
+          resultado_atendente: resultadoAtendente,
+          motivo_curto: motivoCurto,
+          proxima_acao: proximaAcao,
+          versao: 1,
+          motivo_reanalise: "primeiro_registro",
+          processado_em: new Date().toISOString(),
+          resposta_ia_raw: {
+            type: "document_only_analysis",
+            checklist_documentos: [
+              { doc: "CNIS/CTPS", status: hasCnisOrCtps ? "OK" : "FALTA" },
+              { doc: "CERTIDAO", status: hasCertidao ? "OK" : "FALTA" },
+            ],
+          },
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error(`[PRE-ANALISE] Erro ao salvar análise avulsa: ${insertError.message}`);
+        // Still return success even if save fails
+      } else {
+        console.log(`[PRE-ANALISE] Análise avulsa salva: ${insertData.id}`);
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          analise: {
+            id: insertData?.id || null,
+            resultado_atendente: resultadoAtendente,
+            motivo_curto: motivoCurto,
+            proxima_acao: proximaAcao,
+            resposta_estruturada: {
+              status: hasCnisOrCtps && hasCertidao ? "DOCUMENTACAO_COMPLETA" : "DOCUMENTACAO_INCOMPLETA",
+              checklist_documentos: [
+                { doc: "CNIS/CTPS", status: hasCnisOrCtps ? "OK" : "FALTA" },
+                { doc: "CERTIDAO", status: hasCertidao ? "OK" : "FALTA" },
+              ],
+              conclusao: hasCnisOrCtps && hasCertidao 
+                ? "Documentação obrigatória anexada. Pronta para cadastro no sistema."
+                : `Documentação incompleta. Falta: ${[!hasCnisOrCtps && "CNIS ou CTPS", !hasCertidao && "Certidão"].filter(Boolean).join(" e ")}`,
+            },
+          },
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     let versao = 1;
