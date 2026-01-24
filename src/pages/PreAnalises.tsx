@@ -41,15 +41,14 @@ import {
   TrendingDown,
   Clock,
   History,
+  FileUp,
 } from "lucide-react";
 import { PreAnaliseHistoricoDialog } from "@/components/preanalise/PreAnaliseHistoricoDialog";
+import { PreAnaliseAtendenteDialog } from "@/components/preanalise/PreAnaliseAtendenteDialog";
 import {
   STATUS_ANALISE_LABELS,
   STATUS_ANALISE_COLORS,
   CATEGORIA_SEGURADA_OPTIONS,
-  RESULTADO_ATENDENTE_LABELS,
-  type StatusPreAnalise,
-  type ResultadoAtendente,
 } from "@/types/preAnalise";
 import type { MaeProcesso } from "@/types/mae";
 
@@ -82,20 +81,50 @@ interface AnaliseComMae {
   };
 }
 
+interface MaeParaAnalise {
+  id: string;
+  nome_mae: string;
+  cpf: string;
+  categoria_previdenciaria: string;
+  status_processo: string;
+  tipo_evento: string;
+  data_evento: string | null;
+  is_gestante: boolean;
+  telefone: string | null;
+  email: string | null;
+  user_id: string;
+  contrato_assinado: boolean;
+  verificacao_duas_etapas: boolean;
+  data_ultima_atualizacao: string;
+  observacoes: string | null;
+  ultima_analise?: {
+    resultado_atendente?: string;
+    created_at: string;
+  };
+}
+
 export default function PreAnalises() {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, isLoading: isAdminLoading } = useIsAdmin();
   const navigate = useNavigate();
 
+  // Admin state
   const [analises, setAnalises] = useState<AnaliseComMae[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoriaFilter, setCategoriaFilter] = useState<string>("all");
   const [riscoFilter, setRiscoFilter] = useState<string>("all");
   const [resultadoFilter, setResultadoFilter] = useState<string>("all");
-  const [selectedMae, setSelectedMae] = useState<MaeProcesso | null>(null);
+  const [selectedMaeHistorico, setSelectedMaeHistorico] = useState<MaeProcesso | null>(null);
   const [historicoDialogOpen, setHistoricoDialogOpen] = useState(false);
+
+  // Atendente state
+  const [maes, setMaes] = useState<MaeParaAnalise[]>([]);
+  const [selectedMae, setSelectedMae] = useState<MaeProcesso | null>(null);
+  const [analiseDialogOpen, setAnaliseDialogOpen] = useState(false);
+
+  // Shared state
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -104,16 +133,18 @@ export default function PreAnalises() {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (user) {
-      fetchAnalises();
+    if (user && !isAdminLoading) {
+      if (isAdmin) {
+        fetchAnalises();
+      } else {
+        fetchMaesParaAnalise();
+      }
     }
-  }, [user]);
+  }, [user, isAdmin, isAdminLoading]);
 
   const fetchAnalises = async () => {
     setIsLoading(true);
     try {
-      // Fetch without the new columns to avoid TypeScript errors
-      // The new columns will be available after types regeneration
       const { data, error } = await supabase
         .from("pre_analise")
         .select(`
@@ -150,7 +181,6 @@ export default function PreAnalises() {
       (data || []).forEach((item: any) => {
         const existing = latestByMae.get(item.mae_id);
         if (!existing || item.versao > existing.versao) {
-          // Derive resultado_atendente from status_analise if not present
           let resultado_atendente = item.resultado_atendente;
           if (!resultado_atendente) {
             const status = item.status_analise?.toUpperCase();
@@ -175,6 +205,47 @@ export default function PreAnalises() {
     }
   };
 
+  const fetchMaesParaAnalise = async () => {
+    setIsLoading(true);
+    try {
+      // Buscar todas as mães
+      const { data: maesData, error: maesError } = await supabase
+        .from("mae_processo")
+        .select("*")
+        .order("data_ultima_atualizacao", { ascending: false });
+
+      if (maesError) throw maesError;
+
+      // Buscar última análise de cada mãe
+      const { data: analisesData } = await supabase
+        .from("pre_analise")
+        .select("mae_id, resultado_atendente, created_at, versao")
+        .order("versao", { ascending: false });
+
+      const ultimaAnalisePorMae = new Map<string, { resultado_atendente?: string; created_at: string }>();
+      (analisesData || []).forEach((a: any) => {
+        if (!ultimaAnalisePorMae.has(a.mae_id)) {
+          ultimaAnalisePorMae.set(a.mae_id, {
+            resultado_atendente: a.resultado_atendente,
+            created_at: a.created_at,
+          });
+        }
+      });
+
+      const maesComAnalise: MaeParaAnalise[] = (maesData || []).map((mae: any) => ({
+        ...mae,
+        ultima_analise: ultimaAnalisePorMae.get(mae.id),
+      }));
+
+      setMaes(maesComAnalise);
+    } catch (error) {
+      console.error("Erro ao buscar mães:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Filtros para Admin
   const filteredAnalises = useMemo(() => {
     return analises.filter((analise) => {
       const searchLower = searchQuery.toLowerCase();
@@ -183,63 +254,63 @@ export default function PreAnalises() {
         analise.mae_processo.nome_mae.toLowerCase().includes(searchLower) ||
         analise.mae_processo.cpf.includes(searchQuery.replace(/\D/g, ""));
 
-      // Para atendentes, filtro por resultado_atendente; para admin, por status_analise
-      let matchesStatus = true;
-      if (isAdmin) {
-        const normalizedStatus = analise.status_analise?.toUpperCase();
-        matchesStatus = statusFilter === "all" || normalizedStatus === statusFilter;
-      } else {
-        matchesStatus = resultadoFilter === "all" || analise.resultado_atendente === resultadoFilter;
-      }
+      const normalizedStatus = analise.status_analise?.toUpperCase();
+      const matchesStatus = statusFilter === "all" || normalizedStatus === statusFilter;
 
       const matchesCategoria =
         categoriaFilter === "all" ||
         analise.categoria_identificada?.toLowerCase() === categoriaFilter;
 
-      // Filtro de risco apenas para admin
-      let matchesRisco = true;
-      if (isAdmin) {
-        const hasBlockingRisk = analise.riscos_identificados?.some(
-          (r) => r.nivel === "BLOQUEIO"
-        );
-        const hasAlertRisk = analise.riscos_identificados?.some(
-          (r) => r.nivel === "ALERTA"
-        );
+      const hasBlockingRisk = analise.riscos_identificados?.some(
+        (r) => r.nivel === "BLOQUEIO"
+      );
+      const hasAlertRisk = analise.riscos_identificados?.some(
+        (r) => r.nivel === "ALERTA"
+      );
 
-        if (riscoFilter === "bloqueio") matchesRisco = hasBlockingRisk;
-        else if (riscoFilter === "alerta") matchesRisco = hasAlertRisk && !hasBlockingRisk;
-        else if (riscoFilter === "nenhum") matchesRisco = !hasBlockingRisk && !hasAlertRisk;
-      }
+      let matchesRisco = true;
+      if (riscoFilter === "bloqueio") matchesRisco = hasBlockingRisk;
+      else if (riscoFilter === "alerta") matchesRisco = hasAlertRisk && !hasBlockingRisk;
+      else if (riscoFilter === "nenhum") matchesRisco = !hasBlockingRisk && !hasAlertRisk;
 
       return matchesSearch && matchesStatus && matchesCategoria && matchesRisco;
     });
-  }, [analises, searchQuery, statusFilter, categoriaFilter, riscoFilter, resultadoFilter, isAdmin]);
+  }, [analises, searchQuery, statusFilter, categoriaFilter, riscoFilter]);
+
+  // Filtros para Atendente
+  const filteredMaes = useMemo(() => {
+    return maes.filter((mae) => {
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch =
+        !searchQuery ||
+        mae.nome_mae.toLowerCase().includes(searchLower) ||
+        mae.cpf.includes(searchQuery.replace(/\D/g, ""));
+
+      const matchesResultado =
+        resultadoFilter === "all" ||
+        (resultadoFilter === "pendente" && !mae.ultima_analise) ||
+        mae.ultima_analise?.resultado_atendente === resultadoFilter;
+
+      return matchesSearch && matchesResultado;
+    });
+  }, [maes, searchQuery, resultadoFilter]);
 
   const stats = useMemo(() => {
     const total = analises.length;
-    
-    if (isAdmin) {
-      const aprovadas = analises.filter(
-        (a) => a.status_analise?.toUpperCase() === "APROVADA"
-      ).length;
-      const ressalvas = analises.filter(
-        (a) => a.status_analise?.toUpperCase() === "APROVADA_COM_RESSALVAS"
-      ).length;
-      const reprovadas = analises.filter(
-        (a) => a.status_analise?.toUpperCase() === "NAO_APROVAVEL"
-      ).length;
-      const comBloqueio = analises.filter((a) =>
-        a.riscos_identificados?.some((r) => r.nivel === "BLOQUEIO")
-      ).length;
-      return { total, aprovadas, ressalvas, reprovadas, comBloqueio };
-    } else {
-      // Stats simplificadas para atendentes
-      const aprovados = analises.filter((a) => a.resultado_atendente === "APROVADO").length;
-      const reprovados = analises.filter((a) => a.resultado_atendente === "REPROVADO").length;
-      const juridico = analises.filter((a) => a.resultado_atendente === "JURIDICO").length;
-      return { total, aprovados, reprovados, juridico };
-    }
-  }, [analises, isAdmin]);
+    const aprovadas = analises.filter(
+      (a) => a.status_analise?.toUpperCase() === "APROVADA"
+    ).length;
+    const ressalvas = analises.filter(
+      (a) => a.status_analise?.toUpperCase() === "APROVADA_COM_RESSALVAS"
+    ).length;
+    const reprovadas = analises.filter(
+      (a) => a.status_analise?.toUpperCase() === "NAO_APROVAVEL"
+    ).length;
+    const comBloqueio = analises.filter((a) =>
+      a.riscos_identificados?.some((r) => r.nivel === "BLOQUEIO")
+    ).length;
+    return { total, aprovadas, ressalvas, reprovadas, comBloqueio };
+  }, [analises]);
 
   const getStatusIcon = (status: string) => {
     const normalizedStatus = status?.toUpperCase();
@@ -255,29 +326,36 @@ export default function PreAnalises() {
     }
   };
 
-  const getResultadoAtendenteIcon = (resultado?: string) => {
+  const getResultadoBadge = (resultado?: string) => {
     switch (resultado) {
       case "APROVADO":
-        return <CheckCircle2 className="h-4 w-4 text-primary" />;
+        return (
+          <Badge className="bg-primary/10 text-primary border-primary/20">
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            Aprovado
+          </Badge>
+        );
       case "REPROVADO":
-        return <XCircle className="h-4 w-4 text-destructive" />;
+        return (
+          <Badge className="bg-destructive/10 text-destructive border-destructive/20">
+            <XCircle className="h-3 w-3 mr-1" />
+            Reprovado
+          </Badge>
+        );
       case "JURIDICO":
-        return <Scale className="h-4 w-4 text-chart-1" />;
+        return (
+          <Badge className="bg-chart-1/10 text-chart-1 border-chart-1/20">
+            <Scale className="h-3 w-3 mr-1" />
+            Jurídico
+          </Badge>
+        );
       default:
-        return <AlertCircle className="h-4 w-4 text-muted-foreground" />;
-    }
-  };
-
-  const getResultadoAtendenteStyle = (resultado?: string) => {
-    switch (resultado) {
-      case "APROVADO":
-        return "bg-primary/10 text-primary border-primary/20";
-      case "REPROVADO":
-        return "bg-destructive/10 text-destructive border-destructive/20";
-      case "JURIDICO":
-        return "bg-chart-1/10 text-chart-1 border-chart-1/20";
-      default:
-        return "bg-muted text-muted-foreground";
+        return (
+          <Badge variant="outline" className="text-muted-foreground">
+            <Clock className="h-3 w-3 mr-1" />
+            Pendente
+          </Badge>
+        );
     }
   };
 
@@ -289,10 +367,29 @@ export default function PreAnalises() {
       .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
   };
 
-  const handleRowClick = (analise: AnaliseComMae) => {
-    // Apenas admin pode ver o histórico detalhado
-    if (!isAdmin) return;
-    
+  const handleOpenAnalise = (mae: MaeParaAnalise) => {
+    const maeProcesso: MaeProcesso = {
+      id: mae.id,
+      nome_mae: mae.nome_mae,
+      cpf: mae.cpf,
+      categoria_previdenciaria: mae.categoria_previdenciaria as MaeProcesso["categoria_previdenciaria"],
+      status_processo: mae.status_processo as MaeProcesso["status_processo"],
+      tipo_evento: mae.tipo_evento as MaeProcesso["tipo_evento"],
+      data_evento: mae.data_evento || undefined,
+      is_gestante: mae.is_gestante,
+      telefone: mae.telefone || undefined,
+      email: mae.email || undefined,
+      user_id: mae.user_id,
+      contrato_assinado: mae.contrato_assinado,
+      verificacao_duas_etapas: mae.verificacao_duas_etapas,
+      data_ultima_atualizacao: mae.data_ultima_atualizacao,
+      observacoes: mae.observacoes || undefined,
+    };
+    setSelectedMae(maeProcesso);
+    setAnaliseDialogOpen(true);
+  };
+
+  const handleRowClickAdmin = (analise: AnaliseComMae) => {
     const mae: MaeProcesso = {
       id: analise.mae_processo.id,
       nome_mae: analise.mae_processo.nome_mae,
@@ -309,8 +406,13 @@ export default function PreAnalises() {
       verificacao_duas_etapas: analise.mae_processo.verificacao_duas_etapas,
       data_ultima_atualizacao: analise.mae_processo.data_ultima_atualizacao,
     };
-    setSelectedMae(mae);
+    setSelectedMaeHistorico(mae);
     setHistoricoDialogOpen(true);
+  };
+
+  const handleAnaliseSuccess = () => {
+    fetchMaesParaAnalise();
+    setAnaliseDialogOpen(false);
   };
 
   if (authLoading || isAdminLoading) {
@@ -321,12 +423,126 @@ export default function PreAnalises() {
     );
   }
 
+  // ========== VISÃO ATENDENTE ==========
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header searchQuery="" onSearchChange={() => {}} />
+
+        <main className="container mx-auto px-4 py-6 space-y-6">
+          {/* Header simples */}
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Brain className="h-6 w-6 text-primary" />
+                Pré-Análise de Elegibilidade
+              </h1>
+              <p className="text-muted-foreground">
+                Anexe os documentos e gere a análise de elegibilidade
+              </p>
+            </div>
+          </div>
+
+          {/* Busca e filtro */}
+          <div className="flex flex-wrap gap-4">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome ou CPF..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            <Select value={resultadoFilter} onValueChange={setResultadoFilter}>
+              <SelectTrigger className="w-[180px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="pendente">⏳ Pendentes</SelectItem>
+                <SelectItem value="APROVADO">✅ Aprovadas</SelectItem>
+                <SelectItem value="REPROVADO">❌ Reprovadas</SelectItem>
+                <SelectItem value="JURIDICO">⚖️ Jurídico</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Lista de mães */}
+          <Card>
+            <ScrollArea className="h-[500px]">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : filteredMaes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Brain className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="font-medium mb-2">Nenhuma mãe encontrada</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {maes.length === 0
+                      ? "Não há processos cadastrados."
+                      : "Tente ajustar os filtros de busca."}
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {filteredMaes.map((mae) => (
+                    <div
+                      key={mae.id}
+                      className="p-4 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{mae.nome_mae}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatCpf(mae.cpf)}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          {getResultadoBadge(mae.ultima_analise?.resultado_atendente)}
+
+                          <Button
+                            size="sm"
+                            className="gap-1.5"
+                            onClick={() => handleOpenAnalise(mae)}
+                          >
+                            <FileUp className="h-4 w-4" />
+                            {mae.ultima_analise ? "Reanalisar" : "Analisar"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </Card>
+        </main>
+
+        {/* Dialog de Análise */}
+        {selectedMae && (
+          <PreAnaliseAtendenteDialog
+            open={analiseDialogOpen}
+            onOpenChange={setAnaliseDialogOpen}
+            mae={selectedMae}
+            onSuccess={handleAnaliseSuccess}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // ========== VISÃO ADMIN ==========
   return (
     <div className="min-h-screen bg-background">
-      <Header 
-        searchQuery="" 
-        onSearchChange={() => {}}
-      />
+      <Header searchQuery="" onSearchChange={() => {}} />
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Header */}
@@ -341,129 +557,75 @@ export default function PreAnalises() {
                 Pré-Análises de Elegibilidade
               </h1>
               <p className="text-muted-foreground">
-                {isAdmin 
-                  ? "Visão completa com detalhes técnicos, riscos e histórico"
-                  : "Consulte os resultados das análises de elegibilidade"
-                }
+                Visão completa com detalhes técnicos, riscos e histórico
               </p>
             </div>
           </div>
-          {isAdmin && (
-            <Badge variant="outline" className="gap-1 border-primary/30 text-primary">
-              <Scale className="h-3 w-3" />
-              Visão Admin/Jurídico
-            </Badge>
-          )}
+          <Badge variant="outline" className="gap-1 border-primary/30 text-primary">
+            <Scale className="h-3 w-3" />
+            Visão Admin/Jurídico
+          </Badge>
         </div>
 
-        {/* Stats Cards - Diferentes para Admin e Atendente */}
-        {isAdmin ? (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                  Aprovadas
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-primary">{"aprovadas" in stats ? stats.aprovadas : 0}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                  <Clock className="h-4 w-4 text-chart-1" />
-                  Com Ressalvas
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-chart-1">{"ressalvas" in stats ? stats.ressalvas : 0}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                  <TrendingDown className="h-4 w-4 text-destructive" />
-                  Não Aprováveis
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-destructive">{"reprovadas" in stats ? stats.reprovadas : 0}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                  <AlertTriangle className="h-4 w-4 text-destructive" />
-                  Com Bloqueio
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-destructive">{"comBloqueio" in stats ? stats.comBloqueio : 0}</p>
-              </CardContent>
-            </Card>
-          </div>
-        ) : (
-          // Stats simplificadas para atendentes
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  Aprovados
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-primary">{"aprovados" in stats ? stats.aprovados : 0}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                  <XCircle className="h-4 w-4 text-destructive" />
-                  Reprovados
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-destructive">{"reprovados" in stats ? stats.reprovados : 0}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                  <Scale className="h-4 w-4 text-chart-1" />
-                  Jurídico
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-chart-1">{"juridico" in stats ? stats.juridico : 0}</p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{stats.total}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Aprovadas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-primary">{stats.aprovadas}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                <Clock className="h-4 w-4 text-chart-1" />
+                Com Ressalvas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-chart-1">{stats.ressalvas}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                <TrendingDown className="h-4 w-4 text-destructive" />
+                Não Aprováveis
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-destructive">{stats.reprovadas}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                Com Bloqueio
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-destructive">{stats.comBloqueio}</p>
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Filters - Diferentes para Admin e Atendente */}
+        {/* Filters */}
         <div className="flex flex-wrap gap-4">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -475,65 +637,47 @@ export default function PreAnalises() {
             />
           </div>
 
-          {isAdmin ? (
-            <>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Status</SelectItem>
-                  <SelectItem value="APROVADA">Aprovada</SelectItem>
-                  <SelectItem value="APROVADA_COM_RESSALVAS">Com Ressalvas</SelectItem>
-                  <SelectItem value="NAO_APROVAVEL">Não Aprovável</SelectItem>
-                </SelectContent>
-              </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Status</SelectItem>
+              <SelectItem value="APROVADA">Aprovada</SelectItem>
+              <SelectItem value="APROVADA_COM_RESSALVAS">Com Ressalvas</SelectItem>
+              <SelectItem value="NAO_APROVAVEL">Não Aprovável</SelectItem>
+            </SelectContent>
+          </Select>
 
-              <Select value={categoriaFilter} onValueChange={setCategoriaFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas Categorias</SelectItem>
-                  {CATEGORIA_SEGURADA_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <Select value={categoriaFilter} onValueChange={setCategoriaFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas Categorias</SelectItem>
+              {CATEGORIA_SEGURADA_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-              <Select value={riscoFilter} onValueChange={setRiscoFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Risco" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Riscos</SelectItem>
-                  <SelectItem value="bloqueio">Com Bloqueio</SelectItem>
-                  <SelectItem value="alerta">Apenas Alertas</SelectItem>
-                  <SelectItem value="nenhum">Sem Riscos</SelectItem>
-                </SelectContent>
-              </Select>
-            </>
-          ) : (
-            // Filtros simplificados para atendentes
-            <Select value={resultadoFilter} onValueChange={setResultadoFilter}>
-              <SelectTrigger className="w-[180px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Resultado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Resultados</SelectItem>
-                <SelectItem value="APROVADO">✅ Aprovado</SelectItem>
-                <SelectItem value="REPROVADO">❌ Reprovado</SelectItem>
-                <SelectItem value="JURIDICO">⚖️ Jurídico</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
+          <Select value={riscoFilter} onValueChange={setRiscoFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Risco" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Riscos</SelectItem>
+              <SelectItem value="bloqueio">Com Bloqueio</SelectItem>
+              <SelectItem value="alerta">Apenas Alertas</SelectItem>
+              <SelectItem value="nenhum">Sem Riscos</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Table - Diferentes colunas para Admin e Atendente */}
+        {/* Table */}
         <Card>
           <ScrollArea className="h-[500px]">
             {isLoading ? (
@@ -550,8 +694,7 @@ export default function PreAnalises() {
                     : "Tente ajustar os filtros de busca."}
                 </p>
               </div>
-            ) : isAdmin ? (
-              // Tabela completa para Admin
+            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -578,7 +721,7 @@ export default function PreAnalises() {
                       <TableRow
                         key={analise.id}
                         className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleRowClick(analise)}
+                        onClick={() => handleRowClickAdmin(analise)}
                       >
                         <TableCell className="font-medium">
                           {analise.mae_processo.nome_mae}
@@ -630,57 +773,17 @@ export default function PreAnalises() {
                   })}
                 </TableBody>
               </Table>
-            ) : (
-              // Tabela simplificada para Atendente
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>CPF</TableHead>
-                    <TableHead>Resultado</TableHead>
-                    <TableHead>Data</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAnalises.map((analise) => (
-                    <TableRow key={analise.id}>
-                      <TableCell className="font-medium">
-                        {analise.mae_processo.nome_mae}
-                      </TableCell>
-                      <TableCell>{formatCpf(analise.mae_processo.cpf)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getResultadoAtendenteIcon(analise.resultado_atendente)}
-                          <Badge className={getResultadoAtendenteStyle(analise.resultado_atendente)}>
-                            {analise.resultado_atendente === "APROVADO" && "✅ Aprovado"}
-                            {analise.resultado_atendente === "REPROVADO" && "❌ Reprovado"}
-                            {analise.resultado_atendente === "JURIDICO" && "⚖️ Jurídico"}
-                            {!analise.resultado_atendente && "Pendente"}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {analise.processado_em
-                          ? format(new Date(analise.processado_em), "dd/MM/yy HH:mm", {
-                              locale: ptBR,
-                            })
-                          : "-"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
             )}
           </ScrollArea>
         </Card>
       </main>
 
-      {/* Dialog de Histórico - Apenas para Admin */}
-      {isAdmin && selectedMae && (
+      {/* Dialog de Histórico */}
+      {selectedMaeHistorico && (
         <PreAnaliseHistoricoDialog
           open={historicoDialogOpen}
           onOpenChange={setHistoricoDialogOpen}
-          mae={selectedMae}
+          mae={selectedMaeHistorico}
         />
       )}
     </div>
