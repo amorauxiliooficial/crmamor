@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,19 +34,22 @@ import {
   AlertTriangle,
   XCircle,
   AlertCircle,
-  History,
+  Scale,
   ArrowLeft,
   Loader2,
   TrendingUp,
   TrendingDown,
   Clock,
+  History,
 } from "lucide-react";
 import { PreAnaliseHistoricoDialog } from "@/components/preanalise/PreAnaliseHistoricoDialog";
 import {
   STATUS_ANALISE_LABELS,
   STATUS_ANALISE_COLORS,
   CATEGORIA_SEGURADA_OPTIONS,
+  RESULTADO_ATENDENTE_LABELS,
   type StatusPreAnalise,
+  type ResultadoAtendente,
 } from "@/types/preAnalise";
 import type { MaeProcesso } from "@/types/mae";
 
@@ -55,6 +59,8 @@ interface AnaliseComMae {
   status_analise: string;
   categoria_identificada: string | null;
   riscos_identificados: { nivel: string; motivo: string }[];
+  resultado_atendente?: string;
+  motivo_curto?: string;
   versao: number;
   created_at: string;
   processado_em: string | null;
@@ -78,6 +84,7 @@ interface AnaliseComMae {
 
 export default function PreAnalises() {
   const { user, loading: authLoading } = useAuth();
+  const { isAdmin, isLoading: isAdminLoading } = useIsAdmin();
   const navigate = useNavigate();
 
   const [analises, setAnalises] = useState<AnaliseComMae[]>([]);
@@ -86,6 +93,7 @@ export default function PreAnalises() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoriaFilter, setCategoriaFilter] = useState<string>("all");
   const [riscoFilter, setRiscoFilter] = useState<string>("all");
+  const [resultadoFilter, setResultadoFilter] = useState<string>("all");
   const [selectedMae, setSelectedMae] = useState<MaeProcesso | null>(null);
   const [historicoDialogOpen, setHistoricoDialogOpen] = useState(false);
 
@@ -104,7 +112,6 @@ export default function PreAnalises() {
   const fetchAnalises = async () => {
     setIsLoading(true);
     try {
-      // Get latest analysis for each mae (highest version)
       const { data, error } = await supabase
         .from("pre_analise")
         .select(`
@@ -113,6 +120,8 @@ export default function PreAnalises() {
           status_analise,
           categoria_identificada,
           riscos_identificados,
+          resultado_atendente,
+          motivo_curto,
           versao,
           created_at,
           processado_em,
@@ -137,7 +146,6 @@ export default function PreAnalises() {
 
       if (error) throw error;
 
-      // Filter to keep only the latest version per mae
       const latestByMae = new Map<string, AnaliseComMae>();
       (data || []).forEach((item) => {
         const existing = latestByMae.get(item.mae_id);
@@ -162,58 +170,101 @@ export default function PreAnalises() {
         analise.mae_processo.nome_mae.toLowerCase().includes(searchLower) ||
         analise.mae_processo.cpf.includes(searchQuery.replace(/\D/g, ""));
 
-      const normalizedStatus = analise.status_analise?.toUpperCase();
-      const matchesStatus = statusFilter === "all" || normalizedStatus === statusFilter;
+      // Para atendentes, filtro por resultado_atendente; para admin, por status_analise
+      let matchesStatus = true;
+      if (isAdmin) {
+        const normalizedStatus = analise.status_analise?.toUpperCase();
+        matchesStatus = statusFilter === "all" || normalizedStatus === statusFilter;
+      } else {
+        matchesStatus = resultadoFilter === "all" || analise.resultado_atendente === resultadoFilter;
+      }
 
       const matchesCategoria =
         categoriaFilter === "all" ||
         analise.categoria_identificada?.toLowerCase() === categoriaFilter;
 
-      const hasBlockingRisk = analise.riscos_identificados?.some(
-        (r) => r.nivel === "BLOQUEIO"
-      );
-      const hasAlertRisk = analise.riscos_identificados?.some(
-        (r) => r.nivel === "ALERTA"
-      );
-
+      // Filtro de risco apenas para admin
       let matchesRisco = true;
-      if (riscoFilter === "bloqueio") matchesRisco = hasBlockingRisk;
-      else if (riscoFilter === "alerta") matchesRisco = hasAlertRisk && !hasBlockingRisk;
-      else if (riscoFilter === "nenhum") matchesRisco = !hasBlockingRisk && !hasAlertRisk;
+      if (isAdmin) {
+        const hasBlockingRisk = analise.riscos_identificados?.some(
+          (r) => r.nivel === "BLOQUEIO"
+        );
+        const hasAlertRisk = analise.riscos_identificados?.some(
+          (r) => r.nivel === "ALERTA"
+        );
+
+        if (riscoFilter === "bloqueio") matchesRisco = hasBlockingRisk;
+        else if (riscoFilter === "alerta") matchesRisco = hasAlertRisk && !hasBlockingRisk;
+        else if (riscoFilter === "nenhum") matchesRisco = !hasBlockingRisk && !hasAlertRisk;
+      }
 
       return matchesSearch && matchesStatus && matchesCategoria && matchesRisco;
     });
-  }, [analises, searchQuery, statusFilter, categoriaFilter, riscoFilter]);
+  }, [analises, searchQuery, statusFilter, categoriaFilter, riscoFilter, resultadoFilter, isAdmin]);
 
   const stats = useMemo(() => {
     const total = analises.length;
-    const aprovadas = analises.filter(
-      (a) => a.status_analise?.toUpperCase() === "APROVADA"
-    ).length;
-    const ressalvas = analises.filter(
-      (a) => a.status_analise?.toUpperCase() === "APROVADA_COM_RESSALVAS"
-    ).length;
-    const reprovadas = analises.filter(
-      (a) => a.status_analise?.toUpperCase() === "NAO_APROVAVEL"
-    ).length;
-    const comBloqueio = analises.filter((a) =>
-      a.riscos_identificados?.some((r) => r.nivel === "BLOQUEIO")
-    ).length;
-
-    return { total, aprovadas, ressalvas, reprovadas, comBloqueio };
-  }, [analises]);
+    
+    if (isAdmin) {
+      const aprovadas = analises.filter(
+        (a) => a.status_analise?.toUpperCase() === "APROVADA"
+      ).length;
+      const ressalvas = analises.filter(
+        (a) => a.status_analise?.toUpperCase() === "APROVADA_COM_RESSALVAS"
+      ).length;
+      const reprovadas = analises.filter(
+        (a) => a.status_analise?.toUpperCase() === "NAO_APROVAVEL"
+      ).length;
+      const comBloqueio = analises.filter((a) =>
+        a.riscos_identificados?.some((r) => r.nivel === "BLOQUEIO")
+      ).length;
+      return { total, aprovadas, ressalvas, reprovadas, comBloqueio };
+    } else {
+      // Stats simplificadas para atendentes
+      const aprovados = analises.filter((a) => a.resultado_atendente === "APROVADO").length;
+      const reprovados = analises.filter((a) => a.resultado_atendente === "REPROVADO").length;
+      const juridico = analises.filter((a) => a.resultado_atendente === "JURIDICO").length;
+      return { total, aprovados, reprovados, juridico };
+    }
+  }, [analises, isAdmin]);
 
   const getStatusIcon = (status: string) => {
     const normalizedStatus = status?.toUpperCase();
     switch (normalizedStatus) {
       case "APROVADA":
-        return <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
+        return <CheckCircle2 className="h-4 w-4 text-primary" />;
       case "APROVADA_COM_RESSALVAS":
         return <AlertTriangle className="h-4 w-4 text-chart-1" />;
       case "NAO_APROVAVEL":
         return <XCircle className="h-4 w-4 text-destructive" />;
       default:
         return <AlertCircle className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
+  const getResultadoAtendenteIcon = (resultado?: string) => {
+    switch (resultado) {
+      case "APROVADO":
+        return <CheckCircle2 className="h-4 w-4 text-primary" />;
+      case "REPROVADO":
+        return <XCircle className="h-4 w-4 text-destructive" />;
+      case "JURIDICO":
+        return <Scale className="h-4 w-4 text-chart-1" />;
+      default:
+        return <AlertCircle className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
+  const getResultadoAtendenteStyle = (resultado?: string) => {
+    switch (resultado) {
+      case "APROVADO":
+        return "bg-primary/10 text-primary border-primary/20";
+      case "REPROVADO":
+        return "bg-destructive/10 text-destructive border-destructive/20";
+      case "JURIDICO":
+        return "bg-chart-1/10 text-chart-1 border-chart-1/20";
+      default:
+        return "bg-muted text-muted-foreground";
     }
   };
 
@@ -226,6 +277,9 @@ export default function PreAnalises() {
   };
 
   const handleRowClick = (analise: AnaliseComMae) => {
+    // Apenas admin pode ver o histórico detalhado
+    if (!isAdmin) return;
+    
     const mae: MaeProcesso = {
       id: analise.mae_processo.id,
       nome_mae: analise.mae_processo.nome_mae,
@@ -246,7 +300,7 @@ export default function PreAnalises() {
     setHistoricoDialogOpen(true);
   };
 
-  if (authLoading) {
+  if (authLoading || isAdminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -274,71 +328,129 @@ export default function PreAnalises() {
                 Pré-Análises de Elegibilidade
               </h1>
               <p className="text-muted-foreground">
-                Consulte e filtre análises de elegibilidade por status, categoria e riscos
+                {isAdmin 
+                  ? "Visão completa com detalhes técnicos, riscos e histórico"
+                  : "Consulte os resultados das análises de elegibilidade"
+                }
               </p>
             </div>
           </div>
+          {isAdmin && (
+            <Badge variant="outline" className="gap-1 border-primary/30 text-primary">
+              <Scale className="h-3 w-3" />
+              Visão Admin/Jurídico
+            </Badge>
+          )}
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{stats.total}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                <TrendingUp className="h-4 w-4 text-emerald-600" />
-                Aprovadas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-emerald-600">{stats.aprovadas}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                <Clock className="h-4 w-4 text-chart-1" />
-                Com Ressalvas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-chart-1">{stats.ressalvas}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                <TrendingDown className="h-4 w-4 text-destructive" />
-                Não Aprováveis
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-destructive">{stats.reprovadas}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                Com Bloqueio
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-destructive">{stats.comBloqueio}</p>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Stats Cards - Diferentes para Admin e Atendente */}
+        {isAdmin ? (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{stats.total}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  Aprovadas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-primary">{"aprovadas" in stats ? stats.aprovadas : 0}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-4 w-4 text-chart-1" />
+                  Com Ressalvas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-chart-1">{"ressalvas" in stats ? stats.ressalvas : 0}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                  <TrendingDown className="h-4 w-4 text-destructive" />
+                  Não Aprováveis
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-destructive">{"reprovadas" in stats ? stats.reprovadas : 0}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  Com Bloqueio
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-destructive">{"comBloqueio" in stats ? stats.comBloqueio : 0}</p>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          // Stats simplificadas para atendentes
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{stats.total}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  Aprovados
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-primary">{"aprovados" in stats ? stats.aprovados : 0}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                  <XCircle className="h-4 w-4 text-destructive" />
+                  Reprovados
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-destructive">{"reprovados" in stats ? stats.reprovados : 0}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                  <Scale className="h-4 w-4 text-chart-1" />
+                  Jurídico
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-chart-1">{"juridico" in stats ? stats.juridico : 0}</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-        {/* Filters */}
+        {/* Filters - Diferentes para Admin e Atendente */}
         <div className="flex flex-wrap gap-4">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -350,47 +462,65 @@ export default function PreAnalises() {
             />
           </div>
 
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Status</SelectItem>
-              <SelectItem value="APROVADA">Aprovada</SelectItem>
-              <SelectItem value="APROVADA_COM_RESSALVAS">Com Ressalvas</SelectItem>
-              <SelectItem value="NAO_APROVAVEL">Não Aprovável</SelectItem>
-            </SelectContent>
-          </Select>
+          {isAdmin ? (
+            <>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Status</SelectItem>
+                  <SelectItem value="APROVADA">Aprovada</SelectItem>
+                  <SelectItem value="APROVADA_COM_RESSALVAS">Com Ressalvas</SelectItem>
+                  <SelectItem value="NAO_APROVAVEL">Não Aprovável</SelectItem>
+                </SelectContent>
+              </Select>
 
-          <Select value={categoriaFilter} onValueChange={setCategoriaFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas Categorias</SelectItem>
-              {CATEGORIA_SEGURADA_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <Select value={categoriaFilter} onValueChange={setCategoriaFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas Categorias</SelectItem>
+                  {CATEGORIA_SEGURADA_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <Select value={riscoFilter} onValueChange={setRiscoFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Risco" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Riscos</SelectItem>
-              <SelectItem value="bloqueio">Com Bloqueio</SelectItem>
-              <SelectItem value="alerta">Apenas Alertas</SelectItem>
-              <SelectItem value="nenhum">Sem Riscos</SelectItem>
-            </SelectContent>
-          </Select>
+              <Select value={riscoFilter} onValueChange={setRiscoFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Risco" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Riscos</SelectItem>
+                  <SelectItem value="bloqueio">Com Bloqueio</SelectItem>
+                  <SelectItem value="alerta">Apenas Alertas</SelectItem>
+                  <SelectItem value="nenhum">Sem Riscos</SelectItem>
+                </SelectContent>
+              </Select>
+            </>
+          ) : (
+            // Filtros simplificados para atendentes
+            <Select value={resultadoFilter} onValueChange={setResultadoFilter}>
+              <SelectTrigger className="w-[180px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Resultado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Resultados</SelectItem>
+                <SelectItem value="APROVADO">✅ Aprovado</SelectItem>
+                <SelectItem value="REPROVADO">❌ Reprovado</SelectItem>
+                <SelectItem value="JURIDICO">⚖️ Jurídico</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
-        {/* Table */}
+        {/* Table - Diferentes colunas para Admin e Atendente */}
         <Card>
           <ScrollArea className="h-[500px]">
             {isLoading ? (
@@ -407,7 +537,8 @@ export default function PreAnalises() {
                     : "Tente ajustar os filtros de busca."}
                 </p>
               </div>
-            ) : (
+            ) : isAdmin ? (
+              // Tabela completa para Admin
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -486,13 +617,53 @@ export default function PreAnalises() {
                   })}
                 </TableBody>
               </Table>
+            ) : (
+              // Tabela simplificada para Atendente
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>CPF</TableHead>
+                    <TableHead>Resultado</TableHead>
+                    <TableHead>Data</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAnalises.map((analise) => (
+                    <TableRow key={analise.id}>
+                      <TableCell className="font-medium">
+                        {analise.mae_processo.nome_mae}
+                      </TableCell>
+                      <TableCell>{formatCpf(analise.mae_processo.cpf)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getResultadoAtendenteIcon(analise.resultado_atendente)}
+                          <Badge className={getResultadoAtendenteStyle(analise.resultado_atendente)}>
+                            {analise.resultado_atendente === "APROVADO" && "✅ Aprovado"}
+                            {analise.resultado_atendente === "REPROVADO" && "❌ Reprovado"}
+                            {analise.resultado_atendente === "JURIDICO" && "⚖️ Jurídico"}
+                            {!analise.resultado_atendente && "Pendente"}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {analise.processado_em
+                          ? format(new Date(analise.processado_em), "dd/MM/yy HH:mm", {
+                              locale: ptBR,
+                            })
+                          : "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </ScrollArea>
         </Card>
       </main>
 
-      {/* Dialogs */}
-      {selectedMae && (
+      {/* Dialog de Histórico - Apenas para Admin */}
+      {isAdmin && selectedMae && (
         <PreAnaliseHistoricoDialog
           open={historicoDialogOpen}
           onOpenChange={setHistoricoDialogOpen}
