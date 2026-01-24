@@ -131,10 +131,11 @@ interface DadosEntrada {
 }
 
 interface RequestBody {
-  mae_id: string;
+  mae_id: string | null; // Can be null for standalone analyses
   dados_entrada: DadosEntrada;
   motivo_reanalise?: string;
   observacao_reanalise?: string;
+  session_id?: string; // For standalone analyses
 }
 
 Deno.serve(async (req) => {
@@ -177,23 +178,29 @@ Deno.serve(async (req) => {
 
     // Parse request body
     const body: RequestBody = await req.json();
-    const { mae_id, dados_entrada, motivo_reanalise, observacao_reanalise } = body;
+    const { mae_id, dados_entrada, motivo_reanalise, observacao_reanalise, session_id } = body;
 
-    if (!mae_id || !dados_entrada) {
+    // Validate: need either mae_id or session_id for standalone analysis
+    if (!dados_entrada) {
       return new Response(
-        JSON.stringify({ error: "mae_id e dados_entrada são obrigatórios" }),
+        JSON.stringify({ error: "dados_entrada é obrigatório" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[PRE-ANALISE] Iniciando análise para mae_id: ${mae_id}`);
-
-    // Get next version number
-    const { data: versionData } = await supabase
-      .rpc("get_next_analise_version", { p_mae_id: mae_id });
+    // Standalone analysis (no mae_id) - just process and return result, don't save
+    const isStandalone = !mae_id;
     
-    const versao = versionData || 1;
-    console.log(`[PRE-ANALISE] Versão da análise: ${versao}`);
+    console.log(`[PRE-ANALISE] Iniciando análise ${isStandalone ? 'avulsa (standalone)' : `para mae_id: ${mae_id}`}`);
+
+    let versao = 1;
+    if (!isStandalone) {
+      // Get next version number only for non-standalone
+      const { data: versionData } = await supabase
+        .rpc("get_next_analise_version", { p_mae_id: mae_id });
+      versao = versionData || 1;
+      console.log(`[PRE-ANALISE] Versão da análise: ${versao}`);
+    }
 
     // Format dados for AI - JSON estruturado conforme contrato
     const dadosFormatados = JSON.stringify({
@@ -282,7 +289,24 @@ Deno.serve(async (req) => {
 
     console.log(`[PRE-ANALISE] Resultado atendente: ${JSON.stringify(resultadoAtendente)}`);
 
-    // Save to database with simplified result columns
+    // For standalone analyses, just return the result without saving to database
+    if (isStandalone) {
+      console.log(`[PRE-ANALISE] Análise avulsa concluída - não salva no banco`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          analise: {
+            resultado_atendente: resultadoAtendente.resultado,
+            motivo_curto: resultadoAtendente.motivo_curto,
+            proxima_acao: resultadoAtendente.proxima_acao,
+            resposta_estruturada: analiseResult,
+          },
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Save to database with simplified result columns (only for non-standalone)
     const { data: insertData, error: insertError } = await supabase
       .from("pre_analise")
       .insert({
