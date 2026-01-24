@@ -14,10 +14,12 @@ import {
   AlertCircle,
   Sparkles,
   ArrowRight,
+  UserPlus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUploadField } from "./DocumentUploadField";
+import { MaeFormDialog } from "@/components/mae/MaeFormDialog";
 import type { ResultadoAtendente, ProximaAcaoAnalise } from "@/types/preAnalise";
 
 interface NovaPreAnaliseFormProps {
@@ -33,6 +35,7 @@ const PROXIMA_ACAO_LABELS: Record<string, string> = {
 export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showMaeDialog, setShowMaeDialog] = useState(false);
   
   const [sessionId] = useState(() => crypto.randomUUID());
   const [documentos, setDocumentos] = useState<{
@@ -52,6 +55,18 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
     motivo_curto: string;
     proxima_acao: ProximaAcaoAnalise;
   } | null>(null);
+
+  // Verificar se pode cadastrar: APROVADO ou JURIDICO
+  const canRegisterMae = resultado && 
+    (resultado.resultado_atendente === "APROVADO" || resultado.resultado_atendente === "JURIDICO");
+
+  const handleMaeSuccess = () => {
+    toast({
+      title: "Mãe cadastrada!",
+      description: "O cadastro foi criado com sucesso no sistema.",
+    });
+    handleNovaAnalise();
+  };
 
   // Validações: CNIS ou CTPS + Certidão obrigatórios
   const hasContribuicaoDoc = documentos.cnis || documentos.ctps;
@@ -174,48 +189,69 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
     };
 
     return (
-      <Card className={`border-2 ${resultConfig.borderClass} ${resultConfig.bgClass} overflow-hidden`}>
-        <CardContent className="pt-10 pb-8">
-          <div className="flex flex-col items-center text-center space-y-6">
-            <div className={`${resultConfig.iconClass} animate-in zoom-in-50 duration-300`}>
-              {resultConfig.icon}
-            </div>
-            
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold tracking-tight">
-                {resultConfig.label}
-              </h2>
-              <p className="text-muted-foreground text-lg max-w-sm">
-                {resultado.motivo_curto}
-              </p>
-            </div>
-
-            <div className="w-full max-w-sm space-y-3">
-              <Separator />
+      <>
+        <Card className={`border-2 ${resultConfig.borderClass} ${resultConfig.bgClass} overflow-hidden`}>
+          <CardContent className="pt-10 pb-8">
+            <div className="flex flex-col items-center text-center space-y-6">
+              <div className={`${resultConfig.iconClass} animate-in zoom-in-50 duration-300`}>
+                {resultConfig.icon}
+              </div>
               
-              <div className="bg-background/80 backdrop-blur rounded-xl p-5 border">
-                <div className="flex items-center gap-2 text-sm font-medium mb-2">
-                  <ArrowRight className="h-4 w-4 text-primary" />
-                  Próximo passo
-                </div>
-                <p className="text-muted-foreground">
-                  {PROXIMA_ACAO_LABELS[resultado.proxima_acao] || resultado.proxima_acao}
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold tracking-tight">
+                  {resultConfig.label}
+                </h2>
+                <p className="text-muted-foreground text-lg max-w-sm">
+                  {resultado.motivo_curto}
                 </p>
               </div>
-            </div>
 
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="gap-2 mt-2"
-              onClick={handleNovaAnalise}
-            >
-              <RotateCcw className="h-4 w-4" />
-              Nova Análise
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+              <div className="w-full max-w-sm space-y-3">
+                <Separator />
+                
+                <div className="bg-background/80 backdrop-blur rounded-xl p-5 border">
+                  <div className="flex items-center gap-2 text-sm font-medium mb-2">
+                    <ArrowRight className="h-4 w-4 text-primary" />
+                    Próximo passo
+                  </div>
+                  <p className="text-muted-foreground">
+                    {PROXIMA_ACAO_LABELS[resultado.proxima_acao] || resultado.proxima_acao}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                {canRegisterMae && (
+                  <Button 
+                    size="lg" 
+                    className="gap-2"
+                    onClick={() => setShowMaeDialog(true)}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Cadastrar Mãe
+                  </Button>
+                )}
+                
+                <Button 
+                  size="lg" 
+                  variant={canRegisterMae ? "outline" : "default"}
+                  className="gap-2"
+                  onClick={handleNovaAnalise}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Nova Análise
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <MaeFormDialog
+          open={showMaeDialog}
+          onOpenChange={setShowMaeDialog}
+          onSuccess={handleMaeSuccess}
+        />
+      </>
     );
   }
 
