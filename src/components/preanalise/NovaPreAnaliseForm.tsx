@@ -244,7 +244,7 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
           />
 
           <DocumentUploadField
-            label="Comprovante de Endereço"
+            label="Comprovante de Endereço (opcional)"
             docType="comprov_endereco"
             maeId={sessionId}
             uploadedUrl={documentos.comprov_endereco}
@@ -255,6 +255,9 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
         <p className="text-xs text-muted-foreground text-center">
           {totalDocs} documento{totalDocs !== 1 ? "s" : ""} anexado{totalDocs !== 1 ? "s" : ""}
           {!hasMinDocs && " • CNIS ou CTPS obrigatório"}
+        </p>
+        <p className="text-xs text-muted-foreground text-center">
+          ℹ️ Comprovante de endereço é apenas cadastral, não influencia na elegibilidade
         </p>
 
         <Separator />
