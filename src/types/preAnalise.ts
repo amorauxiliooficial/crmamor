@@ -4,6 +4,15 @@ export type StatusPreAnalise =
   | "NAO_APROVAVEL"
   | "ERRO_PROCESSAMENTO";
 
+// Status simplificado para atendente (sem interpretar regras)
+export type ResultadoAtendente = "APROVADO" | "REPROVADO" | "JURIDICO";
+
+// Próxima ação padronizada
+export type ProximaAcaoAnalise = 
+  | "PROTOCOLO_INSS"      // Pode protocolar direto
+  | "ENCAMINHAR_JURIDICO" // Precisa análise jurídica
+  | "SOLICITAR_DOCS";     // Falta documentação
+
 export type CategoriaSeguraraAnalise =
   | "empregada"
   | "desempregada"
@@ -83,6 +92,13 @@ export interface ChecklistDocumento {
   status: StatusDocumento;
 }
 
+// Resposta simplificada para atendente (sem interpretar regras)
+export interface RespostaAtendente {
+  resultado_atendente: ResultadoAtendente;
+  motivo_curto: string;
+  proxima_acao: ProximaAcaoAnalise;
+}
+
 // JSON de SAÍDA padronizado
 export interface RespostaAnaliseIA {
   status: StatusPreAnalise;
@@ -109,6 +125,11 @@ export interface PreAnalise {
   riscos: RiscoIdentificado[];
   conclusao?: string;
   checklist_documentos?: ChecklistDocumento[];
+  // Campos simplificados para atendente
+  resultado_atendente?: ResultadoAtendente;
+  motivo_curto?: string;
+  proxima_acao?: ProximaAcaoAnalise;
+  // Metadata
   versao: number;
   motivo_reanalise: MotivoReanalise;
   observacao_reanalise?: string;
@@ -131,6 +152,24 @@ export const STATUS_ANALISE_COLORS: Record<StatusPreAnalise, string> = {
   APROVADA_COM_RESSALVAS: "bg-chart-1/20 text-chart-1",
   NAO_APROVAVEL: "bg-destructive/20 text-destructive",
   ERRO_PROCESSAMENTO: "bg-muted text-muted-foreground",
+};
+
+export const RESULTADO_ATENDENTE_LABELS: Record<ResultadoAtendente, string> = {
+  APROVADO: "Aprovado",
+  REPROVADO: "Reprovado",
+  JURIDICO: "Encaminhar Jurídico",
+};
+
+export const RESULTADO_ATENDENTE_COLORS: Record<ResultadoAtendente, string> = {
+  APROVADO: "bg-emerald-500 text-white",
+  REPROVADO: "bg-destructive text-destructive-foreground",
+  JURIDICO: "bg-chart-1 text-white",
+};
+
+export const PROXIMA_ACAO_LABELS: Record<ProximaAcaoAnalise, string> = {
+  PROTOCOLO_INSS: "Protocolar no INSS",
+  ENCAMINHAR_JURIDICO: "Encaminhar para Jurídico",
+  SOLICITAR_DOCS: "Solicitar Documentos",
 };
 
 export const MOTIVO_REANALISE_LABELS: Record<MotivoReanalise, string> = {

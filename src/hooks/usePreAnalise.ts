@@ -9,7 +9,9 @@ import type {
   CarenciaAnalise,
   PeriodoGracaAnalise,
   CnisAnalise,
-  ChecklistDocumento
+  ChecklistDocumento,
+  ResultadoAtendente,
+  ProximaAcaoAnalise,
 } from "@/types/preAnalise";
 
 // Helper to safely cast database response to PreAnalise
@@ -29,19 +31,52 @@ const mapDbToPreAnalise = (row: unknown): PreAnalise => {
     return field as T;
   };
 
+  // Derive resultado_atendente from status if not present
+  const deriveResultadoAtendente = (status: string, riscos: RiscoIdentificado[]): ResultadoAtendente => {
+    const normalizedStatus = status?.toUpperCase();
+    if (normalizedStatus === "APROVADA") {
+      const hasBloqueio = riscos?.some(r => r.nivel === "BLOQUEIO");
+      return hasBloqueio ? "JURIDICO" : "APROVADO";
+    }
+    if (normalizedStatus === "NAO_APROVAVEL") {
+      return "REPROVADO";
+    }
+    return "JURIDICO";
+  };
+
+  const deriveProximaAcao = (resultado: ResultadoAtendente): ProximaAcaoAnalise => {
+    switch (resultado) {
+      case "APROVADO": return "PROTOCOLO_INSS";
+      case "REPROVADO": return "SOLICITAR_DOCS";
+      case "JURIDICO": return "ENCAMINHAR_JURIDICO";
+    }
+  };
+
+  const riscos = (data.riscos_identificados || []) as RiscoIdentificado[];
+  const statusAnalise = (data.status_analise as string)?.toUpperCase().replace(/_/g, "_") as PreAnalise["status_analise"];
+  
+  // Get from data or derive
+  const resultadoAtendente = (data.resultado_atendente as ResultadoAtendente) || deriveResultadoAtendente(statusAnalise, riscos);
+  const proximaAcao = (data.proxima_acao as ProximaAcaoAnalise) || deriveProximaAcao(resultadoAtendente);
+
   return {
     id: data.id as string,
     mae_id: data.mae_id as string,
     user_id: data.user_id as string,
     dados_entrada: data.dados_entrada as DadosEntradaAnalise,
-    status_analise: (data.status_analise as string)?.toUpperCase().replace(/_/g, "_") as PreAnalise["status_analise"],
+    status_analise: statusAnalise,
     categoria_identificada: data.categoria_identificada as string | undefined,
     carencia: parseJsonField<CarenciaAnalise>(data.carencia_status),
     periodo_de_graca: parseJsonField<PeriodoGracaAnalise>(data.periodo_graca_status),
     cnis: parseJsonField<CnisAnalise>(data.situacao_cnis),
-    riscos: (data.riscos_identificados || []) as RiscoIdentificado[],
+    riscos,
     conclusao: data.conclusao_detalhada as string | undefined,
     checklist_documentos: parseJsonField<ChecklistDocumento[]>(data.recomendacoes),
+    // Simplified fields
+    resultado_atendente: resultadoAtendente,
+    motivo_curto: (data.motivo_curto as string) || (resultadoAtendente === "APROVADO" ? "Apto para protocolo" : "Análise necessária"),
+    proxima_acao: proximaAcao,
+    // Metadata
     versao: data.versao as number,
     motivo_reanalise: data.motivo_reanalise as PreAnalise["motivo_reanalise"],
     observacao_reanalise: data.observacao_reanalise as string | undefined,
