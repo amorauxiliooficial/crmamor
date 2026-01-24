@@ -194,6 +194,68 @@ Deno.serve(async (req) => {
     
     console.log(`[PRE-ANALISE] Iniciando análise ${isStandalone ? 'avulsa (standalone)' : `para mae_id: ${mae_id}`}`);
 
+    // For standalone analyses with minimal data (only documents), skip AI and just validate docs
+    const isDocumentOnlyAnalysis = isStandalone && 
+      (!dados_entrada.cpf || dados_entrada.cpf === "") && 
+      (!dados_entrada.categoria || dados_entrada.categoria === "");
+
+    if (isDocumentOnlyAnalysis) {
+      console.log(`[PRE-ANALISE] Análise apenas de documentos (sem dados do caso)`);
+      
+      const docs = dados_entrada.documentos;
+      const hasCnisOrCtps = docs.cnis || docs.ctps;
+      const hasCertidao = docs.certidao;
+      
+      // Document validation only - not eligibility
+      if (hasCnisOrCtps && hasCertidao) {
+        console.log(`[PRE-ANALISE] Documentos completos - pronta para cadastro`);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            analise: {
+              resultado_atendente: "APROVADO",
+              motivo_curto: "Documentação completa - pronta para cadastro",
+              proxima_acao: "PROTOCOLO_INSS",
+              resposta_estruturada: {
+                status: "DOCUMENTACAO_COMPLETA",
+                checklist_documentos: [
+                  { doc: "CNIS/CTPS", status: hasCnisOrCtps ? "OK" : "FALTA" },
+                  { doc: "CERTIDAO", status: hasCertidao ? "OK" : "FALTA" },
+                ],
+                conclusao: "Documentação obrigatória anexada. Pronta para cadastro no sistema.",
+              },
+            },
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } else {
+        const missing: string[] = [];
+        if (!hasCnisOrCtps) missing.push("CNIS ou CTPS");
+        if (!hasCertidao) missing.push("Certidão");
+        
+        console.log(`[PRE-ANALISE] Documentos faltantes: ${missing.join(", ")}`);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            analise: {
+              resultado_atendente: "REPROVADO",
+              motivo_curto: `Falta: ${missing.join(" e ")}`,
+              proxima_acao: "SOLICITAR_DOCS",
+              resposta_estruturada: {
+                status: "DOCUMENTACAO_INCOMPLETA",
+                checklist_documentos: [
+                  { doc: "CNIS/CTPS", status: hasCnisOrCtps ? "OK" : "FALTA" },
+                  { doc: "CERTIDAO", status: hasCertidao ? "OK" : "FALTA" },
+                ],
+                conclusao: `Documentação incompleta. Falta: ${missing.join(" e ")}`,
+              },
+            },
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     let versao = 1;
     if (!isStandalone) {
       // Get next version number only for non-standalone
