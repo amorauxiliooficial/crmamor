@@ -1,8 +1,20 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, FileUp, Brain, CheckCircle2, XCircle, Scale, RotateCcw } from "lucide-react";
+import { 
+  Loader2, 
+  Brain, 
+  CheckCircle2, 
+  XCircle, 
+  Scale, 
+  RotateCcw,
+  FileText,
+  AlertCircle,
+  Sparkles,
+  ArrowRight,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUploadField } from "./DocumentUploadField";
@@ -22,7 +34,6 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
-  // Documentos anexados (usando um ID temporário como identificador)
   const [sessionId] = useState(() => crypto.randomUUID());
   const [documentos, setDocumentos] = useState<{
     cnis: string | null;
@@ -42,14 +53,23 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
     proxima_acao: ProximaAcaoAnalise;
   } | null>(null);
 
-  const hasMinDocs = documentos.cnis || documentos.ctps;
-  const totalDocs = Object.values(documentos).filter(Boolean).length;
+  // Validações: CNIS ou CTPS + Certidão obrigatórios
+  const hasContribuicaoDoc = documentos.cnis || documentos.ctps;
+  const hasCertidao = !!documentos.certidao;
+  const isReadyToAnalyze = hasContribuicaoDoc && hasCertidao;
+  
+  const docsObrigatoriosCount = [hasContribuicaoDoc, hasCertidao].filter(Boolean).length;
+  const docsOpcionaisCount = documentos.comprov_endereco ? 1 : 0;
 
   const handleGerarAnalise = async () => {
-    if (!hasMinDocs) {
+    if (!isReadyToAnalyze) {
+      const missing: string[] = [];
+      if (!hasContribuicaoDoc) missing.push("CNIS ou CTPS");
+      if (!hasCertidao) missing.push("Certidão");
+      
       setResultado({
         resultado_atendente: "REPROVADO",
-        motivo_curto: "Documentos obrigatórios não anexados (CNIS ou CTPS)",
+        motivo_curto: `Falta: ${missing.join(" e ")}`,
         proxima_acao: "SOLICITAR_DOCS",
       });
       return;
@@ -57,10 +77,9 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
 
     setIsLoading(true);
     try {
-      // Chamar edge function para análise
       const { data, error } = await supabase.functions.invoke("pre-analise-elegibilidade", {
         body: {
-          mae_id: null, // Análise avulsa, sem mãe cadastrada
+          mae_id: null,
           dados_entrada: {
             cpf: "",
             nome: "Análise Avulsa",
@@ -105,7 +124,7 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
       console.error("Erro na análise:", error);
       toast({
         title: "Erro na análise",
-        description: "Não foi possível processar a análise. Tente novamente.",
+        description: "Não foi possível processar. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -123,75 +142,73 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
     setResultado(null);
   };
 
-  const getResultadoIcon = (resultado: ResultadoAtendente) => {
-    switch (resultado) {
-      case "APROVADO":
-        return <CheckCircle2 className="h-12 w-12 text-primary" />;
-      case "REPROVADO":
-        return <XCircle className="h-12 w-12 text-destructive" />;
-      case "JURIDICO":
-        return <Scale className="h-12 w-12 text-chart-1" />;
-      default:
-        return <Brain className="h-12 w-12 text-muted-foreground" />;
-    }
-  };
-
-  const getResultadoColor = (resultado: ResultadoAtendente) => {
-    switch (resultado) {
-      case "APROVADO":
-        return "bg-primary/10 border-primary/30";
-      case "REPROVADO":
-        return "bg-destructive/10 border-destructive/30";
-      case "JURIDICO":
-        return "bg-chart-1/10 border-chart-1/30";
-      default:
-        return "bg-muted";
-    }
-  };
-
-  const getResultadoLabel = (resultado: ResultadoAtendente) => {
-    switch (resultado) {
-      case "APROVADO":
-        return "Elegível";
-      case "REPROVADO":
-        return "Não Elegível";
-      case "JURIDICO":
-        return "Avaliação Jurídica";
-      default:
-        return "Indefinido";
-    }
-  };
-
   // ========== RESULTADO ==========
   if (resultado) {
+    const resultConfig = {
+      APROVADO: {
+        icon: <CheckCircle2 className="h-16 w-16" />,
+        label: "Elegível",
+        bgClass: "bg-gradient-to-br from-primary/20 to-primary/5",
+        borderClass: "border-primary/30",
+        iconClass: "text-primary",
+      },
+      REPROVADO: {
+        icon: <XCircle className="h-16 w-16" />,
+        label: "Não Elegível",
+        bgClass: "bg-gradient-to-br from-destructive/20 to-destructive/5",
+        borderClass: "border-destructive/30",
+        iconClass: "text-destructive",
+      },
+      JURIDICO: {
+        icon: <Scale className="h-16 w-16" />,
+        label: "Avaliação Jurídica",
+        bgClass: "bg-gradient-to-br from-chart-1/20 to-chart-1/5",
+        borderClass: "border-chart-1/30",
+        iconClass: "text-chart-1",
+      },
+    }[resultado.resultado_atendente] || {
+      icon: <Brain className="h-16 w-16" />,
+      label: "Indefinido",
+      bgClass: "bg-muted",
+      borderClass: "border-muted",
+      iconClass: "text-muted-foreground",
+    };
+
     return (
-      <Card className={`border-2 ${getResultadoColor(resultado.resultado_atendente)}`}>
-        <CardContent className="pt-8 pb-6">
-          <div className="flex flex-col items-center text-center space-y-4">
-            {getResultadoIcon(resultado.resultado_atendente)}
+      <Card className={`border-2 ${resultConfig.borderClass} ${resultConfig.bgClass} overflow-hidden`}>
+        <CardContent className="pt-10 pb-8">
+          <div className="flex flex-col items-center text-center space-y-6">
+            <div className={`${resultConfig.iconClass} animate-in zoom-in-50 duration-300`}>
+              {resultConfig.icon}
+            </div>
             
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">
-                {getResultadoLabel(resultado.resultado_atendente)}
+              <h2 className="text-3xl font-bold tracking-tight">
+                {resultConfig.label}
               </h2>
-              <p className="text-muted-foreground max-w-md">
+              <p className="text-muted-foreground text-lg max-w-sm">
                 {resultado.motivo_curto}
               </p>
             </div>
 
-            <Separator className="my-4" />
-
-            <div className="bg-muted/50 rounded-lg p-4 w-full max-w-md">
-              <p className="text-sm font-medium mb-1">Próximo passo:</p>
-              <p className="text-sm text-muted-foreground">
-                {PROXIMA_ACAO_LABELS[resultado.proxima_acao] || resultado.proxima_acao}
-              </p>
+            <div className="w-full max-w-sm space-y-3">
+              <Separator />
+              
+              <div className="bg-background/80 backdrop-blur rounded-xl p-5 border">
+                <div className="flex items-center gap-2 text-sm font-medium mb-2">
+                  <ArrowRight className="h-4 w-4 text-primary" />
+                  Próximo passo
+                </div>
+                <p className="text-muted-foreground">
+                  {PROXIMA_ACAO_LABELS[resultado.proxima_acao] || resultado.proxima_acao}
+                </p>
+              </div>
             </div>
 
             <Button 
               size="lg" 
               variant="outline" 
-              className="gap-2 mt-4"
+              className="gap-2 mt-2"
               onClick={handleNovaAnalise}
             >
               <RotateCcw className="h-4 w-4" />
@@ -205,74 +222,160 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
 
   // ========== FORMULÁRIO ==========
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileUp className="h-5 w-5 text-primary" />
-          Anexar Documentos
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Envie os documentos para verificar a elegibilidade ao salário-maternidade
-        </p>
-      </CardHeader>
+    <div className="space-y-6">
+      {/* Hero Card */}
+      <Card className="border-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+        <CardContent className="pt-8 pb-6">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-primary/20 flex items-center justify-center">
+              <Sparkles className="h-7 w-7 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">Análise de Elegibilidade</h2>
+              <p className="text-muted-foreground text-sm">
+                Anexe os documentos para verificar o direito ao salário-maternidade
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      <CardContent className="space-y-6">
-        {/* Upload de documentos */}
-        <div className="grid gap-3">
-          <DocumentUploadField
-            label="CNIS"
-            docType="cnis"
-            maeId={sessionId}
-            uploadedUrl={documentos.cnis}
-            onUpload={(url) => setDocumentos(prev => ({ ...prev, cnis: url }))}
-          />
+      {/* Documentos Obrigatórios */}
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              <span className="font-medium">Documentos Obrigatórios</span>
+            </div>
+            <Badge 
+              variant={docsObrigatoriosCount === 2 ? "default" : "secondary"}
+              className="gap-1"
+            >
+              {docsObrigatoriosCount}/2
+            </Badge>
+          </div>
+
+          <div className="space-y-3">
+            {/* Grupo: Histórico de Contribuições */}
+            <div className="rounded-xl border bg-card p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Histórico de Contribuições
+                </span>
+                <Badge variant="outline" className="text-xs">
+                  CNIS ou CTPS
+                </Badge>
+                {hasContribuicaoDoc && (
+                  <CheckCircle2 className="h-4 w-4 text-primary ml-auto" />
+                )}
+              </div>
+              
+              <div className="grid gap-2">
+                <DocumentUploadField
+                  label="CNIS - Cadastro Nacional de Informações Sociais"
+                  docType="cnis"
+                  maeId={sessionId}
+                  uploadedUrl={documentos.cnis}
+                  onUpload={(url) => setDocumentos(prev => ({ ...prev, cnis: url }))}
+                />
+                
+                <div className="flex items-center gap-2 py-1">
+                  <Separator className="flex-1" />
+                  <span className="text-xs text-muted-foreground px-2">ou</span>
+                  <Separator className="flex-1" />
+                </div>
+
+                <DocumentUploadField
+                  label="CTPS - Carteira de Trabalho"
+                  docType="ctps"
+                  maeId={sessionId}
+                  uploadedUrl={documentos.ctps}
+                  onUpload={(url) => setDocumentos(prev => ({ ...prev, ctps: url }))}
+                />
+              </div>
+            </div>
+
+            {/* Certidão */}
+            <div className="rounded-xl border bg-card p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Comprovação do Evento
+                </span>
+                <Badge variant="outline" className="text-xs">
+                  Obrigatório
+                </Badge>
+                {hasCertidao && (
+                  <CheckCircle2 className="h-4 w-4 text-primary ml-auto" />
+                )}
+              </div>
+
+              <DocumentUploadField
+                label="Certidão de Nascimento ou Termo de Adoção/Guarda"
+                docType="certidao"
+                maeId={sessionId}
+                uploadedUrl={documentos.certidao}
+                onUpload={(url) => setDocumentos(prev => ({ ...prev, certidao: url }))}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Documentos Opcionais */}
+      <Card className="border-dashed">
+        <CardContent className="pt-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-muted-foreground" />
+            <span className="font-medium text-muted-foreground">Opcional</span>
+            {docsOpcionaisCount > 0 && (
+              <Badge variant="secondary" className="gap-1 ml-auto">
+                {docsOpcionaisCount} anexado
+              </Badge>
+            )}
+          </div>
 
           <DocumentUploadField
-            label="CTPS"
-            docType="ctps"
-            maeId={sessionId}
-            uploadedUrl={documentos.ctps}
-            onUpload={(url) => setDocumentos(prev => ({ ...prev, ctps: url }))}
-          />
-
-          <DocumentUploadField
-            label="Certidão (Nascimento/Adoção)"
-            docType="certidao"
-            maeId={sessionId}
-            uploadedUrl={documentos.certidao}
-            onUpload={(url) => setDocumentos(prev => ({ ...prev, certidao: url }))}
-          />
-
-          <DocumentUploadField
-            label="Comprovante de Endereço (opcional)"
+            label="Comprovante de Endereço (apenas cadastral)"
             docType="comprov_endereco"
             maeId={sessionId}
             uploadedUrl={documentos.comprov_endereco}
             onUpload={(url) => setDocumentos(prev => ({ ...prev, comprov_endereco: url }))}
           />
-        </div>
+          
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <AlertCircle className="h-3 w-3" />
+            Não influencia na análise de elegibilidade
+          </p>
+        </CardContent>
+      </Card>
 
-        <p className="text-xs text-muted-foreground text-center">
-          {totalDocs} documento{totalDocs !== 1 ? "s" : ""} anexado{totalDocs !== 1 ? "s" : ""}
-          {!hasMinDocs && " • CNIS ou CTPS obrigatório"}
-        </p>
-        <p className="text-xs text-muted-foreground text-center">
-          ℹ️ Comprovante de endereço é apenas cadastral, não influencia na elegibilidade
-        </p>
+      {/* Botão de Análise */}
+      <div className="space-y-3">
+        {!isReadyToAnalyze && (
+          <div className="bg-muted/50 rounded-lg p-3 flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+            <p className="text-sm text-muted-foreground">
+              {!hasContribuicaoDoc && !hasCertidao 
+                ? "Anexe CNIS ou CTPS e a Certidão para continuar"
+                : !hasContribuicaoDoc 
+                  ? "Anexe o CNIS ou CTPS para continuar"
+                  : "Anexe a Certidão de Nascimento/Adoção para continuar"
+              }
+            </p>
+          </div>
+        )}
 
-        <Separator />
-
-        {/* Botão de gerar análise */}
         <Button
           size="lg"
-          className="w-full h-14 text-lg gap-2"
+          className="w-full h-14 text-lg gap-2 shadow-lg"
           onClick={handleGerarAnalise}
-          disabled={isLoading}
+          disabled={isLoading || !isReadyToAnalyze}
         >
           {isLoading ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />
-              Analisando documentos...
+              Analisando...
             </>
           ) : (
             <>
@@ -281,13 +384,7 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
             </>
           )}
         </Button>
-        
-        {!hasMinDocs && (
-          <p className="text-xs text-destructive text-center">
-            ⚠️ Sem CNIS ou CTPS anexado, a análise será reprovada automaticamente
-          </p>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
