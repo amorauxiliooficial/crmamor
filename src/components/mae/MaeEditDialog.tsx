@@ -6,13 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, DollarSign, FolderOpen } from "lucide-react";
+import { Loader2, Save, DollarSign, FolderOpen, Brain } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
 import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
+import { PreAnaliseHistoricoDialog } from "@/components/preanalise/PreAnaliseHistoricoDialog";
 interface MaeEditDialogProps {
   mae: MaeProcesso | null;
   open: boolean;
@@ -36,6 +37,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
   const [isLoading, setIsLoading] = useState(false);
   const [pagamentoDialogOpen, setPagamentoDialogOpen] = useState(false);
   const [documentosDialogOpen, setDocumentosDialogOpen] = useState(false);
+  const [preAnaliseDialogOpen, setPreAnaliseDialogOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     nome_mae: "",
@@ -494,7 +496,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
 
           {/* Submit */}
           <div className="flex flex-wrap justify-between gap-3">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button 
                 type="button" 
                 variant="outline" 
@@ -512,6 +514,15 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
               >
                 <FolderOpen className="h-4 w-4" />
                 Documentos
+              </Button>
+              <Button 
+                type="button" 
+                variant="secondary" 
+                onClick={() => setPreAnaliseDialogOpen(true)}
+                className="gap-2"
+              >
+                <Brain className="h-4 w-4" />
+                Pré-Análise IA
               </Button>
             </div>
             <div className="flex gap-3">
@@ -552,6 +563,11 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
             maeNome={mae.nome_mae}
             linkDocumentos={(mae as MaeProcesso & { link_documentos?: string | null }).link_documentos || null}
             onSuccess={onSuccess}
+          />
+          <PreAnaliseHistoricoDialog
+            open={preAnaliseDialogOpen}
+            onOpenChange={setPreAnaliseDialogOpen}
+            mae={mae}
           />
         </>
       )}

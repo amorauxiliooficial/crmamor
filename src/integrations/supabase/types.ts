@@ -701,6 +701,83 @@ export type Database = {
           },
         ]
       }
+      pre_analise: {
+        Row: {
+          carencia_status: string | null
+          categoria_identificada: string | null
+          conclusao_detalhada: string | null
+          created_at: string
+          dados_entrada: Json
+          id: string
+          mae_id: string
+          modelo_ia_utilizado: string | null
+          motivo_reanalise: Database["public"]["Enums"]["motivo_reanalise"]
+          observacao_reanalise: string | null
+          periodo_graca_status: string | null
+          processado_em: string | null
+          recomendacoes: string[] | null
+          resposta_ia_raw: Json | null
+          riscos_identificados: Json | null
+          situacao_cnis: string | null
+          status_analise: Database["public"]["Enums"]["status_pre_analise"]
+          tokens_utilizados: number | null
+          user_id: string
+          versao: number
+        }
+        Insert: {
+          carencia_status?: string | null
+          categoria_identificada?: string | null
+          conclusao_detalhada?: string | null
+          created_at?: string
+          dados_entrada: Json
+          id?: string
+          mae_id: string
+          modelo_ia_utilizado?: string | null
+          motivo_reanalise?: Database["public"]["Enums"]["motivo_reanalise"]
+          observacao_reanalise?: string | null
+          periodo_graca_status?: string | null
+          processado_em?: string | null
+          recomendacoes?: string[] | null
+          resposta_ia_raw?: Json | null
+          riscos_identificados?: Json | null
+          situacao_cnis?: string | null
+          status_analise: Database["public"]["Enums"]["status_pre_analise"]
+          tokens_utilizados?: number | null
+          user_id: string
+          versao?: number
+        }
+        Update: {
+          carencia_status?: string | null
+          categoria_identificada?: string | null
+          conclusao_detalhada?: string | null
+          created_at?: string
+          dados_entrada?: Json
+          id?: string
+          mae_id?: string
+          modelo_ia_utilizado?: string | null
+          motivo_reanalise?: Database["public"]["Enums"]["motivo_reanalise"]
+          observacao_reanalise?: string | null
+          periodo_graca_status?: string | null
+          processado_em?: string | null
+          recomendacoes?: string[] | null
+          resposta_ia_raw?: Json | null
+          riscos_identificados?: Json | null
+          situacao_cnis?: string | null
+          status_analise?: Database["public"]["Enums"]["status_pre_analise"]
+          tokens_utilizados?: number | null
+          user_id?: string
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_analise_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -879,6 +956,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_next_analise_version: { Args: { p_mae_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -897,9 +975,27 @@ export type Database = {
         | "Contribuinte Individual"
         | "Desempregada"
         | "Não informado"
+      categoria_segurada_analise:
+        | "empregada_clt"
+        | "contribuinte_individual"
+        | "mei"
+        | "desempregada"
+        | "segurada_especial"
+        | "facultativa"
       checklist_status: "OK" | "Incompleto"
       data_evento_tipo: "Parto (real)" | "DPP" | ""
+      motivo_reanalise:
+        | "primeiro_registro"
+        | "documento_novo"
+        | "correcao_dados"
+        | "atualizacao_cnis"
+        | "solicitacao_manual"
       resultado_final: "APROVADA" | "REPROVADA"
+      status_pre_analise:
+        | "aprovada"
+        | "aprovada_com_ressalvas"
+        | "nao_aprovavel"
+        | "erro_processamento"
       status_processo:
         | "Entrada de Documentos"
         | "Em Análise"
@@ -1047,9 +1143,30 @@ export const Constants = {
         "Desempregada",
         "Não informado",
       ],
+      categoria_segurada_analise: [
+        "empregada_clt",
+        "contribuinte_individual",
+        "mei",
+        "desempregada",
+        "segurada_especial",
+        "facultativa",
+      ],
       checklist_status: ["OK", "Incompleto"],
       data_evento_tipo: ["Parto (real)", "DPP", ""],
+      motivo_reanalise: [
+        "primeiro_registro",
+        "documento_novo",
+        "correcao_dados",
+        "atualizacao_cnis",
+        "solicitacao_manual",
+      ],
       resultado_final: ["APROVADA", "REPROVADA"],
+      status_pre_analise: [
+        "aprovada",
+        "aprovada_com_ressalvas",
+        "nao_aprovavel",
+        "erro_processamento",
+      ],
       status_processo: [
         "Entrada de Documentos",
         "Em Análise",
