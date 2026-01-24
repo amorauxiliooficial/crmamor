@@ -1,8 +1,6 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { 
   Loader2, 
   Brain, 
@@ -10,17 +8,18 @@ import {
   XCircle, 
   Scale, 
   RotateCcw,
-  FileText,
-  AlertCircle,
-  Sparkles,
+  Upload,
+  FileCheck,
   ArrowRight,
   UserPlus,
+  Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUploadField } from "./DocumentUploadField";
 import { MaeFormDialog } from "@/components/mae/MaeFormDialog";
 import type { ResultadoAtendente, ProximaAcaoAnalise } from "@/types/preAnalise";
+import { cn } from "@/lib/utils";
 
 interface NovaPreAnaliseFormProps {
   onSuccess?: () => void;
@@ -56,7 +55,6 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
     proxima_acao: ProximaAcaoAnalise;
   } | null>(null);
 
-  // Verificar se pode cadastrar: APROVADO ou JURIDICO
   const canRegisterMae = resultado && 
     (resultado.resultado_atendente === "APROVADO" || resultado.resultado_atendente === "JURIDICO");
 
@@ -68,12 +66,10 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
     handleNovaAnalise();
   };
 
-  // Validações: CNIS ou CTPS + Certidão obrigatórios
   const hasContribuicaoDoc = documentos.cnis || documentos.ctps;
   const hasCertidao = !!documentos.certidao;
   const isReadyToAnalyze = hasContribuicaoDoc && hasCertidao;
-  
-  const docsObrigatoriosCount = [hasContribuicaoDoc, hasCertidao].filter(Boolean).length;
+  const docsCount = [documentos.cnis, documentos.ctps, documentos.certidao, documentos.comprov_endereco].filter(Boolean).length;
 
   const handleGerarAnalise = async () => {
     if (!isReadyToAnalyze) {
@@ -83,7 +79,7 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
       
       setResultado({
         resultado_atendente: "REPROVADO",
-        motivo_curto: `Falta: ${missing.join(" e ")}`,
+        motivo_curto: `Documentos faltando: ${missing.join(" e ")}`,
         proxima_acao: "SOLICITAR_DOCS",
       });
       return;
@@ -160,91 +156,109 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
   if (resultado) {
     const resultConfig = {
       APROVADO: {
-        icon: <CheckCircle2 className="h-16 w-16" />,
-        label: "Elegível",
-        bgClass: "bg-gradient-to-br from-primary/20 to-primary/5",
-        borderClass: "border-primary/30",
-        iconClass: "text-primary",
+        icon: CheckCircle2,
+        title: "Elegível",
+        subtitle: "A cliente tem direito ao salário-maternidade",
+        gradient: "from-emerald-500 to-teal-600",
+        bgGradient: "from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30",
+        iconBg: "bg-emerald-500",
+        badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300",
       },
       REPROVADO: {
-        icon: <XCircle className="h-16 w-16" />,
-        label: "Não Elegível",
-        bgClass: "bg-gradient-to-br from-destructive/20 to-destructive/5",
-        borderClass: "border-destructive/30",
-        iconClass: "text-destructive",
+        icon: XCircle,
+        title: "Não Elegível",
+        subtitle: "Não atende aos requisitos necessários",
+        gradient: "from-rose-500 to-red-600",
+        bgGradient: "from-rose-50 to-red-50 dark:from-rose-950/30 dark:to-red-950/30",
+        iconBg: "bg-rose-500",
+        badge: "bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300",
       },
       JURIDICO: {
-        icon: <Scale className="h-16 w-16" />,
-        label: "Avaliação Jurídica",
-        bgClass: "bg-gradient-to-br from-chart-1/20 to-chart-1/5",
-        borderClass: "border-chart-1/30",
-        iconClass: "text-chart-1",
+        icon: Scale,
+        title: "Análise Jurídica",
+        subtitle: "Requer avaliação especializada",
+        gradient: "from-amber-500 to-orange-600",
+        bgGradient: "from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30",
+        iconBg: "bg-amber-500",
+        badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
       },
     }[resultado.resultado_atendente] || {
-      icon: <Brain className="h-16 w-16" />,
-      label: "Indefinido",
-      bgClass: "bg-muted",
-      borderClass: "border-muted",
-      iconClass: "text-muted-foreground",
+      icon: Brain,
+      title: "Indefinido",
+      subtitle: "Resultado não determinado",
+      gradient: "from-gray-400 to-gray-500",
+      bgGradient: "from-gray-50 to-gray-100 dark:from-gray-900/30 dark:to-gray-800/30",
+      iconBg: "bg-gray-500",
+      badge: "bg-gray-100 text-gray-700",
     };
+
+    const IconComponent = resultConfig.icon;
 
     return (
       <>
-        <Card className={`border-2 ${resultConfig.borderClass} ${resultConfig.bgClass} overflow-hidden`}>
-          <CardContent className="pt-10 pb-8">
-            <div className="flex flex-col items-center text-center space-y-6">
-              <div className={`${resultConfig.iconClass} animate-in zoom-in-50 duration-300`}>
-                {resultConfig.icon}
-              </div>
-              
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">
-                  {resultConfig.label}
-                </h2>
-                <p className="text-muted-foreground text-lg max-w-sm">
-                  {resultado.motivo_curto}
-                </p>
-              </div>
+        <div className={cn(
+          "rounded-3xl overflow-hidden",
+          "bg-gradient-to-br",
+          resultConfig.bgGradient
+        )}>
+          {/* Header com gradiente */}
+          <div className={cn(
+            "bg-gradient-to-r p-8 text-white text-center",
+            resultConfig.gradient
+          )}>
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-4">
+              <IconComponent className="h-10 w-10" />
+            </div>
+            <h2 className="text-3xl font-bold mb-1">{resultConfig.title}</h2>
+            <p className="text-white/80">{resultConfig.subtitle}</p>
+          </div>
 
-              <div className="w-full max-w-sm space-y-3">
-                <Separator />
-                
-                <div className="bg-background/80 backdrop-blur rounded-xl p-5 border">
-                  <div className="flex items-center gap-2 text-sm font-medium mb-2">
-                    <ArrowRight className="h-4 w-4 text-primary" />
-                    Próximo passo
-                  </div>
-                  <p className="text-muted-foreground">
-                    {PROXIMA_ACAO_LABELS[resultado.proxima_acao] || resultado.proxima_acao}
-                  </p>
-                </div>
+          {/* Conteúdo */}
+          <div className="p-6 space-y-6">
+            {/* Motivo */}
+            {resultado.motivo_curto && (
+              <div className="bg-background/80 backdrop-blur rounded-2xl p-4 border">
+                <p className="text-sm text-muted-foreground mb-1">Observação</p>
+                <p className="font-medium">{resultado.motivo_curto}</p>
               </div>
+            )}
 
-              <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                {canRegisterMae && (
-                  <Button 
-                    size="lg" 
-                    className="gap-2"
-                    onClick={() => setShowMaeDialog(true)}
-                  >
-                    <UserPlus className="h-4 w-4" />
-                    Cadastrar Mãe
-                  </Button>
-                )}
-                
+            {/* Próxima Ação */}
+            <div className="bg-background/80 backdrop-blur rounded-2xl p-4 border">
+              <div className="flex items-center gap-2 mb-2">
+                <ArrowRight className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Próximo Passo</span>
+              </div>
+              <p className="text-muted-foreground">
+                {PROXIMA_ACAO_LABELS[resultado.proxima_acao] || resultado.proxima_acao}
+              </p>
+            </div>
+
+            {/* Ações */}
+            <div className="flex flex-col gap-3 pt-2">
+              {canRegisterMae && (
                 <Button 
                   size="lg" 
-                  variant={canRegisterMae ? "outline" : "default"}
-                  className="gap-2"
-                  onClick={handleNovaAnalise}
+                  className="w-full h-14 text-base gap-2 rounded-xl shadow-lg"
+                  onClick={() => setShowMaeDialog(true)}
                 >
-                  <RotateCcw className="h-4 w-4" />
-                  Nova Análise
+                  <UserPlus className="h-5 w-5" />
+                  Cadastrar no Sistema
                 </Button>
-              </div>
+              )}
+              
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="w-full h-12 gap-2 rounded-xl"
+                onClick={handleNovaAnalise}
+              >
+                <RotateCcw className="h-4 w-4" />
+                Nova Análise
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         <MaeFormDialog
           open={showMaeDialog}
@@ -258,154 +272,127 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
   // ========== FORMULÁRIO ==========
   return (
     <div className="space-y-6">
-      {/* Hero Card */}
-      <Card className="border-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
-        <CardContent className="pt-8 pb-6">
-          <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-primary/20 flex items-center justify-center">
-              <Sparkles className="h-7 w-7 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold">Análise de Elegibilidade</h2>
-              <p className="text-muted-foreground text-sm">
-                Anexe os documentos para verificar o direito ao salário-maternidade
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Hero */}
+      <div className="text-center py-6">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground mb-4 shadow-lg">
+          <Sparkles className="h-8 w-8" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">Verificar Elegibilidade</h2>
+        <p className="text-muted-foreground max-w-sm mx-auto">
+          Anexe os documentos necessários para analisar o direito ao salário-maternidade
+        </p>
+      </div>
+
+      {/* Progress indicator */}
+      <div className="flex items-center justify-center gap-2">
+        <Badge 
+          variant={isReadyToAnalyze ? "default" : "secondary"}
+          className="gap-1.5 px-3 py-1.5"
+        >
+          <FileCheck className="h-3.5 w-3.5" />
+          {docsCount} documento{docsCount !== 1 ? "s" : ""} anexado{docsCount !== 1 ? "s" : ""}
+        </Badge>
+      </div>
 
       {/* Documentos Obrigatórios */}
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              <span className="font-medium">Documentos Obrigatórios</span>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 px-1">
+          <div className="h-2 w-2 rounded-full bg-primary" />
+          <span className="text-sm font-medium">Documentos Obrigatórios</span>
+        </div>
+
+        {/* CNIS/CTPS */}
+        <div className="rounded-2xl border bg-card overflow-hidden">
+          <div className="px-4 py-3 bg-muted/50 border-b">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Histórico de Contribuições</span>
+              {hasContribuicaoDoc && (
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+              )}
             </div>
-            <Badge 
-              variant={docsObrigatoriosCount === 2 ? "default" : "secondary"}
-              className="gap-1"
-            >
-              {docsObrigatoriosCount}/2
-            </Badge>
+            <p className="text-xs text-muted-foreground">CNIS ou CTPS</p>
           </div>
-
-          <div className="space-y-3">
-            {/* Grupo: Histórico de Contribuições */}
-            <div className="rounded-xl border bg-card p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Histórico de Contribuições
-                </span>
-                <Badge variant="outline" className="text-xs">
-                  CNIS ou CTPS
-                </Badge>
-                {hasContribuicaoDoc && (
-                  <CheckCircle2 className="h-4 w-4 text-primary ml-auto" />
-                )}
-              </div>
-              
-              <div className="grid gap-2">
-                <DocumentUploadField
-                  label="CNIS - Cadastro Nacional de Informações Sociais"
-                  docType="cnis"
-                  maeId={sessionId}
-                  uploadedUrl={documentos.cnis}
-                  onUpload={(url) => setDocumentos(prev => ({ ...prev, cnis: url }))}
-                />
-                
-                <div className="flex items-center gap-2 py-1">
-                  <Separator className="flex-1" />
-                  <span className="text-xs text-muted-foreground px-2">ou</span>
-                  <Separator className="flex-1" />
-                </div>
-
-                <DocumentUploadField
-                  label="CTPS - Carteira de Trabalho"
-                  docType="ctps"
-                  maeId={sessionId}
-                  uploadedUrl={documentos.ctps}
-                  onUpload={(url) => setDocumentos(prev => ({ ...prev, ctps: url }))}
-                />
-              </div>
+          <div className="p-3 space-y-2">
+            <DocumentUploadField
+              label="CNIS"
+              docType="cnis"
+              maeId={sessionId}
+              uploadedUrl={documentos.cnis}
+              onUpload={(url) => setDocumentos(prev => ({ ...prev, cnis: url }))}
+            />
+            
+            <div className="flex items-center gap-3 px-2">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs text-muted-foreground">ou</span>
+              <div className="flex-1 h-px bg-border" />
             </div>
 
-            {/* Certidão */}
-            <div className="rounded-xl border bg-card p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Comprovação do Evento
-                </span>
-                <Badge variant="outline" className="text-xs">
-                  Obrigatório
-                </Badge>
-                {hasCertidao && (
-                  <CheckCircle2 className="h-4 w-4 text-primary ml-auto" />
-                )}
-              </div>
-
-              <DocumentUploadField
-                label="Certidão de Nascimento ou Termo de Adoção/Guarda"
-                docType="certidao"
-                maeId={sessionId}
-                uploadedUrl={documentos.certidao}
-                onUpload={(url) => setDocumentos(prev => ({ ...prev, certidao: url }))}
-              />
-            </div>
+            <DocumentUploadField
+              label="CTPS"
+              docType="ctps"
+              maeId={sessionId}
+              uploadedUrl={documentos.ctps}
+              onUpload={(url) => setDocumentos(prev => ({ ...prev, ctps: url }))}
+            />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Certidão */}
+        <div className="rounded-2xl border bg-card overflow-hidden">
+          <div className="px-4 py-3 bg-muted/50 border-b">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Comprovação do Evento</span>
+              {hasCertidao && (
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">Certidão de Nascimento ou Termo de Adoção</p>
+          </div>
+          <div className="p-3">
+            <DocumentUploadField
+              label="Certidão de Nascimento / Adoção"
+              docType="certidao"
+              maeId={sessionId}
+              uploadedUrl={documentos.certidao}
+              onUpload={(url) => setDocumentos(prev => ({ ...prev, certidao: url }))}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Documentos Opcionais */}
-      <Card className="border-dashed">
-        <CardContent className="pt-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-muted-foreground" />
-            <span className="font-medium text-muted-foreground">Opcional</span>
-          </div>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 px-1">
+          <div className="h-2 w-2 rounded-full bg-muted-foreground/50" />
+          <span className="text-sm text-muted-foreground">Opcional</span>
+        </div>
 
+        <div className="rounded-2xl border border-dashed bg-card/50 p-3">
           <DocumentUploadField
-            label="Comprovante de Endereço (apenas cadastral)"
+            label="Comprovante de Endereço"
             docType="comprov_endereco"
             maeId={sessionId}
             uploadedUrl={documentos.comprov_endereco}
             onUpload={(url) => setDocumentos(prev => ({ ...prev, comprov_endereco: url }))}
           />
-          
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <AlertCircle className="h-3 w-3" />
-            Não influencia na análise de elegibilidade
-          </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Botão de Análise */}
-      <div className="space-y-3">
-        {!isReadyToAnalyze && (
-          <div className="bg-muted/50 rounded-lg p-3 flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-            <p className="text-sm text-muted-foreground">
-              {!hasContribuicaoDoc && !hasCertidao 
-                ? "Anexe CNIS ou CTPS e a Certidão para continuar"
-                : !hasContribuicaoDoc 
-                  ? "Anexe o CNIS ou CTPS para continuar"
-                  : "Anexe a Certidão de Nascimento/Adoção para continuar"
-              }
-            </p>
-          </div>
-        )}
-
+      <div className="pt-4">
         <Button
           size="lg"
-          className="w-full h-14 text-lg gap-2 shadow-lg"
+          className={cn(
+            "w-full h-14 text-base gap-2 rounded-xl shadow-lg transition-all",
+            isReadyToAnalyze && "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+          )}
           onClick={handleGerarAnalise}
           disabled={isLoading || !isReadyToAnalyze}
         >
           {isLoading ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />
-              Analisando...
+              Analisando documentos...
             </>
           ) : (
             <>
@@ -414,6 +401,17 @@ export function NovaPreAnaliseForm({ onSuccess }: NovaPreAnaliseFormProps) {
             </>
           )}
         </Button>
+        
+        {!isReadyToAnalyze && (
+          <p className="text-center text-sm text-muted-foreground mt-3">
+            {!hasContribuicaoDoc && !hasCertidao 
+              ? "Anexe os documentos obrigatórios para continuar"
+              : !hasContribuicaoDoc 
+                ? "Anexe o CNIS ou CTPS para continuar"
+                : "Anexe a Certidão para continuar"
+            }
+          </p>
+        )}
       </div>
     </div>
   );
