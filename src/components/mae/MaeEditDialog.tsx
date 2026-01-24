@@ -13,7 +13,7 @@ import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
 import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
-import { PreAnaliseHistoricoDialog } from "@/components/preanalise/PreAnaliseHistoricoDialog";
+import { PreAnaliseAtendenteDialog } from "@/components/preanalise/PreAnaliseAtendenteDialog";
 interface MaeEditDialogProps {
   mae: MaeProcesso | null;
   open: boolean;
@@ -564,7 +564,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
             linkDocumentos={(mae as MaeProcesso & { link_documentos?: string | null }).link_documentos || null}
             onSuccess={onSuccess}
           />
-          <PreAnaliseHistoricoDialog
+          <PreAnaliseAtendenteDialog
             open={preAnaliseDialogOpen}
             onOpenChange={setPreAnaliseDialogOpen}
             mae={mae}

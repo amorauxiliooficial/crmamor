@@ -70,8 +70,33 @@ VOCÊ DEVE RESPONDER EXCLUSIVAMENTE NO FORMATO JSON ABAIXO:
     { "doc": "CTPS", "status": "OK|FALTA" },
     { "doc": "CERTIDAO", "status": "OK|FALTA" },
     { "doc": "COMPROVANTE_ENDERECO", "status": "OK|FALTA" }
-  ]
+  ],
+  "resultado_atendente": {
+    "resultado": "APROVADO|REPROVADO|JURIDICO",
+    "motivo_curto": "texto curto padronizado para atendente",
+    "proxima_acao": "PROTOCOLO_INSS|ENCAMINHAR_JURIDICO|SOLICITAR_DOCS"
+  }
 }
+
+REGRAS PARA resultado_atendente (IMPORTANTE - atendente não interpreta regras):
+- APROVADO: status APROVADA sem bloqueios, documentos essenciais OK → proxima_acao = "PROTOCOLO_INSS"
+- REPROVADO: status NAO_APROVAVEL por falta de documentos básicos que podem ser obtidos → proxima_acao = "SOLICITAR_DOCS"
+- JURIDICO (OBRIGATÓRIO quando):
+  * Falta documento essencial que não pode ser obtido
+  * Divergência de CNIS/CTPS
+  * Período de graça no limite ou vencido
+  * Contribuições em atraso / fora do prazo com risco
+  * Caso rural com prova material fraca
+  * Indeferimento anterior / necessidade de recurso
+  * APROVADA_COM_RESSALVAS sempre vai para JURIDICO
+  → proxima_acao = "ENCAMINHAR_JURIDICO"
+
+O motivo_curto deve ser objetivo e padronizado (máx 50 caracteres), ex:
+- "Período de graça possivelmente vencido"
+- "CNIS divergente do informado"
+- "Carência insuficiente"
+- "Documentação incompleta - falta certidão"
+- "Apto para protocolo"
 
 IMPORTANTE:
 - Seja objetivo e técnico
@@ -246,6 +271,17 @@ Deno.serve(async (req) => {
       ? analiseResult.status 
       : "ERRO_PROCESSAMENTO";
 
+    // Extract simplified result for atendente
+    const resultadoAtendente = analiseResult.resultado_atendente || {
+      resultado: statusAnalise === "APROVADA" ? "APROVADO" : 
+                 statusAnalise === "NAO_APROVAVEL" ? "REPROVADO" : "JURIDICO",
+      motivo_curto: statusAnalise === "APROVADA" ? "Apto para protocolo" : 
+                    "Análise necessária",
+      proxima_acao: statusAnalise === "APROVADA" ? "PROTOCOLO_INSS" : "ENCAMINHAR_JURIDICO"
+    };
+
+    console.log(`[PRE-ANALISE] Resultado atendente: ${JSON.stringify(resultadoAtendente)}`);
+
     // Save to database
     const { data: insertData, error: insertError } = await supabase
       .from("pre_analise")
@@ -282,13 +318,16 @@ Deno.serve(async (req) => {
 
     console.log(`[PRE-ANALISE] Análise salva com sucesso: ${insertData.id}`);
 
-    // Return both the DB record and the structured AI response
+    // Return both the DB record, the structured AI response, and simplified result for atendente
     return new Response(
       JSON.stringify({
         success: true,
         analise: {
           ...insertData,
-          resposta_estruturada: analiseResult
+          resposta_estruturada: analiseResult,
+          resultado_atendente: resultadoAtendente.resultado,
+          motivo_curto: resultadoAtendente.motivo_curto,
+          proxima_acao: resultadoAtendente.proxima_acao,
         },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
