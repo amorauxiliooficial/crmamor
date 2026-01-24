@@ -711,12 +711,15 @@ export type Database = {
           id: string
           mae_id: string
           modelo_ia_utilizado: string | null
+          motivo_curto: string | null
           motivo_reanalise: Database["public"]["Enums"]["motivo_reanalise"]
           observacao_reanalise: string | null
           periodo_graca_status: string | null
           processado_em: string | null
+          proxima_acao: string | null
           recomendacoes: string[] | null
           resposta_ia_raw: Json | null
+          resultado_atendente: string | null
           riscos_identificados: Json | null
           situacao_cnis: string | null
           status_analise: Database["public"]["Enums"]["status_pre_analise"]
@@ -733,12 +736,15 @@ export type Database = {
           id?: string
           mae_id: string
           modelo_ia_utilizado?: string | null
+          motivo_curto?: string | null
           motivo_reanalise?: Database["public"]["Enums"]["motivo_reanalise"]
           observacao_reanalise?: string | null
           periodo_graca_status?: string | null
           processado_em?: string | null
+          proxima_acao?: string | null
           recomendacoes?: string[] | null
           resposta_ia_raw?: Json | null
+          resultado_atendente?: string | null
           riscos_identificados?: Json | null
           situacao_cnis?: string | null
           status_analise: Database["public"]["Enums"]["status_pre_analise"]
@@ -755,12 +761,15 @@ export type Database = {
           id?: string
           mae_id?: string
           modelo_ia_utilizado?: string | null
+          motivo_curto?: string | null
           motivo_reanalise?: Database["public"]["Enums"]["motivo_reanalise"]
           observacao_reanalise?: string | null
           periodo_graca_status?: string | null
           processado_em?: string | null
+          proxima_acao?: string | null
           recomendacoes?: string[] | null
           resposta_ia_raw?: Json | null
+          resultado_atendente?: string | null
           riscos_identificados?: Json | null
           situacao_cnis?: string | null
           status_analise?: Database["public"]["Enums"]["status_pre_analise"]

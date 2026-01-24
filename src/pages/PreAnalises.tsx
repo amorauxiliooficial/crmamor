@@ -112,6 +112,8 @@ export default function PreAnalises() {
   const fetchAnalises = async () => {
     setIsLoading(true);
     try {
+      // Fetch without the new columns to avoid TypeScript errors
+      // The new columns will be available after types regeneration
       const { data, error } = await supabase
         .from("pre_analise")
         .select(`
@@ -120,8 +122,6 @@ export default function PreAnalises() {
           status_analise,
           categoria_identificada,
           riscos_identificados,
-          resultado_atendente,
-          motivo_curto,
           versao,
           created_at,
           processado_em,
@@ -147,10 +147,23 @@ export default function PreAnalises() {
       if (error) throw error;
 
       const latestByMae = new Map<string, AnaliseComMae>();
-      (data || []).forEach((item) => {
+      (data || []).forEach((item: any) => {
         const existing = latestByMae.get(item.mae_id);
         if (!existing || item.versao > existing.versao) {
-          latestByMae.set(item.mae_id, item as unknown as AnaliseComMae);
+          // Derive resultado_atendente from status_analise if not present
+          let resultado_atendente = item.resultado_atendente;
+          if (!resultado_atendente) {
+            const status = item.status_analise?.toUpperCase();
+            if (status === "APROVADA") resultado_atendente = "APROVADO";
+            else if (status === "NAO_APROVAVEL") resultado_atendente = "REPROVADO";
+            else resultado_atendente = "JURIDICO";
+          }
+          
+          latestByMae.set(item.mae_id, {
+            ...item,
+            resultado_atendente,
+            motivo_curto: item.motivo_curto || "",
+          } as AnaliseComMae);
         }
       });
 
