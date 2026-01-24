@@ -12,6 +12,8 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2, FileUp, Brain, CheckCircle2 } from "lucide-react";
 import { usePreAnalise } from "@/hooks/usePreAnalise";
 import { PreAnaliseSimplificadaCard } from "./PreAnaliseSimplificadaCard";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import {
   type DadosEntradaAnalise,
   type PreAnalise,
@@ -55,6 +57,8 @@ export function PreAnaliseAtendenteDialog({
   onSuccess,
 }: PreAnaliseAtendenteDialogProps) {
   const { isLoading, executarAnalise } = usePreAnalise();
+  const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
   
   const [documentos, setDocumentos] = useState({
     cnis: false,
@@ -83,13 +87,69 @@ export function PreAnaliseAtendenteDialog({
   }, [open]);
 
   const handleGerarAnalise = async () => {
-    // Validação: se não tem CNIS nem CTPS, retornar reprovado imediatamente
+    // Validação: se não tem CNIS nem CTPS, salvar reprovação no banco
     if (!hasMinDocs) {
-      setResultado({
-        resultado_atendente: "REPROVADO",
-        motivo_curto: "Documentos obrigatórios não anexados (CNIS ou CTPS)",
-        proxima_acao: "SOLICITAR_DOCS",
-      });
+      setIsSaving(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          toast({
+            title: "Erro",
+            description: "Você precisa estar logado.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Buscar próxima versão
+        const { data: versionData } = await supabase
+          .rpc("get_next_analise_version", { p_mae_id: mae.id });
+        
+        const versao = versionData || 1;
+        
+        // Salvar reprovação por falta de documentos
+        const { error } = await supabase
+          .from("pre_analise")
+          .insert({
+            mae_id: mae.id,
+            user_id: session.user.id,
+            dados_entrada: {
+              cpf: mae.cpf.replace(/\D/g, ""),
+              nome: mae.nome_mae,
+              documentos: { cnis: false, ctps: false, certidao: false, comprov_endereco: false, outros: [] },
+            },
+            status_analise: "nao_aprovavel",
+            resultado_atendente: "REPROVADO",
+            motivo_curto: "Documentos obrigatórios não anexados (CNIS ou CTPS)",
+            proxima_acao: "SOLICITAR_DOCS",
+            versao,
+            motivo_reanalise: "primeiro_registro",
+            processado_em: new Date().toISOString(),
+          });
+
+        if (error) {
+          console.error("Erro ao salvar reprovação:", error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível salvar a análise.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setResultado({
+          resultado_atendente: "REPROVADO",
+          motivo_curto: "Documentos obrigatórios não anexados (CNIS ou CTPS)",
+          proxima_acao: "SOLICITAR_DOCS",
+        });
+
+        toast({
+          title: "Análise salva",
+          description: "Reprovada por falta de documentos obrigatórios.",
+        });
+      } finally {
+        setIsSaving(false);
+      }
       return;
     }
 
@@ -226,12 +286,12 @@ export function PreAnaliseAtendenteDialog({
               size="lg"
               className="w-full h-14 text-lg gap-2"
               onClick={handleGerarAnalise}
-              disabled={isLoading}
+              disabled={isLoading || isSaving}
             >
-              {isLoading ? (
+              {isLoading || isSaving ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  Analisando...
+                  {isSaving ? "Salvando..." : "Analisando..."}
                 </>
               ) : (
                 <>
