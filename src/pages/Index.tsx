@@ -17,6 +17,8 @@ import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { GuidedTour } from "@/components/tour/GuidedTour";
 import { MobileViewSelector } from "@/components/layout/MobileViewSelector";
 import { ViewTransition } from "@/components/layout/ViewTransition";
+import { MetasDashboard } from "@/components/metas/MetasDashboard";
+import { MetasConfigDialog } from "@/components/metas/MetasConfigDialog";
 
 import { AtividadeDialog } from "@/components/atividades/AtividadeDialog";
 import { CrmTab } from "@/components/atividades/CrmTab";
@@ -25,6 +27,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTour } from "@/hooks/useTour";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useFollowUpSound } from "@/hooks/useFollowUpSound";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso } from "@/types/mae";
 import {
@@ -110,6 +113,8 @@ const Index = () => {
   const [showOnboardingOnLoad, setShowOnboardingOnLoad] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>("all");
   const [users, setUsers] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
+  const [metasConfigOpen, setMetasConfigOpen] = useState(false);
+  const { isAdmin } = useIsAdmin();
 
   const handleNotificationClick = (indicacao: Indicacao) => {
     setViewMode("indicacoes");
@@ -391,62 +396,13 @@ const Index = () => {
           )}
         </section>
 
-        {/* Stats Grid - Horizontal scroll on mobile */}
+        {/* Metas Dashboard - replaces old stats cards */}
         <section className="tour-stats">
-          <ScrollArea className="w-full md:w-auto">
-            <div className="flex gap-3 pb-2 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 md:gap-4">
-              <StatsCard
-                title="Total"
-                value={stats.total}
-                icon={Users}
-                description="Processos"
-                onClick={() => handleStatsClick("all")}
-                isActive={statusFilter === "all"}
-                className="min-w-[140px] md:min-w-0"
-              />
-              <StatsCard
-                title="Aprovadas"
-                value={stats.aprovadas}
-                icon={CheckCircle2}
-                className="border-l-4 border-l-emerald-500 min-w-[140px] md:min-w-0"
-                onClick={() => handleStatsClick("✅ Aprovada")}
-                isActive={statusFilter === "✅ Aprovada"}
-              />
-              <StatsCard
-                title="Indeferidas"
-                value={stats.indeferidas}
-                icon={XCircle}
-                className="border-l-4 border-l-destructive min-w-[140px] md:min-w-0"
-                onClick={() => handleStatsClick("❌ Indeferida")}
-                isActive={statusFilter === "❌ Indeferida"}
-              />
-              <StatsCard
-                title="Em Análise"
-                value={stats.emAnalise}
-                icon={Clock}
-                className="border-l-4 border-l-primary min-w-[140px] md:min-w-0"
-                onClick={() => handleStatsClick("🔎 Em Análise")}
-                isActive={statusFilter === "🔎 Em Análise"}
-              />
-              <StatsCard
-                title="Pendências"
-                value={stats.pendencias}
-                icon={AlertTriangle}
-                className="border-l-4 border-l-accent-foreground min-w-[140px] md:min-w-0"
-                onClick={() => handleStatsClick("⚠️ Pendência Documental")}
-                isActive={statusFilter === "⚠️ Pendência Documental"}
-              />
-              <StatsCard
-                title="Gestantes"
-                value={gestantesCount}
-                icon={Baby}
-                className="border-l-4 border-l-pink-500 min-w-[140px] md:min-w-0"
-                onClick={() => handleStatsClick("gestantes")}
-                isActive={statusFilter === "gestantes"}
-              />
-            </div>
-            <ScrollBar orientation="horizontal" className="md:hidden" />
-          </ScrollArea>
+          <MetasDashboard 
+            userId={selectedUserId !== "all" ? selectedUserId : user?.id || null}
+            isAdmin={isAdmin}
+            onConfigClick={() => setMetasConfigOpen(true)}
+          />
         </section>
 
 
@@ -613,7 +569,6 @@ const Index = () => {
                 <CrmTab
                   maes={maesFilteredByUser}
                   onRefresh={fetchMaes}
-                  selectedUserId={selectedUserId !== "all" ? selectedUserId : null}
                 />
               </div>
             ) : viewMode === "table" ? (
@@ -742,6 +697,11 @@ const Index = () => {
       <OnboardingModal
         open={onboardingOpen}
         onOpenChange={setOnboardingOpen}
+      />
+
+      <MetasConfigDialog
+        open={metasConfigOpen}
+        onOpenChange={setMetasConfigOpen}
       />
     </div>
   );
