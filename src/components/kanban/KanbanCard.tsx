@@ -1,7 +1,7 @@
 import { MaeProcesso } from "@/types/mae";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Baby, FolderOpen } from "lucide-react";
+import { Calendar, FileText, Baby, FolderOpen, MessageCircle } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { differenceInMonths, parseISO } from "date-fns";
@@ -65,21 +65,23 @@ export function KanbanCard({
         "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20 relative overflow-hidden",
         isDragging && "shadow-lg ring-2 ring-primary rotate-2",
         followUpStatus === "overdue" && "ring-1 ring-destructive/50",
-        hasUnreadAlert && "border-pink-300 dark:border-pink-700"
+        hasUnreadAlert && "bg-pink-50 dark:bg-pink-900/20 border-pink-400 dark:border-pink-600 shadow-[0_0_20px_rgba(236,72,153,0.4)] animate-[pulse_3s_ease-in-out_infinite]"
       )}
       onClick={onClick}
     >
-      {/* Barra lateral rosa para alertas */}
+      {/* Ícone de mensagem no canto */}
       {hasUnreadAlert && (
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-pink-400 via-pink-500 to-pink-400" />
+        <div className="absolute -top-1 -right-1 z-10">
+          <div className="relative">
+            <div className="absolute inset-0 bg-pink-400 rounded-full blur-sm animate-ping opacity-50" />
+            <div className="relative bg-pink-500 rounded-full p-1 shadow-lg">
+              <MessageCircle className="h-3.5 w-3.5 text-white fill-white" />
+            </div>
+          </div>
+        </div>
       )}
       
-      {/* Gradiente sutil no fundo */}
-      {hasUnreadAlert && (
-        <div className="absolute inset-0 bg-gradient-to-r from-pink-50/80 via-transparent to-transparent dark:from-pink-950/30 dark:via-transparent pointer-events-none" />
-      )}
-      
-      <CardContent className={cn("p-2.5 md:p-3 relative", hasUnreadAlert && "pl-3.5")}>
+      <CardContent className="p-2.5 md:p-3 relative">
         <div className="space-y-1.5 md:space-y-2">
           <div className="flex items-start justify-between gap-1.5">
             <h4 className="font-medium text-sm leading-tight line-clamp-2">
