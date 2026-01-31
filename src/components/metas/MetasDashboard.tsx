@@ -200,7 +200,7 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
 
             {/* Mini cards grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {progress.map((p, index) => {
+              {progress.map((p) => {
                 const Icon = TIPO_ICONS[p.meta.tipo_meta] || Heart;
                 const atingido = p.percentual >= 100;
                 const quaseLa = p.percentual >= 80 && p.percentual < 100;
@@ -211,14 +211,13 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
                   <div
                     key={p.meta.id}
                     className={cn(
-                      "flex items-center gap-2 p-2 rounded-lg border transition-all animate-fade-in opacity-0 [animation-fill-mode:forwards]",
+                      "flex items-center gap-2 p-2 rounded-lg border transition-all animate-fade-in",
                       atingido 
                         ? "bg-chart-1/10 border-chart-1/30" 
                         : quaseLa 
                           ? "bg-amber-500/10 border-amber-500/30"
                           : "bg-muted/30 border-border"
                     )}
-                    style={{ animationDelay: `${index * 80}ms` }}
                   >
                     <RadialProgress 
                       value={p.percentual} 
