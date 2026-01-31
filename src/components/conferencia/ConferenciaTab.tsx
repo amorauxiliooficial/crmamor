@@ -65,7 +65,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
     const { data: maesData, error: maesError } = await supabase
       .from("mae_processo")
       .select("id, nome_mae, cpf, status_processo, data_ultima_atualizacao, user_id")
-      .eq("status_processo", "Em Análise")
+      .eq("status_processo", "Aguardando Análise INSS")
       .order("data_ultima_atualizacao", { ascending: true });
 
     if (maesError) {
@@ -173,7 +173,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total em Análise
+              Aguardando Análise INSS
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -235,7 +235,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
                 <TableCell colSpan={5} className="text-center py-8">
                   <p className="text-muted-foreground">
                     {maes.length === 0
-                      ? "Nenhuma mãe em análise encontrada"
+                      ? "Nenhuma mãe aguardando análise INSS"
                       : "Nenhum resultado para a busca"}
                   </p>
                 </TableCell>

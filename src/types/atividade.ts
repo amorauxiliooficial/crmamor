@@ -33,6 +33,7 @@ export interface ConfigPrazoStatus {
   id: string;
   status_processo: string;
   dias_limite: number;
+  prazos_progressivos?: number[] | null;
   created_at: string;
   updated_at: string;
 }

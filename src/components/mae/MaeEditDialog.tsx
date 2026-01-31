@@ -54,7 +54,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     data_evento: "",
     data_evento_tipo: "none" as "none" | "Parto (real)" | "DPP",
     categoria_previdenciaria: "Não informado" as "CLT" | "MEI" | "Contribuinte Individual" | "Desempregada" | "Não informado",
-    status_processo: "📥 Entrada de Documentos" as StatusProcesso,
+    status_processo: "⚠️ Pendência Documental" as StatusProcesso,
     protocolo_inss: "",
     parcelas: "",
     contrato_assinado: false,
@@ -185,9 +185,9 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     setIsLoading(true);
     
     const dbStatusValue = mapDisplayStatusToDb(formData.status_processo) as 
-      "Entrada de Documentos" | "Em Análise" | "Pendência Documental" | 
-      "Elegível (Análise Positiva)" | "Protocolo INSS" | "Aguardando Análise INSS" | 
-      "Aprovada" | "Indeferida" | "Recurso / Judicial" | "Processo Encerrado";
+      "Pendência Documental" | "Elegível (Análise Positiva)" | 
+      "Aguardando Análise INSS" | "Aprovada" | "Indeferida" | 
+      "Recurso / Judicial" | "Inadimplência" | "Processo Encerrado";
 
     // Build update object - include user_id only if admin is changing it
     const updateData: Record<string, unknown> = {

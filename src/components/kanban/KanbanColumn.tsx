@@ -1,8 +1,9 @@
-import { MaeProcesso, StatusProcesso, STATUS_COLORS } from "@/types/mae";
+import { MaeProcesso, StatusProcesso, STATUS_COLORS, FOLLOWUP_PRAZO_LABELS } from "@/types/mae";
 import { KanbanCard } from "./KanbanCard";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Draggable } from "@hello-pangea/dnd";
+import { Clock } from "lucide-react";
 
 interface KanbanColumnProps {
   status: StatusProcesso;
@@ -27,6 +28,8 @@ export function KanbanColumn({
 }: KanbanColumnProps) {
   const statusLabel = status.split(" ").slice(1).join(" ") || status;
   const emoji = status.split(" ")[0];
+  const followUpLabel = FOLLOWUP_PRAZO_LABELS[status];
+  const showFollowUp = followUpLabel && followUpLabel !== "—";
 
   return (
     <div 
@@ -47,12 +50,17 @@ export function KanbanColumn({
       >
         <span className="text-lg">{emoji}</span>
         {isExpanded ? (
-          <>
+          <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm">{statusLabel}</h3>
-            <span className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-background text-xs font-medium">
-              {maes.length}
-            </span>
-          </>
+            {showFollowUp && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <Clock className="h-3 w-3 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground font-medium">
+                  Follow-up: {followUpLabel}
+                </span>
+              </div>
+            )}
+          </div>
         ) : (
           <>
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-background text-[10px] font-medium">
@@ -65,6 +73,11 @@ export function KanbanColumn({
               {statusLabel}
             </span>
           </>
+        )}
+        {isExpanded && (
+          <span className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-background text-xs font-medium shrink-0">
+            {maes.length}
+          </span>
         )}
       </div>
       {isExpanded && (

@@ -76,18 +76,16 @@ interface MaeProcessoComAtividade extends MaeProcesso {
 // Map database status to display status with emoji
 const mapDbStatusToDisplay = (status: string): StatusProcesso => {
   const statusMap: Record<string, StatusProcesso> = {
-    "Entrada de Documentos": "📥 Entrada de Documentos",
-    "Em Análise": "🔎 Em Análise",
     "Pendência Documental": "⚠️ Pendência Documental",
     "Elegível (Análise Positiva)": "🟡 Elegível (Análise Positiva)",
-    "Protocolo INSS": "📤 Protocolo INSS",
     "Aguardando Análise INSS": "⏳ Aguardando Análise INSS",
     "Aprovada": "✅ Aprovada",
     "Indeferida": "❌ Indeferida",
     "Recurso / Judicial": "⚖️ Recurso / Judicial",
+    "Inadimplência": "💳 Inadimplência",
     "Processo Encerrado": "📦 Processo Encerrado",
   };
-  return statusMap[status] || ("📥 Entrada de Documentos" as StatusProcesso);
+  return statusMap[status] || ("⚠️ Pendência Documental" as StatusProcesso);
 };
 
 const Index = () => {
@@ -345,14 +343,17 @@ const Index = () => {
     const indeferidas = maesFilteredByUser.filter(
       (m) => m.status_processo === "❌ Indeferida"
     ).length;
-    const emAnalise = maesFilteredByUser.filter(
-      (m) => m.status_processo === "🔎 Em Análise"
+    const elegiveis = maesFilteredByUser.filter(
+      (m) => m.status_processo === "🟡 Elegível (Análise Positiva)"
     ).length;
     const pendencias = maesFilteredByUser.filter(
       (m) => m.status_processo === "⚠️ Pendência Documental"
     ).length;
+    const inadimplentes = maesFilteredByUser.filter(
+      (m) => m.status_processo === "💳 Inadimplência"
+    ).length;
 
-    return { total, aprovadas, indeferidas, emAnalise, pendencias };
+    return { total, aprovadas, indeferidas, elegiveis, pendencias, inadimplentes };
   }, [maesFilteredByUser]);
 
   const handleStatsClick = (filter: StatusProcesso | "all" | "gestantes") => {
@@ -383,9 +384,9 @@ const Index = () => {
     );
 
     const dbStatus = mapDisplayStatusToDb(newStatus) as 
-      "Entrada de Documentos" | "Em Análise" | "Pendência Documental" | 
-      "Elegível (Análise Positiva)" | "Protocolo INSS" | "Aguardando Análise INSS" | 
-      "Aprovada" | "Indeferida" | "Recurso / Judicial" | "Processo Encerrado";
+      "Pendência Documental" | "Elegível (Análise Positiva)" | 
+      "Aguardando Análise INSS" | "Aprovada" | "Indeferida" | 
+      "Recurso / Judicial" | "Inadimplência" | "Processo Encerrado";
 
     const { error } = await supabase
       .from("mae_processo")
@@ -685,9 +686,7 @@ const Index = () => {
                     onOpenAtividades={handleOpenAtividades}
                     alertasNaoLidos={alertasNaoLidos}
                     visibleStatuses={[
-                      "🔎 Em Análise",
                       "🟡 Elegível (Análise Positiva)",
-                      "📤 Protocolo INSS",
                       "⏳ Aguardando Análise INSS",
                     ]}
                   />
