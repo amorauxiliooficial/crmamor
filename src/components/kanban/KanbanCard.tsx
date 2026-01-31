@@ -74,20 +74,11 @@ export function KanbanCard({
             </h4>
             <div className="flex gap-0.5 shrink-0">
               {followUpStatus && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenAtividades?.();
-                  }}
-                  className="hover:scale-110 transition-transform"
-                  title={`${daysSinceActivity} dia(s) sem contato - Clique para registrar atividade`}
-                >
-                  <FollowUpBadge
-                    status={followUpStatus}
-                    daysSinceActivity={daysSinceActivity}
-                    compact
-                  />
-                </button>
+                <FollowUpBadge
+                  status={followUpStatus}
+                  daysSinceActivity={daysSinceActivity}
+                  compact
+                />
               )}
               {mae.is_gestante && mesGestacao && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
