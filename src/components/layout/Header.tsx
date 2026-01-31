@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Search, LogOut, UserPlus, Settings, X, Key } from "lucide-react";
+import { Search, LogOut, UserPlus, Settings, X, Key, Map } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -232,17 +232,28 @@ export function Header({
             </Button>
           )}
           
-          {/* Admin onboarding button - only for admins */}
+          {/* Admin buttons - only for admins */}
           {isAdmin && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="hidden md:flex gap-2 tour-onboarding"
-              onClick={() => setAdminDialogOpen(true)}
-            >
-              <Settings className="h-4 w-4" />
-              <span className="hidden lg:inline">Admin</span>
-            </Button>
+            <>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="hidden md:flex gap-2"
+                onClick={() => navigate("/roadmap")}
+              >
+                <Map className="h-4 w-4" />
+                <span className="hidden lg:inline">Roadmap</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="hidden md:flex gap-2 tour-onboarding"
+                onClick={() => setAdminDialogOpen(true)}
+              >
+                <Settings className="h-4 w-4" />
+                <span className="hidden lg:inline">Admin</span>
+              </Button>
+            </>
           )}
           
           <div className="tour-notifications flex items-center gap-0.5 md:gap-1">
