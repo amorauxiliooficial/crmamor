@@ -161,10 +161,6 @@ export default function Roadmap() {
             </Badge>
           )}
         </div>
-        <QuickTaskInput onCreateTask={createTarefa} />
-
-        {/* Quick task input */}
-        <QuickTaskInput onCreateTask={createTarefa} />
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
