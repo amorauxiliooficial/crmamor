@@ -64,24 +64,19 @@ export function KanbanCard({
       className={cn(
         "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20 relative overflow-hidden",
         isDragging && "shadow-lg ring-2 ring-primary rotate-2",
-        followUpStatus === "overdue" && !hasUnreadAlert && "ring-1 ring-destructive/50",
-        hasUnreadAlert && "ring-2 ring-pink-500 bg-gradient-to-br from-pink-100 via-pink-50 to-white dark:from-pink-900/40 dark:via-pink-800/20 dark:to-card shadow-[0_0_30px_rgba(236,72,153,0.4)] border-pink-400"
+        followUpStatus === "overdue" && !hasUnreadAlert && "ring-1 ring-destructive/50"
       )}
       onClick={onClick}
     >
-      {/* Ícone de mensagem no canto */}
+      {/* Faixa de alerta do admin */}
       {hasUnreadAlert && (
-        <div className="absolute -top-1 -right-1 z-10">
-          <div className="relative">
-            <div className="absolute inset-0 bg-pink-400 rounded-full blur-sm animate-ping opacity-50" />
-            <div className="relative bg-pink-500 rounded-full p-1 shadow-lg">
-              <MessageCircle className="h-3.5 w-3.5 text-white fill-white" />
-            </div>
-          </div>
+        <div className="absolute top-0 left-0 right-0 bg-primary text-primary-foreground text-[10px] font-semibold py-0.5 px-2 flex items-center gap-1 z-10">
+          <MessageCircle className="h-3 w-3" />
+          <span>Mensagem do Admin</span>
         </div>
       )}
       
-      <CardContent className="p-2.5 md:p-3 relative">
+      <CardContent className={cn("p-2.5 md:p-3 relative", hasUnreadAlert && "pt-6 md:pt-7")}>
         <div className="space-y-1.5 md:space-y-2">
           <div className="flex items-start justify-between gap-1.5">
             <h4 className="font-medium text-sm leading-tight line-clamp-2">
