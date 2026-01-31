@@ -11,6 +11,8 @@ interface TarefaColumnProps {
   isDraggingOver?: boolean;
   usuarios: Record<string, string>;
   responsaveisPorTarefa: Record<string, string[]>;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
 }
 
 export function TarefaColumn({
@@ -20,6 +22,8 @@ export function TarefaColumn({
   isDraggingOver,
   usuarios,
   responsaveisPorTarefa,
+  isExpanded,
+  onToggleExpand,
 }: TarefaColumnProps) {
   const statusLabel = TASK_STATUS_LABELS[status].split(" ").slice(1).join(" ");
   const emoji = TASK_STATUS_LABELS[status].split(" ")[0];
@@ -33,49 +37,71 @@ export function TarefaColumn({
   return (
     <div
       className={cn(
-        "flex h-full w-[280px] flex-shrink-0 flex-col rounded-lg border bg-card transition-all duration-300 animate-fade-in",
+        "flex h-full flex-shrink-0 flex-col rounded-lg border bg-card transition-all duration-300 animate-fade-in",
+        isExpanded ? "w-[280px]" : "w-[48px] cursor-pointer",
         isDraggingOver && "ring-2 ring-primary bg-primary/5 scale-[1.02]"
       )}
+      onClick={!isExpanded ? onToggleExpand : undefined}
     >
       <div
         className={cn(
-          "flex items-center gap-2 border-b px-4 py-3 transition-colors duration-200",
-          TASK_STATUS_COLORS[status]
+          "flex items-center gap-2 border-b px-4 py-3 cursor-pointer transition-colors duration-200",
+          TASK_STATUS_COLORS[status],
+          !isExpanded && "flex-col px-2 py-4"
         )}
+        onClick={isExpanded ? onToggleExpand : undefined}
       >
         <span className="text-lg">{emoji}</span>
-        <h3 className="font-semibold text-sm">{statusLabel}</h3>
-        <span className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-background text-xs font-medium transition-transform duration-200">
-          {tarefas.length}
-        </span>
+        {isExpanded ? (
+          <>
+            <h3 className="font-semibold text-sm">{statusLabel}</h3>
+            <span className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-background text-xs font-medium transition-transform duration-200">
+              {tarefas.length}
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-background text-[10px] font-medium">
+              {tarefas.length}
+            </span>
+            <span
+              className="text-[10px] font-medium text-center mt-2 leading-tight"
+              style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
+            >
+              {statusLabel}
+            </span>
+          </>
+        )}
       </div>
-      <ScrollArea className="flex-1 p-2">
-        <div className="space-y-2 min-h-[100px]">
-          {tarefas.map((tarefa, index) => (
-            <Draggable key={tarefa.id} draggableId={tarefa.id} index={index}>
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.draggableProps}
-                  {...provided.dragHandleProps}
-                >
-                  <TarefaCard
-                    tarefa={tarefa}
-                    onClick={() => onCardClick(tarefa)}
-                    isDragging={snapshot.isDragging}
-                    responsaveis={getResponsaveisComNomes(tarefa.id)}
-                  />
-                </div>
-              )}
-            </Draggable>
-          ))}
-          {tarefas.length === 0 && (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Nenhuma tarefa
-            </p>
-          )}
-        </div>
-      </ScrollArea>
+      {isExpanded && (
+        <ScrollArea className="flex-1 p-2">
+          <div className="space-y-2 min-h-[100px]">
+            {tarefas.map((tarefa, index) => (
+              <Draggable key={tarefa.id} draggableId={tarefa.id} index={index}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                  >
+                    <TarefaCard
+                      tarefa={tarefa}
+                      onClick={() => onCardClick(tarefa)}
+                      isDragging={snapshot.isDragging}
+                      responsaveis={getResponsaveisComNomes(tarefa.id)}
+                    />
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {tarefas.length === 0 && (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Nenhuma tarefa
+              </p>
+            )}
+          </div>
+        </ScrollArea>
+      )}
     </div>
   );
 }
