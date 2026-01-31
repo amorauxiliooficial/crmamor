@@ -19,8 +19,7 @@ import { MobileViewSelector } from "@/components/layout/MobileViewSelector";
 import { ViewTransition } from "@/components/layout/ViewTransition";
 import { PendenciasPanel } from "@/components/atividades/PendenciasPanel";
 import { AtividadeDialog } from "@/components/atividades/AtividadeDialog";
-import { TipoAtividade } from "@/types/atividade";
-import { useAtividades } from "@/hooks/useAtividades";
+import { AtividadesTab } from "@/components/atividades/AtividadesTab";
 import { Indicacao } from "@/types/indicacao";
 import { useAuth } from "@/hooks/useAuth";
 import { useTour } from "@/hooks/useTour";
@@ -46,6 +45,7 @@ import {
   BookOpen,
   ClipboardList,
   Brain,
+  Activity,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -104,7 +104,7 @@ const Index = () => {
   const [allMaesRaw, setAllMaesRaw] = useState<{ id: string; user_id: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all" | "gestantes">("all");
-  const [viewMode, setViewMode] = useState<"kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes">("kanban");
+  const [viewMode, setViewMode] = useState<"kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes" | "atividades">("kanban");
   const [selectedIndicacaoFromNotification, setSelectedIndicacaoFromNotification] = useState<Indicacao | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [showOnboardingOnLoad, setShowOnboardingOnLoad] = useState(false);
@@ -303,33 +303,6 @@ const Index = () => {
     setAtividadeDialogOpen(true);
   };
 
-  // Quick activity registration
-  const handleQuickActivity = async (mae: MaeProcessoComAtividade, tipo: TipoAtividade) => {
-    if (!user) return;
-    
-    const { error } = await supabase.from("atividades_mae").insert({
-      mae_id: mae.id,
-      user_id: user.id,
-      tipo_atividade: tipo,
-      descricao: null,
-    });
-
-    if (error) {
-      console.error("Erro ao registrar atividade:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível registrar a atividade.",
-      });
-    } else {
-      toast({
-        title: "Atividade registrada",
-        description: `${tipo === "ligacao" ? "Ligação" : "WhatsApp"} registrado com sucesso!`,
-      });
-      fetchMaes();
-    }
-  };
-
   // Map display status (with emoji) to db status (without emoji)
   const mapDisplayStatusToDb = (status: StatusProcesso): string => {
     return status.split(" ").slice(1).join(" ") || status;
@@ -508,7 +481,7 @@ const Index = () => {
               <ToggleGroup
                 type="single"
                 value={viewMode}
-                onValueChange={(value) => value && setViewMode(value as "kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes")}
+                onValueChange={(value) => value && setViewMode(value as "kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes" | "atividades")}
                 className="bg-muted/50 rounded-lg p-1 gap-0.5"
               >
                 <ToggleGroupItem 
@@ -524,6 +497,13 @@ const Index = () => {
                   className="tour-view-table data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-2 py-1.5 text-sm"
                 >
                   <List className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem 
+                  value="atividades" 
+                  aria-label="Atividades CRM" 
+                  className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-2 py-1.5 text-sm"
+                >
+                  <Activity className="h-4 w-4" />
                 </ToggleGroupItem>
                 <ToggleGroupItem 
                   value="gestantes" 
@@ -634,6 +614,14 @@ const Index = () => {
                   onRefresh={fetchMaes}
                 />
               </div>
+            ) : viewMode === "atividades" ? (
+              <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
+                <AtividadesTab
+                  maes={maesFilteredByUser}
+                  onRefresh={fetchMaes}
+                  selectedUserId={selectedUserId}
+                />
+              </div>
             ) : viewMode === "table" ? (
               isMobile ? (
                 <MaeCardList maes={filteredMaes} onCardClick={handleCardClick} />
@@ -662,7 +650,6 @@ const Index = () => {
                       onCardClick={handleCardClick} 
                       onStatusChange={handleStatusChange}
                       onOpenAtividades={handleOpenAtividades}
-                      onQuickActivity={handleQuickActivity}
                     />
                   )}
                 </div>
@@ -675,7 +662,6 @@ const Index = () => {
                     onCardClick={handleCardClick}
                     onStatusChange={handleStatusChange}
                     onOpenAtividades={handleOpenAtividades}
-                    onQuickActivity={handleQuickActivity}
                     visibleStatuses={[
                       "🔎 Em Análise",
                       "🟡 Elegível (Análise Positiva)",
@@ -693,7 +679,6 @@ const Index = () => {
                     onCardClick={handleCardClick}
                     onStatusChange={handleStatusChange}
                     onOpenAtividades={handleOpenAtividades}
-                    onQuickActivity={handleQuickActivity}
                     visibleStatuses={["⚠️ Pendência Documental"]}
                   />
                 </div>
@@ -706,7 +691,6 @@ const Index = () => {
                     onCardClick={handleCardClick}
                     onStatusChange={handleStatusChange}
                     onOpenAtividades={handleOpenAtividades}
-                    onQuickActivity={handleQuickActivity}
                     visibleStatuses={[
                       "✅ Aprovada",
                       "❌ Indeferida",
