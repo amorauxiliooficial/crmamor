@@ -33,19 +33,19 @@ export function TarefaColumn({
   return (
     <div
       className={cn(
-        "flex h-full w-[280px] flex-shrink-0 flex-col rounded-lg border bg-card transition-all duration-200",
-        isDraggingOver && "ring-2 ring-primary bg-primary/5"
+        "flex h-full w-[280px] flex-shrink-0 flex-col rounded-lg border bg-card transition-all duration-300 animate-fade-in",
+        isDraggingOver && "ring-2 ring-primary bg-primary/5 scale-[1.02]"
       )}
     >
       <div
         className={cn(
-          "flex items-center gap-2 border-b px-4 py-3",
+          "flex items-center gap-2 border-b px-4 py-3 transition-colors duration-200",
           TASK_STATUS_COLORS[status]
         )}
       >
         <span className="text-lg">{emoji}</span>
         <h3 className="font-semibold text-sm">{statusLabel}</h3>
-        <span className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-background text-xs font-medium">
+        <span className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-background text-xs font-medium transition-transform duration-200">
           {tarefas.length}
         </span>
       </div>
