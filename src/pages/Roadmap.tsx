@@ -8,7 +8,7 @@ import { useTarefasInternas } from "@/hooks/useTarefasInternas";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, ShieldAlert } from "lucide-react";
+import { Plus, Loader2, ShieldAlert, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Roadmap() {
@@ -77,11 +77,21 @@ export default function Roadmap() {
 
       <main className="p-3 md:p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">🗺️ Roadmap</h1>
-            <p className="text-muted-foreground text-sm">
-              Gerencie as tarefas internas e melhorias do sistema
-            </p>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+              className="shrink-0"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">🗺️ Roadmap</h1>
+              <p className="text-muted-foreground text-sm">
+                Gerencie as tarefas internas e melhorias do sistema
+              </p>
+            </div>
           </div>
           <Button onClick={() => setFormOpen(true)} variant="outline">
             <Plus className="h-4 w-4 mr-2" />
