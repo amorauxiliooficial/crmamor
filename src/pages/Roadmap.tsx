@@ -102,6 +102,7 @@ export default function Roadmap() {
             onStatusChange={updateStatus}
             onUpdate={updateTarefa}
             onDelete={deleteTarefa}
+            onCreateTarefa={createTarefa}
           />
         )}
       </main>
