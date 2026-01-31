@@ -65,7 +65,7 @@ export function KanbanCard({
         "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20 relative overflow-hidden",
         isDragging && "shadow-lg ring-2 ring-primary rotate-2",
         followUpStatus === "overdue" && "ring-1 ring-destructive/50",
-        hasUnreadAlert && "bg-pink-50 dark:bg-pink-900/20 border-pink-400 dark:border-pink-600 shadow-[0_0_20px_rgba(236,72,153,0.4)] animate-[pulse_3s_ease-in-out_infinite]"
+        hasUnreadAlert && "!bg-pink-100 dark:!bg-pink-900/30 !border-pink-400 dark:!border-pink-500 shadow-[0_0_20px_rgba(236,72,153,0.5)]"
       )}
       onClick={onClick}
     >
