@@ -1036,6 +1036,51 @@ export type Database = {
         }
         Relationships: []
       }
+      tarefas_internas: {
+        Row: {
+          categoria: Database["public"]["Enums"]["task_category"]
+          created_at: string
+          created_by: string
+          descricao: string | null
+          id: string
+          ordem: number | null
+          prazo: string | null
+          prioridade: Database["public"]["Enums"]["task_priority"]
+          responsavel_id: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          categoria?: Database["public"]["Enums"]["task_category"]
+          created_at?: string
+          created_by: string
+          descricao?: string | null
+          id?: string
+          ordem?: number | null
+          prazo?: string | null
+          prioridade?: Database["public"]["Enums"]["task_priority"]
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["task_status"]
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          categoria?: Database["public"]["Enums"]["task_category"]
+          created_at?: string
+          created_by?: string
+          descricao?: string | null
+          id?: string
+          ordem?: number | null
+          prazo?: string | null
+          prioridade?: Database["public"]["Enums"]["task_priority"]
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["task_status"]
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       templates_comunicado: {
         Row: {
           ativo: boolean
@@ -1211,6 +1256,9 @@ export type Database = {
         | "Indeferida"
         | "Recurso / Judicial"
         | "Processo Encerrado"
+      task_category: "bug" | "melhoria" | "nova_funcionalidade" | "ajuste"
+      task_priority: "baixa" | "media" | "alta" | "urgente"
+      task_status: "backlog" | "priorizado" | "em_progresso" | "concluido"
       tipo_evento: "Parto" | "Adoção" | "Guarda judicial"
     }
     CompositeTypes: {
@@ -1383,6 +1431,9 @@ export const Constants = {
         "Recurso / Judicial",
         "Processo Encerrado",
       ],
+      task_category: ["bug", "melhoria", "nova_funcionalidade", "ajuste"],
+      task_priority: ["baixa", "media", "alta", "urgente"],
+      task_status: ["backlog", "priorizado", "em_progresso", "concluido"],
       tipo_evento: ["Parto", "Adoção", "Guarda judicial"],
     },
   },

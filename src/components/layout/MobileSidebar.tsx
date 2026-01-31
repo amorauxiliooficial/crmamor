@@ -24,6 +24,7 @@ import {
   ClipboardList,
   LogOut,
   Megaphone,
+  Map,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -150,6 +151,19 @@ export function MobileSidebar({
               <BookOpen className="h-4 w-4" />
               Playbook
             </Button>
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2.5 h-10 text-sm"
+                onClick={() => {
+                  navigate("/roadmap");
+                  setOpen(false);
+                }}
+              >
+                <Map className="h-4 w-4" />
+                Roadmap
+              </Button>
+            )}
             <Button
               variant="ghost"
               className="w-full justify-start gap-2.5 h-10 text-sm relative"

@@ -12,6 +12,7 @@ import Playbook from "./pages/Playbook";
 import Senhas from "./pages/Senhas";
 import Marketing from "./pages/Marketing";
 import Indicar from "./pages/Indicar";
+import Roadmap from "./pages/Roadmap";
 
 import PreAnalises from "./pages/PreAnalises";
 import NotFound from "./pages/NotFound";
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/indicar" element={<Indicar />} />
             
             <Route path="/pre-analises" element={<PreAnalises />} />
+            <Route path="/roadmap" element={<Roadmap />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
