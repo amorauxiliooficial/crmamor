@@ -21,7 +21,6 @@ import {
   MessageCircle, 
   FileText, 
   StickyNote,
-  Video,
   Search,
   AlertCircle,
   Clock,
@@ -53,7 +52,6 @@ const TIPO_ICONS: Record<TipoAtividade, typeof Phone> = {
   whatsapp: MessageCircle,
   documento: FileText,
   anotacao: StickyNote,
-  reuniao: Video,
 };
 
 const TIPO_BG_COLORS: Record<TipoAtividade, string> = {
@@ -61,7 +59,6 @@ const TIPO_BG_COLORS: Record<TipoAtividade, string> = {
   whatsapp: "bg-emerald-100 dark:bg-emerald-900/30",
   documento: "bg-purple-100 dark:bg-purple-900/30",
   anotacao: "bg-amber-100 dark:bg-amber-900/30",
-  reuniao: "bg-rose-100 dark:bg-rose-900/30",
 };
 
 interface ClienteWithActivity extends MaeProcesso {

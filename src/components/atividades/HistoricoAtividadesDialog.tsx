@@ -16,7 +16,6 @@ import {
   MessageCircle, 
   FileText, 
   StickyNote,
-  Video,
   Loader2,
   CheckCircle2,
   Clock,
@@ -36,7 +35,6 @@ const TIPO_ICONS: Record<TipoAtividade, typeof Phone> = {
   whatsapp: MessageCircle,
   documento: FileText,
   anotacao: StickyNote,
-  reuniao: Video,
 };
 
 const STATUS_ICONS: Record<string, typeof CheckCircle2> = {

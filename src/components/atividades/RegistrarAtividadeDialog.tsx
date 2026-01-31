@@ -17,8 +17,7 @@ import {
   Phone, 
   MessageCircle, 
   FileText, 
-  StickyNote, 
-  Video,
+  StickyNote,
   Loader2,
   CalendarClock,
   ArrowRight,
@@ -51,7 +50,6 @@ const TIPO_ICONS: Record<TipoAtividade, typeof Phone> = {
   whatsapp: MessageCircle,
   documento: FileText,
   anotacao: StickyNote,
-  reuniao: Video,
 };
 
 const TIPO_COLORS: Record<TipoAtividade, string> = {
@@ -59,7 +57,6 @@ const TIPO_COLORS: Record<TipoAtividade, string> = {
   whatsapp: "bg-emerald-500 hover:bg-emerald-600 text-white",
   documento: "bg-purple-500 hover:bg-purple-600 text-white",
   anotacao: "bg-amber-500 hover:bg-amber-600 text-white",
-  reuniao: "bg-rose-500 hover:bg-rose-600 text-white",
 };
 
 const RESULTADO_COLORS: Record<ResultadoContato, string> = {
@@ -330,7 +327,7 @@ export function RegistrarAtividadeDialog({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Tipo de ação</Label>
                   <div className="flex flex-wrap gap-2">
-                    {(["ligacao", "whatsapp", "documento", "reuniao"] as TipoAtividade[]).map((tipo) => {
+                    {(["ligacao", "whatsapp", "documento"] as TipoAtividade[]).map((tipo) => {
                       const Icon = TIPO_ICONS[tipo];
                       return (
                         <Button
