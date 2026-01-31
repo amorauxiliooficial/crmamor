@@ -84,7 +84,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
   }, [isAdmin, open]);
 
   useEffect(() => {
-    if (mae) {
+    if (mae && open) {
       setFormData({
         nome_mae: mae.nome_mae,
         cpf: formatCpf(mae.cpf),
@@ -108,9 +108,10 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
         is_gestante: mae.is_gestante ?? false,
         mes_gestacao: mae.mes_gestacao ?? null,
       });
-      setSelectedUserId(mae.user_id);
+      // Always set selectedUserId when mae data loads
+      setSelectedUserId(mae.user_id || "");
     }
-  }, [mae]);
+  }, [mae, open]);
 
   const formatCpf = (value: string) => {
     const numbers = value.replace(/\D/g, "").slice(0, 11);
