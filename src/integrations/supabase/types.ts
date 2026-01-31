@@ -49,6 +49,47 @@ export type Database = {
           },
         ]
       }
+      alertas_mae: {
+        Row: {
+          created_at: string
+          created_by: string
+          destinatario_id: string | null
+          id: string
+          lido: boolean | null
+          lido_em: string | null
+          mae_id: string
+          mensagem: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          destinatario_id?: string | null
+          id?: string
+          lido?: boolean | null
+          lido_em?: string | null
+          mae_id: string
+          mensagem: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          destinatario_id?: string | null
+          id?: string
+          lido?: boolean | null
+          lido_em?: string | null
+          mae_id?: string
+          mensagem?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alertas_mae_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       atividades_mae: {
         Row: {
           concluido: boolean | null

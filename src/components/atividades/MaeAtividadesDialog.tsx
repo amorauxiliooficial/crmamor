@@ -4,6 +4,7 @@ import { TipoAtividade, TIPO_ATIVIDADE_LABELS, RESULTADO_CONTATO_LABELS, Resulta
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import { formatCpf, formatPhone } from "@/lib/formatters";
 import { RegistrarAtividadeDialog } from "./RegistrarAtividadeDialog";
 import { AgendarFollowUpDialog } from "./AgendarFollowUpDialog";
@@ -33,6 +35,9 @@ import {
   AlertCircle,
   ExternalLink,
   Pencil,
+  Bell,
+  Send,
+  X,
 } from "lucide-react";
 import { format, formatDistanceToNow, isPast, parseISO, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -55,6 +60,18 @@ interface Atividade {
   data_proxima_acao: string | null;
   status_followup: string | null;
   concluido: boolean;
+}
+
+interface AlertaMae {
+  id: string;
+  mae_id: string;
+  created_by: string;
+  destinatario_id: string | null;
+  mensagem: string;
+  lido: boolean;
+  lido_em: string | null;
+  created_at: string;
+  criador?: { full_name: string | null; email: string | null };
 }
 
 const TIPO_ICONS: Record<TipoAtividade, typeof Phone> = {
@@ -80,41 +97,145 @@ export function MaeAtividadesDialog({
 }: MaeAtividadesDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isAdmin } = useIsAdmin();
   
   const [atividades, setAtividades] = useState<Atividade[]>([]);
   const [pendentes, setPendentes] = useState<Atividade[]>([]);
+  const [alertas, setAlertas] = useState<AlertaMae[]>([]);
   const [loading, setLoading] = useState(false);
   
   const [novaAtividadeOpen, setNovaAtividadeOpen] = useState(false);
   const [agendarFollowUpOpen, setAgendarFollowUpOpen] = useState(false);
+  
+  // Admin alert form
+  const [novoAlerta, setNovoAlerta] = useState("");
+  const [enviandoAlerta, setEnviandoAlerta] = useState(false);
 
-  // Fetch activities for this mae
+  // Fetch activities and alerts for this mae
   useEffect(() => {
     if (!mae || !open) return;
 
-    const fetchAtividades = async () => {
+    const fetchData = async () => {
       setLoading(true);
       
-      const { data, error } = await supabase
+      // Fetch activities
+      const { data: atividadesData } = await supabase
         .from("atividades_mae")
         .select("*")
         .eq("mae_id", mae.id)
         .order("data_atividade", { ascending: false });
 
-      if (!error && data) {
-        setAtividades(data as Atividade[]);
+      if (atividadesData) {
+        setAtividades(atividadesData as Atividade[]);
         setPendentes(
-          data.filter(
+          atividadesData.filter(
             (a) => a.status_followup === "agendado" && !a.concluido
           ) as Atividade[]
         );
       }
       
+      // Fetch admin alerts
+      const { data: alertasData } = await supabase
+        .from("alertas_mae")
+        .select("*")
+        .eq("mae_id", mae.id)
+        .order("created_at", { ascending: false });
+
+      if (alertasData) {
+        // Fetch creator names
+        const creatorIds = [...new Set(alertasData.map(a => a.created_by))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", creatorIds);
+
+        const alertasComCriador = alertasData.map(alerta => ({
+          ...alerta,
+          criador: profiles?.find(p => p.id === alerta.created_by) || null
+        }));
+        
+        setAlertas(alertasComCriador as AlertaMae[]);
+      }
+      
       setLoading(false);
     };
 
-    fetchAtividades();
+    fetchData();
   }, [mae, open]);
+
+  // Send admin alert
+  const handleEnviarAlerta = async () => {
+    if (!mae || !user || !novoAlerta.trim()) return;
+    
+    setEnviandoAlerta(true);
+    
+    const { error } = await supabase
+      .from("alertas_mae")
+      .insert({
+        mae_id: mae.id,
+        created_by: user.id,
+        destinatario_id: mae.user_id, // Send to the main attendant
+        mensagem: novoAlerta.trim(),
+      });
+
+    if (error) {
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível enviar o alerta." });
+    } else {
+      toast({ title: "✓ Alerta enviado", description: "O atendente será notificado." });
+      setNovoAlerta("");
+      
+      // Refresh alerts
+      const { data: alertasData } = await supabase
+        .from("alertas_mae")
+        .select("*")
+        .eq("mae_id", mae.id)
+        .order("created_at", { ascending: false });
+
+      if (alertasData) {
+        const creatorIds = [...new Set(alertasData.map(a => a.created_by))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", creatorIds);
+
+        const alertasComCriador = alertasData.map(alerta => ({
+          ...alerta,
+          criador: profiles?.find(p => p.id === alerta.created_by) || null
+        }));
+        
+        setAlertas(alertasComCriador as AlertaMae[]);
+      }
+    }
+    
+    setEnviandoAlerta(false);
+  };
+
+  // Mark alert as read
+  const handleMarcarLido = async (alertaId: string) => {
+    const { error } = await supabase
+      .from("alertas_mae")
+      .update({ lido: true, lido_em: new Date().toISOString() })
+      .eq("id", alertaId);
+
+    if (!error) {
+      setAlertas(prev => prev.map(a => 
+        a.id === alertaId ? { ...a, lido: true, lido_em: new Date().toISOString() } : a
+      ));
+    }
+  };
+
+  // Delete alert (admin only)
+  const handleDeletarAlerta = async (alertaId: string) => {
+    const { error } = await supabase
+      .from("alertas_mae")
+      .delete()
+      .eq("id", alertaId);
+
+    if (!error) {
+      setAlertas(prev => prev.filter(a => a.id !== alertaId));
+      toast({ title: "Alerta removido" });
+    }
+  };
 
   const handleComplete = async (atividadeId: string) => {
     const { error } = await supabase
@@ -224,6 +345,81 @@ export function MaeAtividadesDialog({
             </Button>
           </div>
 
+          {/* Admin Alerts Section */}
+          {alertas.filter(a => !a.lido).length > 0 && (
+            <div className="p-3 border-b bg-amber-50 dark:bg-amber-900/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Bell className="h-4 w-4 text-amber-600" />
+                <span className="font-medium text-sm text-amber-800 dark:text-amber-200">
+                  Alertas do Admin ({alertas.filter(a => !a.lido).length})
+                </span>
+              </div>
+              <div className="space-y-2">
+                {alertas.filter(a => !a.lido).map(alerta => (
+                  <Card key={alerta.id} className="border-amber-200 dark:border-amber-800">
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-2">
+                        <div className="flex-1">
+                          <p className="text-sm">{alerta.mensagem}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {alerta.criador?.full_name || "Admin"} • {formatDistanceToNow(parseISO(alerta.created_at), { addSuffix: true, locale: ptBR })}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleMarcarLido(alerta.id)}
+                          className="shrink-0"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                        </Button>
+                        {isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeletarAlerta(alerta.id)}
+                            className="shrink-0 text-destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Admin: Send new alert */}
+          {isAdmin && (
+            <div className="p-3 border-b bg-muted/30">
+              <div className="flex items-center gap-2 mb-2">
+                <Bell className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Enviar alerta ao atendente</span>
+              </div>
+              <div className="flex gap-2">
+                <Textarea
+                  placeholder="Digite uma mensagem para o atendente..."
+                  value={novoAlerta}
+                  onChange={(e) => setNovoAlerta(e.target.value)}
+                  className="min-h-[60px] text-sm"
+                />
+                <Button
+                  onClick={handleEnviarAlerta}
+                  disabled={!novoAlerta.trim() || enviandoAlerta}
+                  className="shrink-0"
+                >
+                  {enviandoAlerta ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Tabs for content */}
           <Tabs defaultValue="pendentes" className="flex-1">
             <TabsList className="w-full justify-start rounded-none border-b bg-transparent h-auto p-0">
@@ -245,6 +441,18 @@ export function MaeAtividadesDialog({
               >
                 <History className="h-4 w-4 mr-2" />
                 Histórico ({atividades.length})
+              </TabsTrigger>
+              <TabsTrigger
+                value="alertas"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent py-3 px-4"
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                Alertas
+                {alertas.length > 0 && (
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    {alertas.length}
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
 
@@ -410,6 +618,69 @@ export function MaeAtividadesDialog({
                         </Card>
                       );
                     })}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Alerts tab */}
+              <TabsContent value="alertas" className="m-0 p-4">
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : alertas.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Bell className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <p>Nenhum alerta registrado</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {alertas.map((alerta) => (
+                      <Card 
+                        key={alerta.id} 
+                        className={alerta.lido ? "opacity-60" : "border-l-4 border-l-amber-500"}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                              <Bell className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm">{alerta.mensagem}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {alerta.criador?.full_name || "Admin"} • {format(parseISO(alerta.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                {alerta.lido && (
+                                  <span className="ml-2 text-emerald-600">
+                                    • Lido
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                            <div className="flex gap-1">
+                              {!alerta.lido && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleMarcarLido(alerta.id)}
+                                >
+                                  <CheckCircle2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {isAdmin && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDeletarAlerta(alerta.id)}
+                                  className="text-destructive"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 )}
               </TabsContent>
