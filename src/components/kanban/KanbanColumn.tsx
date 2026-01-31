@@ -3,6 +3,7 @@ import { KanbanCard } from "./KanbanCard";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Draggable } from "@hello-pangea/dnd";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface KanbanColumnProps {
   status: StatusProcesso;
@@ -26,27 +27,27 @@ export function KanbanColumn({
   const statusLabel = status.split(" ").slice(1).join(" ") || status;
   const emoji = status.split(" ")[0];
 
+  const handleToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleExpand();
+  };
+
   return (
     <div 
       className={cn(
-        "flex h-full flex-shrink-0 flex-col rounded-lg border bg-card transition-all duration-200 cursor-pointer",
-        isExpanded ? "w-[300px]" : "w-[48px]",
+        "flex h-full flex-shrink-0 flex-col rounded-lg border bg-card transition-all duration-200",
+        isExpanded ? "w-[300px]" : "w-[48px] cursor-pointer",
         isDraggingOver && "ring-2 ring-primary bg-primary/5"
       )}
-      onClick={() => !isExpanded && onToggleExpand()}
+      onClick={!isExpanded ? handleToggle : undefined}
     >
       <div
         className={cn(
-          "flex items-center gap-2 border-b px-4 py-3",
+          "flex items-center gap-2 border-b px-4 py-3 relative",
           STATUS_COLORS[status],
           !isExpanded && "flex-col px-2 py-4"
         )}
-        onClick={(e) => {
-          if (isExpanded) {
-            e.stopPropagation();
-            onToggleExpand();
-          }
-        }}
       >
         <span className="text-lg">{emoji}</span>
         {isExpanded ? (
@@ -55,6 +56,14 @@ export function KanbanColumn({
             <span className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-background text-xs font-medium">
               {maes.length}
             </span>
+            <button
+              type="button"
+              onClick={handleToggle}
+              className="ml-1 p-1 rounded hover:bg-background/50 transition-colors"
+              title="Recolher coluna"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
           </>
         ) : (
           <>
@@ -67,6 +76,7 @@ export function KanbanColumn({
             >
               {statusLabel}
             </span>
+            <ChevronRight className="h-3 w-3 mt-2 opacity-50" />
           </>
         )}
       </div>
