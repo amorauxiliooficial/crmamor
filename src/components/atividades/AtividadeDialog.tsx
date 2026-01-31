@@ -103,7 +103,9 @@ export function AtividadeDialog({
         <div className="space-y-3 py-3 border-b">
           <Label className="text-sm font-medium">Registrar nova atividade</Label>
           <div className="flex flex-wrap gap-2">
-            {(Object.keys(TIPO_ICONS) as TipoAtividade[]).map((tipo) => {
+            {(Object.keys(TIPO_ICONS) as TipoAtividade[])
+              .filter((tipo) => tipo !== "ligacao")
+              .map((tipo) => {
               const Icon = TIPO_ICONS[tipo];
               const isSelected = selectedTipo === tipo;
               return (
