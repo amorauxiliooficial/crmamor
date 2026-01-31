@@ -84,14 +84,16 @@ export function TarefaFormDialog({
   const [prazo, setPrazo] = useState<Date | undefined>();
   const [saving, setSaving] = useState(false);
 
+  // Reset form when dialog opens/closes or tarefa changes
   useEffect(() => {
+    if (!open) return;
+    
     if (tarefa) {
       setTitulo(tarefa.titulo);
       setDescricao(tarefa.descricao || "");
       setStatus(tarefa.status);
       setPrioridade(tarefa.prioridade);
       setCategoria(tarefa.categoria);
-      setResponsaveis(responsaveisAtuais);
       setPrazo(tarefa.prazo ? parseISO(tarefa.prazo) : undefined);
     } else {
       setTitulo("");
@@ -99,10 +101,15 @@ export function TarefaFormDialog({
       setStatus(defaultStatus || "backlog");
       setPrioridade("media");
       setCategoria("melhoria");
-      setResponsaveis([]);
       setPrazo(undefined);
     }
-  }, [tarefa, open, responsaveisAtuais, defaultStatus]);
+  }, [tarefa, open, defaultStatus]);
+
+  // Separate effect for responsaveis to avoid loop
+  useEffect(() => {
+    if (!open) return;
+    setResponsaveis(responsaveisAtuais);
+  }, [open, tarefa?.id]);
 
   const handleToggleResponsavel = (userId: string) => {
     setResponsaveis((prev) =>
