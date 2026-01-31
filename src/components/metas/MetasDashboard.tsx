@@ -1,7 +1,7 @@
 import { useMetasProgress } from "@/hooks/useMetas";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Settings, Heart, Baby, Users, FileCheck, Activity, Target, Sparkles, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Loader2, Settings, Heart, Baby, Users, FileCheck, Activity, Target, Sparkles, TrendingUp, TrendingDown, Minus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { useEffect, useRef, useState } from "react";
@@ -311,8 +311,16 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
                         </div>
                       </div>
                     </PopoverTrigger>
-                    <PopoverContent className="w-64 p-3" align="center">
-                      <div className="space-y-3">
+                    <PopoverContent className="w-64 p-3 relative" align="center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6"
+                        onClick={() => setSelectedMeta(null)}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                      <div className="space-y-3 pt-2">
                         {/* Header */}
                         <div className="flex items-center gap-2">
                           <div className={cn(
