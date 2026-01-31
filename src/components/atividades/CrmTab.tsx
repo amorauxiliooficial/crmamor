@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { MaeProcesso } from "@/types/mae";
 import { TipoAtividade, TIPO_ATIVIDADE_LABELS, RESULTADO_CONTATO_LABELS, ResultadoContato } from "@/types/atividade";
 import { useCrmAtividades, PendingFollowUp, useFollowUpCounts, useFollowUpsByDate } from "@/hooks/useCrmAtividades";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { RegistrarAtividadeDialog } from "./RegistrarAtividadeDialog";
+import { ClienteCard } from "./ClienteCard";
+import { AgendarFollowUpDialog } from "./AgendarFollowUpDialog";
+import { HistoricoAtividadesDialog } from "./HistoricoAtividadesDialog";
 import { formatCpf } from "@/lib/formatters";
 import { 
   Phone, 
@@ -27,9 +31,10 @@ import {
   Loader2,
   Play,
   X,
-  MoreHorizontal
+  MoreHorizontal,
+  Users
 } from "lucide-react";
-import { format, isToday, isPast, parseISO, isSameDay } from "date-fns";
+import { format, isToday, isPast, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   DropdownMenu,
@@ -59,6 +64,11 @@ const TIPO_BG_COLORS: Record<TipoAtividade, string> = {
   reuniao: "bg-rose-100 dark:bg-rose-900/30",
 };
 
+interface ClienteWithActivity extends MaeProcesso {
+  pendingCount: number;
+  lastActivityDate: string | null;
+}
+
 export function CrmTab({ maes, onRefresh }: CrmTabProps) {
   const { toast } = useToast();
   const { categorized, loading, refetch, completeFollowUp, cancelFollowUp } = useCrmAtividades();
@@ -68,10 +78,64 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
   const [selectedMae, setSelectedMae] = useState<MaeProcesso | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("followups");
+  
+  // Dialog states
+  const [agendarDialogOpen, setAgendarDialogOpen] = useState(false);
+  const [historicoDialogOpen, setHistoricoDialogOpen] = useState(false);
   
   // Calendar data
   const { counts: followUpCounts } = useFollowUpCounts(selectedDate.getFullYear(), selectedDate.getMonth());
   const { followUps: dateFollowUps, loading: dateLoading } = useFollowUpsByDate(selectedDate);
+  
+  // Clients with pending count
+  const [clientesComPendencias, setClientesComPendencias] = useState<ClienteWithActivity[]>([]);
+  const [clientesLoading, setClientesLoading] = useState(false);
+
+  // Fetch pending counts for all clients
+  useEffect(() => {
+    const fetchClientesPendencias = async () => {
+      if (maes.length === 0) return;
+      
+      setClientesLoading(true);
+      
+      // Get pending counts and last activity for each mae
+      const maeIds = maes.map(m => m.id);
+      
+      const { data: atividades } = await supabase
+        .from("atividades_mae")
+        .select("mae_id, data_atividade, status_followup, concluido")
+        .in("mae_id", maeIds);
+      
+      const clientesEnriquecidos = maes.map(mae => {
+        const maeAtividades = atividades?.filter(a => a.mae_id === mae.id) || [];
+        const pendentes = maeAtividades.filter(a => 
+          a.status_followup === "agendado" && !a.concluido
+        ).length;
+        const ultimaAtividade = maeAtividades
+          .sort((a, b) => new Date(b.data_atividade).getTime() - new Date(a.data_atividade).getTime())[0];
+        
+        return {
+          ...mae,
+          pendingCount: pendentes,
+          lastActivityDate: ultimaAtividade?.data_atividade || null,
+        };
+      });
+      
+      // Sort: pending first, then by last activity
+      clientesEnriquecidos.sort((a, b) => {
+        if (a.pendingCount !== b.pendingCount) return b.pendingCount - a.pendingCount;
+        if (!a.lastActivityDate) return 1;
+        if (!b.lastActivityDate) return -1;
+        return new Date(b.lastActivityDate).getTime() - new Date(a.lastActivityDate).getTime();
+      });
+      
+      setClientesComPendencias(clientesEnriquecidos);
+      setClientesLoading(false);
+    };
+    
+    fetchClientesPendencias();
+  }, [maes]);
 
   // Filter follow-ups by search
   const filterBySearch = (items: PendingFollowUp[]) => {
@@ -81,6 +145,15 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
       (f) => f.mae_nome.toLowerCase().includes(query) || f.mae_cpf.includes(query.replace(/\D/g, ""))
     );
   };
+  
+  // Filter clients by search
+  const filteredClientes = useMemo(() => {
+    if (!searchQuery.trim()) return clientesComPendencias;
+    const query = searchQuery.toLowerCase();
+    return clientesComPendencias.filter(
+      (c) => c.nome_mae.toLowerCase().includes(query) || c.cpf.includes(query.replace(/\D/g, ""))
+    );
+  }, [clientesComPendencias, searchQuery]);
 
   const handleStartFollowUp = (followUp: PendingFollowUp) => {
     const mae = maes.find((m) => m.id === followUp.mae_id);
@@ -114,6 +187,22 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
       toast({ title: "Cancelado", description: "Follow-up cancelado." });
       onRefresh();
     }
+  };
+  
+  // Cliente actions
+  const handleNovaAtividade = (mae: MaeProcesso) => {
+    setSelectedMae(mae);
+    setDialogOpen(true);
+  };
+  
+  const handleVerHistorico = (mae: MaeProcesso) => {
+    setSelectedMae(mae);
+    setHistoricoDialogOpen(true);
+  };
+  
+  const handleAgendarFollowUp = (mae: MaeProcesso) => {
+    setSelectedMae(mae);
+    setAgendarDialogOpen(true);
   };
 
   const FollowUpCard = ({ followUp, showDate = true }: { followUp: PendingFollowUp; showDate?: boolean }) => {
@@ -199,7 +288,7 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
   return (
     <div className="space-y-4">
       {/* Stats Header */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <Card className="border-l-4 border-l-destructive">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
@@ -235,6 +324,18 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
             </div>
           </CardContent>
         </Card>
+        
+        <Card className="border-l-4 border-l-emerald-500">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-emerald-500" />
+              <div>
+                <p className="text-2xl font-bold text-emerald-600">{maes.length}</p>
+                <p className="text-xs text-muted-foreground">Clientes</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search */}
@@ -248,12 +349,16 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
         />
       </div>
 
-      {/* Tabs: List / Calendar */}
-      <Tabs defaultValue="list" className="w-full">
-        <TabsList className="w-full grid grid-cols-2">
-          <TabsTrigger value="list" className="gap-2">
+      {/* Tabs: Follow-ups / Clients / Calendar */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="w-full grid grid-cols-3">
+          <TabsTrigger value="followups" className="gap-2">
             <ListTodo className="h-4 w-4" />
-            Lista
+            Follow-ups
+          </TabsTrigger>
+          <TabsTrigger value="clientes" className="gap-2">
+            <Users className="h-4 w-4" />
+            Clientes
           </TabsTrigger>
           <TabsTrigger value="calendar" className="gap-2">
             <CalendarDays className="h-4 w-4" />
@@ -261,8 +366,8 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
           </TabsTrigger>
         </TabsList>
 
-        {/* List View */}
-        <TabsContent value="list" className="mt-4">
+        {/* Follow-ups View */}
+        <TabsContent value="followups" className="mt-4">
           <ScrollArea className="h-[calc(100vh-460px)] min-h-[350px]">
             <div className="space-y-4 pr-4">
               {loading ? (
@@ -317,10 +422,40 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
                     <div className="text-center py-12 text-muted-foreground">
                       <CheckCircle2 className="h-12 w-12 mx-auto mb-3 opacity-30" />
                       <p>Nenhum follow-up agendado</p>
-                      <p className="text-xs mt-1">Registre atividades com agendamento para ver aqui</p>
+                      <p className="text-xs mt-1">Vá em "Clientes" para agendar atividades</p>
                     </div>
                   )}
                 </>
+              )}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        {/* Clients View */}
+        <TabsContent value="clientes" className="mt-4">
+          <ScrollArea className="h-[calc(100vh-460px)] min-h-[350px]">
+            <div className="space-y-2 pr-4">
+              {clientesLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : filteredClientes.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p>Nenhum cliente encontrado</p>
+                </div>
+              ) : (
+                filteredClientes.map((cliente) => (
+                  <ClienteCard
+                    key={cliente.id}
+                    mae={cliente}
+                    pendingCount={cliente.pendingCount}
+                    lastActivityDate={cliente.lastActivityDate}
+                    onNovaAtividade={handleNovaAtividade}
+                    onVerHistorico={handleVerHistorico}
+                    onAgendarFollowUp={handleAgendarFollowUp}
+                  />
+                ))
               )}
             </div>
           </ScrollArea>
@@ -395,6 +530,28 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
             refetch();
             onRefresh();
           }}
+        />
+      )}
+      
+      {/* Agendar Follow-up Dialog */}
+      {selectedMae && (
+        <AgendarFollowUpDialog
+          mae={selectedMae}
+          open={agendarDialogOpen}
+          onOpenChange={setAgendarDialogOpen}
+          onFollowUpAgendado={() => {
+            refetch();
+            onRefresh();
+          }}
+        />
+      )}
+      
+      {/* Histórico Dialog */}
+      {selectedMae && (
+        <HistoricoAtividadesDialog
+          mae={selectedMae}
+          open={historicoDialogOpen}
+          onOpenChange={setHistoricoDialogOpen}
         />
       )}
     </div>
