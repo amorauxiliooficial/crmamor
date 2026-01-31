@@ -139,6 +139,36 @@ const Index = () => {
   // Onboarding modal is now opened manually via header button only
   // Removed automatic popup on first load
 
+  // Map a single database item to MaeProcessoComAtividade
+  const mapDbToMae = (item: Record<string, unknown>): MaeProcessoComAtividade => ({
+    id: item.id as string,
+    user_id: item.user_id as string,
+    nome_mae: item.nome_mae as string,
+    cpf: item.cpf as string,
+    telefone: (item.telefone as string) || undefined,
+    email: (item.email as string) || undefined,
+    tipo_evento: item.tipo_evento as MaeProcesso["tipo_evento"],
+    data_evento: (item.data_evento as string) || undefined,
+    data_evento_tipo: ((item.data_evento_tipo as string) || "") as MaeProcesso["data_evento_tipo"],
+    categoria_previdenciaria: item.categoria_previdenciaria as MaeProcesso["categoria_previdenciaria"],
+    status_processo: mapDbStatusToDisplay(item.status_processo as string),
+    protocolo_inss: (item.protocolo_inss as string) || undefined,
+    parcelas: (item.parcelas as string) || undefined,
+    contrato_assinado: item.contrato_assinado as boolean,
+    segurada: (item.segurada as string) || undefined,
+    precisa_gps: (item.precisa_gps as string) || undefined,
+    uf: (item.uf as string) || undefined,
+    observacoes: (item.observacoes as string) || undefined,
+    origem: (item.origem as string) || undefined,
+    senha_gov: (item.senha_gov as string) || undefined,
+    verificacao_duas_etapas: (item.verificacao_duas_etapas as boolean) ?? false,
+    is_gestante: (item.is_gestante as boolean) ?? false,
+    mes_gestacao: (item.mes_gestacao as number) ?? null,
+    data_ultima_atualizacao: item.data_ultima_atualizacao as string,
+    link_documentos: (item.link_documentos as string) || null,
+    ultima_atividade_em: (item.ultima_atividade_em as string) || null,
+  });
+
   // Fetch processes from database
   const fetchMaes = async () => {
     if (!user) return;
@@ -159,38 +189,37 @@ const Index = () => {
     } else if (data) {
       // Store raw data for user extraction
       setAllMaesRaw(data.map((item) => ({ id: item.id, user_id: item.user_id })));
-      
-      const mappedData: MaeProcessoComAtividade[] = data.map((item) => ({
-        id: item.id,
-        user_id: item.user_id,
-        nome_mae: item.nome_mae,
-        cpf: item.cpf,
-        telefone: item.telefone || undefined,
-        email: item.email || undefined,
-        tipo_evento: item.tipo_evento as MaeProcesso["tipo_evento"],
-        data_evento: item.data_evento || undefined,
-        data_evento_tipo: (item.data_evento_tipo || "") as MaeProcesso["data_evento_tipo"],
-        categoria_previdenciaria: item.categoria_previdenciaria as MaeProcesso["categoria_previdenciaria"],
-        status_processo: mapDbStatusToDisplay(item.status_processo),
-        protocolo_inss: item.protocolo_inss || undefined,
-        parcelas: item.parcelas || undefined,
-        contrato_assinado: item.contrato_assinado,
-        segurada: item.segurada || undefined,
-        precisa_gps: item.precisa_gps || undefined,
-        uf: item.uf || undefined,
-        observacoes: item.observacoes || undefined,
-        origem: item.origem || undefined,
-        senha_gov: item.senha_gov || undefined,
-        verificacao_duas_etapas: item.verificacao_duas_etapas ?? false,
-        is_gestante: item.is_gestante ?? false,
-        mes_gestacao: item.mes_gestacao ?? null,
-        data_ultima_atualizacao: item.data_ultima_atualizacao,
-        link_documentos: item.link_documentos || null,
-        ultima_atividade_em: (item as { ultima_atividade_em?: string | null }).ultima_atividade_em || null,
-      }));
+      const mappedData = data.map((item) => mapDbToMae(item as Record<string, unknown>));
       setMaes(mappedData);
     }
     setLoading(false);
+  };
+
+  // Refresh a single mae in the state without reloading all data
+  const refreshSingleMae = async (maeId: string) => {
+    const { data, error } = await supabase
+      .from("mae_processo")
+      .select("*")
+      .eq("id", maeId)
+      .single();
+
+    if (error) {
+      logError('refresh_single_mae', error);
+      // Fallback to full refresh on error
+      fetchMaes();
+      return;
+    }
+
+    if (data) {
+      const updatedMae = mapDbToMae(data as Record<string, unknown>);
+      setMaes((prevMaes) => 
+        prevMaes.map((m) => (m.id === maeId ? updatedMae : m))
+      );
+      // Update selectedMae if it's the same
+      if (selectedMae?.id === maeId) {
+        setSelectedMae(updatedMae);
+      }
+    }
   };
 
   // Fetch all users (profiles) for user selector
@@ -322,6 +351,13 @@ const Index = () => {
   };
 
   const handleStatusChange = async (maeId: string, newStatus: StatusProcesso) => {
+    // Optimistic update - update UI immediately
+    setMaes((prevMaes) =>
+      prevMaes.map((m) =>
+        m.id === maeId ? { ...m, status_processo: newStatus } : m
+      )
+    );
+
     const dbStatus = mapDisplayStatusToDb(newStatus) as 
       "Entrada de Documentos" | "Em Análise" | "Pendência Documental" | 
       "Elegível (Análise Positiva)" | "Protocolo INSS" | "Aguardando Análise INSS" | 
@@ -339,12 +375,13 @@ const Index = () => {
         title: "Erro ao atualizar status",
         description: getUserFriendlyError(error),
       });
+      // Revert on error - refresh from server
+      fetchMaes();
     } else {
       toast({
         title: "Status atualizado",
         description: `Processo movido para ${newStatus}`,
       });
-      fetchMaes();
     }
   };
 
@@ -675,7 +712,11 @@ const Index = () => {
         mae={selectedMae}
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
-        onSuccess={fetchMaes}
+        onSuccess={() => {
+          if (selectedMae?.id) {
+            refreshSingleMae(selectedMae.id);
+          }
+        }}
       />
 
       <MaeFormDialog
@@ -700,7 +741,11 @@ const Index = () => {
           mae={selectedMae}
           open={atividadeDialogOpen}
           onOpenChange={setAtividadeDialogOpen}
-          onActivityAdded={fetchMaes}
+          onActivityAdded={() => {
+            if (selectedMae?.id) {
+              refreshSingleMae(selectedMae.id);
+            }
+          }}
         />
       )}
 
