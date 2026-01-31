@@ -226,9 +226,13 @@ export function Header({
 
           {/* Add button - always visible */}
           {onAddMae && (
-            <Button onClick={onAddMae} size="sm" className="gap-2 tour-add-mae h-8 md:h-9 px-2 md:px-3">
-              <UserPlus className="h-4 w-4" />
-              <span className="hidden lg:inline">Nova Mãe</span>
+            <Button 
+              onClick={onAddMae} 
+              size="sm" 
+              className="gap-2 tour-add-mae h-9 md:h-10 px-3 md:px-4 font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
+            >
+              <UserPlus className="h-4 w-4 md:h-5 md:w-5" />
+              <span className="hidden sm:inline">Nova Mãe</span>
             </Button>
           )}
           
