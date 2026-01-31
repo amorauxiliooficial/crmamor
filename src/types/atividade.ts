@@ -1,4 +1,4 @@
-export type TipoAtividade = "ligacao" | "whatsapp" | "documento" | "anotacao" | "reuniao";
+export type TipoAtividade = "ligacao" | "whatsapp" | "documento" | "anotacao";
 
 export type ResultadoContato = 
   | "conseguiu_falar" 
@@ -42,7 +42,6 @@ export const TIPO_ATIVIDADE_LABELS: Record<TipoAtividade, string> = {
   whatsapp: "WhatsApp",
   documento: "Documento",
   anotacao: "Anotação",
-  reuniao: "Reunião",
 };
 
 export const TIPO_ATIVIDADE_ICONS: Record<TipoAtividade, string> = {
@@ -50,7 +49,6 @@ export const TIPO_ATIVIDADE_ICONS: Record<TipoAtividade, string> = {
   whatsapp: "MessageCircle",
   documento: "FileText",
   anotacao: "StickyNote",
-  reuniao: "Video",
 };
 
 export const RESULTADO_CONTATO_LABELS: Record<ResultadoContato, string> = {

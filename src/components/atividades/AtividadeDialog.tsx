@@ -16,8 +16,7 @@ import {
   Phone, 
   MessageCircle, 
   FileText, 
-  StickyNote, 
-  Video,
+  StickyNote,
   Loader2,
   Plus,
   Clock
@@ -40,7 +39,6 @@ const TIPO_ICONS: Record<TipoAtividade, typeof Phone> = {
   whatsapp: MessageCircle,
   documento: FileText,
   anotacao: StickyNote,
-  reuniao: Video,
 };
 
 const TIPO_COLORS: Record<TipoAtividade, string> = {
@@ -48,7 +46,6 @@ const TIPO_COLORS: Record<TipoAtividade, string> = {
   whatsapp: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
   documento: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
   anotacao: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-  reuniao: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
 };
 
 export function AtividadeDialog({ 
@@ -104,7 +101,7 @@ export function AtividadeDialog({
           <Label className="text-sm font-medium">Registrar nova atividade</Label>
           <div className="flex flex-wrap gap-2">
             {(Object.keys(TIPO_ICONS) as TipoAtividade[])
-              .filter((tipo) => tipo !== "ligacao" && tipo !== "reuniao")
+              .filter((tipo) => tipo !== "ligacao")
               .map((tipo) => {
               const Icon = TIPO_ICONS[tipo];
               const isSelected = selectedTipo === tipo;
