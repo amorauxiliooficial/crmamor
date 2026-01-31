@@ -1,14 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { RoadmapBoard } from "@/components/roadmap/RoadmapBoard";
 import { TarefaFormDialog } from "@/components/roadmap/TarefaFormDialog";
+import { QuickTaskInput } from "@/components/roadmap/QuickTaskInput";
 import { useTarefasInternas } from "@/hooks/useTarefasInternas";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, ShieldAlert } from "lucide-react";
-import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Roadmap() {
@@ -75,19 +75,22 @@ export default function Roadmap() {
         onSearchChange={() => {}}
       />
 
-      <main className="p-3 md:p-6">
-        <div className="flex items-center justify-between mb-4">
+      <main className="p-3 md:p-6 space-y-4">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">🗺️ Roadmap</h1>
             <p className="text-muted-foreground text-sm">
               Gerencie as tarefas internas e melhorias do sistema
             </p>
           </div>
-          <Button onClick={() => setFormOpen(true)}>
+          <Button onClick={() => setFormOpen(true)} variant="outline">
             <Plus className="h-4 w-4 mr-2" />
-            Nova Tarefa
+            Formulário Completo
           </Button>
         </div>
+
+        {/* Quick task input */}
+        <QuickTaskInput onCreateTask={createTarefa} />
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
