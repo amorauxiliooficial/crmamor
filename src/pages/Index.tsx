@@ -22,6 +22,7 @@ import { MetasConfigDialog } from "@/components/metas/MetasConfigDialog";
 
 import { AtividadeDialog } from "@/components/atividades/AtividadeDialog";
 import { CrmTab } from "@/components/atividades/CrmTab";
+import { MaeAtividadesDialog } from "@/components/atividades/MaeAtividadesDialog";
 import { Indicacao } from "@/types/indicacao";
 import { useAuth } from "@/hooks/useAuth";
 import { useTour } from "@/hooks/useTour";
@@ -103,6 +104,7 @@ const Index = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [atividadeDialogOpen, setAtividadeDialogOpen] = useState(false);
+  const [maeAtividadesDialogOpen, setMaeAtividadesDialogOpen] = useState(false);
   const [maes, setMaes] = useState<MaeProcessoComAtividade[]>([]);
   const [allMaesRaw, setAllMaesRaw] = useState<{ id: string; user_id: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -341,7 +343,7 @@ const Index = () => {
 
   const handleCardClick = (mae: MaeProcessoComAtividade) => {
     setSelectedMae(mae);
-    setEditDialogOpen(true);
+    setMaeAtividadesDialogOpen(true);
   };
 
   const handleOpenAtividades = (mae: MaeProcessoComAtividade) => {
@@ -746,6 +748,19 @@ const Index = () => {
           open={atividadeDialogOpen}
           onOpenChange={setAtividadeDialogOpen}
           onActivityAdded={() => {
+            if (selectedMae?.id) {
+              refreshSingleMae(selectedMae.id);
+            }
+          }}
+        />
+      )}
+
+      {selectedMae && (
+        <MaeAtividadesDialog
+          mae={selectedMae}
+          open={maeAtividadesDialogOpen}
+          onOpenChange={setMaeAtividadesDialogOpen}
+          onRefresh={() => {
             if (selectedMae?.id) {
               refreshSingleMae(selectedMae.id);
             }
