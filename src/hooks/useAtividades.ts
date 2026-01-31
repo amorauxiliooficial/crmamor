@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Atividade, TipoAtividade, ConfigPrazoStatus } from "@/types/atividade";
@@ -68,26 +69,27 @@ export function useAtividades(maeId?: string) {
   return { atividades, loading, addAtividade, refetch: fetchAtividades };
 }
 
+// Fetch config with React Query for caching
+async function fetchConfigPrazos(): Promise<ConfigPrazoStatus[]> {
+  const { data, error } = await supabase
+    .from("config_prazos_status")
+    .select("*");
+
+  if (error) throw error;
+  return (data || []) as ConfigPrazoStatus[];
+}
+
 export function useConfigPrazos() {
-  const [config, setConfig] = useState<ConfigPrazoStatus[]>([]);
-  const [loading, setLoading] = useState(true);
+  const query = useQuery({
+    queryKey: ["config_prazos_status"],
+    queryFn: fetchConfigPrazos,
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30, // 30 minutos no cache
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
-  useEffect(() => {
-    const fetchConfig = async () => {
-      const { data, error } = await supabase
-        .from("config_prazos_status")
-        .select("*");
-
-      if (error) {
-        console.error("Erro ao carregar configuração de prazos:", error);
-      } else if (data) {
-        setConfig(data as ConfigPrazoStatus[]);
-      }
-      setLoading(false);
-    };
-
-    fetchConfig();
-  }, []);
+  const config = query.data || [];
 
   const getPrazoForStatus = (statusProcesso: string): number => {
     // Remove emoji prefix if present
@@ -96,7 +98,7 @@ export function useConfigPrazos() {
     return found?.dias_limite ?? 3; // Default 3 days
   };
 
-  return { config, loading, getPrazoForStatus };
+  return { config, loading: query.isLoading, getPrazoForStatus };
 }
 
 export function useFollowUpStatus() {
