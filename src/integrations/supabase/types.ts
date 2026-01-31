@@ -260,6 +260,7 @@ export type Database = {
           created_at: string
           dias_limite: number
           id: string
+          prazos_progressivos: number[] | null
           status_processo: string
           updated_at: string
         }
@@ -267,6 +268,7 @@ export type Database = {
           created_at?: string
           dias_limite?: number
           id?: string
+          prazos_progressivos?: number[] | null
           status_processo: string
           updated_at?: string
         }
@@ -274,6 +276,7 @@ export type Database = {
           created_at?: string
           dias_limite?: number
           id?: string
+          prazos_progressivos?: number[] | null
           status_processo?: string
           updated_at?: string
         }
@@ -1297,6 +1300,7 @@ export type Database = {
         | "Indeferida"
         | "Recurso / Judicial"
         | "Processo Encerrado"
+        | "Inadimplência"
       task_category: "bug" | "melhoria" | "nova_funcionalidade" | "ajuste"
       task_priority: "baixa" | "media" | "alta" | "urgente"
       task_status: "backlog" | "priorizado" | "em_progresso" | "concluido"
@@ -1471,6 +1475,7 @@ export const Constants = {
         "Indeferida",
         "Recurso / Judicial",
         "Processo Encerrado",
+        "Inadimplência",
       ],
       task_category: ["bug", "melhoria", "nova_funcionalidade", "ajuste"],
       task_priority: ["baixa", "media", "alta", "urgente"],

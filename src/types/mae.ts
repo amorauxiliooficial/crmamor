@@ -1,13 +1,11 @@
 export type StatusProcesso =
-  | "📥 Entrada de Documentos"
-  | "🔎 Em Análise"
   | "⚠️ Pendência Documental"
   | "🟡 Elegível (Análise Positiva)"
-  | "📤 Protocolo INSS"
   | "⏳ Aguardando Análise INSS"
   | "✅ Aprovada"
   | "❌ Indeferida"
   | "⚖️ Recurso / Judicial"
+  | "💳 Inadimplência"
   | "📦 Processo Encerrado";
 
 export type TipoEvento = "Parto" | "Adoção" | "Guarda judicial";
@@ -69,27 +67,35 @@ export interface DecisaoProcesso {
 }
 
 export const STATUS_ORDER: StatusProcesso[] = [
-  "📥 Entrada de Documentos",
-  "🔎 Em Análise",
   "⚠️ Pendência Documental",
   "🟡 Elegível (Análise Positiva)",
-  "📤 Protocolo INSS",
   "⏳ Aguardando Análise INSS",
   "✅ Aprovada",
   "❌ Indeferida",
   "⚖️ Recurso / Judicial",
+  "💳 Inadimplência",
   "📦 Processo Encerrado",
 ];
 
 export const STATUS_COLORS: Record<StatusProcesso, string> = {
-  "📥 Entrada de Documentos": "bg-secondary",
-  "🔎 Em Análise": "bg-primary/20",
   "⚠️ Pendência Documental": "bg-accent",
   "🟡 Elegível (Análise Positiva)": "bg-chart-1/30",
-  "📤 Protocolo INSS": "bg-chart-2/30",
   "⏳ Aguardando Análise INSS": "bg-chart-3/30",
   "✅ Aprovada": "bg-emerald-500/20",
   "❌ Indeferida": "bg-destructive/20",
   "⚖️ Recurso / Judicial": "bg-chart-5/30",
+  "💳 Inadimplência": "bg-orange-500/20",
   "📦 Processo Encerrado": "bg-muted",
+};
+
+// Prazos de follow-up para exibição na UI (em dias)
+export const FOLLOWUP_PRAZO_LABELS: Record<StatusProcesso, string> = {
+  "⚠️ Pendência Documental": "1x/semana",
+  "🟡 Elegível (Análise Positiva)": "1x/semana",
+  "⏳ Aguardando Análise INSS": "15 dias",
+  "✅ Aprovada": "1 dia",
+  "❌ Indeferida": "3→15→60→90d",
+  "⚖️ Recurso / Judicial": "3→15→60→90d",
+  "💳 Inadimplência": "1 dia (único)",
+  "📦 Processo Encerrado": "—",
 };
