@@ -19,6 +19,7 @@ import {
   MessageCircle, 
   FileText, 
   StickyNote,
+  Video,
   Search,
   AlertCircle,
   Clock,
@@ -44,6 +45,7 @@ const TIPO_ICONS: Record<TipoAtividade, typeof Phone> = {
   whatsapp: MessageCircle,
   documento: FileText,
   anotacao: StickyNote,
+  reuniao: Video,
 };
 
 const TIPO_COLORS: Record<TipoAtividade, string> = {
@@ -51,6 +53,7 @@ const TIPO_COLORS: Record<TipoAtividade, string> = {
   whatsapp: "bg-emerald-500 hover:bg-emerald-600 text-white",
   documento: "bg-purple-500 hover:bg-purple-600 text-white",
   anotacao: "bg-amber-500 hover:bg-amber-600 text-white",
+  reuniao: "bg-rose-500 hover:bg-rose-600 text-white",
 };
 
 export function AtividadesTab({ maes, onRefresh, selectedUserId }: AtividadesTabProps) {

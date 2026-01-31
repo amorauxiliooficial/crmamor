@@ -19,7 +19,7 @@ import { MobileViewSelector } from "@/components/layout/MobileViewSelector";
 import { ViewTransition } from "@/components/layout/ViewTransition";
 import { PendenciasPanel } from "@/components/atividades/PendenciasPanel";
 import { AtividadeDialog } from "@/components/atividades/AtividadeDialog";
-import { AtividadesTab } from "@/components/atividades/AtividadesTab";
+import { CrmTab } from "@/components/atividades/CrmTab";
 import { Indicacao } from "@/types/indicacao";
 import { useAuth } from "@/hooks/useAuth";
 import { useTour } from "@/hooks/useTour";
@@ -616,10 +616,9 @@ const Index = () => {
               </div>
             ) : viewMode === "atividades" ? (
               <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-                <AtividadesTab
+                <CrmTab
                   maes={maesFilteredByUser}
                   onRefresh={fetchMaes}
-                  selectedUserId={selectedUserId}
                 />
               </div>
             ) : viewMode === "table" ? (
