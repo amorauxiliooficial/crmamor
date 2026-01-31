@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { TarefaInterna, TaskStatus, TASK_STATUS_ORDER } from "@/types/tarefaInterna";
 import { TarefaColumn } from "./TarefaColumn";
 import { TarefaFormDialog } from "./TarefaFormDialog";
@@ -6,6 +6,8 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import { supabase } from "@/integrations/supabase/client";
 import { useTarefaResponsaveis } from "@/hooks/useTarefaResponsaveis";
+
+const STORAGE_KEY = "roadmap-columns-expanded";
 
 interface RoadmapBoardProps {
   tarefas: TarefaInterna[];
@@ -24,6 +26,31 @@ export function RoadmapBoard({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [usuarios, setUsuarios] = useState<Record<string, string>>({});
   const { responsaveis, updateResponsaveis, getResponsaveisForTarefa } = useTarefaResponsaveis();
+
+  // Column expansion state with localStorage persistence
+  const [expandedColumns, setExpandedColumns] = useState<Record<TaskStatus, boolean>>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return Object.fromEntries(TASK_STATUS_ORDER.map((s) => [s, true]));
+      }
+    }
+    return Object.fromEntries(TASK_STATUS_ORDER.map((s) => [s, true]));
+  });
+
+  // Save expanded state to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(expandedColumns));
+  }, [expandedColumns]);
+
+  const toggleColumnExpand = useCallback((status: TaskStatus) => {
+    setExpandedColumns((prev) => ({
+      ...prev,
+      [status]: !prev[status],
+    }));
+  }, []);
 
   // Fetch users for display
   useEffect(() => {
@@ -117,6 +144,8 @@ export function RoadmapBoard({
                       isDraggingOver={snapshot.isDraggingOver}
                       usuarios={usuarios}
                       responsaveisPorTarefa={responsaveis}
+                      isExpanded={expandedColumns[status]}
+                      onToggleExpand={() => toggleColumnExpand(status)}
                     />
                     {provided.placeholder}
                   </div>
