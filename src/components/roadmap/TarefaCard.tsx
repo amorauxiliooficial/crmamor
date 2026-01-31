@@ -136,7 +136,7 @@ export function TarefaCard({
           </div>
 
           {/* Expanded Content */}
-          <CollapsibleContent className="space-y-3 pt-2 border-t">
+          <CollapsibleContent className="space-y-3 pt-2 border-t data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up overflow-hidden">
             {/* Full description */}
             {tarefa.descricao && (
               <div className="space-y-1">
