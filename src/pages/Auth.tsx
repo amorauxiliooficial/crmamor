@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Loader2, Mail, Lock } from "lucide-react";
+import { Loader2, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import logoAam from "@/assets/logo-aam.png";
 
 const authSchema = z.object({
   email: z.string().email("E-mail inválido").max(255),
@@ -107,15 +108,16 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="p-3 rounded-full bg-primary/10">
-              <Heart className="h-8 w-8 text-primary" />
-            </div>
+            <img 
+              src={logoAam} 
+              alt="Amor Auxílio Maternidade" 
+              className="h-24 w-24 object-contain"
+            />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">AAM</CardTitle>
-            <CardDescription className="text-base">
+            <CardTitle className="text-xl font-bold text-primary">
               Amor Auxílio Maternidade
-            </CardDescription>
+            </CardTitle>
           </div>
         </CardHeader>
         <CardContent>
