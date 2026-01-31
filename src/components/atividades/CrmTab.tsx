@@ -301,6 +301,18 @@ export function CrmTab({ maes, onRefresh, selectedUserId }: CrmTabProps) {
     <div className="space-y-4">
       {/* Stats Header */}
       <div className="grid grid-cols-4 gap-3">
+        <Card className="border-l-4 border-l-emerald-500">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-emerald-500" />
+              <div>
+                <p className="text-2xl font-bold text-emerald-600">{maes.length}</p>
+                <p className="text-xs text-muted-foreground">Clientes</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
         <Card className="border-l-4 border-l-destructive">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
@@ -336,18 +348,6 @@ export function CrmTab({ maes, onRefresh, selectedUserId }: CrmTabProps) {
             </div>
           </CardContent>
         </Card>
-        
-        <Card className="border-l-4 border-l-emerald-500">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-emerald-500" />
-              <div>
-                <p className="text-2xl font-bold text-emerald-600">{maes.length}</p>
-                <p className="text-xs text-muted-foreground">Clientes</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Search */}
@@ -361,24 +361,20 @@ export function CrmTab({ maes, onRefresh, selectedUserId }: CrmTabProps) {
         />
       </div>
 
-      {/* Tabs: Metas / Follow-ups / Clients / Calendar */}
+      {/* Tabs: Metas / Clientes / Follow-ups (with calendar) */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="metas" className="gap-2">
             <Target className="h-4 w-4" />
             Metas
-          </TabsTrigger>
-          <TabsTrigger value="followups" className="gap-2">
-            <ListTodo className="h-4 w-4" />
-            Follow-ups
           </TabsTrigger>
           <TabsTrigger value="clientes" className="gap-2">
             <Users className="h-4 w-4" />
             Clientes
           </TabsTrigger>
-          <TabsTrigger value="calendar" className="gap-2">
+          <TabsTrigger value="followups" className="gap-2">
             <CalendarDays className="h-4 w-4" />
-            Calendário
+            Follow-ups
           </TabsTrigger>
         </TabsList>
 
@@ -390,71 +386,6 @@ export function CrmTab({ maes, onRefresh, selectedUserId }: CrmTabProps) {
               isAdmin={isAdmin}
               onConfigClick={() => setMetasConfigOpen(true)}
             />
-          </ScrollArea>
-        </TabsContent>
-
-        {/* Follow-ups View */}
-        <TabsContent value="followups" className="mt-4">
-          <ScrollArea className="h-[calc(100vh-460px)] min-h-[350px]">
-            <div className="space-y-4 pr-4">
-              {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <>
-                  {/* Overdue Section */}
-                  {categorized.overdue.length > 0 && (
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium text-destructive flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4" />
-                        Atrasados ({categorized.overdue.length})
-                      </h3>
-                      {filterBySearch(categorized.overdue).map((f) => (
-                        <FollowUpCard key={f.id} followUp={f} />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Today Section */}
-                  {categorized.today.length > 0 && (
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium text-amber-600 flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        Hoje ({categorized.today.length})
-                      </h3>
-                      {filterBySearch(categorized.today).map((f) => (
-                        <FollowUpCard key={f.id} followUp={f} />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Upcoming Section */}
-                  {categorized.upcoming.length > 0 && (
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium text-primary flex items-center gap-2">
-                        <CalendarDays className="h-4 w-4" />
-                        Próximos ({categorized.upcoming.length})
-                      </h3>
-                      {filterBySearch(categorized.upcoming).map((f) => (
-                        <FollowUpCard key={f.id} followUp={f} />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Empty State */}
-                  {categorized.overdue.length === 0 && 
-                   categorized.today.length === 0 && 
-                   categorized.upcoming.length === 0 && (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <CheckCircle2 className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                      <p>Nenhum follow-up agendado</p>
-                      <p className="text-xs mt-1">Vá em "Clientes" para agendar atividades</p>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
           </ScrollArea>
         </TabsContent>
 
@@ -488,61 +419,126 @@ export function CrmTab({ maes, onRefresh, selectedUserId }: CrmTabProps) {
           </ScrollArea>
         </TabsContent>
 
-        {/* Calendar View */}
-        <TabsContent value="calendar" className="mt-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Calendar */}
-            <Card>
-              <CardContent className="p-3">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => date && setSelectedDate(date)}
-                  locale={ptBR}
-                  className="w-full"
-                  modifiers={{
-                    hasFollowUp: (date) => {
-                      const dateKey = format(date, "yyyy-MM-dd");
-                      return (followUpCounts[dateKey] || 0) > 0;
-                    },
-                  }}
-                  modifiersStyles={{
-                    hasFollowUp: {
-                      backgroundColor: "hsl(var(--primary) / 0.1)",
-                      fontWeight: "bold",
-                    },
-                  }}
-                />
-              </CardContent>
-            </Card>
+        {/* Follow-ups View (merged with calendar) */}
+        <TabsContent value="followups" className="mt-4">
+          <div className="grid md:grid-cols-[1fr_320px] gap-4">
+            {/* Follow-ups List */}
+            <ScrollArea className="h-[calc(100vh-460px)] min-h-[350px]">
+              <div className="space-y-4 pr-4">
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <>
+                    {/* Overdue */}
+                    {categorized.overdue.length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-medium flex items-center gap-2 text-destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          Atrasados ({categorized.overdue.length})
+                        </h3>
+                        {categorized.overdue.map((f) => (
+                          <FollowUpCard key={f.id} followUp={f} />
+                        ))}
+                      </div>
+                    )}
 
-            {/* Selected Date Follow-ups */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[280px]">
-                  {dateLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    </div>
-                  ) : dateFollowUps.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground text-sm">
-                      Nenhum follow-up para esta data
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {dateFollowUps.map((f) => (
-                        <FollowUpCard key={f.id} followUp={f} showDate={false} />
-                      ))}
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
+                    {/* Today */}
+                    {categorized.today.length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-medium flex items-center gap-2 text-amber-600">
+                          <Clock className="h-4 w-4" />
+                          Hoje ({categorized.today.length})
+                        </h3>
+                        {categorized.today.map((f) => (
+                          <FollowUpCard key={f.id} followUp={f} />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Upcoming */}
+                    {categorized.upcoming.length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-medium flex items-center gap-2 text-primary">
+                          <CalendarDays className="h-4 w-4" />
+                          Próximos ({categorized.upcoming.length})
+                        </h3>
+                        {categorized.upcoming.map((f) => (
+                          <FollowUpCard key={f.id} followUp={f} />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Empty State */}
+                    {categorized.overdue.length === 0 && 
+                     categorized.today.length === 0 && 
+                     categorized.upcoming.length === 0 && (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <CheckCircle2 className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                        <p>Nenhum follow-up agendado</p>
+                        <p className="text-xs mt-1">Vá em "Clientes" para agendar atividades</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </ScrollArea>
+
+            {/* Calendar Sidebar */}
+            <div className="space-y-3">
+              <Card>
+                <CardContent className="p-3">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    locale={ptBR}
+                    className="w-full"
+                    modifiers={{
+                      hasFollowUp: (date) => {
+                        const dateKey = format(date, "yyyy-MM-dd");
+                        return (followUpCounts[dateKey] || 0) > 0;
+                      },
+                    }}
+                    modifiersStyles={{
+                      hasFollowUp: {
+                        backgroundColor: "hsl(var(--primary) / 0.1)",
+                        fontWeight: "bold",
+                      },
+                    }}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Selected Date Follow-ups */}
+              <Card>
+                <CardHeader className="pb-2 px-3 pt-3">
+                  <CardTitle className="text-sm font-medium">
+                    {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 pb-3">
+                  <ScrollArea className="h-[180px]">
+                    {dateLoading ? (
+                      <div className="flex items-center justify-center py-6">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      </div>
+                    ) : dateFollowUps.length === 0 ? (
+                      <div className="text-center py-6 text-muted-foreground text-xs">
+                        Nenhum follow-up
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {dateFollowUps.map((f) => (
+                          <FollowUpCard key={f.id} followUp={f} showDate={false} />
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
