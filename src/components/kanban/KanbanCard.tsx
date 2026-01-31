@@ -1,7 +1,7 @@
 import { MaeProcesso } from "@/types/mae";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Baby, FolderOpen, Bell } from "lucide-react";
+import { Calendar, FileText, Baby, FolderOpen } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { differenceInMonths, parseISO } from "date-fns";
@@ -62,24 +62,24 @@ export function KanbanCard({
   return (
     <Card
       className={cn(
-        "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20 relative",
+        "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20 relative overflow-hidden",
         isDragging && "shadow-lg ring-2 ring-primary rotate-2",
         followUpStatus === "overdue" && "ring-1 ring-destructive/50",
-        hasUnreadAlert && "bg-pink-50 dark:bg-pink-950/40 ring-2 ring-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.3)]"
+        hasUnreadAlert && "border-pink-300 dark:border-pink-700"
       )}
       onClick={onClick}
     >
+      {/* Barra lateral rosa para alertas */}
       {hasUnreadAlert && (
-        <div className="absolute -top-1.5 -right-1.5 z-10">
-          <span className="relative flex h-5 w-5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-5 w-5 bg-pink-500 items-center justify-center">
-              <Bell className="h-3 w-3 text-white" />
-            </span>
-          </span>
-        </div>
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-pink-400 via-pink-500 to-pink-400" />
       )}
-      <CardContent className="p-2.5 md:p-3">
+      
+      {/* Gradiente sutil no fundo */}
+      {hasUnreadAlert && (
+        <div className="absolute inset-0 bg-gradient-to-r from-pink-50/80 via-transparent to-transparent dark:from-pink-950/30 dark:via-transparent pointer-events-none" />
+      )}
+      
+      <CardContent className={cn("p-2.5 md:p-3 relative", hasUnreadAlert && "pl-3.5")}>
         <div className="space-y-1.5 md:space-y-2">
           <div className="flex items-start justify-between gap-1.5">
             <h4 className="font-medium text-sm leading-tight line-clamp-2">
