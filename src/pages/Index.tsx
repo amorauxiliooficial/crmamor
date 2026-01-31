@@ -116,6 +116,7 @@ const Index = () => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [users, setUsers] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
   const [metasConfigOpen, setMetasConfigOpen] = useState(false);
+  const [alertasNaoLidos, setAlertasNaoLidos] = useState<Set<string>>(new Set());
   const { isAdmin } = useIsAdmin();
 
   const handleOpenMetasConfig = useCallback(() => {
@@ -240,6 +241,22 @@ const Index = () => {
     }
   };
 
+  // Fetch unread alerts for all maes (to show indicator on cards)
+  const fetchAlertasNaoLidos = async () => {
+    if (!user) return;
+    
+    const { data: alertas } = await supabase
+      .from("alertas_mae")
+      .select("mae_id")
+      .eq("lido", false)
+      .or(`destinatario_id.eq.${user.id},destinatario_id.is.null`);
+    
+    if (alertas) {
+      const maeIdsComAlertas = new Set(alertas.map(a => a.mae_id));
+      setAlertasNaoLidos(maeIdsComAlertas);
+    }
+  };
+
   // Helper to get display name for user
   const getUserDisplayName = (u: { id: string; full_name: string | null; email: string | null }) => {
     if (u.full_name) return u.full_name;
@@ -251,6 +268,7 @@ const Index = () => {
     if (user) {
       fetchMaes();
       fetchUsers();
+      fetchAlertasNaoLidos();
     }
   }, [user]);
 
@@ -652,6 +670,7 @@ const Index = () => {
                       onCardClick={handleCardClick} 
                       onStatusChange={handleStatusChange}
                       onOpenAtividades={handleOpenAtividades}
+                      alertasNaoLidos={alertasNaoLidos}
                     />
                   )}
                 </div>
@@ -664,6 +683,7 @@ const Index = () => {
                     onCardClick={handleCardClick}
                     onStatusChange={handleStatusChange}
                     onOpenAtividades={handleOpenAtividades}
+                    alertasNaoLidos={alertasNaoLidos}
                     visibleStatuses={[
                       "🔎 Em Análise",
                       "🟡 Elegível (Análise Positiva)",
@@ -681,6 +701,7 @@ const Index = () => {
                     onCardClick={handleCardClick}
                     onStatusChange={handleStatusChange}
                     onOpenAtividades={handleOpenAtividades}
+                    alertasNaoLidos={alertasNaoLidos}
                     visibleStatuses={["⚠️ Pendência Documental"]}
                   />
                 </div>
@@ -693,6 +714,7 @@ const Index = () => {
                     onCardClick={handleCardClick}
                     onStatusChange={handleStatusChange}
                     onOpenAtividades={handleOpenAtividades}
+                    alertasNaoLidos={alertasNaoLidos}
                     visibleStatuses={[
                       "✅ Aprovada",
                       "❌ Indeferida",
@@ -759,11 +781,18 @@ const Index = () => {
         <MaeAtividadesDialog
           mae={selectedMae}
           open={maeAtividadesDialogOpen}
-          onOpenChange={setMaeAtividadesDialogOpen}
+          onOpenChange={(open) => {
+            setMaeAtividadesDialogOpen(open);
+            // Refresh alerts when dialog closes (user may have marked alerts as read)
+            if (!open) {
+              fetchAlertasNaoLidos();
+            }
+          }}
           onRefresh={() => {
             if (selectedMae?.id) {
               refreshSingleMae(selectedMae.id);
             }
+            fetchAlertasNaoLidos();
           }}
           onOpenEdit={(mae) => {
             setSelectedMae(mae);

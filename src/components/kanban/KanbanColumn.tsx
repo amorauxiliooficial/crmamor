@@ -12,6 +12,7 @@ interface KanbanColumnProps {
   isDraggingOver?: boolean;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  alertasNaoLidos?: Set<string>;
 }
 
 export function KanbanColumn({ 
@@ -22,6 +23,7 @@ export function KanbanColumn({
   isDraggingOver,
   isExpanded,
   onToggleExpand,
+  alertasNaoLidos = new Set(),
 }: KanbanColumnProps) {
   const statusLabel = status.split(" ").slice(1).join(" ") || status;
   const emoji = status.split(" ")[0];
@@ -81,6 +83,7 @@ export function KanbanColumn({
                       onClick={() => onCardClick(mae)} 
                       isDragging={snapshot.isDragging}
                       onOpenAtividades={() => onOpenAtividades?.(mae)}
+                      hasUnreadAlert={alertasNaoLidos.has(mae.id)}
                     />
                   </div>
                 )}

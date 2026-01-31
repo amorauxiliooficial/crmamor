@@ -12,6 +12,7 @@ interface KanbanBoardProps {
   onStatusChange?: (maeId: string, newStatus: StatusProcesso) => void;
   onOpenAtividades?: (mae: MaeProcesso) => void;
   visibleStatuses?: StatusProcesso[];
+  alertasNaoLidos?: Set<string>;
 }
 
 export function KanbanBoard({
@@ -20,6 +21,7 @@ export function KanbanBoard({
   onStatusChange,
   onOpenAtividades,
   visibleStatuses = STATUS_ORDER,
+  alertasNaoLidos = new Set(),
 }: KanbanBoardProps) {
   // Load expanded columns from localStorage or default to all expanded
   const [expandedColumns, setExpandedColumns] = useState<Set<StatusProcesso>>(() => {
@@ -104,6 +106,7 @@ export function KanbanBoard({
                     isDraggingOver={snapshot.isDraggingOver}
                     isExpanded={expandedColumns.has(status)}
                     onToggleExpand={() => toggleColumn(status)}
+                    alertasNaoLidos={alertasNaoLidos}
                   />
                   {provided.placeholder}
                 </div>
