@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { StatsCard } from "@/components/dashboard/StatsCard";
@@ -115,6 +115,10 @@ const Index = () => {
   const [users, setUsers] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
   const [metasConfigOpen, setMetasConfigOpen] = useState(false);
   const { isAdmin } = useIsAdmin();
+
+  const handleOpenMetasConfig = useCallback(() => {
+    setMetasConfigOpen(true);
+  }, []);
 
   const handleNotificationClick = (indicacao: Indicacao) => {
     setViewMode("indicacoes");
@@ -448,7 +452,7 @@ const Index = () => {
           <MetasDashboard 
             userId={selectedUserId && selectedUserId !== "all" ? selectedUserId : user?.id || null}
             isAdmin={isAdmin}
-            onConfigClick={() => setMetasConfigOpen(true)}
+            onConfigClick={handleOpenMetasConfig}
           />
         </section>
 

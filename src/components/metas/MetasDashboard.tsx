@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Settings, Heart, Baby, Users, FileCheck, Activity, Target, Sparkles, TrendingUp, TrendingDown, Minus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import confetti from "canvas-confetti";
 import {
   Popover,
@@ -105,7 +105,7 @@ function RadialProgress({
   );
 }
 
-export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboardProps) {
+function MetasDashboardImpl({ userId, onConfigClick, isAdmin }: MetasDashboardProps) {
   const { progress, loading } = useMetasProgress(userId);
   const confettiTriggeredRef = useRef(false);
   const [selectedMeta, setSelectedMeta] = useState<string | null>(null);
@@ -206,6 +206,7 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
                     paddingAngle={0}
                     dataKey="value"
                     strokeWidth={0}
+                    isAnimationActive={false}
                   >
                     <Cell fill={metasAtingidas === totalMetas ? "hsl(var(--chart-1))" : "hsl(var(--primary))"} />
                     <Cell fill="hsl(var(--muted))" />
@@ -403,3 +404,5 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
     </Card>
   );
 }
+
+export const MetasDashboard = memo(MetasDashboardImpl);
