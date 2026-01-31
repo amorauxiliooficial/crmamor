@@ -1,7 +1,7 @@
 import { MaeProcesso } from "@/types/mae";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Baby, FolderOpen, MessageCircle } from "lucide-react";
+import { Calendar, FileText, Baby, FolderOpen, AlertTriangle } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { differenceInMonths, parseISO } from "date-fns";
@@ -71,7 +71,7 @@ export function KanbanCard({
       {/* Faixa de alerta do admin */}
       {hasUnreadAlert && (
         <div className="absolute top-0 left-0 right-0 bg-primary text-primary-foreground text-[10px] font-semibold py-0.5 px-2 flex items-center gap-1 z-10">
-          <MessageCircle className="h-3 w-3" />
+          <AlertTriangle className="h-3 w-3" />
           <span>Aviso Importante</span>
         </div>
       )}
