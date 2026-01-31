@@ -159,11 +159,12 @@ export function Header({
             <img 
               src={logoAam} 
               alt="AAM Logo" 
-              className="h-10 w-10 md:h-12 md:w-12 object-contain"
+              className="h-12 w-12 md:h-14 md:w-14 object-contain"
+              style={{ imageRendering: "auto" }}
             />
             <div className="hidden sm:block">
-              <p className="font-semibold text-sm md:text-base truncate max-w-[150px]">
-                {user?.user_metadata?.full_name || userEmail.split("@")[0]}
+              <p className="font-semibold text-sm md:text-base truncate max-w-[180px] text-primary capitalize">
+                {(user?.user_metadata?.full_name || userEmail.split("@")[0]).toLowerCase()}
               </p>
               <p className="text-xs text-muted-foreground">
                 Bem-vindo(a)!
