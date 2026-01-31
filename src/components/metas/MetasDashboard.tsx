@@ -1,9 +1,7 @@
 import { useMetasProgress } from "@/hooks/useMetas";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Loader2, Target, TrendingUp, Settings, Award, Flame, Zap } from "lucide-react";
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from "recharts";
+import { Loader2, Settings, Heart, TrendingUp, TrendingDown, Minus, Baby, Users, FileCheck, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MetasDashboardProps {
@@ -12,12 +10,18 @@ interface MetasDashboardProps {
   isAdmin?: boolean;
 }
 
-const COLORS = {
-  primary: "hsl(var(--primary))",
-  chart1: "hsl(var(--chart-1))",
-  chart2: "hsl(var(--chart-2))",
-  chart3: "hsl(var(--chart-3))",
-  muted: "hsl(var(--muted))",
+const TIPO_ICONS: Record<string, typeof Heart> = {
+  cadastros: Users,
+  contratos: FileCheck,
+  aprovados: Baby,
+  atividades: Activity,
+  follow_ups: Activity,
+};
+
+const PERIODO_LABELS: Record<string, { current: string; previous: string }> = {
+  diario: { current: "Hoje", previous: "vs ontem" },
+  semanal: { current: "Esta semana", previous: "vs semana passada" },
+  mensal: { current: "Este mês", previous: "vs mês passado" },
 };
 
 export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboardProps) {
@@ -25,21 +29,27 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      <div className="flex items-center justify-center py-6">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-sm">Carregando metas...</span>
+        </div>
       </div>
     );
   }
 
   if (progress.length === 0) {
     return (
-      <Card className="border-dashed">
+      <Card className="border-dashed border-2 bg-gradient-to-br from-primary/5 to-accent/10">
         <CardContent className="py-8 text-center">
-          <Target className="h-10 w-10 mx-auto mb-2 text-muted-foreground/40" />
-          <p className="text-sm text-muted-foreground">Nenhuma meta configurada</p>
+          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+            <Heart className="h-6 w-6 text-primary" />
+          </div>
+          <p className="text-sm font-medium text-foreground mb-1">Nenhuma meta configurada</p>
+          <p className="text-xs text-muted-foreground mb-4">Configure suas metas para acompanhar seu progresso</p>
           {isAdmin && onConfigClick && (
-            <Button variant="outline" size="sm" className="mt-3" onClick={onConfigClick}>
-              <Settings className="h-3.5 w-3.5 mr-1.5" />
+            <Button variant="outline" size="sm" onClick={onConfigClick} className="gap-1.5">
+              <Settings className="h-3.5 w-3.5" />
               Configurar Metas
             </Button>
           )}
@@ -48,227 +58,131 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
     );
   }
 
-  // Calculations
+  // Calculate totals
   const totalMetas = progress.length;
   const metasAtingidas = progress.filter(p => p.percentual >= 100).length;
   const mediaGeral = progress.reduce((acc, p) => acc + Math.min(p.percentual, 100), 0) / totalMetas;
-  const totalRealizado = progress.reduce((acc, p) => acc + p.realizado, 0);
-  const totalMeta = progress.reduce((acc, p) => acc + p.meta.valor_meta, 0);
-
-  // Pie chart data
-  const pieData = progress.map((p, i) => ({
-    name: p.meta.nome,
-    value: p.realizado,
-    fill: [COLORS.primary, COLORS.chart1, COLORS.chart2, COLORS.chart3][i % 4],
-  }));
-
-  // Area chart data (simulated trend)
-  const areaData = progress.map((p) => ({
-    name: p.meta.nome.substring(0, 8),
-    realizado: p.realizado,
-    meta: p.meta.valor_meta,
-  }));
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Header with warm branding */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-chart-1 flex items-center justify-center">
-            <Target className="h-4 w-4 text-primary-foreground" />
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-foreground flex items-center justify-center shadow-sm">
+            <Heart className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
-            <h3 className="font-semibold text-sm">Metas & Performance</h3>
-            <p className="text-[11px] text-muted-foreground">
-              {metasAtingidas}/{totalMetas} concluídas
+            <h2 className="font-semibold text-foreground">Suas Metas</h2>
+            <p className="text-xs text-muted-foreground">
+              {metasAtingidas} de {totalMetas} alcançadas • {mediaGeral.toFixed(0)}% no geral
             </p>
           </div>
         </div>
         {isAdmin && onConfigClick && (
-          <Button variant="ghost" size="sm" onClick={onConfigClick} className="h-8 px-2">
-            <Settings className="h-3.5 w-3.5" />
+          <Button variant="ghost" size="icon" onClick={onConfigClick} className="h-8 w-8">
+            <Settings className="h-4 w-4" />
           </Button>
         )}
       </div>
 
-      {/* Main Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {/* Overall Progress */}
-        <Card className="col-span-2 md:col-span-1 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-muted-foreground">Progresso</span>
-              <Zap className="h-4 w-4 text-primary" />
-            </div>
-            <p className="text-2xl font-bold">{mediaGeral.toFixed(0)}%</p>
-            <Progress value={mediaGeral} className="h-1.5 mt-2" />
-          </CardContent>
-        </Card>
-
-        {/* Achieved Goals */}
-        <Card className={cn(
-          "border-chart-1/20",
-          metasAtingidas > 0 && "bg-gradient-to-br from-chart-1/10 to-chart-1/5"
-        )}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-muted-foreground">Atingidas</span>
-              <Award className="h-4 w-4 text-chart-1" />
-            </div>
-            <p className="text-2xl font-bold">{metasAtingidas}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">de {totalMetas} metas</p>
-          </CardContent>
-        </Card>
-
-        {/* Total Realized */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-muted-foreground">Realizado</span>
-              <TrendingUp className="h-4 w-4 text-chart-2" />
-            </div>
-            <p className="text-2xl font-bold">{totalRealizado}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">de {totalMeta} total</p>
-          </CardContent>
-        </Card>
-
-        {/* Streak/Momentum */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-muted-foreground">Em progresso</span>
-              <Flame className="h-4 w-4 text-chart-3" />
-            </div>
-            <p className="text-2xl font-bold">{totalMetas - metasAtingidas}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">metas ativas</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid md:grid-cols-3 gap-3">
-        {/* Area Chart */}
-        <Card className="md:col-span-2">
-          <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Realizado vs Meta</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 pr-4 pb-4">
-            <ResponsiveContainer width="100%" height={140}>
-              <AreaChart data={areaData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorRealizado" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fontSize: 10 }} 
-                  tickLine={false} 
-                  axisLine={false}
-                />
-                <YAxis 
-                  tick={{ fontSize: 10 }} 
-                  tickLine={false} 
-                  axisLine={false}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    fontSize: 11, 
-                    borderRadius: 8,
-                    border: '1px solid hsl(var(--border))',
-                    backgroundColor: 'hsl(var(--card))'
-                  }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="meta" 
-                  stroke="hsl(var(--muted-foreground))" 
-                  strokeWidth={1}
-                  strokeDasharray="4 4"
-                  fill="none"
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="realizado" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#colorRealizado)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Pie Chart */}
-        <Card>
-          <CardHeader className="pb-0 pt-4 px-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Distribuição</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 pb-2">
-            <ResponsiveContainer width="100%" height={140}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={35}
-                  outerRadius={55}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    fontSize: 11, 
-                    borderRadius: 8,
-                    border: '1px solid hsl(var(--border))',
-                    backgroundColor: 'hsl(var(--card))'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Individual Meta Progress - Compact */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        {progress.map((p, i) => {
+      {/* Meta Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {progress.map((p) => {
+          const Icon = TIPO_ICONS[p.meta.tipo_meta] || Heart;
           const atingido = p.percentual >= 100;
-          const colors = ["primary", "chart-1", "chart-2", "chart-3"];
-          const colorClass = colors[i % colors.length];
+          const periodoInfo = PERIODO_LABELS[p.meta.periodo] || PERIODO_LABELS.mensal;
+          const progressCapped = Math.min(p.percentual, 100);
           
+          // Determine trend
+          const isPositive = p.variacao > 0;
+          const isNegative = p.variacao < 0;
+          const isNeutral = p.variacao === 0;
+
           return (
-            <div 
+            <Card 
               key={p.meta.id}
               className={cn(
-                "p-3 rounded-lg border transition-all",
-                atingido 
-                  ? "bg-chart-1/10 border-chart-1/30" 
-                  : "bg-card hover:bg-muted/30"
+                "relative overflow-hidden transition-all hover:shadow-md",
+                atingido && "ring-1 ring-chart-1/30 bg-gradient-to-br from-chart-1/5 to-chart-1/10"
               )}
             >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-medium truncate pr-2">{p.meta.nome}</span>
-                {atingido && <Award className="h-3 w-3 text-chart-1 shrink-0" />}
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-lg font-bold">{p.realizado}</span>
-                <span className="text-[10px] text-muted-foreground">/{p.meta.valor_meta}</span>
-              </div>
-              <Progress 
-                value={Math.min(p.percentual, 100)} 
+              {/* Progress bar background */}
+              <div 
                 className={cn(
-                  "h-1 mt-2",
-                  atingido && "[&>div]:bg-chart-1"
+                  "absolute bottom-0 left-0 h-1 transition-all",
+                  atingido ? "bg-chart-1" : "bg-primary"
                 )}
+                style={{ width: `${progressCapped}%` }}
               />
-            </div>
+              
+              <CardContent className="p-4">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className={cn(
+                    "w-9 h-9 rounded-lg flex items-center justify-center",
+                    atingido 
+                      ? "bg-chart-1/20 text-chart-1" 
+                      : "bg-primary/10 text-primary"
+                  )}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+                    {periodoInfo.current}
+                  </span>
+                </div>
+
+                {/* Title */}
+                <h3 className="font-medium text-sm mb-2 line-clamp-1">{p.meta.nome}</h3>
+
+                {/* Numbers */}
+                <div className="flex items-baseline gap-1.5 mb-2">
+                  <span className={cn(
+                    "text-2xl font-bold tabular-nums",
+                    atingido && "text-chart-1"
+                  )}>
+                    {p.realizado}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    / {p.meta.valor_meta}
+                  </span>
+                  {atingido && (
+                    <span className="ml-auto text-xs font-medium text-chart-1 bg-chart-1/10 px-1.5 py-0.5 rounded">
+                      ✓ Meta
+                    </span>
+                  )}
+                </div>
+
+                {/* Comparison with previous period */}
+                <div className="flex items-center gap-1.5 text-xs">
+                  {isPositive && (
+                    <>
+                      <TrendingUp className="h-3 w-3 text-chart-1" />
+                      <span className="text-chart-1 font-medium">+{p.variacao.toFixed(0)}%</span>
+                    </>
+                  )}
+                  {isNegative && (
+                    <>
+                      <TrendingDown className="h-3 w-3 text-destructive" />
+                      <span className="text-destructive font-medium">{p.variacao.toFixed(0)}%</span>
+                    </>
+                  )}
+                  {isNeutral && (
+                    <>
+                      <Minus className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">0%</span>
+                    </>
+                  )}
+                  <span className="text-muted-foreground">
+                    {periodoInfo.previous}
+                  </span>
+                  {p.realizadoAnterior > 0 && (
+                    <span className="text-muted-foreground ml-auto">
+                      ({p.realizadoAnterior} ant.)
+                    </span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           );
         })}
       </div>
