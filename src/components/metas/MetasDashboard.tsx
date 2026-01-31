@@ -245,7 +245,7 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
             </div>
 
             {/* Mini cards grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {progress.map((p) => {
                 const Icon = TIPO_ICONS[p.meta.tipo_meta] || Heart;
                 const atingido = p.percentual >= 100;
