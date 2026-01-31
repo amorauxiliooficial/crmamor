@@ -104,7 +104,7 @@ export function AtividadeDialog({
           <Label className="text-sm font-medium">Registrar nova atividade</Label>
           <div className="flex flex-wrap gap-2">
             {(Object.keys(TIPO_ICONS) as TipoAtividade[])
-              .filter((tipo) => tipo !== "ligacao")
+              .filter((tipo) => tipo !== "ligacao" && tipo !== "reuniao")
               .map((tipo) => {
               const Icon = TIPO_ICONS[tipo];
               const isSelected = selectedTipo === tipo;
