@@ -1,15 +1,18 @@
 import { MaeProcesso } from "@/types/mae";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Baby, FolderOpen } from "lucide-react";
+import { Calendar, FileText, Baby, FolderOpen, MessageCircle } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { differenceInMonths, parseISO } from "date-fns";
+import { FollowUpBadge } from "@/components/atividades/FollowUpBadge";
+import { useFollowUpStatus } from "@/hooks/useAtividades";
 
 interface KanbanCardProps {
-  mae: MaeProcesso;
+  mae: MaeProcesso & { ultima_atividade_em?: string | null };
   onClick: () => void;
   isDragging?: boolean;
+  onOpenAtividades?: () => void;
 }
 
 function calcularMesGravidez(mae: MaeProcesso): number | null {
@@ -34,14 +37,30 @@ function calcularMesGravidez(mae: MaeProcesso): number | null {
   return Math.max(1, Math.min(9, 9 - mesesAteParto));
 }
 
-export function KanbanCard({ mae, onClick, isDragging }: KanbanCardProps) {
+export function KanbanCard({ mae, onClick, isDragging, onOpenAtividades }: KanbanCardProps) {
   const mesGestacao = calcularMesGravidez(mae);
+  const { getFollowUpStatus, getDaysSinceLastActivity, configLoading } = useFollowUpStatus();
+  
+  // Não mostrar badge para status finais
+  const isActiveStatus = !mae.status_processo.toLowerCase().includes("aprovada") &&
+    !mae.status_processo.toLowerCase().includes("indeferida") &&
+    !mae.status_processo.toLowerCase().includes("encerrado");
+  
+  const followUpStatus = isActiveStatus && !configLoading
+    ? getFollowUpStatus(mae.ultima_atividade_em, mae.status_processo, mae.data_ultima_atualizacao)
+    : null;
+  
+  const daysSinceActivity = getDaysSinceLastActivity(
+    mae.ultima_atividade_em,
+    mae.data_ultima_atualizacao
+  );
   
   return (
     <Card
       className={cn(
         "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20",
-        isDragging && "shadow-lg ring-2 ring-primary rotate-2"
+        isDragging && "shadow-lg ring-2 ring-primary rotate-2",
+        followUpStatus === "overdue" && "ring-1 ring-destructive/50"
       )}
       onClick={onClick}
     >
@@ -52,6 +71,22 @@ export function KanbanCard({ mae, onClick, isDragging }: KanbanCardProps) {
               {mae.nome_mae}
             </h4>
             <div className="flex gap-0.5 shrink-0">
+              {followUpStatus && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenAtividades?.();
+                  }}
+                  className="hover:scale-110 transition-transform"
+                  title="Ver atividades"
+                >
+                  <FollowUpBadge
+                    status={followUpStatus}
+                    daysSinceActivity={daysSinceActivity}
+                    compact
+                  />
+                </button>
+              )}
               {mae.is_gestante && mesGestacao && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
                   <Baby className="h-2.5 w-2.5 mr-0.5" />

@@ -49,6 +49,44 @@ export type Database = {
           },
         ]
       }
+      atividades_mae: {
+        Row: {
+          created_at: string
+          data_atividade: string
+          descricao: string | null
+          id: string
+          mae_id: string
+          tipo_atividade: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_atividade?: string
+          descricao?: string | null
+          id?: string
+          mae_id: string
+          tipo_atividade: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_atividade?: string
+          descricao?: string | null
+          id?: string
+          mae_id?: string
+          tipo_atividade?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atividades_mae_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bancos: {
         Row: {
           cidade: string | null
@@ -157,6 +195,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      config_prazos_status: {
+        Row: {
+          created_at: string
+          dias_limite: number
+          id: string
+          status_processo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dias_limite?: number
+          id?: string
+          status_processo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dias_limite?: number
+          id?: string
+          status_processo?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       criativos: {
         Row: {
@@ -343,6 +405,7 @@ export type Database = {
           telefone: string | null
           tipo_evento: Database["public"]["Enums"]["tipo_evento"]
           uf: string | null
+          ultima_atividade_em: string | null
           user_id: string
           verificacao_duas_etapas: boolean
         }
@@ -375,6 +438,7 @@ export type Database = {
           telefone?: string | null
           tipo_evento?: Database["public"]["Enums"]["tipo_evento"]
           uf?: string | null
+          ultima_atividade_em?: string | null
           user_id: string
           verificacao_duas_etapas?: boolean
         }
@@ -407,6 +471,7 @@ export type Database = {
           telefone?: string | null
           tipo_evento?: Database["public"]["Enums"]["tipo_evento"]
           uf?: string | null
+          ultima_atividade_em?: string | null
           user_id?: string
           verificacao_duas_etapas?: boolean
         }

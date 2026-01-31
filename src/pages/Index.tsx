@@ -17,10 +17,13 @@ import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { GuidedTour } from "@/components/tour/GuidedTour";
 import { MobileViewSelector } from "@/components/layout/MobileViewSelector";
 import { ViewTransition } from "@/components/layout/ViewTransition";
+import { PendenciasPanel } from "@/components/atividades/PendenciasPanel";
+import { AtividadeDialog } from "@/components/atividades/AtividadeDialog";
 import { Indicacao } from "@/types/indicacao";
 import { useAuth } from "@/hooks/useAuth";
 import { useTour } from "@/hooks/useTour";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useFollowUpSound } from "@/hooks/useFollowUpSound";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso } from "@/types/mae";
 import {
@@ -59,6 +62,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Extended MaeProcesso with activity data
+interface MaeProcessoComAtividade extends MaeProcesso {
+  ultima_atividade_em?: string | null;
+}
+
 // Map database status to display status with emoji
 const mapDbStatusToDisplay = (status: string): StatusProcesso => {
   const statusMap: Record<string, StatusProcesso> = {
@@ -82,13 +90,15 @@ const Index = () => {
   const { toast } = useToast();
   const { run: tourRun, stepIndex, setStepIndex, stopTour, startTour } = useTour();
   const isMobile = useIsMobile();
+  const { playSound } = useFollowUpSound();
   
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMae, setSelectedMae] = useState<MaeProcesso | null>(null);
+  const [selectedMae, setSelectedMae] = useState<MaeProcessoComAtividade | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
-  const [maes, setMaes] = useState<MaeProcesso[]>([]);
+  const [atividadeDialogOpen, setAtividadeDialogOpen] = useState(false);
+  const [maes, setMaes] = useState<MaeProcessoComAtividade[]>([]);
   const [allMaesRaw, setAllMaesRaw] = useState<{ id: string; user_id: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all" | "gestantes">("all");
@@ -135,7 +145,7 @@ const Index = () => {
       // Store raw data for user extraction
       setAllMaesRaw(data.map((item) => ({ id: item.id, user_id: item.user_id })));
       
-      const mappedData: MaeProcesso[] = data.map((item) => ({
+      const mappedData: MaeProcessoComAtividade[] = data.map((item) => ({
         id: item.id,
         user_id: item.user_id,
         nome_mae: item.nome_mae,
@@ -161,6 +171,7 @@ const Index = () => {
         mes_gestacao: item.mes_gestacao ?? null,
         data_ultima_atualizacao: item.data_ultima_atualizacao,
         link_documentos: item.link_documentos || null,
+        ultima_atividade_em: (item as { ultima_atividade_em?: string | null }).ultima_atividade_em || null,
       }));
       setMaes(mappedData);
     }
@@ -280,9 +291,14 @@ const Index = () => {
     setStatusFilter(statusFilter === filter ? "all" : filter);
   };
 
-  const handleCardClick = (mae: MaeProcesso) => {
+  const handleCardClick = (mae: MaeProcessoComAtividade) => {
     setSelectedMae(mae);
     setEditDialogOpen(true);
+  };
+
+  const handleOpenAtividades = (mae: MaeProcessoComAtividade) => {
+    setSelectedMae(mae);
+    setAtividadeDialogOpen(true);
   };
 
   // Map display status (with emoji) to db status (without emoji)
@@ -430,6 +446,13 @@ const Index = () => {
             <ScrollBar orientation="horizontal" className="md:hidden" />
           </ScrollArea>
         </section>
+
+        {/* Follow-up Pendencies Panel */}
+        <PendenciasPanel
+          maes={maesFilteredByUser}
+          onMaeClick={(mae) => handleOpenAtividades(mae as MaeProcessoComAtividade)}
+          onPlaySound={playSound}
+        />
 
         {/* View Toggle and Content */}
         <section>
@@ -691,6 +714,15 @@ const Index = () => {
           }
         }}
       />
+
+      {selectedMae && (
+        <AtividadeDialog
+          mae={selectedMae}
+          open={atividadeDialogOpen}
+          onOpenChange={setAtividadeDialogOpen}
+          onActivityAdded={fetchMaes}
+        />
+      )}
 
       <OnboardingModal
         open={onboardingOpen}
