@@ -765,6 +765,10 @@ const Index = () => {
               refreshSingleMae(selectedMae.id);
             }
           }}
+          onOpenEdit={(mae) => {
+            setSelectedMae(mae);
+            setEditDialogOpen(true);
+          }}
         />
       )}
 
