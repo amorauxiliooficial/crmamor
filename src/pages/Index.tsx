@@ -17,7 +17,7 @@ import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { GuidedTour } from "@/components/tour/GuidedTour";
 import { MobileViewSelector } from "@/components/layout/MobileViewSelector";
 import { ViewTransition } from "@/components/layout/ViewTransition";
-import { PendenciasPanel } from "@/components/atividades/PendenciasPanel";
+
 import { AtividadeDialog } from "@/components/atividades/AtividadeDialog";
 import { CrmTab } from "@/components/atividades/CrmTab";
 import { Indicacao } from "@/types/indicacao";
@@ -449,12 +449,6 @@ const Index = () => {
           </ScrollArea>
         </section>
 
-        {/* Follow-up Pendencies Panel */}
-        <PendenciasPanel
-          maes={maesFilteredByUser}
-          onMaeClick={(mae) => handleOpenAtividades(mae as MaeProcessoComAtividade)}
-          onPlaySound={playSound}
-        />
 
         {/* View Toggle and Content */}
         <section>
