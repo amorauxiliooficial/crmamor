@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay,
@@ -20,7 +20,7 @@ export interface MetaProgress {
   realizado: number;
   realizadoAnterior: number;
   percentual: number;
-  variacao: number; // +/- percentage compared to previous period
+  variacao: number;
 }
 
 export function useMetas() {
@@ -85,34 +85,30 @@ export function useMetas() {
 
 // Helper to get period dates
 function getPeriodDates(periodo: string, now: Date) {
-  let startDate: Date;
-  let endDate: Date;
-  let prevStartDate: Date;
-  let prevEndDate: Date;
-
   switch (periodo) {
     case "diario":
-      startDate = startOfDay(now);
-      endDate = endOfDay(now);
-      prevStartDate = startOfDay(subDays(now, 1));
-      prevEndDate = endOfDay(subDays(now, 1));
-      break;
+      return {
+        startDate: startOfDay(now),
+        endDate: endOfDay(now),
+        prevStartDate: startOfDay(subDays(now, 1)),
+        prevEndDate: endOfDay(subDays(now, 1)),
+      };
     case "semanal":
-      startDate = startOfWeek(now, { weekStartsOn: 1 });
-      endDate = endOfWeek(now, { weekStartsOn: 1 });
-      prevStartDate = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
-      prevEndDate = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
-      break;
+      return {
+        startDate: startOfWeek(now, { weekStartsOn: 1 }),
+        endDate: endOfWeek(now, { weekStartsOn: 1 }),
+        prevStartDate: startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 }),
+        prevEndDate: endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 }),
+      };
     case "mensal":
     default:
-      startDate = startOfMonth(now);
-      endDate = endOfMonth(now);
-      prevStartDate = startOfMonth(subMonths(now, 1));
-      prevEndDate = endOfMonth(subMonths(now, 1));
-      break;
+      return {
+        startDate: startOfMonth(now),
+        endDate: endOfMonth(now),
+        prevStartDate: startOfMonth(subMonths(now, 1)),
+        prevEndDate: endOfMonth(subMonths(now, 1)),
+      };
   }
-
-  return { startDate, endDate, prevStartDate, prevEndDate };
 }
 
 // Helper to count records for a period
@@ -169,35 +165,51 @@ async function countForPeriod(
 
 // Hook to calculate progress for a specific user
 export function useMetasProgress(userId: string | null) {
-  const { metas, loading: metasLoading, refetch } = useMetas();
+  const [metas, setMetas] = useState<MetaConfig[]>([]);
   const [progress, setProgress] = useState<MetaProgress[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMountedRef = useRef(true);
 
-  const calculateProgress = useCallback(async () => {
-    if (!userId || metas.length === 0) {
-      setProgress([]);
-      setLoading(false);
+  // Fetch metas directly in this hook to avoid hook nesting issues
+  const fetchMetas = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("metas_config")
+      .select("*")
+      .eq("ativo", true)
+      .order("created_at");
+
+    if (!error && data && isMountedRef.current) {
+      setMetas(data as MetaConfig[]);
+    }
+    return data as MetaConfig[] | null;
+  }, []);
+
+  // Calculate progress based on metas and userId
+  const calculateProgress = useCallback(async (metasList: MetaConfig[], uid: string) => {
+    if (!uid || metasList.length === 0) {
+      if (isMountedRef.current) {
+        setProgress([]);
+        setLoading(false);
+      }
       return;
     }
 
-    setLoading(true);
     const now = new Date();
     const progressData: MetaProgress[] = [];
 
-    for (const meta of metas) {
+    for (const meta of metasList) {
       const { startDate, endDate, prevStartDate, prevEndDate } = getPeriodDates(meta.periodo, now);
 
-      const realizado = await countForPeriod(meta.tipo_meta, userId, startDate, endDate);
-      const realizadoAnterior = await countForPeriod(meta.tipo_meta, userId, prevStartDate, prevEndDate);
+      const realizado = await countForPeriod(meta.tipo_meta, uid, startDate, endDate);
+      const realizadoAnterior = await countForPeriod(meta.tipo_meta, uid, prevStartDate, prevEndDate);
 
       const percentual = meta.valor_meta > 0 ? (realizado / meta.valor_meta) * 100 : 0;
       
-      // Calculate variation: if previous was 0, show as new growth
       let variacao = 0;
       if (realizadoAnterior > 0) {
         variacao = ((realizado - realizadoAnterior) / realizadoAnterior) * 100;
       } else if (realizado > 0) {
-        variacao = 100; // New growth from zero
+        variacao = 100;
       }
 
       progressData.push({
@@ -209,20 +221,48 @@ export function useMetasProgress(userId: string | null) {
       });
     }
 
-    setProgress(progressData);
-    setLoading(false);
-  }, [userId, metas]);
-
-  useEffect(() => {
-    calculateProgress();
-  }, [calculateProgress]);
-
-  return { 
-    progress, 
-    loading: loading || metasLoading,
-    refetch: async () => {
-      await refetch();
-      await calculateProgress();
+    if (isMountedRef.current) {
+      setProgress(progressData);
+      setLoading(false);
     }
-  };
+  }, []);
+
+  // Main effect to load data
+  useEffect(() => {
+    isMountedRef.current = true;
+    
+    const loadData = async () => {
+      if (!userId) {
+        setProgress([]);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      const metasList = await fetchMetas();
+      
+      if (metasList && isMountedRef.current) {
+        await calculateProgress(metasList, userId);
+      } else if (isMountedRef.current) {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [userId, fetchMetas, calculateProgress]);
+
+  const refetch = useCallback(async () => {
+    if (!userId) return;
+    setLoading(true);
+    const metasList = await fetchMetas();
+    if (metasList) {
+      await calculateProgress(metasList, userId);
+    }
+  }, [userId, fetchMetas, calculateProgress]);
+
+  return { progress, loading, refetch, metas };
 }
