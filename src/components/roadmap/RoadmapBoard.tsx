@@ -26,6 +26,8 @@ export function RoadmapBoard({
 }: RoadmapBoardProps) {
   const [selectedTarefa, setSelectedTarefa] = useState<TarefaInterna | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [quickFormStatus, setQuickFormStatus] = useState<TaskStatus | null>(null);
   const [usuarios, setUsuarios] = useState<Record<string, string>>({});
   const { responsaveis, updateResponsaveis, getResponsaveisForTarefa } = useTarefaResponsaveis();
 
@@ -125,8 +127,13 @@ export function RoadmapBoard({
     return false;
   };
 
-  const handleQuickAdd = async (titulo: string, status: TaskStatus) => {
-    return await onCreateTarefa({ titulo, status });
+  const handleQuickAdd = async (titulo: string, status: TaskStatus, extras?: { prioridade?: string; categoria?: string }) => {
+    return await onCreateTarefa({ titulo, status, ...extras });
+  };
+
+  const handleOpenFullForm = (status: TaskStatus) => {
+    setQuickFormStatus(status);
+    setFormOpen(true);
   };
 
   const usuariosList = Object.entries(usuarios).map(([id, nome]) => ({ id, nome }));
@@ -153,6 +160,7 @@ export function RoadmapBoard({
                       isExpanded={expandedColumns[status]}
                       onToggleExpand={() => toggleColumnExpand(status)}
                       onQuickAdd={handleQuickAdd}
+                      onOpenFullForm={handleOpenFullForm}
                     />
                     {provided.placeholder}
                   </div>
@@ -172,6 +180,23 @@ export function RoadmapBoard({
         onDelete={handleDelete}
         usuarios={usuariosList}
         responsaveisAtuais={selectedTarefa ? getResponsaveisForTarefa(selectedTarefa.id) : []}
+      />
+
+      {/* Quick form for new task from column */}
+      <TarefaFormDialog
+        open={formOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open);
+          if (!open) setQuickFormStatus(null);
+        }}
+        tarefa={null}
+        defaultStatus={quickFormStatus || undefined}
+        onSave={async (data) => {
+          await onCreateTarefa(data);
+          return true;
+        }}
+        usuarios={usuariosList}
+        responsaveisAtuais={[]}
       />
     </>
   );

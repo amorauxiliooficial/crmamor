@@ -50,6 +50,7 @@ interface TarefaFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tarefa?: TarefaInterna | null;
+  defaultStatus?: TaskStatus;
   onSave: (data: {
     titulo: string;
     descricao?: string;
@@ -68,6 +69,7 @@ export function TarefaFormDialog({
   open,
   onOpenChange,
   tarefa,
+  defaultStatus,
   onSave,
   onDelete,
   usuarios,
@@ -94,13 +96,13 @@ export function TarefaFormDialog({
     } else {
       setTitulo("");
       setDescricao("");
-      setStatus("backlog");
+      setStatus(defaultStatus || "backlog");
       setPrioridade("media");
       setCategoria("melhoria");
       setResponsaveis([]);
       setPrazo(undefined);
     }
-  }, [tarefa, open, responsaveisAtuais]);
+  }, [tarefa, open, responsaveisAtuais, defaultStatus]);
 
   const handleToggleResponsavel = (userId: string) => {
     setResponsaveis((prev) =>
