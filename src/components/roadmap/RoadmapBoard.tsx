@@ -5,6 +5,7 @@ import { TarefaFormDialog } from "./TarefaFormDialog";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import { supabase } from "@/integrations/supabase/client";
+import { useTarefaResponsaveis } from "@/hooks/useTarefaResponsaveis";
 
 interface RoadmapBoardProps {
   tarefas: TarefaInterna[];
@@ -22,6 +23,7 @@ export function RoadmapBoard({
   const [selectedTarefa, setSelectedTarefa] = useState<TarefaInterna | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [usuarios, setUsuarios] = useState<Record<string, string>>({});
+  const { responsaveis, updateResponsaveis, getResponsaveisForTarefa } = useTarefaResponsaveis();
 
   // Fetch users for display
   useEffect(() => {
@@ -75,9 +77,14 @@ export function RoadmapBoard({
     setDialogOpen(true);
   };
 
-  const handleSave = async (data: Parameters<typeof onUpdate>[1]) => {
+  const handleSave = async (data: Parameters<typeof onUpdate>[1], responsaveisIds?: string[]) => {
     if (selectedTarefa) {
       await onUpdate(selectedTarefa.id, data);
+      
+      // Update responsáveis if provided
+      if (responsaveisIds !== undefined) {
+        await updateResponsaveis(selectedTarefa.id, responsaveisIds);
+      }
     }
     return true;
   };
@@ -109,6 +116,7 @@ export function RoadmapBoard({
                       onCardClick={handleCardClick}
                       isDraggingOver={snapshot.isDraggingOver}
                       usuarios={usuarios}
+                      responsaveisPorTarefa={responsaveis}
                     />
                     {provided.placeholder}
                   </div>
@@ -127,6 +135,7 @@ export function RoadmapBoard({
         onSave={handleSave}
         onDelete={handleDelete}
         usuarios={usuariosList}
+        responsaveisAtuais={selectedTarefa ? getResponsaveisForTarefa(selectedTarefa.id) : []}
       />
     </>
   );

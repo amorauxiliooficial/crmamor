@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Trash2 } from "lucide-react";
+import { CalendarIcon, Trash2, Check } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -44,6 +44,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 
 interface TarefaFormDialogProps {
   open: boolean;
@@ -57,9 +58,10 @@ interface TarefaFormDialogProps {
     categoria?: TaskCategory;
     responsavel_id?: string;
     prazo?: string;
-  }) => Promise<unknown>;
+  }, responsaveisIds?: string[]) => Promise<unknown>;
   onDelete?: () => Promise<boolean>;
   usuarios: { id: string; nome: string }[];
+  responsaveisAtuais?: string[];
 }
 
 export function TarefaFormDialog({
@@ -69,13 +71,14 @@ export function TarefaFormDialog({
   onSave,
   onDelete,
   usuarios,
+  responsaveisAtuais = [],
 }: TarefaFormDialogProps) {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [status, setStatus] = useState<TaskStatus>("backlog");
   const [prioridade, setPrioridade] = useState<TaskPriority>("media");
   const [categoria, setCategoria] = useState<TaskCategory>("melhoria");
-  const [responsavelId, setResponsavelId] = useState<string>("");
+  const [responsaveis, setResponsaveis] = useState<string[]>([]);
   const [prazo, setPrazo] = useState<Date | undefined>();
   const [saving, setSaving] = useState(false);
 
@@ -86,7 +89,7 @@ export function TarefaFormDialog({
       setStatus(tarefa.status);
       setPrioridade(tarefa.prioridade);
       setCategoria(tarefa.categoria);
-      setResponsavelId(tarefa.responsavel_id || "");
+      setResponsaveis(responsaveisAtuais);
       setPrazo(tarefa.prazo ? parseISO(tarefa.prazo) : undefined);
     } else {
       setTitulo("");
@@ -94,23 +97,33 @@ export function TarefaFormDialog({
       setStatus("backlog");
       setPrioridade("media");
       setCategoria("melhoria");
-      setResponsavelId("");
+      setResponsaveis([]);
       setPrazo(undefined);
     }
-  }, [tarefa, open]);
+  }, [tarefa, open, responsaveisAtuais]);
+
+  const handleToggleResponsavel = (userId: string) => {
+    setResponsaveis((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
 
   const handleSave = async () => {
     if (!titulo.trim()) return;
     setSaving(true);
-    await onSave({
-      titulo: titulo.trim(),
-      descricao: descricao.trim() || undefined,
-      status,
-      prioridade,
-      categoria,
-      responsavel_id: responsavelId || undefined,
-      prazo: prazo ? format(prazo, "yyyy-MM-dd") : undefined,
-    });
+    await onSave(
+      {
+        titulo: titulo.trim(),
+        descricao: descricao.trim() || undefined,
+        status,
+        prioridade,
+        categoria,
+        prazo: prazo ? format(prazo, "yyyy-MM-dd") : undefined,
+      },
+      responsaveis
+    );
     setSaving(false);
     onOpenChange(false);
   };
@@ -124,7 +137,7 @@ export function TarefaFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{tarefa ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
         </DialogHeader>
@@ -185,42 +198,51 @@ export function TarefaFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Categoria</Label>
-              <Select value={categoria} onValueChange={(v) => setCategoria(v as TaskCategory)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(TASK_CATEGORY_LABELS) as TaskCategory[]).map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {TASK_CATEGORY_LABELS[c]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label>Categoria</Label>
+            <Select value={categoria} onValueChange={(v) => setCategoria(v as TaskCategory)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(TASK_CATEGORY_LABELS) as TaskCategory[]).map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {TASK_CATEGORY_LABELS[c]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            <div className="space-y-2">
-              <Label>Responsável</Label>
-              <Select 
-                value={responsavelId || "__none__"} 
-                onValueChange={(v) => setResponsavelId(v === "__none__" ? "" : v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Ninguém</SelectItem>
-                  {usuarios.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="space-y-2">
+            <Label>Responsáveis</Label>
+            <div className="flex flex-wrap gap-2 p-3 border rounded-md bg-muted/30 min-h-[44px]">
+              {usuarios.map((u) => {
+                const isSelected = responsaveis.includes(u.id);
+                return (
+                  <Badge
+                    key={u.id}
+                    variant={isSelected ? "default" : "outline"}
+                    className={cn(
+                      "cursor-pointer transition-all hover:opacity-80",
+                      isSelected && "bg-primary text-primary-foreground"
+                    )}
+                    onClick={() => handleToggleResponsavel(u.id)}
+                  >
+                    {isSelected && <Check className="h-3 w-3 mr-1" />}
+                    {u.nome}
+                  </Badge>
+                );
+              })}
+              {usuarios.length === 0 && (
+                <span className="text-sm text-muted-foreground">Nenhum usuário disponível</span>
+              )}
             </div>
+            {responsaveis.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {responsaveis.length} responsável(is) selecionado(s)
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

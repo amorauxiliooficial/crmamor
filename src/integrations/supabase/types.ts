@@ -1036,44 +1036,85 @@ export type Database = {
         }
         Relationships: []
       }
+      tarefa_responsaveis: {
+        Row: {
+          created_at: string
+          id: string
+          tarefa_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tarefa_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tarefa_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarefa_responsaveis_tarefa_id_fkey"
+            columns: ["tarefa_id"]
+            isOneToOne: false
+            referencedRelation: "tarefas_internas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tarefas_internas: {
         Row: {
+          backlog_at: string | null
           categoria: Database["public"]["Enums"]["task_category"]
+          concluido_at: string | null
           created_at: string
           created_by: string
           descricao: string | null
+          em_progresso_at: string | null
           id: string
           ordem: number | null
           prazo: string | null
           prioridade: Database["public"]["Enums"]["task_priority"]
+          priorizado_at: string | null
           responsavel_id: string | null
           status: Database["public"]["Enums"]["task_status"]
           titulo: string
           updated_at: string
         }
         Insert: {
+          backlog_at?: string | null
           categoria?: Database["public"]["Enums"]["task_category"]
+          concluido_at?: string | null
           created_at?: string
           created_by: string
           descricao?: string | null
+          em_progresso_at?: string | null
           id?: string
           ordem?: number | null
           prazo?: string | null
           prioridade?: Database["public"]["Enums"]["task_priority"]
+          priorizado_at?: string | null
           responsavel_id?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           titulo: string
           updated_at?: string
         }
         Update: {
+          backlog_at?: string | null
           categoria?: Database["public"]["Enums"]["task_category"]
+          concluido_at?: string | null
           created_at?: string
           created_by?: string
           descricao?: string | null
+          em_progresso_at?: string | null
           id?: string
           ordem?: number | null
           prazo?: string | null
           prioridade?: Database["public"]["Enums"]["task_priority"]
+          priorizado_at?: string | null
           responsavel_id?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           titulo?: string
