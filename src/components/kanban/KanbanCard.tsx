@@ -1,18 +1,29 @@
 import { MaeProcesso } from "@/types/mae";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Baby, FolderOpen, MessageCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, FileText, Baby, FolderOpen, Phone, MessageCircle } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { differenceInMonths, parseISO } from "date-fns";
 import { FollowUpBadge } from "@/components/atividades/FollowUpBadge";
 import { useFollowUpStatus } from "@/hooks/useAtividades";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+
+interface UserProfile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
 
 interface KanbanCardProps {
   mae: MaeProcesso & { ultima_atividade_em?: string | null };
   onClick: () => void;
   isDragging?: boolean;
   onOpenAtividades?: () => void;
+  onQuickActivity?: (tipo: "ligacao" | "whatsapp") => void;
+  userProfile?: UserProfile | null;
 }
 
 function calcularMesGravidez(mae: MaeProcesso): number | null {
@@ -37,7 +48,28 @@ function calcularMesGravidez(mae: MaeProcesso): number | null {
   return Math.max(1, Math.min(9, 9 - mesesAteParto));
 }
 
-export function KanbanCard({ mae, onClick, isDragging, onOpenAtividades }: KanbanCardProps) {
+function getInitials(name: string | null, email: string | null): string {
+  if (name) {
+    const parts = name.split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  }
+  if (email) {
+    return email.substring(0, 2).toUpperCase();
+  }
+  return "??";
+}
+
+export function KanbanCard({ 
+  mae, 
+  onClick, 
+  isDragging, 
+  onOpenAtividades,
+  onQuickActivity,
+  userProfile
+}: KanbanCardProps) {
   const mesGestacao = calcularMesGravidez(mae);
   const { getFollowUpStatus, getDaysSinceLastActivity, configLoading } = useFollowUpStatus();
   
@@ -55,6 +87,8 @@ export function KanbanCard({ mae, onClick, isDragging, onOpenAtividades }: Kanba
     mae.data_ultima_atualizacao
   );
   
+  const userName = userProfile?.full_name || userProfile?.email?.split("@")[0] || null;
+  
   return (
     <Card
       className={cn(
@@ -67,9 +101,27 @@ export function KanbanCard({ mae, onClick, isDragging, onOpenAtividades }: Kanba
       <CardContent className="p-2.5 md:p-3">
         <div className="space-y-1.5 md:space-y-2">
           <div className="flex items-start justify-between gap-1.5">
-            <h4 className="font-medium text-sm leading-tight line-clamp-2">
-              {mae.nome_mae}
-            </h4>
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              {userProfile && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Avatar className="h-5 w-5 shrink-0 text-[9px]">
+                        <AvatarFallback className="bg-primary/10 text-primary text-[9px] font-medium">
+                          {getInitials(userProfile.full_name, userProfile.email)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      {userName || "Sem atribuição"}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              <h4 className="font-medium text-sm leading-tight line-clamp-2">
+                {mae.nome_mae}
+              </h4>
+            </div>
             <div className="flex gap-0.5 shrink-0">
               {followUpStatus && (
                 <button
@@ -135,6 +187,36 @@ export function KanbanCard({ mae, onClick, isDragging, onOpenAtividades }: Kanba
               </span>
             )}
           </div>
+
+          {/* Quick Activity Buttons */}
+          {onQuickActivity && isActiveStatus && (
+            <div className="flex gap-1 pt-1 border-t">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[10px] gap-1 flex-1 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950 dark:hover:text-blue-400"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickActivity("ligacao");
+                }}
+              >
+                <Phone className="h-3 w-3" />
+                Ligação
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[10px] gap-1 flex-1 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-950 dark:hover:text-green-400"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickActivity("whatsapp");
+                }}
+              >
+                <MessageCircle className="h-3 w-3" />
+                WhatsApp
+              </Button>
+            </div>
+          )}
 
           {mae.observacoes && (
             <p className="text-[11px] text-muted-foreground italic line-clamp-2 border-t pt-1.5">
