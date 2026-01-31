@@ -6,12 +6,13 @@ import { Draggable } from "@hello-pangea/dnd";
 
 interface KanbanColumnProps {
   status: StatusProcesso;
-  maes: MaeProcesso[];
+  maes: (MaeProcesso & { ultima_atividade_em?: string | null })[];
   onCardClick: (mae: MaeProcesso) => void;
+  onOpenAtividades?: (mae: MaeProcesso) => void;
   isDraggingOver?: boolean;
 }
 
-export function KanbanColumn({ status, maes, onCardClick, isDraggingOver }: KanbanColumnProps) {
+export function KanbanColumn({ status, maes, onCardClick, onOpenAtividades, isDraggingOver }: KanbanColumnProps) {
   const statusLabel = status.split(" ").slice(1).join(" ") || status;
   const emoji = status.split(" ")[0];
 
@@ -46,6 +47,7 @@ export function KanbanColumn({ status, maes, onCardClick, isDraggingOver }: Kanb
                     mae={mae} 
                     onClick={() => onCardClick(mae)} 
                     isDragging={snapshot.isDragging}
+                    onOpenAtividades={() => onOpenAtividades?.(mae)}
                   />
                 </div>
               )}

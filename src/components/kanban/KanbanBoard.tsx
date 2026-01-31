@@ -5,9 +5,10 @@ import { useMemo } from "react";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 
 interface KanbanBoardProps {
-  maes: MaeProcesso[];
+  maes: (MaeProcesso & { ultima_atividade_em?: string | null })[];
   onCardClick: (mae: MaeProcesso) => void;
   onStatusChange?: (maeId: string, newStatus: StatusProcesso) => void;
+  onOpenAtividades?: (mae: MaeProcesso) => void;
   visibleStatuses?: StatusProcesso[];
 }
 
@@ -15,6 +16,7 @@ export function KanbanBoard({
   maes,
   onCardClick,
   onStatusChange,
+  onOpenAtividades,
   visibleStatuses = STATUS_ORDER,
 }: KanbanBoardProps) {
   const groupedMaes = useMemo(() => {
@@ -60,6 +62,7 @@ export function KanbanBoard({
                     status={status}
                     maes={groupedMaes[status] || []}
                     onCardClick={onCardClick}
+                    onOpenAtividades={onOpenAtividades}
                     isDraggingOver={snapshot.isDraggingOver}
                   />
                   {provided.placeholder}
