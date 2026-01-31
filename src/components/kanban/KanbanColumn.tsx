@@ -57,9 +57,17 @@ export function KanbanColumn({
             </span>
           </>
         ) : (
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-background text-[10px] font-medium">
-            {maes.length}
-          </span>
+          <>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-background text-[10px] font-medium">
+              {maes.length}
+            </span>
+            <span 
+              className="text-[10px] font-medium text-center mt-2 leading-tight"
+              style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
+            >
+              {statusLabel}
+            </span>
+          </>
         )}
       </div>
       {isExpanded && (
