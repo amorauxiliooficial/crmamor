@@ -15,6 +15,7 @@ import { RegistrarAtividadeDialog } from "./RegistrarAtividadeDialog";
 import { ClienteCard } from "./ClienteCard";
 import { AgendarFollowUpDialog } from "./AgendarFollowUpDialog";
 import { HistoricoAtividadesDialog } from "./HistoricoAtividadesDialog";
+import { MaeAtividadesDialog } from "./MaeAtividadesDialog";
 import { formatCpf } from "@/lib/formatters";
 import { 
   Phone, 
@@ -80,6 +81,7 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
   // Dialog states
   const [agendarDialogOpen, setAgendarDialogOpen] = useState(false);
   const [historicoDialogOpen, setHistoricoDialogOpen] = useState(false);
+  const [atividadesDialogOpen, setAtividadesDialogOpen] = useState(false);
   
   // Calendar data
   const { counts: followUpCounts } = useFollowUpCounts(selectedDate.getFullYear(), selectedDate.getMonth());
@@ -200,6 +202,12 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
   const handleAgendarFollowUp = (mae: MaeProcesso) => {
     setSelectedMae(mae);
     setAgendarDialogOpen(true);
+  };
+  
+  // Abrir dialog focado em atividades ao clicar no card
+  const handleCardClick = (mae: MaeProcesso) => {
+    setSelectedMae(mae);
+    setAtividadesDialogOpen(true);
   };
 
   const FollowUpCard = ({ followUp, showDate = true }: { followUp: PendingFollowUp; showDate?: boolean }) => {
@@ -379,6 +387,7 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
                     mae={cliente}
                     pendingCount={cliente.pendingCount}
                     lastActivityDate={cliente.lastActivityDate}
+                    onClick={handleCardClick}
                     onNovaAtividade={handleNovaAtividade}
                     onVerHistorico={handleVerHistorico}
                     onAgendarFollowUp={handleAgendarFollowUp}
@@ -545,6 +554,19 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
           mae={selectedMae}
           open={historicoDialogOpen}
           onOpenChange={setHistoricoDialogOpen}
+        />
+      )}
+      
+      {/* Atividades Dialog (abre ao clicar no card) */}
+      {selectedMae && (
+        <MaeAtividadesDialog
+          mae={selectedMae}
+          open={atividadesDialogOpen}
+          onOpenChange={setAtividadesDialogOpen}
+          onRefresh={() => {
+            refetch();
+            onRefresh();
+          }}
         />
       )}
     </div>
