@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { 
   Loader2, Settings, Heart, TrendingUp, TrendingDown, Minus, 
-  Baby, Users, FileCheck, Activity, Target, Award
+  Baby, Users, FileCheck, Activity, Target, Sparkles, Star, Flame, Trophy
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +28,50 @@ const PERIODO_LABELS: Record<string, { current: string; previous: string }> = {
   mensal: { current: "Mês", previous: "vs anterior" },
 };
 
+// Mensagens motivacionais baseadas no progresso
+function getMotivationalMessage(mediaGeral: number, metasAtingidas: number, total: number): { emoji: string; message: string; subMessage: string } {
+  if (metasAtingidas === total && total > 0) {
+    return { 
+      emoji: "🏆", 
+      message: "Incrível! Todas as metas batidas!", 
+      subMessage: "Você é uma inspiração!" 
+    };
+  }
+  if (mediaGeral >= 80) {
+    return { 
+      emoji: "🔥", 
+      message: "Você está arrasando!", 
+      subMessage: "Quase lá, continue assim!" 
+    };
+  }
+  if (mediaGeral >= 60) {
+    return { 
+      emoji: "💪", 
+      message: "Ótimo progresso!", 
+      subMessage: "Cada passo conta!" 
+    };
+  }
+  if (mediaGeral >= 40) {
+    return { 
+      emoji: "✨", 
+      message: "Bom trabalho!", 
+      subMessage: "Continue focada!" 
+    };
+  }
+  if (mediaGeral > 0) {
+    return { 
+      emoji: "🌱", 
+      message: "Você começou!", 
+      subMessage: "O importante é não parar!" 
+    };
+  }
+  return { 
+    emoji: "💜", 
+    message: "Vamos juntas?", 
+    subMessage: "Hoje é um novo dia!" 
+  };
+}
+
 export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboardProps) {
   const { progress, loading } = useMetasProgress(userId);
 
@@ -41,10 +85,11 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
 
   if (progress.length === 0) {
     return (
-      <Card className="border-dashed border-2">
+      <Card className="border-dashed border-2 bg-gradient-to-br from-primary/5 to-transparent">
         <CardContent className="py-6 text-center">
-          <Target className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground mb-3">Nenhuma meta configurada</p>
+          <div className="text-3xl mb-2">💜</div>
+          <p className="text-sm font-medium text-foreground mb-1">Vamos definir suas metas?</p>
+          <p className="text-xs text-muted-foreground mb-3">Juntas, alcançamos mais!</p>
           {isAdmin && onConfigClick && (
             <Button variant="outline" size="sm" onClick={onConfigClick} className="gap-1.5">
               <Settings className="h-3.5 w-3.5" />
@@ -60,38 +105,45 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
   const totalMetas = progress.length;
   const metasAtingidas = progress.filter(p => p.percentual >= 100).length;
   const mediaGeral = progress.reduce((acc, p) => acc + Math.min(p.percentual, 100), 0) / totalMetas;
+  const motivational = getMotivationalMessage(mediaGeral, metasAtingidas, totalMetas);
 
   return (
     <div className="space-y-4">
-      {/* Header compacto */}
+      {/* Header motivacional */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold text-foreground">Metas</h3>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">|</span>
-            <Award className="h-4 w-4 text-chart-1" />
-            <span className="font-medium">{metasAtingidas}/{totalMetas}</span>
-            <span className="text-muted-foreground">•</span>
-            <span className="font-medium text-primary">{mediaGeral.toFixed(0)}%</span>
+          <div className="text-2xl">{motivational.emoji}</div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-foreground">{motivational.message}</h3>
+              {metasAtingidas === totalMetas && totalMetas > 0 && (
+                <Sparkles className="h-4 w-4 text-yellow-500 animate-pulse" />
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">{motivational.subMessage}</p>
           </div>
         </div>
-        {isAdmin && onConfigClick && (
-          <Button variant="ghost" size="icon" onClick={onConfigClick} className="h-8 w-8">
-            <Settings className="h-4 w-4" />
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <div className="text-right">
+            <p className="text-lg font-bold text-primary">{mediaGeral.toFixed(0)}%</p>
+            <p className="text-[10px] text-muted-foreground">{metasAtingidas}/{totalMetas} metas</p>
+          </div>
+          {isAdmin && onConfigClick && (
+            <Button variant="ghost" size="icon" onClick={onConfigClick} className="h-8 w-8">
+              <Settings className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Grid de metas compacto */}
+      {/* Grid de metas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {progress.map((p) => {
           const Icon = TIPO_ICONS[p.meta.tipo_meta] || Heart;
           const atingido = p.percentual >= 100;
           const periodoInfo = PERIODO_LABELS[p.meta.periodo] || PERIODO_LABELS.mensal;
           const progressCapped = Math.min(p.percentual, 100);
+          const quaseLa = p.percentual >= 80 && p.percentual < 100;
           
           const isPositive = p.variacao > 0;
           const isNegative = p.variacao < 0;
@@ -100,32 +152,38 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
             <Card 
               key={p.meta.id}
               className={cn(
-                "transition-all hover:shadow-sm",
-                atingido && "ring-1 ring-chart-1/30 bg-chart-1/5"
+                "transition-all hover:shadow-sm relative overflow-hidden",
+                atingido && "ring-1 ring-chart-1/30 bg-gradient-to-br from-chart-1/10 to-chart-1/5",
+                quaseLa && !atingido && "ring-1 ring-yellow-500/30 bg-gradient-to-br from-yellow-500/10 to-yellow-500/5"
               )}
             >
+              {atingido && (
+                <div className="absolute top-1 right-1">
+                  <Trophy className="h-3.5 w-3.5 text-chart-1" />
+                </div>
+              )}
+              {quaseLa && !atingido && (
+                <div className="absolute top-1 right-1">
+                  <Flame className="h-3.5 w-3.5 text-yellow-500 animate-pulse" />
+                </div>
+              )}
               <CardContent className="p-3">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className={cn(
-                      "w-7 h-7 rounded-md flex items-center justify-center",
-                      atingido 
-                        ? "bg-chart-1/20 text-chart-1" 
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={cn(
+                    "w-7 h-7 rounded-md flex items-center justify-center",
+                    atingido 
+                      ? "bg-chart-1/20 text-chart-1" 
+                      : quaseLa
+                        ? "bg-yellow-500/20 text-yellow-600"
                         : "bg-primary/10 text-primary"
-                    )}>
-                      <Icon className="h-3.5 w-3.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="font-medium text-xs truncate">{p.meta.nome}</h4>
-                      <span className="text-[10px] text-muted-foreground">{periodoInfo.current}</span>
-                    </div>
+                  )}>
+                    <Icon className="h-3.5 w-3.5" />
                   </div>
-                  {atingido && (
-                    <span className="text-[10px] font-medium text-chart-1 bg-chart-1/10 px-1.5 py-0.5 rounded">
-                      ✓
-                    </span>
-                  )}
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-medium text-xs truncate">{p.meta.nome}</h4>
+                    <span className="text-[10px] text-muted-foreground">{periodoInfo.current}</span>
+                  </div>
                 </div>
 
                 {/* Numbers + Progress */}
@@ -134,7 +192,8 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
                     <div className="flex items-baseline gap-1">
                       <span className={cn(
                         "text-lg font-bold tabular-nums",
-                        atingido && "text-chart-1"
+                        atingido && "text-chart-1",
+                        quaseLa && !atingido && "text-yellow-600"
                       )}>
                         {p.realizado}
                       </span>
@@ -163,8 +222,22 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
                   </div>
                   <Progress 
                     value={progressCapped} 
-                    className={cn("h-1.5", atingido && "[&>div]:bg-chart-1")}
+                    className={cn(
+                      "h-1.5", 
+                      atingido && "[&>div]:bg-chart-1",
+                      quaseLa && !atingido && "[&>div]:bg-yellow-500"
+                    )}
                   />
+                  {atingido && (
+                    <p className="text-[10px] text-chart-1 font-medium text-center">
+                      🎉 Parabéns!
+                    </p>
+                  )}
+                  {quaseLa && !atingido && (
+                    <p className="text-[10px] text-yellow-600 font-medium text-center">
+                      Quase lá! Falta {p.meta.valor_meta - p.realizado}!
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
