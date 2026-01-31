@@ -1,8 +1,10 @@
 import { MaeProcesso, STATUS_ORDER, StatusProcesso } from "@/types/mae";
 import { KanbanColumn } from "./KanbanColumn";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
+
+const STORAGE_KEY = "kanban-expanded-columns";
 
 interface KanbanBoardProps {
   maes: (MaeProcesso & { ultima_atividade_em?: string | null })[];
@@ -19,6 +21,42 @@ export function KanbanBoard({
   onOpenAtividades,
   visibleStatuses = STATUS_ORDER,
 }: KanbanBoardProps) {
+  // Load expanded columns from localStorage or default to all expanded
+  const [expandedColumns, setExpandedColumns] = useState<Set<StatusProcesso>>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as StatusProcesso[];
+        return new Set(parsed);
+      }
+    } catch {
+      // Ignore parse errors
+    }
+    // Default: all columns expanded
+    return new Set(STATUS_ORDER);
+  });
+
+  // Save to localStorage whenever expandedColumns changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(expandedColumns)));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [expandedColumns]);
+
+  const toggleColumn = useCallback((status: StatusProcesso) => {
+    setExpandedColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) {
+        next.delete(status);
+      } else {
+        next.add(status);
+      }
+      return next;
+    });
+  }, []);
+
   const groupedMaes = useMemo(() => {
     const groups: Record<StatusProcesso, MaeProcesso[]> = {} as any;
     
@@ -64,6 +102,8 @@ export function KanbanBoard({
                     onCardClick={onCardClick}
                     onOpenAtividades={onOpenAtividades}
                     isDraggingOver={snapshot.isDraggingOver}
+                    isExpanded={expandedColumns.has(status)}
+                    onToggleExpand={() => toggleColumn(status)}
                   />
                   {provided.placeholder}
                 </div>
