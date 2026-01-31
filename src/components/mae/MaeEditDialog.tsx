@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, DollarSign, FolderOpen, UserCog } from "lucide-react";
+import { Loader2, Save, DollarSign, FolderOpen, UserCog, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
@@ -14,6 +14,8 @@ import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
 import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { MultiAtendentesSelect } from "@/components/mae/MultiAtendentesSelect";
+
 interface MaeEditDialogProps {
   mae: MaeProcesso | null;
   open: boolean;
@@ -40,6 +42,8 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
   const [documentosDialogOpen, setDocumentosDialogOpen] = useState(false);
   const [users, setUsers] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [selectedAtendentes, setSelectedAtendentes] = useState<string[]>([]);
+  const [originalAtendentes, setOriginalAtendentes] = useState<string[]>([]);
   
   const [formData, setFormData] = useState({
     nome_mae: "",
@@ -82,6 +86,37 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       fetchUsers();
     }
   }, [isAdmin, open]);
+
+  // Fetch existing atendentes for this mae
+  useEffect(() => {
+    const fetchAtendentes = async () => {
+      if (!mae?.id || !open) return;
+      
+      const { data } = await supabase
+        .from("mae_atendentes")
+        .select("user_id")
+        .eq("mae_id", mae.id);
+      
+      if (data) {
+        const userIds = data.map((a) => a.user_id);
+        // Always include the primary user_id
+        if (mae.user_id && !userIds.includes(mae.user_id)) {
+          userIds.unshift(mae.user_id);
+        }
+        setSelectedAtendentes(userIds);
+        setOriginalAtendentes(userIds);
+      } else {
+        // If no extra atendentes, just set the primary
+        const primaryList = mae.user_id ? [mae.user_id] : [];
+        setSelectedAtendentes(primaryList);
+        setOriginalAtendentes(primaryList);
+      }
+    };
+
+    if (isAdmin) {
+      fetchAtendentes();
+    }
+  }, [mae?.id, mae?.user_id, open, isAdmin]);
 
   useEffect(() => {
     if (mae && open) {
@@ -189,6 +224,33 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       .update(updateData)
       .eq("id", mae.id);
 
+    // Handle multiple atendentes
+    if (!error && isAdmin) {
+      // Find which to add and which to remove
+      const toAdd = selectedAtendentes.filter(
+        (id) => !originalAtendentes.includes(id) && id !== selectedUserId
+      );
+      const toRemove = originalAtendentes.filter(
+        (id) => !selectedAtendentes.includes(id) && id !== selectedUserId
+      );
+
+      // Insert new atendentes
+      if (toAdd.length > 0) {
+        await supabase
+          .from("mae_atendentes")
+          .insert(toAdd.map((user_id) => ({ mae_id: mae.id, user_id })));
+      }
+
+      // Remove old atendentes
+      if (toRemove.length > 0) {
+        await supabase
+          .from("mae_atendentes")
+          .delete()
+          .eq("mae_id", mae.id)
+          .in("user_id", toRemove);
+      }
+    }
+
     setIsLoading(false);
 
     if (error) {
@@ -224,30 +286,54 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Admin: Atendente Responsável */}
+          {/* Admin: Atendentes Responsáveis */}
           {isAdmin && (
-            <div className="space-y-2 p-4 bg-primary/5 rounded-lg border border-primary/20">
-              <div className="flex items-center gap-2 mb-2">
-                <UserCog className="h-4 w-4 text-primary" />
-                <Label className="font-semibold text-primary">Atendente Responsável</Label>
+            <div className="space-y-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <Label className="font-semibold text-primary">Atendentes Responsáveis</Label>
               </div>
-              <Select
-                value={selectedUserId}
-                onValueChange={setSelectedUserId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o atendente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.full_name || u.email?.split("@")[0] || "Sem nome"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              
+              {/* Primary attendant */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Atendente Principal</Label>
+                <Select
+                  value={selectedUserId}
+                  onValueChange={(value) => {
+                    setSelectedUserId(value);
+                    // Ensure primary is in selected list
+                    if (!selectedAtendentes.includes(value)) {
+                      setSelectedAtendentes([...selectedAtendentes, value]);
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o atendente principal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.full_name || u.email?.split("@")[0] || "Sem nome"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Additional attendants */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Atendentes Adicionais</Label>
+                <MultiAtendentesSelect
+                  users={users}
+                  selectedUserIds={selectedAtendentes}
+                  onChange={setSelectedAtendentes}
+                  primaryUserId={selectedUserId}
+                  onPrimaryChange={setSelectedUserId}
+                />
+              </div>
+
               <p className="text-xs text-muted-foreground">
-                Somente administradores podem alterar o atendente responsável pelo processo.
+                Somente administradores podem alterar os atendentes responsáveis pelo processo.
               </p>
             </div>
           )}
