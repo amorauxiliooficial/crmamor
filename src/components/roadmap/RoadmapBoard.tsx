@@ -14,6 +14,7 @@ interface RoadmapBoardProps {
   onStatusChange: (id: string, newStatus: TaskStatus) => Promise<boolean>;
   onUpdate: (id: string, updates: Partial<TarefaInterna>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
+  onCreateTarefa: (tarefa: { titulo: string; status?: TaskStatus }) => Promise<unknown>;
 }
 
 export function RoadmapBoard({
@@ -21,6 +22,7 @@ export function RoadmapBoard({
   onStatusChange,
   onUpdate,
   onDelete,
+  onCreateTarefa,
 }: RoadmapBoardProps) {
   const [selectedTarefa, setSelectedTarefa] = useState<TarefaInterna | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -123,6 +125,10 @@ export function RoadmapBoard({
     return false;
   };
 
+  const handleQuickAdd = async (titulo: string, status: TaskStatus) => {
+    return await onCreateTarefa({ titulo, status });
+  };
+
   const usuariosList = Object.entries(usuarios).map(([id, nome]) => ({ id, nome }));
 
   return (
@@ -146,6 +152,7 @@ export function RoadmapBoard({
                       responsaveisPorTarefa={responsaveis}
                       isExpanded={expandedColumns[status]}
                       onToggleExpand={() => toggleColumnExpand(status)}
+                      onQuickAdd={handleQuickAdd}
                     />
                     {provided.placeholder}
                   </div>
