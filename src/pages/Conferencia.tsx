@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import {
   Loader2,
+  ArrowLeft,
   Search,
   CheckCircle2,
   AlertTriangle,
@@ -178,45 +179,47 @@ export default function Conferencia() {
         onSearchChange={setSearchQuery}
       />
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Conferência INSS</h1>
-            <p className="text-muted-foreground">
-              Acompanhamento de processos em análise (intervalo: {CONFERENCIA_INTERVALO_DIAS} dias)
-            </p>
+      <main className="p-3 md:p-6 space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 md:gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="h-8 w-8 md:h-10 md:w-10 shrink-0">
+              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
+            </Button>
+            <div>
+              <h1 className="text-lg md:text-2xl font-bold">Conferência INSS</h1>
+              <p className="text-xs md:text-sm text-muted-foreground">
+                Intervalo: {CONFERENCIA_INTERVALO_DIAS} dias
+              </p>
+            </div>
           </div>
-          <Button variant="outline" onClick={() => navigate("/")}>
-            Voltar ao Dashboard
-          </Button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 md:gap-4">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total em Análise
+            <CardHeader className="pb-2 p-3 md:p-4">
+              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+                Total
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 pt-0 md:p-4 md:pt-0">
               <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                <span className="text-2xl font-bold">{stats.total}</span>
+                <Clock className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+                <span className="text-xl md:text-2xl font-bold">{stats.total}</span>
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-destructive/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-destructive">
-                Pendentes de Conferência
+            <CardHeader className="pb-2 p-3 md:p-4">
+              <CardTitle className="text-xs md:text-sm font-medium text-destructive">
+                Pendentes
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 pt-0 md:p-4 md:pt-0">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-                <span className="text-2xl font-bold text-destructive">
+                <AlertTriangle className="h-4 w-4 md:h-5 md:w-5 text-destructive" />
+                <span className="text-xl md:text-2xl font-bold text-destructive">
                   {stats.pendentes}
                 </span>
               </div>
@@ -224,15 +227,15 @@ export default function Conferencia() {
           </Card>
 
           <Card className="border-emerald-500/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-emerald-600">
+            <CardHeader className="pb-2 p-3 md:p-4">
+              <CardTitle className="text-xs md:text-sm font-medium text-emerald-600">
                 Em Dia
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 pt-0 md:p-4 md:pt-0">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                <span className="text-2xl font-bold text-emerald-600">
+                <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" />
+                <span className="text-xl md:text-2xl font-bold text-emerald-600">
                   {stats.emDia}
                 </span>
               </div>
@@ -241,18 +244,84 @@ export default function Conferencia() {
         </div>
 
         {/* Search */}
-        <div className="relative max-w-sm">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por nome ou CPF..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-9 md:h-10"
           />
         </div>
 
-        {/* Table */}
-        <Card>
+        {/* Mobile Card List */}
+        <div className="md:hidden space-y-2">
+          {filteredMaes.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              {maes.length === 0
+                ? "Nenhuma mãe em análise encontrada"
+                : "Nenhum resultado para a busca"}
+            </div>
+          ) : (
+            filteredMaes.map((mae) => (
+              <Card key={mae.id} className="overflow-hidden">
+                <CardContent className="p-3">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-sm truncate">{mae.nome_mae}</h3>
+                      <p className="text-xs text-muted-foreground font-mono">{formatCpf(mae.cpf)}</p>
+                    </div>
+                    {mae.precisa_conferencia ? (
+                      <Badge variant="destructive" className="text-[10px] shrink-0">
+                        <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
+                        Pendente
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-600 text-[10px] shrink-0">
+                        <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />
+                        Em dia
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <div className="text-xs text-muted-foreground mb-3">
+                    {mae.ultima_conferencia ? (
+                      <>
+                        Última: {format(new Date(mae.ultima_conferencia), "dd/MM/yyyy", { locale: ptBR })}
+                        {" · "}
+                        {mae.dias_sem_conferencia === 0 ? "Hoje" : `${mae.dias_sem_conferencia} dia(s)`}
+                      </>
+                    ) : (
+                      "Nunca conferido"
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 h-8 text-xs"
+                      onClick={() => handleHistorico(mae)}
+                    >
+                      Histórico
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1 h-8 text-xs"
+                      onClick={() => handleConferencia(mae)}
+                    >
+                      <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
+                      Conferir
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table */}
+        <Card className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>

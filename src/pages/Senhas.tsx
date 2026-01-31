@@ -164,104 +164,182 @@ export default function Senhas() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-4xl mx-auto py-6 px-4">
-        <Button
-          variant="ghost"
-          className="mb-4"
-          onClick={() => navigate("/")}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Voltar
-        </Button>
+      <div className="p-3 md:p-6 max-w-4xl mx-auto space-y-4">
+        <div className="flex items-center gap-2 md:gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/")}
+            className="h-8 w-8 md:h-10 md:w-10 shrink-0"
+          >
+            <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
+          </Button>
+          <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-primary/10 shrink-0">
+              <Key className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+            </div>
+            <h1 className="text-lg md:text-xl font-bold truncate">Senhas de Sistemas</h1>
+          </div>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                size="sm"
+                className="h-8 md:h-9 shrink-0"
+                onClick={() => {
+                  setFormData({ nome_sistema: "", login: "", senha: "" });
+                  setEditingId(null);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Nova Senha</span>
+                <span className="sm:hidden">Nova</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingId ? "Editar Senha" : "Nova Senha"}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nome_sistema">Nome do Sistema</Label>
+                  <Input
+                    id="nome_sistema"
+                    value={formData.nome_sistema}
+                    onChange={(e) =>
+                      setFormData({ ...formData, nome_sistema: e.target.value })
+                    }
+                    placeholder="Ex: Meu Gov, INSS Digital..."
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login">Login</Label>
+                  <Input
+                    id="login"
+                    value={formData.login}
+                    onChange={(e) =>
+                      setFormData({ ...formData, login: e.target.value })
+                    }
+                    placeholder="Email, CPF ou usuário"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="senha">Senha</Label>
+                  <Input
+                    id="senha"
+                    type="text"
+                    value={formData.senha}
+                    onChange={(e) =>
+                      setFormData({ ...formData, senha: e.target.value })
+                    }
+                    placeholder="Senha do sistema"
+                    required
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={resetForm}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit">
+                    {editingId ? "Salvar" : "Adicionar"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                <Key className="h-5 w-5 text-primary" />
-              </div>
-              <CardTitle>Senhas de Sistemas</CardTitle>
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Carregando...
+          </div>
+        ) : !senhas?.length ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Nenhuma senha cadastrada ainda.
+          </div>
+        ) : (
+          <>
+            {/* Mobile Card List */}
+            <div className="md:hidden space-y-2">
+              {senhas.map((senha) => (
+                <Card key={senha.id}>
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-semibold text-sm">{senha.nome_sistema}</h3>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => handleEdit(senha)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => deleteMutation.mutate(senha.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">Login:</span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-mono text-xs truncate max-w-[150px]">{senha.login}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0"
+                            onClick={() => copyToClipboard(senha.login, "Login")}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">Senha:</span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-mono text-xs">
+                            {visiblePasswords.has(senha.id) ? senha.senha : "••••••••"}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0"
+                            onClick={() => togglePasswordVisibility(senha.id)}
+                          >
+                            {visiblePasswords.has(senha.id) ? (
+                              <EyeOff className="h-3 w-3" />
+                            ) : (
+                              <Eye className="h-3 w-3" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0"
+                            onClick={() => copyToClipboard(senha.senha, "Senha")}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
 
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  onClick={() => {
-                    setFormData({ nome_sistema: "", login: "", senha: "" });
-                    setEditingId(null);
-                  }}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nova Senha
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingId ? "Editar Senha" : "Nova Senha"}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nome_sistema">Nome do Sistema</Label>
-                    <Input
-                      id="nome_sistema"
-                      value={formData.nome_sistema}
-                      onChange={(e) =>
-                        setFormData({ ...formData, nome_sistema: e.target.value })
-                      }
-                      placeholder="Ex: Meu Gov, INSS Digital..."
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login">Login</Label>
-                    <Input
-                      id="login"
-                      value={formData.login}
-                      onChange={(e) =>
-                        setFormData({ ...formData, login: e.target.value })
-                      }
-                      placeholder="Email, CPF ou usuário"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="senha">Senha</Label>
-                    <Input
-                      id="senha"
-                      type="text"
-                      value={formData.senha}
-                      onChange={(e) =>
-                        setFormData({ ...formData, senha: e.target.value })
-                      }
-                      placeholder="Senha do sistema"
-                      required
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={resetForm}>
-                      Cancelar
-                    </Button>
-                    <Button type="submit">
-                      {editingId ? "Salvar" : "Adicionar"}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </CardHeader>
-
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Carregando...
-              </div>
-            ) : !senhas?.length ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Nenhuma senha cadastrada ainda.
-              </div>
-            ) : (
+            {/* Desktop Table */}
+            <Card className="hidden md:block">
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -347,9 +425,9 @@ export default function Senhas() {
                   </TableBody>
                 </Table>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </Card>
+          </>
+        )}
       </div>
     </div>
   );
