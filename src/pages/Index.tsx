@@ -111,7 +111,7 @@ const Index = () => {
   const [selectedIndicacaoFromNotification, setSelectedIndicacaoFromNotification] = useState<Indicacao | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [showOnboardingOnLoad, setShowOnboardingOnLoad] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string>("all");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [users, setUsers] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
   const [metasConfigOpen, setMetasConfigOpen] = useState(false);
   const { isAdmin } = useIsAdmin();
@@ -127,6 +127,14 @@ const Index = () => {
       navigate("/auth");
     }
   }, [user, authLoading, navigate]);
+
+  // Set default user filter based on role
+  useEffect(() => {
+    if (user && selectedUserId === null) {
+      // Admin sees all users by default, non-admin sees only their own
+      setSelectedUserId(isAdmin ? "all" : user.id);
+    }
+  }, [user, isAdmin, selectedUserId]);
 
   // Onboarding modal is now opened manually via header button only
   // Removed automatic popup on first load
@@ -227,7 +235,7 @@ const Index = () => {
 
   // Filter by user first
   const maesFilteredByUser = useMemo(() => {
-    if (selectedUserId === "all") return maes;
+    if (!selectedUserId || selectedUserId === "all") return maes;
     return maes.filter((mae) => mae.user_id === selectedUserId);
   }, [maes, selectedUserId]);
 
@@ -373,33 +381,35 @@ const Index = () => {
 
       <main className="p-3 md:p-6 space-y-3 md:space-y-6 overflow-x-hidden">
 
-        {/* User Selector */}
-        <section className="flex items-center gap-3">
-          <span className="text-sm font-medium text-muted-foreground">Usuário:</span>
-          <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Todos os usuários" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os usuários</SelectItem>
-              {users.map((u) => (
-                <SelectItem key={u.id} value={u.id}>
-                  {getUserDisplayName(u)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {selectedUserId !== "all" && (
-            <Badge variant="secondary" className="gap-1">
-              {getUserDisplayName(users.find((u) => u.id === selectedUserId) || { id: "", full_name: null, email: null })}
-            </Badge>
-          )}
-        </section>
+        {/* User Selector - Only visible for admins */}
+        {isAdmin && (
+          <section className="flex items-center gap-3">
+            <span className="text-sm font-medium text-muted-foreground">Usuário:</span>
+            <Select value={selectedUserId || "all"} onValueChange={setSelectedUserId}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Todos os usuários" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os usuários</SelectItem>
+                {users.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {getUserDisplayName(u)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedUserId && selectedUserId !== "all" && (
+              <Badge variant="secondary" className="gap-1">
+                {getUserDisplayName(users.find((u) => u.id === selectedUserId) || { id: "", full_name: null, email: null })}
+              </Badge>
+            )}
+          </section>
+        )}
 
         {/* Metas Dashboard - replaces old stats cards */}
         <section className="tour-stats">
           <MetasDashboard 
-            userId={selectedUserId !== "all" ? selectedUserId : user?.id || null}
+            userId={selectedUserId && selectedUserId !== "all" ? selectedUserId : user?.id || null}
             isAdmin={isAdmin}
             onConfigClick={() => setMetasConfigOpen(true)}
           />
@@ -545,16 +555,16 @@ const Index = () => {
                   searchQuery={searchQuery} 
                   externalSelectedIndicacao={selectedIndicacaoFromNotification}
                   onClearExternalSelection={() => setSelectedIndicacaoFromNotification(null)}
-                  selectedUserId={selectedUserId}
+                  selectedUserId={selectedUserId || undefined}
                 />
               </div>
             ) : viewMode === "conferencia" ? (
               <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-                <ConferenciaTab searchQuery={searchQuery} selectedUserId={selectedUserId} />
+                <ConferenciaTab searchQuery={searchQuery} selectedUserId={selectedUserId || undefined} />
               </div>
             ) : viewMode === "pagamentos" ? (
               <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-                <PagamentosTab searchQuery={searchQuery} selectedUserId={selectedUserId} />
+                <PagamentosTab searchQuery={searchQuery} selectedUserId={selectedUserId || undefined} />
               </div>
             ) : viewMode === "gestantes" ? (
               <div className="rounded-lg border bg-muted/30 min-h-[500px]">
