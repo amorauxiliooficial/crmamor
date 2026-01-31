@@ -1,7 +1,7 @@
 import { MaeProcesso } from "@/types/mae";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Baby, FolderOpen } from "lucide-react";
+import { Calendar, FileText, Baby, FolderOpen, Bell } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { differenceInMonths, parseISO } from "date-fns";
@@ -13,6 +13,7 @@ interface KanbanCardProps {
   onClick: () => void;
   isDragging?: boolean;
   onOpenAtividades?: () => void;
+  hasUnreadAlert?: boolean;
 }
 
 function calcularMesGravidez(mae: MaeProcesso): number | null {
@@ -39,7 +40,8 @@ export function KanbanCard({
   mae, 
   onClick, 
   isDragging, 
-  onOpenAtividades
+  onOpenAtividades,
+  hasUnreadAlert = false,
 }: KanbanCardProps) {
   const mesGestacao = calcularMesGravidez(mae);
   const { getFollowUpStatus, getDaysSinceLastActivity, configLoading } = useFollowUpStatus();
@@ -60,12 +62,23 @@ export function KanbanCard({
   return (
     <Card
       className={cn(
-        "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20",
+        "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20 relative",
         isDragging && "shadow-lg ring-2 ring-primary rotate-2",
-        followUpStatus === "overdue" && "ring-1 ring-destructive/50"
+        followUpStatus === "overdue" && "ring-1 ring-destructive/50",
+        hasUnreadAlert && "ring-2 ring-amber-500 animate-pulse"
       )}
       onClick={onClick}
     >
+      {hasUnreadAlert && (
+        <div className="absolute -top-1.5 -right-1.5 z-10">
+          <span className="relative flex h-5 w-5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-5 w-5 bg-amber-500 items-center justify-center">
+              <Bell className="h-3 w-3 text-white" />
+            </span>
+          </span>
+        </div>
+      )}
       <CardContent className="p-2.5 md:p-3">
         <div className="space-y-1.5 md:space-y-2">
           <div className="flex items-start justify-between gap-1.5">
