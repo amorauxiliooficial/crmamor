@@ -65,15 +65,15 @@ export function KanbanCard({
         "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20 relative",
         isDragging && "shadow-lg ring-2 ring-primary rotate-2",
         followUpStatus === "overdue" && "ring-1 ring-destructive/50",
-        hasUnreadAlert && "ring-2 ring-amber-500 animate-pulse"
+        hasUnreadAlert && "ring-2 ring-pink-500 animate-pulse"
       )}
       onClick={onClick}
     >
       {hasUnreadAlert && (
         <div className="absolute -top-1.5 -right-1.5 z-10">
           <span className="relative flex h-5 w-5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-5 w-5 bg-amber-500 items-center justify-center">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-5 w-5 bg-pink-500 items-center justify-center">
               <Bell className="h-3 w-3 text-white" />
             </span>
           </span>
