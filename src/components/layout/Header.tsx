@@ -155,16 +155,18 @@ export function Header({
             onAdminClick={() => setAdminDialogOpen(true)}
           />
           
-          <div className="flex items-center gap-2 tour-logo">
+          <div className="flex items-center gap-3 tour-logo">
             <img 
               src={logoAam} 
               alt="AAM Logo" 
-              className="h-9 w-9 md:h-11 md:w-11 object-contain"
+              className="h-10 w-10 md:h-12 md:w-12 object-contain"
             />
             <div className="hidden sm:block">
-              <h1 className="font-bold text-lg">AAM</h1>
+              <p className="font-semibold text-sm md:text-base truncate max-w-[150px]">
+                {user?.user_metadata?.full_name || userEmail.split("@")[0]}
+              </p>
               <p className="text-xs text-muted-foreground">
-                Amor Auxílio Maternidade
+                Bem-vindo(a)!
               </p>
             </div>
           </div>
