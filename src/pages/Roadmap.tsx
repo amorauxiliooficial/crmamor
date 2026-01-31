@@ -102,25 +102,25 @@ export default function Roadmap() {
       />
 
       <main className="p-3 md:p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate("/")}
-              className="shrink-0"
+              className="shrink-0 h-8 w-8 md:h-10 md:w-10"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">🗺️ Roadmap</h1>
-              <p className="text-muted-foreground text-sm">
-                Gerencie as tarefas internas e melhorias do sistema
+              <h1 className="text-lg md:text-2xl font-bold">🗺️ Roadmap</h1>
+              <p className="text-muted-foreground text-xs md:text-sm hidden sm:block">
+                Gerencie as tarefas internas
               </p>
             </div>
           </div>
-          <Button onClick={() => setFormOpen(true)} variant="outline">
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={() => setFormOpen(true)} variant="outline" size="sm" className="h-8 md:h-9 self-end sm:self-auto">
+            <Plus className="h-4 w-4 mr-1" />
             <span className="hidden sm:inline">Formulário Completo</span>
             <span className="sm:hidden">Novo</span>
           </Button>
@@ -128,11 +128,11 @@ export default function Roadmap() {
 
         {/* Filters */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <Users className="h-4 w-4 text-muted-foreground shrink-0" />
             <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
-              <SelectTrigger className="w-[180px] h-9">
-                <SelectValue placeholder="Filtrar por responsável" />
+              <SelectTrigger className="w-full sm:w-[180px] h-8 md:h-9 text-xs md:text-sm">
+                <SelectValue placeholder="Filtrar responsável" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
@@ -148,16 +148,16 @@ export default function Roadmap() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-7 w-7 md:h-8 md:w-8 shrink-0"
                 onClick={() => setFiltroResponsavel("todos")}
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5 md:h-4 md:w-4" />
               </Button>
             )}
           </div>
           {filtroResponsavel !== "todos" && (
-            <Badge variant="secondary" className="text-xs">
-              {tarefasFiltradas.length} tarefa(s) encontrada(s)
+            <Badge variant="secondary" className="text-[10px] md:text-xs shrink-0">
+              {tarefasFiltradas.length} tarefa(s)
             </Badge>
           )}
         </div>
