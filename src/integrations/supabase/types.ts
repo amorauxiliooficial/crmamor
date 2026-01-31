@@ -393,6 +393,35 @@ export type Database = {
         }
         Relationships: []
       }
+      mae_atendentes: {
+        Row: {
+          created_at: string
+          id: string
+          mae_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mae_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mae_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mae_atendentes_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mae_processo: {
         Row: {
           categoria_previdenciaria: Database["public"]["Enums"]["categoria_previdenciaria"]
