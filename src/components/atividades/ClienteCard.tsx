@@ -26,6 +26,7 @@ interface ClienteCardProps {
   mae: MaeProcesso;
   pendingCount?: number;
   lastActivityDate?: string | null;
+  onClick?: (mae: MaeProcesso) => void;
   onNovaAtividade: (mae: MaeProcesso) => void;
   onVerHistorico: (mae: MaeProcesso) => void;
   onAgendarFollowUp: (mae: MaeProcesso) => void;
@@ -35,14 +36,24 @@ export function ClienteCard({
   mae, 
   pendingCount = 0,
   lastActivityDate,
+  onClick,
   onNovaAtividade, 
   onVerHistorico, 
   onAgendarFollowUp 
 }: ClienteCardProps) {
   const statusBg = STATUS_COLORS[mae.status_processo] || "bg-muted";
   
+  const handleCardClick = () => {
+    if (onClick) {
+      onClick(mae);
+    }
+  };
+  
   return (
-    <Card className="transition-all hover:shadow-md">
+    <Card 
+      className={`transition-all hover:shadow-md ${onClick ? "cursor-pointer" : ""}`}
+      onClick={handleCardClick}
+    >
       <CardContent className="p-3">
         <div className="flex items-start gap-3">
           {/* Avatar */}
@@ -86,10 +97,13 @@ export function ClienteCard({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
             <Button
               size="sm"
-              onClick={() => onNovaAtividade(mae)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onNovaAtividade(mae);
+              }}
               className="h-8 gap-1"
             >
               <Plus className="h-3.5 w-3.5" />
