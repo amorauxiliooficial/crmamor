@@ -72,7 +72,7 @@ export function KanbanCard({
       {hasUnreadAlert && (
         <div className="absolute top-0 left-0 right-0 bg-primary text-primary-foreground text-[10px] font-semibold py-0.5 px-2 flex items-center gap-1 z-10">
           <MessageCircle className="h-3 w-3" />
-          <span>Mensagem do Admin</span>
+          <span>Aviso Importante</span>
         </div>
       )}
       
