@@ -1,12 +1,9 @@
 import { useMetasProgress } from "@/hooks/useMetas";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { 
-  Loader2, Settings, Heart, TrendingUp, TrendingDown, Minus, 
-  Baby, Users, FileCheck, Activity, Target, Sparkles, Star, Flame, Trophy
-} from "lucide-react";
+import { Loader2, Settings, Heart, Baby, Users, FileCheck, Activity, Target, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 interface MetasDashboardProps {
   userId: string | null;
@@ -22,54 +19,85 @@ const TIPO_ICONS: Record<string, typeof Heart> = {
   follow_ups: Activity,
 };
 
-const PERIODO_LABELS: Record<string, { current: string; previous: string }> = {
-  diario: { current: "Hoje", previous: "vs ontem" },
-  semanal: { current: "Semana", previous: "vs anterior" },
-  mensal: { current: "Mês", previous: "vs anterior" },
+const PERIODO_LABELS: Record<string, string> = {
+  diario: "Hoje",
+  semanal: "Semana",
+  mensal: "Mês",
 };
 
-// Mensagens motivacionais baseadas no progresso
-function getMotivationalMessage(mediaGeral: number, metasAtingidas: number, total: number): { emoji: string; message: string; subMessage: string } {
+function getMotivationalMessage(mediaGeral: number, metasAtingidas: number, total: number): { emoji: string; message: string } {
   if (metasAtingidas === total && total > 0) {
-    return { 
-      emoji: "🏆", 
-      message: "Incrível! Todas as metas batidas!", 
-      subMessage: "Você é uma inspiração!" 
-    };
+    return { emoji: "🏆", message: "Todas as metas batidas!" };
   }
   if (mediaGeral >= 80) {
-    return { 
-      emoji: "🔥", 
-      message: "Você está arrasando!", 
-      subMessage: "Quase lá, continue assim!" 
-    };
+    return { emoji: "🔥", message: "Você está arrasando!" };
   }
   if (mediaGeral >= 60) {
-    return { 
-      emoji: "💪", 
-      message: "Ótimo progresso!", 
-      subMessage: "Cada passo conta!" 
-    };
+    return { emoji: "💪", message: "Ótimo progresso!" };
   }
   if (mediaGeral >= 40) {
-    return { 
-      emoji: "✨", 
-      message: "Bom trabalho!", 
-      subMessage: "Continue focada!" 
-    };
+    return { emoji: "✨", message: "Continue assim!" };
   }
   if (mediaGeral > 0) {
-    return { 
-      emoji: "🌱", 
-      message: "Você começou!", 
-      subMessage: "O importante é não parar!" 
-    };
+    return { emoji: "🌱", message: "Bom começo!" };
   }
-  return { 
-    emoji: "💜", 
-    message: "Vamos juntas?", 
-    subMessage: "Hoje é um novo dia!" 
-  };
+  return { emoji: "💜", message: "Vamos juntas?" };
+}
+
+// Mini radial progress component
+function RadialProgress({ 
+  value, 
+  size = 48, 
+  strokeWidth = 5,
+  atingido = false,
+  quaseLa = false
+}: { 
+  value: number; 
+  size?: number; 
+  strokeWidth?: number;
+  atingido?: boolean;
+  quaseLa?: boolean;
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (Math.min(value, 100) / 100) * circumference;
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="transform -rotate-90">
+        {/* Background circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="hsl(var(--muted))"
+          strokeWidth={strokeWidth}
+        />
+        {/* Progress circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={atingido ? "hsl(var(--chart-1))" : quaseLa ? "hsl(45 93% 47%)" : "hsl(var(--primary))"}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="transition-all duration-500"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className={cn(
+          "text-xs font-bold",
+          atingido && "text-chart-1"
+        )}>
+          {Math.min(value, 100).toFixed(0)}%
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboardProps) {
@@ -101,149 +129,143 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
     );
   }
 
-  // Calculate totals
   const totalMetas = progress.length;
   const metasAtingidas = progress.filter(p => p.percentual >= 100).length;
   const mediaGeral = progress.reduce((acc, p) => acc + Math.min(p.percentual, 100), 0) / totalMetas;
   const motivational = getMotivationalMessage(mediaGeral, metasAtingidas, totalMetas);
 
+  // Pie chart data for overall progress
+  const pieData = [
+    { name: "Progresso", value: mediaGeral },
+    { name: "Restante", value: Math.max(0, 100 - mediaGeral) },
+  ];
+
   return (
-    <div className="space-y-4">
-      {/* Header motivacional */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="text-2xl">{motivational.emoji}</div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-foreground">{motivational.message}</h3>
-              {metasAtingidas === totalMetas && totalMetas > 0 && (
-                <Sparkles className="h-4 w-4 text-yellow-500 animate-pulse" />
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-start gap-4">
+          {/* Left: Pie Chart Geral */}
+          <div className="flex flex-col items-center shrink-0">
+            <div className="relative w-20 h-20">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={28}
+                    outerRadius={38}
+                    startAngle={90}
+                    endAngle={-270}
+                    paddingAngle={0}
+                    dataKey="value"
+                    strokeWidth={0}
+                  >
+                    <Cell fill={metasAtingidas === totalMetas ? "hsl(var(--chart-1))" : "hsl(var(--primary))"} />
+                    <Cell fill="hsl(var(--muted))" />
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className={cn(
+                  "text-lg font-bold",
+                  metasAtingidas === totalMetas && "text-chart-1"
+                )}>
+                  {mediaGeral.toFixed(0)}%
+                </span>
+              </div>
+            </div>
+            <div className="text-center mt-1">
+              <p className="text-[10px] text-muted-foreground">{metasAtingidas}/{totalMetas} metas</p>
+            </div>
+          </div>
+
+          {/* Right: Metas Grid */}
+          <div className="flex-1 min-w-0">
+            {/* Header motivacional */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{motivational.emoji}</span>
+                <span className="font-medium text-sm">{motivational.message}</span>
+                {metasAtingidas === totalMetas && totalMetas > 0 && (
+                  <Sparkles className="h-4 w-4 text-chart-1 animate-pulse" />
+                )}
+              </div>
+              {isAdmin && onConfigClick && (
+                <Button variant="ghost" size="icon" onClick={onConfigClick} className="h-7 w-7">
+                  <Settings className="h-3.5 w-3.5" />
+                </Button>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">{motivational.subMessage}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="text-right">
-            <p className="text-lg font-bold text-primary">{mediaGeral.toFixed(0)}%</p>
-            <p className="text-[10px] text-muted-foreground">{metasAtingidas}/{totalMetas} metas</p>
-          </div>
-          {isAdmin && onConfigClick && (
-            <Button variant="ghost" size="icon" onClick={onConfigClick} className="h-8 w-8">
-              <Settings className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </div>
 
-      {/* Grid de metas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {progress.map((p) => {
-          const Icon = TIPO_ICONS[p.meta.tipo_meta] || Heart;
-          const atingido = p.percentual >= 100;
-          const periodoInfo = PERIODO_LABELS[p.meta.periodo] || PERIODO_LABELS.mensal;
-          const progressCapped = Math.min(p.percentual, 100);
-          const quaseLa = p.percentual >= 80 && p.percentual < 100;
-          
-          const isPositive = p.variacao > 0;
-          const isNegative = p.variacao < 0;
+            {/* Mini cards grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              {progress.map((p) => {
+                const Icon = TIPO_ICONS[p.meta.tipo_meta] || Heart;
+                const atingido = p.percentual >= 100;
+                const quaseLa = p.percentual >= 80 && p.percentual < 100;
+                const periodoLabel = PERIODO_LABELS[p.meta.periodo] || "Mês";
+                const faltam = Math.max(0, p.meta.valor_meta - p.realizado);
 
-          return (
-            <Card 
-              key={p.meta.id}
-              className={cn(
-                "transition-all hover:shadow-sm relative overflow-hidden",
-                atingido && "ring-1 ring-chart-1/30 bg-gradient-to-br from-chart-1/10 to-chart-1/5",
-                quaseLa && !atingido && "ring-1 ring-yellow-500/30 bg-gradient-to-br from-yellow-500/10 to-yellow-500/5"
-              )}
-            >
-              {atingido && (
-                <div className="absolute top-1 right-1">
-                  <Trophy className="h-3.5 w-3.5 text-chart-1" />
-                </div>
-              )}
-              {quaseLa && !atingido && (
-                <div className="absolute top-1 right-1">
-                  <Flame className="h-3.5 w-3.5 text-yellow-500 animate-pulse" />
-                </div>
-              )}
-              <CardContent className="p-3">
-                {/* Header */}
-                <div className="flex items-center gap-2 mb-2">
-                  <div className={cn(
-                    "w-7 h-7 rounded-md flex items-center justify-center",
-                    atingido 
-                      ? "bg-chart-1/20 text-chart-1" 
-                      : quaseLa
-                        ? "bg-yellow-500/20 text-yellow-600"
-                        : "bg-primary/10 text-primary"
-                  )}>
-                    <Icon className="h-3.5 w-3.5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="font-medium text-xs truncate">{p.meta.nome}</h4>
-                    <span className="text-[10px] text-muted-foreground">{periodoInfo.current}</span>
-                  </div>
-                </div>
-
-                {/* Numbers + Progress */}
-                <div className="space-y-1.5">
-                  <div className="flex items-baseline justify-between">
-                    <div className="flex items-baseline gap-1">
-                      <span className={cn(
-                        "text-lg font-bold tabular-nums",
-                        atingido && "text-chart-1",
-                        quaseLa && !atingido && "text-yellow-600"
-                      )}>
-                        {p.realizado}
-                      </span>
-                      <span className="text-xs text-muted-foreground">/{p.meta.valor_meta}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-[10px]">
-                      {isPositive && (
-                        <>
-                          <TrendingUp className="h-3 w-3 text-chart-1" />
-                          <span className="text-chart-1">+{p.variacao.toFixed(0)}%</span>
-                        </>
-                      )}
-                      {isNegative && (
-                        <>
-                          <TrendingDown className="h-3 w-3 text-destructive" />
-                          <span className="text-destructive">{p.variacao.toFixed(0)}%</span>
-                        </>
-                      )}
-                      {!isPositive && !isNegative && (
-                        <>
-                          <Minus className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">0%</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <Progress 
-                    value={progressCapped} 
+                return (
+                  <div 
+                    key={p.meta.id}
                     className={cn(
-                      "h-1.5", 
-                      atingido && "[&>div]:bg-chart-1",
-                      quaseLa && !atingido && "[&>div]:bg-yellow-500"
+                      "flex items-center gap-2 p-2 rounded-lg border transition-all",
+                      atingido 
+                        ? "bg-chart-1/10 border-chart-1/30" 
+                        : quaseLa 
+                          ? "bg-amber-500/10 border-amber-500/30"
+                          : "bg-muted/30 border-border"
                     )}
-                  />
-                  {atingido && (
-                    <p className="text-[10px] text-chart-1 font-medium text-center">
-                      🎉 Parabéns!
-                    </p>
-                  )}
-                  {quaseLa && !atingido && (
-                    <p className="text-[10px] text-yellow-600 font-medium text-center">
-                      Quase lá! Falta {p.meta.valor_meta - p.realizado}!
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-    </div>
+                  >
+                    <RadialProgress 
+                      value={p.percentual} 
+                      size={40} 
+                      strokeWidth={4}
+                      atingido={atingido}
+                      quaseLa={quaseLa}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1">
+                        <Icon className={cn(
+                          "h-3 w-3 shrink-0",
+                          atingido ? "text-chart-1" : quaseLa ? "text-amber-500" : "text-primary"
+                        )} />
+                        <span className="text-[10px] font-medium truncate">{p.meta.nome}</span>
+                      </div>
+                      <div className="flex items-baseline gap-1 mt-0.5">
+                        <span className={cn(
+                          "text-sm font-bold tabular-nums",
+                          atingido && "text-chart-1"
+                        )}>
+                          {p.realizado}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">/{p.meta.valor_meta}</span>
+                      </div>
+                      <p className={cn(
+                        "text-[9px]",
+                        atingido 
+                          ? "text-chart-1" 
+                          : quaseLa 
+                            ? "text-amber-600" 
+                            : "text-muted-foreground"
+                      )}>
+                        {atingido 
+                          ? "🎉 Batida!" 
+                          : quaseLa 
+                            ? `🔥 Falta ${faltam}!` 
+                            : periodoLabel
+                        }
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
