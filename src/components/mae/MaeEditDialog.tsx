@@ -6,13 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, DollarSign, FolderOpen } from "lucide-react";
+import { Loader2, Save, DollarSign, FolderOpen, UserCog } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
 import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 interface MaeEditDialogProps {
   mae: MaeProcesso | null;
   open: boolean;
@@ -33,9 +34,12 @@ const mapDisplayStatusToDb = (status: StatusProcesso): string => {
 
 export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDialogProps) {
   const { toast } = useToast();
+  const { isAdmin } = useIsAdmin();
   const [isLoading, setIsLoading] = useState(false);
   const [pagamentoDialogOpen, setPagamentoDialogOpen] = useState(false);
   const [documentosDialogOpen, setDocumentosDialogOpen] = useState(false);
+  const [users, setUsers] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
   
   const [formData, setFormData] = useState({
     nome_mae: "",
@@ -60,6 +64,24 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     is_gestante: false,
     mes_gestacao: null as number | null,
   });
+
+  // Fetch users for admin assignment
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .order("full_name", { ascending: true, nullsFirst: false });
+      
+      if (profiles) {
+        setUsers(profiles);
+      }
+    };
+    
+    if (isAdmin && open) {
+      fetchUsers();
+    }
+  }, [isAdmin, open]);
 
   useEffect(() => {
     if (mae) {
@@ -86,6 +108,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
         is_gestante: mae.is_gestante ?? false,
         mes_gestacao: mae.mes_gestacao ?? null,
       });
+      setSelectedUserId(mae.user_id);
     }
   }, [mae]);
 
@@ -130,31 +153,39 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       "Elegível (Análise Positiva)" | "Protocolo INSS" | "Aguardando Análise INSS" | 
       "Aprovada" | "Indeferida" | "Recurso / Judicial" | "Processo Encerrado";
 
+    // Build update object - include user_id only if admin is changing it
+    const updateData: Record<string, unknown> = {
+      nome_mae: formData.nome_mae.trim(),
+      cpf: formData.cpf.replace(/\D/g, ""),
+      telefone: formData.telefone || null,
+      email: formData.email || null,
+      tipo_evento: formData.tipo_evento,
+      data_evento: formData.data_evento || null,
+      data_evento_tipo: formData.data_evento_tipo === "none" ? "" : formData.data_evento_tipo,
+      categoria_previdenciaria: formData.categoria_previdenciaria,
+      status_processo: dbStatusValue,
+      protocolo_inss: formData.protocolo_inss || null,
+      parcelas: formData.parcelas || null,
+      contrato_assinado: formData.contrato_assinado,
+      segurada: formData.segurada || null,
+      precisa_gps: formData.precisa_gps || null,
+      uf: formData.uf || null,
+      origem: formData.origem || null,
+      observacoes: formData.observacoes || null,
+      senha_gov: formData.senha_gov || null,
+      verificacao_duas_etapas: formData.verificacao_duas_etapas,
+      is_gestante: formData.is_gestante,
+      mes_gestacao: formData.is_gestante ? formData.mes_gestacao : null,
+    };
+
+    // Admin can reassign to different user
+    if (isAdmin && selectedUserId && selectedUserId !== mae.user_id) {
+      updateData.user_id = selectedUserId;
+    }
+
     const { error } = await supabase
       .from("mae_processo")
-      .update({
-        nome_mae: formData.nome_mae.trim(),
-        cpf: formData.cpf.replace(/\D/g, ""),
-        telefone: formData.telefone || null,
-        email: formData.email || null,
-        tipo_evento: formData.tipo_evento,
-        data_evento: formData.data_evento || null,
-        data_evento_tipo: formData.data_evento_tipo === "none" ? "" : formData.data_evento_tipo,
-        categoria_previdenciaria: formData.categoria_previdenciaria,
-        status_processo: dbStatusValue,
-        protocolo_inss: formData.protocolo_inss || null,
-        parcelas: formData.parcelas || null,
-        contrato_assinado: formData.contrato_assinado,
-        segurada: formData.segurada || null,
-        precisa_gps: formData.precisa_gps || null,
-        uf: formData.uf || null,
-        origem: formData.origem || null,
-        observacoes: formData.observacoes || null,
-        senha_gov: formData.senha_gov || null,
-        verificacao_duas_etapas: formData.verificacao_duas_etapas,
-        is_gestante: formData.is_gestante,
-        mes_gestacao: formData.is_gestante ? formData.mes_gestacao : null,
-      })
+      .update(updateData)
       .eq("id", mae.id);
 
     setIsLoading(false);
@@ -192,6 +223,34 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Admin: Atendente Responsável */}
+          {isAdmin && (
+            <div className="space-y-2 p-4 bg-primary/5 rounded-lg border border-primary/20">
+              <div className="flex items-center gap-2 mb-2">
+                <UserCog className="h-4 w-4 text-primary" />
+                <Label className="font-semibold text-primary">Atendente Responsável</Label>
+              </div>
+              <Select
+                value={selectedUserId}
+                onValueChange={setSelectedUserId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o atendente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.full_name || u.email?.split("@")[0] || "Sem nome"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Somente administradores podem alterar o atendente responsável pelo processo.
+              </p>
+            </div>
+          )}
+
           {/* Status */}
           <div className="space-y-2">
             <Label>Status do Processo</Label>
