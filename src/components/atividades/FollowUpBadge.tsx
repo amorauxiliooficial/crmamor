@@ -83,7 +83,6 @@ export function FollowUpBadge({
           <TooltipContent side="top" className="text-xs max-w-[200px]">
             <p className="font-medium">{config.label}</p>
             <p className="text-muted-foreground">{getTooltipMessage()}</p>
-            <p className="text-primary text-[10px] mt-1">Clique para registrar atividade</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
