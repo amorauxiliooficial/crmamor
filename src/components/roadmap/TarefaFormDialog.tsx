@@ -204,12 +204,15 @@ export function TarefaFormDialog({
 
             <div className="space-y-2">
               <Label>Responsável</Label>
-              <Select value={responsavelId} onValueChange={setResponsavelId}>
+              <Select 
+                value={responsavelId || "__none__"} 
+                onValueChange={(v) => setResponsavelId(v === "__none__" ? "" : v)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Ninguém</SelectItem>
+                  <SelectItem value="__none__">Ninguém</SelectItem>
                   {usuarios.map((u) => (
                     <SelectItem key={u.id} value={u.id}>
                       {u.nome}
