@@ -3,16 +3,33 @@ import { KanbanCard } from "./KanbanCard";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Draggable } from "@hello-pangea/dnd";
+import { TipoAtividade } from "@/types/atividade";
+
+interface UserProfile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
 
 interface KanbanColumnProps {
   status: StatusProcesso;
   maes: (MaeProcesso & { ultima_atividade_em?: string | null })[];
   onCardClick: (mae: MaeProcesso) => void;
   onOpenAtividades?: (mae: MaeProcesso) => void;
+  onQuickActivity?: (mae: MaeProcesso, tipo: TipoAtividade) => void;
   isDraggingOver?: boolean;
+  userProfiles?: Record<string, UserProfile>;
 }
 
-export function KanbanColumn({ status, maes, onCardClick, onOpenAtividades, isDraggingOver }: KanbanColumnProps) {
+export function KanbanColumn({ 
+  status, 
+  maes, 
+  onCardClick, 
+  onOpenAtividades, 
+  onQuickActivity,
+  isDraggingOver,
+  userProfiles = {}
+}: KanbanColumnProps) {
   const statusLabel = status.split(" ").slice(1).join(" ") || status;
   const emoji = status.split(" ")[0];
 
@@ -48,6 +65,8 @@ export function KanbanColumn({ status, maes, onCardClick, onOpenAtividades, isDr
                     onClick={() => onCardClick(mae)} 
                     isDragging={snapshot.isDragging}
                     onOpenAtividades={() => onOpenAtividades?.(mae)}
+                    onQuickActivity={onQuickActivity ? (tipo) => onQuickActivity(mae, tipo) : undefined}
+                    userProfile={mae.user_id ? userProfiles[mae.user_id] : null}
                   />
                 </div>
               )}

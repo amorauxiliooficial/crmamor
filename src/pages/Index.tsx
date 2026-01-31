@@ -19,6 +19,8 @@ import { MobileViewSelector } from "@/components/layout/MobileViewSelector";
 import { ViewTransition } from "@/components/layout/ViewTransition";
 import { PendenciasPanel } from "@/components/atividades/PendenciasPanel";
 import { AtividadeDialog } from "@/components/atividades/AtividadeDialog";
+import { TipoAtividade } from "@/types/atividade";
+import { useAtividades } from "@/hooks/useAtividades";
 import { Indicacao } from "@/types/indicacao";
 import { useAuth } from "@/hooks/useAuth";
 import { useTour } from "@/hooks/useTour";
@@ -299,6 +301,33 @@ const Index = () => {
   const handleOpenAtividades = (mae: MaeProcessoComAtividade) => {
     setSelectedMae(mae);
     setAtividadeDialogOpen(true);
+  };
+
+  // Quick activity registration
+  const handleQuickActivity = async (mae: MaeProcessoComAtividade, tipo: TipoAtividade) => {
+    if (!user) return;
+    
+    const { error } = await supabase.from("atividades_mae").insert({
+      mae_id: mae.id,
+      user_id: user.id,
+      tipo_atividade: tipo,
+      descricao: null,
+    });
+
+    if (error) {
+      console.error("Erro ao registrar atividade:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível registrar a atividade.",
+      });
+    } else {
+      toast({
+        title: "Atividade registrada",
+        description: `${tipo === "ligacao" ? "Ligação" : "WhatsApp"} registrado com sucesso!`,
+      });
+      fetchMaes();
+    }
   };
 
   // Map display status (with emoji) to db status (without emoji)
@@ -632,6 +661,8 @@ const Index = () => {
                       maes={filteredMaes} 
                       onCardClick={handleCardClick} 
                       onStatusChange={handleStatusChange}
+                      onOpenAtividades={handleOpenAtividades}
+                      onQuickActivity={handleQuickActivity}
                     />
                   )}
                 </div>
@@ -643,6 +674,8 @@ const Index = () => {
                     maes={filteredMaes}
                     onCardClick={handleCardClick}
                     onStatusChange={handleStatusChange}
+                    onOpenAtividades={handleOpenAtividades}
+                    onQuickActivity={handleQuickActivity}
                     visibleStatuses={[
                       "🔎 Em Análise",
                       "🟡 Elegível (Análise Positiva)",
@@ -659,6 +692,8 @@ const Index = () => {
                     maes={filteredMaes}
                     onCardClick={handleCardClick}
                     onStatusChange={handleStatusChange}
+                    onOpenAtividades={handleOpenAtividades}
+                    onQuickActivity={handleQuickActivity}
                     visibleStatuses={["⚠️ Pendência Documental"]}
                   />
                 </div>
@@ -670,6 +705,8 @@ const Index = () => {
                     maes={filteredMaes}
                     onCardClick={handleCardClick}
                     onStatusChange={handleStatusChange}
+                    onOpenAtividades={handleOpenAtividades}
+                    onQuickActivity={handleQuickActivity}
                     visibleStatuses={[
                       "✅ Aprovada",
                       "❌ Indeferida",

@@ -1,14 +1,23 @@
 import { MaeProcesso, STATUS_ORDER, StatusProcesso } from "@/types/mae";
 import { KanbanColumn } from "./KanbanColumn";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
+import { supabase } from "@/integrations/supabase/client";
+import { TipoAtividade } from "@/types/atividade";
+
+interface UserProfile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
 
 interface KanbanBoardProps {
   maes: (MaeProcesso & { ultima_atividade_em?: string | null })[];
   onCardClick: (mae: MaeProcesso) => void;
   onStatusChange?: (maeId: string, newStatus: StatusProcesso) => void;
   onOpenAtividades?: (mae: MaeProcesso) => void;
+  onQuickActivity?: (mae: MaeProcesso, tipo: TipoAtividade) => void;
   visibleStatuses?: StatusProcesso[];
 }
 
@@ -17,8 +26,29 @@ export function KanbanBoard({
   onCardClick,
   onStatusChange,
   onOpenAtividades,
+  onQuickActivity,
   visibleStatuses = STATUS_ORDER,
 }: KanbanBoardProps) {
+  const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
+
+  // Fetch all user profiles for display
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, email");
+      
+      if (data) {
+        const profileMap: Record<string, UserProfile> = {};
+        data.forEach((p) => {
+          profileMap[p.id] = p;
+        });
+        setUserProfiles(profileMap);
+      }
+    };
+    fetchProfiles();
+  }, []);
+
   const groupedMaes = useMemo(() => {
     const groups: Record<StatusProcesso, MaeProcesso[]> = {} as any;
     
@@ -63,7 +93,9 @@ export function KanbanBoard({
                     maes={groupedMaes[status] || []}
                     onCardClick={onCardClick}
                     onOpenAtividades={onOpenAtividades}
+                    onQuickActivity={onQuickActivity}
                     isDraggingOver={snapshot.isDraggingOver}
+                    userProfiles={userProfiles}
                   />
                   {provided.placeholder}
                 </div>
