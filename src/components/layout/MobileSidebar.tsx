@@ -13,7 +13,6 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import {
   Menu,
-  Heart,
   LayoutGrid,
   List,
   Baby,
@@ -24,11 +23,11 @@ import {
   Settings,
   ClipboardList,
   LogOut,
-  X,
   Megaphone,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import logoAam from "@/assets/logo-aam.png";
 
 interface MobileSidebarProps {
   onNavigate?: (view: string) => void;
@@ -102,9 +101,11 @@ export function MobileSidebar({
       <SheetContent side="left" className="w-[85vw] max-w-[300px] p-0">
         <SheetHeader className="p-3 border-b">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
-              <Heart className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <img 
+              src={logoAam} 
+              alt="AAM Logo" 
+              className="h-10 w-10 object-contain"
+            />
             <div>
               <SheetTitle className="text-left text-base">AAM</SheetTitle>
               <p className="text-[11px] text-muted-foreground">

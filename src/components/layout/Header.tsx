@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { Heart, Search, LogOut, UserPlus, BookOpen, Settings, ClipboardList, X, Key } from "lucide-react";
+import { Search, LogOut, UserPlus, Settings, X, Key } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import {
@@ -21,6 +20,7 @@ import { OnboardingAdminDialog } from "@/components/onboarding/OnboardingAdminDi
 import { supabase } from "@/integrations/supabase/client";
 import { MobileSidebar } from "./MobileSidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import logoAam from "@/assets/logo-aam.png";
 
 interface HeaderProps {
   searchQuery: string;
@@ -156,9 +156,11 @@ export function Header({
           />
           
           <div className="flex items-center gap-2 tour-logo">
-            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-primary">
-              <Heart className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
-            </div>
+            <img 
+              src={logoAam} 
+              alt="AAM Logo" 
+              className="h-9 w-9 md:h-11 md:w-11 object-contain"
+            />
             <div className="hidden sm:block">
               <h1 className="font-bold text-lg">AAM</h1>
               <p className="text-xs text-muted-foreground">
