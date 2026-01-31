@@ -1,9 +1,16 @@
 import { useMetasProgress } from "@/hooks/useMetas";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Settings, Heart, Baby, Users, FileCheck, Activity, Target, Sparkles } from "lucide-react";
+import { Loader2, Settings, Heart, Baby, Users, FileCheck, Activity, Target, Sparkles, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { useEffect, useRef, useState } from "react";
+import confetti from "canvas-confetti";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface MetasDashboardProps {
   userId: string | null;
@@ -19,10 +26,10 @@ const TIPO_ICONS: Record<string, typeof Heart> = {
   follow_ups: Activity,
 };
 
-const PERIODO_LABELS: Record<string, string> = {
-  diario: "Hoje",
-  semanal: "Semana",
-  mensal: "Mês",
+const PERIODO_LABELS: Record<string, { current: string; previous: string }> = {
+  diario: { current: "Hoje", previous: "vs ontem" },
+  semanal: { current: "Semana", previous: "vs semana anterior" },
+  mensal: { current: "Mês", previous: "vs mês anterior" },
 };
 
 function getMotivationalMessage(mediaGeral: number, metasAtingidas: number, total: number): { emoji: string; message: string } {
@@ -65,7 +72,6 @@ function RadialProgress({
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="transform -rotate-90">
-        {/* Background circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -74,7 +80,6 @@ function RadialProgress({
           stroke="hsl(var(--muted))"
           strokeWidth={strokeWidth}
         />
-        {/* Progress circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -102,6 +107,48 @@ function RadialProgress({
 
 export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboardProps) {
   const { progress, loading } = useMetasProgress(userId);
+  const confettiTriggeredRef = useRef(false);
+  const [selectedMeta, setSelectedMeta] = useState<string | null>(null);
+
+  // Trigger confetti when all goals are achieved
+  useEffect(() => {
+    if (progress.length === 0) return;
+    
+    const allAchieved = progress.every(p => p.percentual >= 100);
+    
+    if (allAchieved && !confettiTriggeredRef.current) {
+      confettiTriggeredRef.current = true;
+      
+      // Trigger confetti celebration
+      const duration = 3000;
+      const end = Date.now() + duration;
+
+      const colors = ['#ff69b4', '#ba55d3', '#9370db', '#ff1493', '#da70d6'];
+
+      (function frame() {
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: colors
+        });
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: colors
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
+    } else if (!allAchieved) {
+      confettiTriggeredRef.current = false;
+    }
+  }, [progress]);
 
   if (loading) {
     return (
@@ -134,7 +181,6 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
   const mediaGeral = progress.reduce((acc, p) => acc + Math.min(p.percentual, 100), 0) / totalMetas;
   const motivational = getMotivationalMessage(mediaGeral, metasAtingidas, totalMetas);
 
-  // Pie chart data for overall progress
   const pieData = [
     { name: "Progresso", value: mediaGeral },
     { name: "Restante", value: Math.max(0, 100 - mediaGeral) },
@@ -204,62 +250,142 @@ export function MetasDashboard({ userId, onConfigClick, isAdmin }: MetasDashboar
                 const Icon = TIPO_ICONS[p.meta.tipo_meta] || Heart;
                 const atingido = p.percentual >= 100;
                 const quaseLa = p.percentual >= 80 && p.percentual < 100;
-                const periodoLabel = PERIODO_LABELS[p.meta.periodo] || "Mês";
+                const periodoInfo = PERIODO_LABELS[p.meta.periodo] || PERIODO_LABELS.mensal;
                 const faltam = Math.max(0, p.meta.valor_meta - p.realizado);
+                
+                const isPositive = p.variacao > 0;
+                const isNegative = p.variacao < 0;
 
                 return (
-                  <div
-                    key={p.meta.id}
-                    className={cn(
-                      "flex items-center gap-2 p-2 rounded-lg border transition-all animate-fade-in",
-                      atingido 
-                        ? "bg-chart-1/10 border-chart-1/30" 
-                        : quaseLa 
-                          ? "bg-amber-500/10 border-amber-500/30"
-                          : "bg-muted/30 border-border"
-                    )}
-                  >
-                    <RadialProgress 
-                      value={p.percentual} 
-                      size={40} 
-                      strokeWidth={4}
-                      atingido={atingido}
-                      quaseLa={quaseLa}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1">
-                        <Icon className={cn(
-                          "h-3 w-3 shrink-0",
-                          atingido ? "text-chart-1" : quaseLa ? "text-amber-500" : "text-primary"
-                        )} />
-                        <span className="text-[10px] font-medium truncate">{p.meta.nome}</span>
+                  <Popover key={p.meta.id} open={selectedMeta === p.meta.id} onOpenChange={(open) => setSelectedMeta(open ? p.meta.id : null)}>
+                    <PopoverTrigger asChild>
+                      <div
+                        className={cn(
+                          "flex items-center gap-2 p-2 rounded-lg border transition-all animate-fade-in cursor-pointer hover:shadow-md",
+                          atingido 
+                            ? "bg-chart-1/10 border-chart-1/30 hover:bg-chart-1/15" 
+                            : quaseLa 
+                              ? "bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/15"
+                              : "bg-muted/30 border-border hover:bg-muted/50"
+                        )}
+                      >
+                        <RadialProgress 
+                          value={p.percentual} 
+                          size={40} 
+                          strokeWidth={4}
+                          atingido={atingido}
+                          quaseLa={quaseLa}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1">
+                            <Icon className={cn(
+                              "h-3 w-3 shrink-0",
+                              atingido ? "text-chart-1" : quaseLa ? "text-amber-500" : "text-primary"
+                            )} />
+                            <span className="text-[10px] font-medium truncate">{p.meta.nome}</span>
+                          </div>
+                          <div className="flex items-baseline gap-1 mt-0.5">
+                            <span className={cn(
+                              "text-sm font-bold tabular-nums",
+                              atingido && "text-chart-1"
+                            )}>
+                              {p.realizado}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">/{p.meta.valor_meta}</span>
+                          </div>
+                          <p className={cn(
+                            "text-[9px]",
+                            atingido 
+                              ? "text-chart-1" 
+                              : quaseLa 
+                                ? "text-amber-600" 
+                                : "text-muted-foreground"
+                          )}>
+                            {atingido 
+                              ? "🎉 Batida!" 
+                              : quaseLa 
+                                ? `🔥 Falta ${faltam}!` 
+                                : periodoInfo.current
+                            }
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-baseline gap-1 mt-0.5">
-                        <span className={cn(
-                          "text-sm font-bold tabular-nums",
-                          atingido && "text-chart-1"
-                        )}>
-                          {p.realizado}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground">/{p.meta.valor_meta}</span>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-3" align="center">
+                      <div className="space-y-3">
+                        {/* Header */}
+                        <div className="flex items-center gap-2">
+                          <div className={cn(
+                            "w-8 h-8 rounded-lg flex items-center justify-center",
+                            atingido ? "bg-chart-1/20 text-chart-1" : "bg-primary/10 text-primary"
+                          )}>
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm">{p.meta.nome}</h4>
+                            <p className="text-[10px] text-muted-foreground uppercase">{periodoInfo.current}</p>
+                          </div>
+                        </div>
+
+                        {/* Numbers */}
+                        <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-muted-foreground">Realizado</span>
+                            <span className={cn(
+                              "text-lg font-bold",
+                              atingido && "text-chart-1"
+                            )}>
+                              {p.realizado}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-muted-foreground">Meta</span>
+                            <span className="text-lg font-bold text-muted-foreground">{p.meta.valor_meta}</span>
+                          </div>
+                          <div className="border-t border-border pt-2 flex justify-between items-center">
+                            <span className="text-xs text-muted-foreground">Progresso</span>
+                            <span className={cn(
+                              "text-sm font-bold",
+                              atingido && "text-chart-1"
+                            )}>
+                              {p.percentual.toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Comparison */}
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">{periodoInfo.previous}</span>
+                          <div className="flex items-center gap-1">
+                            {isPositive && (
+                              <>
+                                <TrendingUp className="h-3.5 w-3.5 text-chart-1" />
+                                <span className="font-medium text-chart-1">+{p.variacao.toFixed(0)}%</span>
+                              </>
+                            )}
+                            {isNegative && (
+                              <>
+                                <TrendingDown className="h-3.5 w-3.5 text-destructive" />
+                                <span className="font-medium text-destructive">{p.variacao.toFixed(0)}%</span>
+                              </>
+                            )}
+                            {!isPositive && !isNegative && (
+                              <>
+                                <Minus className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span className="text-muted-foreground">0%</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {p.realizadoAnterior > 0 && (
+                          <p className="text-[10px] text-muted-foreground text-center">
+                            Período anterior: {p.realizadoAnterior} realizados
+                          </p>
+                        )}
                       </div>
-                      <p className={cn(
-                        "text-[9px]",
-                        atingido 
-                          ? "text-chart-1" 
-                          : quaseLa 
-                            ? "text-amber-600" 
-                            : "text-muted-foreground"
-                      )}>
-                        {atingido 
-                          ? "🎉 Batida!" 
-                          : quaseLa 
-                            ? `🔥 Falta ${faltam}!` 
-                            : periodoLabel
-                        }
-                      </p>
-                    </div>
-                  </div>
+                    </PopoverContent>
+                  </Popover>
                 );
               })}
             </div>
