@@ -495,6 +495,42 @@ export type Database = {
         }
         Relationships: []
       }
+      metas_config: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          periodo: string
+          tipo_meta: string
+          updated_at: string
+          valor_meta: number
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          periodo?: string
+          tipo_meta: string
+          updated_at?: string
+          valor_meta?: number
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          periodo?: string
+          tipo_meta?: string
+          updated_at?: string
+          valor_meta?: number
+        }
+        Relationships: []
+      }
       onboarding_items: {
         Row: {
           arquivo_url: string | null

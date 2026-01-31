@@ -4,6 +4,8 @@ import { TipoAtividade, TIPO_ATIVIDADE_LABELS, RESULTADO_CONTATO_LABELS, Resulta
 import { useCrmAtividades, PendingFollowUp, useFollowUpCounts, useFollowUpsByDate } from "@/hooks/useCrmAtividades";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +17,8 @@ import { RegistrarAtividadeDialog } from "./RegistrarAtividadeDialog";
 import { ClienteCard } from "./ClienteCard";
 import { AgendarFollowUpDialog } from "./AgendarFollowUpDialog";
 import { HistoricoAtividadesDialog } from "./HistoricoAtividadesDialog";
+import { MetasDashboard } from "@/components/metas/MetasDashboard";
+import { MetasConfigDialog } from "@/components/metas/MetasConfigDialog";
 import { formatCpf } from "@/lib/formatters";
 import { 
   Phone, 
@@ -32,7 +36,8 @@ import {
   Play,
   X,
   MoreHorizontal,
-  Users
+  Users,
+  Target
 } from "lucide-react";
 import { format, isToday, isPast, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -46,6 +51,7 @@ import {
 interface CrmTabProps {
   maes: MaeProcesso[];
   onRefresh: () => void;
+  selectedUserId?: string | null;
 }
 
 const TIPO_ICONS: Record<TipoAtividade, typeof Phone> = {
@@ -69,8 +75,10 @@ interface ClienteWithActivity extends MaeProcesso {
   lastActivityDate: string | null;
 }
 
-export function CrmTab({ maes, onRefresh }: CrmTabProps) {
+export function CrmTab({ maes, onRefresh, selectedUserId }: CrmTabProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const { categorized, loading, refetch, completeFollowUp, cancelFollowUp } = useCrmAtividades();
   
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,11 +86,15 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
   const [selectedMae, setSelectedMae] = useState<MaeProcesso | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("followups");
+  const [activeTab, setActiveTab] = useState("metas");
   
   // Dialog states
   const [agendarDialogOpen, setAgendarDialogOpen] = useState(false);
   const [historicoDialogOpen, setHistoricoDialogOpen] = useState(false);
+  const [metasConfigOpen, setMetasConfigOpen] = useState(false);
+  
+  // User ID for metas (selected user or current user)
+  const metasUserId = selectedUserId || user?.id || null;
   
   // Calendar data
   const { counts: followUpCounts } = useFollowUpCounts(selectedDate.getFullYear(), selectedDate.getMonth());
@@ -349,9 +361,13 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
         />
       </div>
 
-      {/* Tabs: Follow-ups / Clients / Calendar */}
+      {/* Tabs: Metas / Follow-ups / Clients / Calendar */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-3">
+        <TabsList className="w-full grid grid-cols-4">
+          <TabsTrigger value="metas" className="gap-2">
+            <Target className="h-4 w-4" />
+            Metas
+          </TabsTrigger>
           <TabsTrigger value="followups" className="gap-2">
             <ListTodo className="h-4 w-4" />
             Follow-ups
@@ -365,6 +381,17 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
             Calendário
           </TabsTrigger>
         </TabsList>
+
+        {/* Metas View */}
+        <TabsContent value="metas" className="mt-4">
+          <ScrollArea className="h-[calc(100vh-460px)] min-h-[350px]">
+            <MetasDashboard 
+              userId={metasUserId}
+              isAdmin={isAdmin}
+              onConfigClick={() => setMetasConfigOpen(true)}
+            />
+          </ScrollArea>
+        </TabsContent>
 
         {/* Follow-ups View */}
         <TabsContent value="followups" className="mt-4">
@@ -554,6 +581,12 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
           onOpenChange={setHistoricoDialogOpen}
         />
       )}
+      
+      {/* Metas Config Dialog (Admin only) */}
+      <MetasConfigDialog
+        open={metasConfigOpen}
+        onOpenChange={setMetasConfigOpen}
+      />
     </div>
   );
 }

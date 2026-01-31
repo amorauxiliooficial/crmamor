@@ -613,6 +613,7 @@ const Index = () => {
                 <CrmTab
                   maes={maesFilteredByUser}
                   onRefresh={fetchMaes}
+                  selectedUserId={selectedUserId !== "all" ? selectedUserId : null}
                 />
               </div>
             ) : viewMode === "table" ? (
