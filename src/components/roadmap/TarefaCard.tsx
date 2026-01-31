@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, User } from "lucide-react";
+import { Calendar, User, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   TarefaInterna,
@@ -8,23 +8,31 @@ import {
   TASK_PRIORITY_COLORS,
   TASK_CATEGORY_LABELS,
   TASK_CATEGORY_COLORS,
+  STATUS_TIMESTAMP_FIELD,
 } from "@/types/tarefaInterna";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatDuration, getDurationColor } from "@/lib/timeUtils";
 
 interface TarefaCardProps {
   tarefa: TarefaInterna;
   onClick: () => void;
   isDragging?: boolean;
-  responsavelNome?: string;
+  responsaveis?: { id: string; nome: string }[];
 }
 
 export function TarefaCard({
   tarefa,
   onClick,
   isDragging,
-  responsavelNome,
+  responsaveis = [],
 }: TarefaCardProps) {
+  // Get the timestamp for current status column
+  const timestampField = STATUS_TIMESTAMP_FIELD[tarefa.status];
+  const currentTimestamp = tarefa[timestampField] as string | null;
+  const duration = formatDuration(currentTimestamp);
+  const durationColor = getDurationColor(currentTimestamp);
+
   return (
     <Card
       className={cn(
@@ -34,20 +42,28 @@ export function TarefaCard({
       onClick={onClick}
     >
       <CardContent className="p-3 space-y-2">
-        {/* Category Badge */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <Badge
-            variant="secondary"
-            className={cn("text-[10px] px-1.5 py-0 h-5", TASK_CATEGORY_COLORS[tarefa.categoria])}
-          >
-            {TASK_CATEGORY_LABELS[tarefa.categoria]}
-          </Badge>
-          <Badge
-            variant="secondary"
-            className={cn("text-[10px] px-1.5 py-0 h-5", TASK_PRIORITY_COLORS[tarefa.prioridade])}
-          >
-            {TASK_PRIORITY_LABELS[tarefa.prioridade]}
-          </Badge>
+        {/* Category Badge + Time */}
+        <div className="flex items-center justify-between gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge
+              variant="secondary"
+              className={cn("text-[10px] px-1.5 py-0 h-5", TASK_CATEGORY_COLORS[tarefa.categoria])}
+            >
+              {TASK_CATEGORY_LABELS[tarefa.categoria]}
+            </Badge>
+            <Badge
+              variant="secondary"
+              className={cn("text-[10px] px-1.5 py-0 h-5", TASK_PRIORITY_COLORS[tarefa.prioridade])}
+            >
+              {TASK_PRIORITY_LABELS[tarefa.prioridade]}
+            </Badge>
+          </div>
+          {duration && (
+            <span className={cn("flex items-center gap-0.5 text-[10px] font-medium", durationColor)}>
+              <Clock className="h-3 w-3" />
+              {duration}
+            </span>
+          )}
         </div>
 
         {/* Title */}
@@ -70,10 +86,12 @@ export function TarefaCard({
               {format(parseISO(tarefa.prazo), "dd/MM", { locale: ptBR })}
             </span>
           )}
-          {responsavelNome && (
+          {responsaveis.length > 0 && (
             <span className="flex items-center gap-1">
               <User className="h-3 w-3" />
-              {responsavelNome.split(" ")[0]}
+              {responsaveis.length === 1
+                ? responsaveis[0].nome.split(" ")[0]
+                : `${responsaveis.length} pessoas`}
             </span>
           )}
         </div>

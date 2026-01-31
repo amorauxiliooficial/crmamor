@@ -10,6 +10,7 @@ interface TarefaColumnProps {
   onCardClick: (tarefa: TarefaInterna) => void;
   isDraggingOver?: boolean;
   usuarios: Record<string, string>;
+  responsaveisPorTarefa: Record<string, string[]>;
 }
 
 export function TarefaColumn({
@@ -18,9 +19,16 @@ export function TarefaColumn({
   onCardClick,
   isDraggingOver,
   usuarios,
+  responsaveisPorTarefa,
 }: TarefaColumnProps) {
   const statusLabel = TASK_STATUS_LABELS[status].split(" ").slice(1).join(" ");
   const emoji = TASK_STATUS_LABELS[status].split(" ")[0];
+
+  // Helper to get responsaveis with names for a tarefa
+  const getResponsaveisComNomes = (tarefaId: string) => {
+    const userIds = responsaveisPorTarefa[tarefaId] || [];
+    return userIds.map((id) => ({ id, nome: usuarios[id] || "Desconhecido" }));
+  };
 
   return (
     <div
@@ -55,7 +63,7 @@ export function TarefaColumn({
                     tarefa={tarefa}
                     onClick={() => onCardClick(tarefa)}
                     isDragging={snapshot.isDragging}
-                    responsavelNome={tarefa.responsavel_id ? usuarios[tarefa.responsavel_id] : undefined}
+                    responsaveis={getResponsaveisComNomes(tarefa.id)}
                   />
                 </div>
               )}

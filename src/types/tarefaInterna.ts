@@ -15,6 +15,18 @@ export interface TarefaInterna {
   created_by: string;
   created_at: string;
   updated_at: string;
+  // Timestamps for time tracking per column
+  backlog_at?: string | null;
+  priorizado_at?: string | null;
+  em_progresso_at?: string | null;
+  concluido_at?: string | null;
+}
+
+export interface TarefaResponsavel {
+  id: string;
+  tarefa_id: string;
+  user_id: string;
+  created_at: string;
 }
 
 export const TASK_STATUS_ORDER: TaskStatus[] = [
@@ -64,4 +76,12 @@ export const TASK_CATEGORY_COLORS: Record<TaskCategory, string> = {
   melhoria: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
   nova_funcionalidade: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
   ajuste: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+};
+
+// Helper to get the timestamp field for a given status
+export const STATUS_TIMESTAMP_FIELD: Record<TaskStatus, keyof TarefaInterna> = {
+  backlog: "backlog_at",
+  priorizado: "priorizado_at",
+  em_progresso: "em_progresso_at",
+  concluido: "concluido_at",
 };
