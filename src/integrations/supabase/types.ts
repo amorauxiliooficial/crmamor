@@ -51,29 +51,47 @@ export type Database = {
       }
       atividades_mae: {
         Row: {
+          concluido: boolean | null
+          concluido_em: string | null
           created_at: string
           data_atividade: string
+          data_proxima_acao: string | null
           descricao: string | null
           id: string
           mae_id: string
+          proxima_acao: string | null
+          resultado_contato: string | null
+          status_followup: string | null
           tipo_atividade: string
           user_id: string
         }
         Insert: {
+          concluido?: boolean | null
+          concluido_em?: string | null
           created_at?: string
           data_atividade?: string
+          data_proxima_acao?: string | null
           descricao?: string | null
           id?: string
           mae_id: string
+          proxima_acao?: string | null
+          resultado_contato?: string | null
+          status_followup?: string | null
           tipo_atividade: string
           user_id: string
         }
         Update: {
+          concluido?: boolean | null
+          concluido_em?: string | null
           created_at?: string
           data_atividade?: string
+          data_proxima_acao?: string | null
           descricao?: string | null
           id?: string
           mae_id?: string
+          proxima_acao?: string | null
+          resultado_contato?: string | null
+          status_followup?: string | null
           tipo_atividade?: string
           user_id?: string
         }
