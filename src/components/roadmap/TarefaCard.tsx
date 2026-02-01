@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, User, Clock, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
+import { Calendar, User, Clock, ChevronDown, ChevronUp, AlertTriangle, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   TarefaInterna,
@@ -110,6 +110,18 @@ export function TarefaCard({
           {/* Footer with expand button */}
           <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
             <div className="flex items-center gap-3">
+              {tarefa.imagem_url && (
+                <a
+                  href={tarefa.imagem_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1 text-primary hover:underline"
+                  title="Ver imagem"
+                >
+                  <ImageIcon className="h-3 w-3" />
+                </a>
+              )}
               {tarefa.prazo && (
                 <span className={cn(
                   "flex items-center gap-1",

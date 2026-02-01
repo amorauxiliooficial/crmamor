@@ -20,6 +20,8 @@ export interface TarefaInterna {
   priorizado_at?: string | null;
   em_progresso_at?: string | null;
   concluido_at?: string | null;
+  // Image for reference
+  imagem_url?: string | null;
 }
 
 export interface TarefaResponsavel {
