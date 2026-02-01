@@ -25,6 +25,7 @@ import {
   LogOut,
   Megaphone,
   Map,
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -143,6 +144,17 @@ export function MobileSidebar({
             <p className="text-[10px] font-semibold text-muted-foreground mb-2 px-2 uppercase tracking-wider">
               Ferramentas
             </p>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2.5 h-10 text-sm"
+              onClick={() => {
+                navigate("/financeiro");
+                setOpen(false);
+              }}
+            >
+              <Wallet className="h-4 w-4" />
+              Financeiro
+            </Button>
             <Button
               variant="ghost"
               className="w-full justify-start gap-2.5 h-10 text-sm"

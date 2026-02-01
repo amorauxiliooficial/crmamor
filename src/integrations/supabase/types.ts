@@ -380,6 +380,57 @@ export type Database = {
           },
         ]
       }
+      despesas: {
+        Row: {
+          categoria: Database["public"]["Enums"]["categoria_despesa"]
+          comprovante_url: string | null
+          created_at: string
+          data_pagamento: string | null
+          data_vencimento: string
+          descricao: string
+          fornecedor: string | null
+          id: string
+          observacoes: string | null
+          recorrencia: Database["public"]["Enums"]["tipo_recorrencia"]
+          status: Database["public"]["Enums"]["status_transacao"]
+          updated_at: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          categoria?: Database["public"]["Enums"]["categoria_despesa"]
+          comprovante_url?: string | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento: string
+          descricao: string
+          fornecedor?: string | null
+          id?: string
+          observacoes?: string | null
+          recorrencia?: Database["public"]["Enums"]["tipo_recorrencia"]
+          status?: Database["public"]["Enums"]["status_transacao"]
+          updated_at?: string
+          user_id: string
+          valor: number
+        }
+        Update: {
+          categoria?: Database["public"]["Enums"]["categoria_despesa"]
+          comprovante_url?: string | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string
+          descricao?: string
+          fornecedor?: string | null
+          id?: string
+          observacoes?: string | null
+          recorrencia?: Database["public"]["Enums"]["tipo_recorrencia"]
+          status?: Database["public"]["Enums"]["status_transacao"]
+          updated_at?: string
+          user_id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       indicacoes: {
         Row: {
           created_at: string
@@ -1265,6 +1316,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      categoria_despesa:
+        | "fornecedor_servico"
+        | "custo_operacional"
+        | "comissao_parceiro"
+        | "impostos"
+        | "outros"
       categoria_previdenciaria:
         | "CLT"
         | "MEI"
@@ -1304,10 +1361,12 @@ export type Database = {
         | "Recurso / Judicial"
         | "Processo Encerrado"
         | "Inadimplência"
+      status_transacao: "pendente" | "pago" | "cancelado" | "atrasado"
       task_category: "bug" | "melhoria" | "nova_funcionalidade" | "ajuste"
       task_priority: "baixa" | "media" | "alta" | "urgente"
       task_status: "backlog" | "priorizado" | "em_progresso" | "concluido"
       tipo_evento: "Parto" | "Adoção" | "Guarda judicial"
+      tipo_recorrencia: "unica" | "mensal" | "trimestral" | "anual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1436,6 +1495,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      categoria_despesa: [
+        "fornecedor_servico",
+        "custo_operacional",
+        "comissao_parceiro",
+        "impostos",
+        "outros",
+      ],
       categoria_previdenciaria: [
         "CLT",
         "MEI",
@@ -1480,10 +1546,12 @@ export const Constants = {
         "Processo Encerrado",
         "Inadimplência",
       ],
+      status_transacao: ["pendente", "pago", "cancelado", "atrasado"],
       task_category: ["bug", "melhoria", "nova_funcionalidade", "ajuste"],
       task_priority: ["baixa", "media", "alta", "urgente"],
       task_status: ["backlog", "priorizado", "em_progresso", "concluido"],
       tipo_evento: ["Parto", "Adoção", "Guarda judicial"],
+      tipo_recorrencia: ["unica", "mensal", "trimestral", "anual"],
     },
   },
 } as const
