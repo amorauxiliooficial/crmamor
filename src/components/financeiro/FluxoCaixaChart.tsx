@@ -24,6 +24,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
       const monthEnd = endOfMonth(month);
       
       // Calculate receivables (parcelas pagas + previstas)
+      // Usa o valor da parcela referente ao mês (independente se é parcelado ou único)
       let receitas = 0;
       let receitasPrevistas = 0;
       
@@ -33,11 +34,11 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
           try {
             const parcelaDate = parseISO(p.data_pagamento);
             if (parcelaDate >= monthStart && parcelaDate <= monthEnd) {
-              const comissao = p.valor_comissao || 0;
+              const valorParcela = p.valor || 0;
               if (p.status === "pago") {
-                receitas += comissao;
+                receitas += valorParcela;
               } else {
-                receitasPrevistas += comissao;
+                receitasPrevistas += valorParcela;
               }
             }
           } catch {
