@@ -202,12 +202,12 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
 
           <div className="space-y-2">
             <Label>Fornecedor</Label>
-            <Select value={fornecedorId} onValueChange={setFornecedorId}>
+            <Select value={fornecedorId || "__none__"} onValueChange={(v) => setFornecedorId(v === "__none__" ? "" : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um fornecedor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
+                <SelectItem value="__none__">Nenhum</SelectItem>
                 {fornecedoresAtivos.map((f) => (
                   <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
                 ))}
