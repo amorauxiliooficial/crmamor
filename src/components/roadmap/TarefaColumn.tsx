@@ -130,10 +130,6 @@ export function TarefaColumn({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => setIsAddingTask(true)}>
-                  <Zap className="h-4 w-4 mr-2 text-yellow-500" />
-                  Criar rápido
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onOpenFullForm(status)}>
                   <FileText className="h-4 w-4 mr-2 text-blue-500" />
                   Formulário completo
