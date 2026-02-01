@@ -44,6 +44,7 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
   const [fornecedorId, setFornecedorId] = useState<string>("");
   const [observacoes, setObservacoes] = useState("");
 
+  // Reset form only when dialog opens/closes or despesa changes
   useEffect(() => {
     if (open) {
       if (despesa) {
@@ -54,11 +55,6 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
         setDataPagamento(despesa.data_pagamento || "");
         setStatus(despesa.status);
         setRecorrencia(despesa.recorrencia);
-        // Try to match existing fornecedor by name to id
-        const matchedFornecedor = fornecedoresAtivos.find(
-          f => f.nome.toLowerCase() === despesa.fornecedor?.toLowerCase()
-        );
-        setFornecedorId(matchedFornecedor?.id || "");
         setObservacoes(despesa.observacoes || "");
       } else {
         setDescricao("");
@@ -71,6 +67,16 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
         setFornecedorId("");
         setObservacoes("");
       }
+    }
+  }, [open, despesa]);
+
+  // Match fornecedor when editing and fornecedores load
+  useEffect(() => {
+    if (open && despesa && fornecedoresAtivos.length > 0) {
+      const matchedFornecedor = fornecedoresAtivos.find(
+        f => f.nome.toLowerCase() === despesa.fornecedor?.toLowerCase()
+      );
+      setFornecedorId(matchedFornecedor?.id || "");
     }
   }, [open, despesa, fornecedoresAtivos]);
 
