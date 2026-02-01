@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Search, LogOut, UserPlus, Settings, X, Key, Map } from "lucide-react";
+import { Search, LogOut, UserPlus, Settings, X, Key, Map, Wallet } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -261,6 +261,15 @@ export function Header({
           )}
           
           <div className="tour-notifications flex items-center gap-0.5 md:gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => navigate("/financeiro")}
+              title="Financeiro"
+            >
+              <Wallet className="h-5 w-5" />
+            </Button>
             <PagamentosNotificacao />
             <IndicacoesNotificacao onSelectIndicacao={onSelectIndicacao} />
           </div>
