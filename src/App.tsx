@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Conferencia from "./pages/Conferencia";
 import Pagamentos from "./pages/Pagamentos";
+import Financeiro from "./pages/Financeiro";
 import Playbook from "./pages/Playbook";
 import Senhas from "./pages/Senhas";
 import Marketing from "./pages/Marketing";
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/conferencia" element={<Conferencia />} />
             <Route path="/pagamentos" element={<Pagamentos />} />
+            <Route path="/financeiro" element={<Financeiro />} />
             <Route path="/playbook" element={<Playbook />} />
             <Route path="/senhas" element={<Senhas />} />
             <Route path="/marketing" element={<Marketing />} />
