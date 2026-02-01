@@ -370,7 +370,10 @@ export function TarefaFormDialog({
 
           {/* Image upload */}
           <div className="space-y-2">
-            <Label>Imagem de referência</Label>
+            <Label className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              Imagem de referência
+            </Label>
             <input
               type="file"
               ref={fileInputRef}
@@ -383,33 +386,30 @@ export function TarefaFormDialog({
             />
             
             {imagemUrl ? (
-              <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/30">
-                <div className="flex-1 flex items-center gap-2 min-w-0">
-                  <img 
-                    src={imagemUrl} 
-                    alt="Preview" 
-                    className="h-12 w-12 object-cover rounded border"
-                  />
-                  <span className="text-sm truncate">Imagem anexada</span>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
+              <div className="relative group rounded-lg overflow-hidden border bg-muted/20">
+                <img 
+                  src={imagemUrl} 
+                  alt="Preview" 
+                  className="w-full h-32 object-cover"
+                />
+                <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
+                    variant="secondary"
+                    size="sm"
                     onClick={() => window.open(imagemUrl, "_blank")}
                   >
-                    <ExternalLink className="h-3.5 w-3.5" />
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Abrir
                   </Button>
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-destructive"
+                    variant="destructive"
+                    size="sm"
                     onClick={handleRemoveImage}
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="h-4 w-4 mr-1" />
+                    Remover
                   </Button>
                 </div>
               </div>
@@ -421,44 +421,43 @@ export function TarefaFormDialog({
                 onFocus={() => setIsPasteFocused(true)}
                 onBlur={() => setIsPasteFocused(false)}
                 className={cn(
-                  "border-2 border-dashed rounded-md p-4 text-center cursor-pointer transition-all",
-                  "hover:border-primary/50 hover:bg-muted/50",
-                  isPasteFocused && "border-primary bg-primary/5 ring-2 ring-primary/20",
+                  "relative rounded-lg border bg-muted/30 p-4 transition-all cursor-pointer",
+                  "hover:bg-muted/50 hover:border-primary/30",
+                  isPasteFocused && "border-primary bg-primary/5 ring-1 ring-primary/30",
                   uploading && "opacity-50 pointer-events-none"
                 )}
                 onClick={() => pasteAreaRef.current?.focus()}
               >
                 {uploading ? (
-                  <div className="flex flex-col items-center gap-2 py-2">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Enviando...</span>
+                  <div className="flex items-center justify-center gap-3 py-2">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Enviando imagem...</span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-2 py-2">
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <Clipboard className="h-5 w-5" />
-                      <span className="text-sm font-medium">Cole um print aqui (Ctrl+V)</span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0 h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
+                      <Clipboard className="h-5 w-5 text-primary" />
                     </div>
-                    <span className="text-xs text-muted-foreground">ou</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Colar print (Ctrl+V)</p>
+                      <p className="text-xs text-muted-foreground">ou clique para escolher arquivo</p>
+                    </div>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
+                      className="shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         fileInputRef.current?.click();
                       }}
                     >
-                      <Upload className="mr-2 h-3.5 w-3.5" />
-                      Escolher arquivo
+                      <Upload className="h-4 w-4" />
                     </Button>
                   </div>
                 )}
               </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Máx. 5MB • Clique na área e cole (Ctrl+V) ou escolha um arquivo
-            </p>
           </div>
         </div>
 
