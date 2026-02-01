@@ -14,7 +14,7 @@ import {
 } from "@/types/tarefaInterna";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatDuration, getDurationColor, isTaskOverdue } from "@/lib/timeUtils";
+import { formatDuration, getDurationColor, isTaskOverdue, isDeadlineOverdue } from "@/lib/timeUtils";
 import {
   Collapsible,
   CollapsibleContent,
@@ -41,7 +41,9 @@ export function TarefaCard({
   const currentTimestamp = (tarefa[timestampField] as string | null) || tarefa.backlog_at || tarefa.created_at;
   const duration = formatDuration(currentTimestamp);
   const durationColor = getDurationColor(currentTimestamp);
-  const isOverdue = isTaskOverdue(currentTimestamp);
+  const isColumnOverdue = isTaskOverdue(currentTimestamp);
+  const isPrazoOverdue = tarefa.status !== "concluido" && isDeadlineOverdue(tarefa.prazo);
+  const isOverdue = isColumnOverdue || isPrazoOverdue;
 
   // Get all time history
   const timeHistory = [
