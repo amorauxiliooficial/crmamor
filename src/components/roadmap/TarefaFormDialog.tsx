@@ -187,6 +187,30 @@ export function TarefaFormDialog({
     setImagemUrl(null);
   };
 
+  // Handle paste event for clipboard images
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            await handleImageUpload(file);
+          }
+          break;
+        }
+      }
+    };
+
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+  }, [open]);
+
   const handleSave = async () => {
     if (!titulo.trim()) return;
     setSaving(true);
