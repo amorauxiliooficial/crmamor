@@ -1078,6 +1078,7 @@ export type Database = {
           descricao: string | null
           em_progresso_at: string | null
           id: string
+          imagem_url: string | null
           ordem: number | null
           prazo: string | null
           prioridade: Database["public"]["Enums"]["task_priority"]
@@ -1096,6 +1097,7 @@ export type Database = {
           descricao?: string | null
           em_progresso_at?: string | null
           id?: string
+          imagem_url?: string | null
           ordem?: number | null
           prazo?: string | null
           prioridade?: Database["public"]["Enums"]["task_priority"]
@@ -1114,6 +1116,7 @@ export type Database = {
           descricao?: string | null
           em_progresso_at?: string | null
           id?: string
+          imagem_url?: string | null
           ordem?: number | null
           prazo?: string | null
           prioridade?: Database["public"]["Enums"]["task_priority"]

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Trash2, Check } from "lucide-react";
+import { CalendarIcon, Trash2, Check, ImageIcon, Upload, X, ExternalLink, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -45,6 +45,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface TarefaFormDialogProps {
   open: boolean;
@@ -59,6 +61,7 @@ interface TarefaFormDialogProps {
     categoria?: TaskCategory;
     responsavel_id?: string;
     prazo?: string;
+    imagem_url?: string | null;
   }, responsaveisIds?: string[]) => Promise<unknown>;
   onDelete?: () => Promise<boolean>;
   usuarios: { id: string; nome: string }[];
@@ -83,6 +86,10 @@ export function TarefaFormDialog({
   const [responsaveis, setResponsaveis] = useState<string[]>([]);
   const [prazo, setPrazo] = useState<Date | undefined>();
   const [saving, setSaving] = useState(false);
+  const [imagemUrl, setImagemUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   // Reset form when dialog opens/closes or tarefa changes
   useEffect(() => {
@@ -95,6 +102,7 @@ export function TarefaFormDialog({
       setPrioridade(tarefa.prioridade);
       setCategoria(tarefa.categoria);
       setPrazo(tarefa.prazo ? parseISO(tarefa.prazo) : undefined);
+      setImagemUrl(tarefa.imagem_url || null);
     } else {
       setTitulo("");
       setDescricao("");
@@ -102,6 +110,7 @@ export function TarefaFormDialog({
       setPrioridade("media");
       setCategoria("melhoria");
       setPrazo(undefined);
+      setImagemUrl(null);
     }
   }, [tarefa, open, defaultStatus]);
 
@@ -119,6 +128,65 @@ export function TarefaFormDialog({
     );
   };
 
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "Arquivo muito grande",
+        description: "O tamanho máximo é 5MB",
+      });
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast({
+        variant: "destructive",
+        title: "Tipo inválido",
+        description: "Apenas imagens são permitidas",
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("tarefas-imagens")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrl } = supabase.storage
+        .from("tarefas-imagens")
+        .getPublicUrl(fileName);
+
+      setImagemUrl(publicUrl.publicUrl);
+      toast({
+        title: "Imagem enviada",
+        description: "A imagem foi anexada à tarefa",
+      });
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao enviar",
+        description: "Não foi possível enviar a imagem",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagemUrl(null);
+  };
+
   const handleSave = async () => {
     if (!titulo.trim()) return;
     setSaving(true);
@@ -130,6 +198,7 @@ export function TarefaFormDialog({
         prioridade,
         categoria,
         prazo: prazo ? format(prazo, "yyyy-MM-dd") : undefined,
+        imagem_url: imagemUrl,
       },
       responsaveis
     );
@@ -278,6 +347,73 @@ export function TarefaFormDialog({
                 />
               </PopoverContent>
             </Popover>
+          </div>
+
+          {/* Image upload */}
+          <div className="space-y-2">
+            <Label>Imagem de referência</Label>
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageUpload(file);
+              }}
+            />
+            
+            {imagemUrl ? (
+              <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/30">
+                <div className="flex-1 flex items-center gap-2 min-w-0">
+                  <ImageIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm truncate">Imagem anexada</span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => window.open(imagemUrl, "_blank")}
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive"
+                    onClick={handleRemoveImage}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full justify-start text-muted-foreground"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Anexar imagem
+                  </>
+                )}
+              </Button>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Máx. 5MB. Clique no ícone de imagem no card para visualizar.
+            </p>
           </div>
         </div>
 
