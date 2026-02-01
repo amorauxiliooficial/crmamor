@@ -36,9 +36,9 @@ export function TarefaCard({
 }: TarefaCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Get the timestamp for current status column
+  // Get the timestamp for current status column (with fallback to backlog_at or created_at)
   const timestampField = STATUS_TIMESTAMP_FIELD[tarefa.status];
-  const currentTimestamp = tarefa[timestampField] as string | null;
+  const currentTimestamp = (tarefa[timestampField] as string | null) || tarefa.backlog_at || tarefa.created_at;
   const duration = formatDuration(currentTimestamp);
   const durationColor = getDurationColor(currentTimestamp);
   const isOverdue = isTaskOverdue(currentTimestamp);
