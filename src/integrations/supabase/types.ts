@@ -389,6 +389,7 @@ export type Database = {
           data_vencimento: string
           descricao: string
           fornecedor: string | null
+          fornecedor_id: string | null
           id: string
           observacoes: string | null
           recorrencia: Database["public"]["Enums"]["tipo_recorrencia"]
@@ -405,6 +406,7 @@ export type Database = {
           data_vencimento: string
           descricao: string
           fornecedor?: string | null
+          fornecedor_id?: string | null
           id?: string
           observacoes?: string | null
           recorrencia?: Database["public"]["Enums"]["tipo_recorrencia"]
@@ -421,6 +423,7 @@ export type Database = {
           data_vencimento?: string
           descricao?: string
           fornecedor?: string | null
+          fornecedor_id?: string | null
           id?: string
           observacoes?: string | null
           recorrencia?: Database["public"]["Enums"]["tipo_recorrencia"]
@@ -428,6 +431,56 @@ export type Database = {
           updated_at?: string
           user_id?: string
           valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "despesas_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fornecedores: {
+        Row: {
+          ativo: boolean
+          cnpj_cpf: string | null
+          created_at: string
+          email: string | null
+          endereco: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          telefone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          cnpj_cpf?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          cnpj_cpf?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

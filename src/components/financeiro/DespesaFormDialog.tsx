@@ -19,9 +19,9 @@ import {
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useDespesas } from "@/hooks/useDespesas";
+import { useFornecedores } from "@/hooks/useFornecedores";
 import type { Despesa, CategoriaDespesa, StatusTransacao, TipoRecorrencia } from "@/types/despesa";
 import { CATEGORIA_LABELS, STATUS_LABELS, RECORRENCIA_LABELS } from "@/types/despesa";
-import { useToast } from "@/hooks/use-toast";
 
 interface DespesaFormDialogProps {
   open: boolean;
@@ -31,8 +31,9 @@ interface DespesaFormDialogProps {
 
 export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDialogProps) {
   const { user } = useAuth();
-  const { despesas, createDespesa, updateDespesa } = useDespesas();
-  const { toast } = useToast();
+  const { createDespesa, updateDespesa } = useDespesas();
+  const { fornecedoresAtivos } = useFornecedores();
+  
   const [descricao, setDescricao] = useState("");
   const [categoria, setCategoria] = useState<CategoriaDespesa>("outros");
   const [valor, setValor] = useState("");
@@ -40,7 +41,7 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
   const [dataPagamento, setDataPagamento] = useState("");
   const [status, setStatus] = useState<StatusTransacao>("pendente");
   const [recorrencia, setRecorrencia] = useState<TipoRecorrencia>("unica");
-  const [fornecedor, setFornecedor] = useState("");
+  const [fornecedorId, setFornecedorId] = useState<string>("");
   const [observacoes, setObservacoes] = useState("");
 
   useEffect(() => {
@@ -53,7 +54,11 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
         setDataPagamento(despesa.data_pagamento || "");
         setStatus(despesa.status);
         setRecorrencia(despesa.recorrencia);
-        setFornecedor(despesa.fornecedor || "");
+        // Try to match existing fornecedor by name to id
+        const matchedFornecedor = fornecedoresAtivos.find(
+          f => f.nome.toLowerCase() === despesa.fornecedor?.toLowerCase()
+        );
+        setFornecedorId(matchedFornecedor?.id || "");
         setObservacoes(despesa.observacoes || "");
       } else {
         setDescricao("");
@@ -63,33 +68,17 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
         setDataPagamento("");
         setStatus("pendente");
         setRecorrencia("unica");
-        setFornecedor("");
+        setFornecedorId("");
         setObservacoes("");
       }
     }
-  }, [open, despesa]);
+  }, [open, despesa, fornecedoresAtivos]);
 
   const handleSave = async () => {
     if (!user || !descricao || !valor || !dataVencimento) return;
 
-    // Validar fornecedor duplicado
-    if (fornecedor && fornecedor.trim()) {
-      const fornecedorNormalizado = fornecedor.trim().toLowerCase();
-      const fornecedorExistente = despesas.find(
-        (d) => 
-          d.fornecedor?.toLowerCase() === fornecedorNormalizado && 
-          d.id !== despesa?.id
-      );
-      
-      if (fornecedorExistente) {
-        toast({
-          variant: "destructive",
-          title: "Fornecedor duplicado",
-          description: `O fornecedor "${fornecedor}" já está cadastrado em outra despesa.`,
-        });
-        return;
-      }
-    }
+    // Get fornecedor name from id
+    const selectedFornecedor = fornecedoresAtivos.find(f => f.id === fornecedorId);
 
     const payload = {
       user_id: user.id,
@@ -100,7 +89,8 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
       data_pagamento: dataPagamento || null,
       status,
       recorrencia,
-      fornecedor: fornecedor || null,
+      fornecedor: selectedFornecedor?.nome || null,
+      fornecedor_id: fornecedorId || null,
       observacoes: observacoes || null,
     };
 
@@ -212,11 +202,22 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
 
           <div className="space-y-2">
             <Label>Fornecedor</Label>
-            <Input
-              value={fornecedor}
-              onChange={(e) => setFornecedor(e.target.value)}
-              placeholder="Nome do fornecedor"
-            />
+            <Select value={fornecedorId} onValueChange={setFornecedorId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um fornecedor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nenhum</SelectItem>
+                {fornecedoresAtivos.map((f) => (
+                  <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {fornecedoresAtivos.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Cadastre fornecedores na aba "Fornecedores" para selecionar aqui.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

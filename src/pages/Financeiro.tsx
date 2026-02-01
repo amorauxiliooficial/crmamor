@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { usePagamentos } from "@/hooks/usePagamentos";
 import { useDespesas } from "@/hooks/useDespesas";
+import { useFornecedores } from "@/hooks/useFornecedores";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -13,11 +14,13 @@ import {
   LayoutDashboard,
   Receipt,
   Users,
+  Building2,
 } from "lucide-react";
 import { ResumoFinanceiroCards } from "@/components/financeiro/ResumoFinanceiroCards";
 import { FluxoCaixaChart } from "@/components/financeiro/FluxoCaixaChart";
 import { DespesasTable } from "@/components/financeiro/DespesasTable";
 import { ReceitasMaesTable } from "@/components/financeiro/ReceitasMaesTable";
+import { FornecedoresTable } from "@/components/financeiro/FornecedoresTable";
 import { FinanceiroFilters, FilterPeriod } from "@/components/financeiro/FinanceiroFilters";
 import { getMonth, getYear } from "date-fns";
 
@@ -26,6 +29,7 @@ const Financeiro = () => {
   const navigate = useNavigate();
   const { pagamentos, isLoading: pagLoading, isFetching: pagFetching, refetch: refetchPag } = usePagamentos();
   const { despesas, isLoading: despLoading, isFetching: despFetching, refetch: refetchDesp } = useDespesas();
+  const { isLoading: fornLoading, refetch: refetchForn } = useFornecedores();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -42,12 +46,13 @@ const Financeiro = () => {
     }
   }, [user, authLoading, navigate]);
 
-  const isLoading = pagLoading || despLoading;
+  const isLoading = pagLoading || despLoading || fornLoading;
   const isFetching = pagFetching || despFetching;
 
   const handleRefresh = () => {
     refetchPag();
     refetchDesp();
+    refetchForn();
   };
 
   if (authLoading || isLoading) {
@@ -104,18 +109,22 @@ const Financeiro = () => {
 
         {/* Tabs for different views */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 md:w-auto md:inline-grid">
+          <TabsList className="grid w-full grid-cols-4 md:w-auto md:inline-grid">
             <TabsTrigger value="dashboard" className="gap-1.5">
               <LayoutDashboard className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
             </TabsTrigger>
             <TabsTrigger value="receitas" className="gap-1.5">
               <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Receitas Mães</span>
+              <span className="hidden sm:inline">Receitas</span>
             </TabsTrigger>
             <TabsTrigger value="despesas" className="gap-1.5">
               <Receipt className="h-4 w-4" />
               <span className="hidden sm:inline">Despesas</span>
+            </TabsTrigger>
+            <TabsTrigger value="fornecedores" className="gap-1.5">
+              <Building2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Fornecedores</span>
             </TabsTrigger>
           </TabsList>
 
@@ -142,6 +151,10 @@ const Financeiro = () => {
 
           <TabsContent value="despesas" className="mt-4">
             <DespesasTable />
+          </TabsContent>
+
+          <TabsContent value="fornecedores" className="mt-4">
+            <FornecedoresTable />
           </TabsContent>
         </Tabs>
       </main>
