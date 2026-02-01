@@ -14,7 +14,7 @@ import {
 } from "@/types/tarefaInterna";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatDuration, getDurationColor } from "@/lib/timeUtils";
+import { formatDuration, getDurationColor, isTaskOverdue } from "@/lib/timeUtils";
 import {
   Collapsible,
   CollapsibleContent,
@@ -41,6 +41,7 @@ export function TarefaCard({
   const currentTimestamp = tarefa[timestampField] as string | null;
   const duration = formatDuration(currentTimestamp);
   const durationColor = getDurationColor(currentTimestamp);
+  const isOverdue = isTaskOverdue(currentTimestamp);
 
   // Get all time history
   const timeHistory = [
@@ -59,7 +60,8 @@ export function TarefaCard({
     <Card
       className={cn(
         "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20",
-        isDragging && "shadow-lg ring-2 ring-primary rotate-2"
+        isDragging && "shadow-lg ring-2 ring-primary rotate-2",
+        isOverdue && !isDragging && "ring-2 ring-destructive/70 bg-destructive/5"
       )}
     >
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
