@@ -61,6 +61,7 @@ export function TarefaCard({
 
   return (
     <Card
+      onClick={onClick}
       className={cn(
         "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20",
         isDragging && "shadow-lg ring-2 ring-primary rotate-2",
@@ -95,10 +96,7 @@ export function TarefaCard({
           </div>
 
           {/* Title */}
-          <h4 
-            className="font-medium text-sm leading-tight line-clamp-2"
-            onClick={onClick}
-          >
+          <h4 className="font-medium text-sm leading-tight line-clamp-2">
             {tarefa.titulo}
           </h4>
 
