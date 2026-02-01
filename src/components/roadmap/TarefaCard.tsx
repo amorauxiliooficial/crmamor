@@ -41,8 +41,9 @@ export function TarefaCard({
   const currentTimestamp = (tarefa[timestampField] as string | null) || tarefa.backlog_at || tarefa.created_at;
   const duration = formatDuration(currentTimestamp);
   const durationColor = getDurationColor(currentTimestamp);
-  const isColumnOverdue = isTaskOverdue(currentTimestamp);
-  const isPrazoOverdue = tarefa.status !== "concluido" && isDeadlineOverdue(tarefa.prazo);
+  const isCompleted = tarefa.status === "concluido";
+  const isColumnOverdue = !isCompleted && isTaskOverdue(currentTimestamp);
+  const isPrazoOverdue = !isCompleted && isDeadlineOverdue(tarefa.prazo);
   const isOverdue = isColumnOverdue || isPrazoOverdue;
 
   // Get all time history
@@ -63,6 +64,7 @@ export function TarefaCard({
       className={cn(
         "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20",
         isDragging && "shadow-lg ring-2 ring-primary rotate-2",
+        isCompleted && !isDragging && "ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20",
         isOverdue && !isDragging && "ring-2 ring-destructive/70 bg-destructive/5"
       )}
     >
