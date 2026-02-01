@@ -49,11 +49,11 @@ export function ResumoFinanceiroCards({
       pag.parcelas.forEach((p) => {
         if (!isInPeriod(p.data_pagamento)) return;
         
-        const comissao = p.valor_comissao || 0;
+        const valor = p.valor || 0;
         if (p.status === "pago") {
-          receitasRecebidas += comissao;
+          receitasRecebidas += valor;
         } else {
-          receitasPendentes += comissao;
+          receitasPendentes += valor;
         }
       });
     });

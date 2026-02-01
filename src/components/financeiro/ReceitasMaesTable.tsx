@@ -66,12 +66,12 @@ export function ReceitasMaesTable({
           parcelas_pagas: 0,
         };
 
-        const comissao = p.valor_comissao || 0;
+        const valor = p.valor || 0;
         if (p.status === "pago") {
-          existing.valor_pago += comissao;
+          existing.valor_pago += valor;
           existing.parcelas_pagas += 1;
         } else {
-          existing.valor_pendente += comissao;
+          existing.valor_pendente += valor;
         }
         existing.total_parcelas += 1;
 
