@@ -10,15 +10,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Plus, Loader2, ShieldAlert, ArrowLeft, Users, X } from "lucide-react";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Plus, Loader2, ShieldAlert, ArrowLeft, Users, X, Filter, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { TaskPriority, TASK_PRIORITY_LABELS, TASK_PRIORITY_COLORS } from "@/types/tarefaInterna";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Roadmap() {
   const { user, loading: authLoading } = useAuth();
@@ -28,7 +29,8 @@ export default function Roadmap() {
   const { responsaveis } = useTarefaResponsaveis();
   const [formOpen, setFormOpen] = useState(false);
   const [usuarios, setUsuarios] = useState<{ id: string; nome: string }[]>([]);
-  const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
+  const [filtroResponsaveis, setFiltroResponsaveis] = useState<string[]>([]);
+  const [filtroPrioridades, setFiltroPrioridades] = useState<TaskPriority[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -60,20 +62,54 @@ export default function Roadmap() {
     fetchUsuarios();
   }, []);
 
-  // Filter tarefas by responsavel
+  const toggleResponsavel = (userId: string) => {
+    setFiltroResponsaveis((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const togglePrioridade = (prioridade: TaskPriority) => {
+    setFiltroPrioridades((prev) =>
+      prev.includes(prioridade)
+        ? prev.filter((p) => p !== prioridade)
+        : [...prev, prioridade]
+    );
+  };
+
+  // Filter tarefas by responsavel and priority
   const tarefasFiltradas = useMemo(() => {
-    if (filtroResponsavel === "todos") return tarefas;
-    if (filtroResponsavel === "sem_responsavel") {
-      return tarefas.filter((t) => {
-        const resp = responsaveis[t.id] || [];
-        return resp.length === 0;
-      });
+    let filtered = tarefas;
+
+    // Filter by responsaveis
+    if (filtroResponsaveis.length > 0) {
+      if (filtroResponsaveis.includes("sem_responsavel")) {
+        filtered = filtered.filter((t) => {
+          const resp = responsaveis[t.id] || [];
+          return resp.length === 0 || filtroResponsaveis.some((id) => id !== "sem_responsavel" && resp.includes(id));
+        });
+      } else {
+        filtered = filtered.filter((t) => {
+          const resp = responsaveis[t.id] || [];
+          return filtroResponsaveis.some((id) => resp.includes(id));
+        });
+      }
     }
-    return tarefas.filter((t) => {
-      const resp = responsaveis[t.id] || [];
-      return resp.includes(filtroResponsavel);
-    });
-  }, [tarefas, filtroResponsavel, responsaveis]);
+
+    // Filter by priorities
+    if (filtroPrioridades.length > 0) {
+      filtered = filtered.filter((t) => filtroPrioridades.includes(t.prioridade));
+    }
+
+    return filtered;
+  }, [tarefas, filtroResponsaveis, filtroPrioridades, responsaveis]);
+
+  const hasActiveFilters = filtroResponsaveis.length > 0 || filtroPrioridades.length > 0;
+  const clearAllFilters = () => {
+    setFiltroResponsaveis([]);
+    setFiltroPrioridades([]);
+  };
 
   if (authLoading || adminLoading) {
     return (
@@ -128,37 +164,135 @@ export default function Roadmap() {
 
         {/* Filters */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <Users className="h-4 w-4 text-muted-foreground shrink-0" />
-            <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
-              <SelectTrigger className="w-full sm:w-[180px] h-8 md:h-9 text-xs md:text-sm">
-                <SelectValue placeholder="Filtrar responsável" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="sem_responsavel">Sem responsável</SelectItem>
-                {usuarios.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.nome}
-                  </SelectItem>
+          {/* Responsável Filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-8 md:h-9 gap-1.5 text-xs md:text-sm",
+                  filtroResponsaveis.length > 0 && "border-primary bg-primary/5"
+                )}
+              >
+                <Users className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Responsável</span>
+                {filtroResponsaveis.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+                    {filtroResponsaveis.length}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2" align="start">
+              <ScrollArea className="max-h-64">
+                <div className="space-y-1">
+                  <button
+                    onClick={() => toggleResponsavel("sem_responsavel")}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent transition-colors",
+                      filtroResponsaveis.includes("sem_responsavel") && "bg-accent"
+                    )}
+                  >
+                    <div className={cn(
+                      "h-4 w-4 rounded border flex items-center justify-center",
+                      filtroResponsaveis.includes("sem_responsavel") 
+                        ? "bg-primary border-primary text-primary-foreground" 
+                        : "border-input"
+                    )}>
+                      {filtroResponsaveis.includes("sem_responsavel") && <Check className="h-3 w-3" />}
+                    </div>
+                    <span className="text-muted-foreground italic">Sem responsável</span>
+                  </button>
+                  {usuarios.map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => toggleResponsavel(u.id)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent transition-colors",
+                        filtroResponsaveis.includes(u.id) && "bg-accent"
+                      )}
+                    >
+                      <div className={cn(
+                        "h-4 w-4 rounded border flex items-center justify-center",
+                        filtroResponsaveis.includes(u.id) 
+                          ? "bg-primary border-primary text-primary-foreground" 
+                          : "border-input"
+                      )}>
+                        {filtroResponsaveis.includes(u.id) && <Check className="h-3 w-3" />}
+                      </div>
+                      <span className="truncate">{u.nome}</span>
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
+
+          {/* Prioridade Filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-8 md:h-9 gap-1.5 text-xs md:text-sm",
+                  filtroPrioridades.length > 0 && "border-primary bg-primary/5"
+                )}
+              >
+                <Filter className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Prioridade</span>
+                {filtroPrioridades.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+                    {filtroPrioridades.length}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-2" align="start">
+              <div className="space-y-1">
+                {(Object.keys(TASK_PRIORITY_LABELS) as TaskPriority[]).map((prioridade) => (
+                  <button
+                    key={prioridade}
+                    onClick={() => togglePrioridade(prioridade)}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent transition-colors",
+                      filtroPrioridades.includes(prioridade) && "bg-accent"
+                    )}
+                  >
+                    <div className={cn(
+                      "h-4 w-4 rounded border flex items-center justify-center",
+                      filtroPrioridades.includes(prioridade) 
+                        ? "bg-primary border-primary text-primary-foreground" 
+                        : "border-input"
+                    )}>
+                      {filtroPrioridades.includes(prioridade) && <Check className="h-3 w-3" />}
+                    </div>
+                    <Badge className={cn("text-xs", TASK_PRIORITY_COLORS[prioridade])}>
+                      {TASK_PRIORITY_LABELS[prioridade]}
+                    </Badge>
+                  </button>
                 ))}
-              </SelectContent>
-            </Select>
-            {filtroResponsavel !== "todos" && (
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Clear filters & count */}
+          {hasActiveFilters && (
+            <>
               <Button
                 variant="ghost"
-                size="icon"
-                className="h-7 w-7 md:h-8 md:w-8 shrink-0"
-                onClick={() => setFiltroResponsavel("todos")}
+                size="sm"
+                className="h-8 md:h-9 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                onClick={clearAllFilters}
               >
-                <X className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <X className="h-3.5 w-3.5" />
+                Limpar
               </Button>
-            )}
-          </div>
-          {filtroResponsavel !== "todos" && (
-            <Badge variant="secondary" className="text-[10px] md:text-xs shrink-0">
-              {tarefasFiltradas.length} tarefa(s)
-            </Badge>
+              <Badge variant="outline" className="text-[10px] md:text-xs">
+                {tarefasFiltradas.length} tarefa(s)
+              </Badge>
+            </>
           )}
         </div>
 
