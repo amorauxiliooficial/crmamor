@@ -64,3 +64,16 @@ export function isTaskOverdue(timestamp: string | null | undefined): boolean {
   
   return days >= 7;
 }
+
+/**
+ * Check if task deadline has passed
+ */
+export function isDeadlineOverdue(deadline: string | null | undefined): boolean {
+  if (!deadline) return false;
+  
+  const date = parseISO(deadline);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  return date < today;
+}
