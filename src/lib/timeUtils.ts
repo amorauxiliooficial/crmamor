@@ -52,3 +52,15 @@ export function getDurationColor(timestamp: string | null | undefined): string {
   if (days < 7) return "text-amber-600 dark:text-amber-400";
   return "text-destructive";
 }
+
+/**
+ * Check if task is overdue (more than 7 days in same status)
+ */
+export function isTaskOverdue(timestamp: string | null | undefined): boolean {
+  if (!timestamp) return false;
+  
+  const date = parseISO(timestamp);
+  const days = differenceInDays(new Date(), date);
+  
+  return days >= 7;
+}
