@@ -33,6 +33,19 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
   const { user } = useAuth();
   const { createDespesa, updateDespesa } = useDespesas();
   const { fornecedoresAtivos } = useFornecedores();
+
+  const parseMoneyToNumber = (input: string) => {
+    const raw = input.trim();
+    if (!raw) return NaN;
+
+    // pt-BR: usually uses comma as decimal separator and dot as thousands separator
+    if (raw.includes(",")) {
+      return Number(raw.replace(/\./g, "").replace(",", "."));
+    }
+
+    // fallback: allow dot as decimal separator
+    return Number(raw);
+  };
   
   const [descricao, setDescricao] = useState("");
   const [categoria, setCategoria] = useState<CategoriaDespesa>("outros");
@@ -90,7 +103,7 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
       user_id: user.id,
       descricao,
       categoria,
-      valor: parseFloat(valor),
+      valor: parseMoneyToNumber(valor),
       data_vencimento: dataVencimento,
       data_pagamento: dataPagamento || null,
       status,
@@ -146,11 +159,17 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
             <div className="space-y-2">
               <Label>Valor (R$) *</Label>
               <Input
-                type="number"
-                step="0.01"
-                min="0"
+                type="text"
+                inputMode="decimal"
                 value={valor}
-                onChange={(e) => setValor(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value
+                    .replace(/[^0-9.,]/g, "")
+                    // normalize multiple commas/dots a bit (keep user's last intent)
+                    .replace(/(,)(?=.*\1)/g, "")
+                    .replace(/(\.)(?=.*\1)/g, "");
+                  setValor(next);
+                }}
                 placeholder="0,00"
               />
             </div>
