@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDespesas } from "@/hooks/useDespesas";
 import type { Despesa, CategoriaDespesa, StatusTransacao, TipoRecorrencia } from "@/types/despesa";
 import { CATEGORIA_LABELS, STATUS_LABELS, RECORRENCIA_LABELS } from "@/types/despesa";
+import { useToast } from "@/hooks/use-toast";
 
 interface DespesaFormDialogProps {
   open: boolean;
@@ -30,8 +31,8 @@ interface DespesaFormDialogProps {
 
 export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDialogProps) {
   const { user } = useAuth();
-  const { createDespesa, updateDespesa } = useDespesas();
-  
+  const { despesas, createDespesa, updateDespesa } = useDespesas();
+  const { toast } = useToast();
   const [descricao, setDescricao] = useState("");
   const [categoria, setCategoria] = useState<CategoriaDespesa>("outros");
   const [valor, setValor] = useState("");
@@ -70,6 +71,25 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
 
   const handleSave = async () => {
     if (!user || !descricao || !valor || !dataVencimento) return;
+
+    // Validar fornecedor duplicado
+    if (fornecedor && fornecedor.trim()) {
+      const fornecedorNormalizado = fornecedor.trim().toLowerCase();
+      const fornecedorExistente = despesas.find(
+        (d) => 
+          d.fornecedor?.toLowerCase() === fornecedorNormalizado && 
+          d.id !== despesa?.id
+      );
+      
+      if (fornecedorExistente) {
+        toast({
+          variant: "destructive",
+          title: "Fornecedor duplicado",
+          description: `O fornecedor "${fornecedor}" já está cadastrado em outra despesa.`,
+        });
+        return;
+      }
+    }
 
     const payload = {
       user_id: user.id,
