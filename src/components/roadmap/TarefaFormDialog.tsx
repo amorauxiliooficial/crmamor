@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Trash2, Check, ImageIcon, Upload, X, ExternalLink, Loader2 } from "lucide-react";
+import { CalendarIcon, Trash2, Check, ImageIcon, Upload, X, ExternalLink, Loader2, Clipboard } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -88,7 +88,9 @@ export function TarefaFormDialog({
   const [saving, setSaving] = useState(false);
   const [imagemUrl, setImagemUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isPasteFocused, setIsPasteFocused] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pasteAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   // Reset form when dialog opens/closes or tarefa changes
@@ -187,29 +189,22 @@ export function TarefaFormDialog({
     setImagemUrl(null);
   };
 
-  // Handle paste event for clipboard images
-  useEffect(() => {
-    if (!open) return;
+  // Handle paste event within the paste area
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
 
-    const handlePaste = async (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-
-      for (const item of items) {
-        if (item.type.startsWith("image/")) {
-          e.preventDefault();
-          const file = item.getAsFile();
-          if (file) {
-            await handleImageUpload(file);
-          }
-          break;
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          await handleImageUpload(file);
         }
+        break;
       }
-    };
-
-    document.addEventListener("paste", handlePaste);
-    return () => document.removeEventListener("paste", handlePaste);
-  }, [open]);
+    }
+  };
 
   const handleSave = async () => {
     if (!titulo.trim()) return;
@@ -390,7 +385,11 @@ export function TarefaFormDialog({
             {imagemUrl ? (
               <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/30">
                 <div className="flex-1 flex items-center gap-2 min-w-0">
-                  <ImageIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <img 
+                    src={imagemUrl} 
+                    alt="Preview" 
+                    className="h-12 w-12 object-cover rounded border"
+                  />
                   <span className="text-sm truncate">Imagem anexada</span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
@@ -415,28 +414,50 @@ export function TarefaFormDialog({
                 </div>
               </div>
             ) : (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full justify-start text-muted-foreground"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
+              <div
+                ref={pasteAreaRef}
+                tabIndex={0}
+                onPaste={handlePaste}
+                onFocus={() => setIsPasteFocused(true)}
+                onBlur={() => setIsPasteFocused(false)}
+                className={cn(
+                  "border-2 border-dashed rounded-md p-4 text-center cursor-pointer transition-all",
+                  "hover:border-primary/50 hover:bg-muted/50",
+                  isPasteFocused && "border-primary bg-primary/5 ring-2 ring-primary/20",
+                  uploading && "opacity-50 pointer-events-none"
+                )}
+                onClick={() => pasteAreaRef.current?.focus()}
               >
                 {uploading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Enviando...
-                  </>
+                  <div className="flex flex-col items-center gap-2 py-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Enviando...</span>
+                  </div>
                 ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Anexar imagem
-                  </>
+                  <div className="flex flex-col items-center gap-2 py-2">
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <Clipboard className="h-5 w-5" />
+                      <span className="text-sm font-medium">Cole um print aqui (Ctrl+V)</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">ou</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                    >
+                      <Upload className="mr-2 h-3.5 w-3.5" />
+                      Escolher arquivo
+                    </Button>
+                  </div>
                 )}
-              </Button>
+              </div>
             )}
             <p className="text-xs text-muted-foreground">
-              Máx. 5MB. Clique no ícone de imagem no card para visualizar.
+              Máx. 5MB • Clique na área e cole (Ctrl+V) ou escolha um arquivo
             </p>
           </div>
         </div>
