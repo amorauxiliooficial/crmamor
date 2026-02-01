@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, User, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, User, Clock, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   TarefaInterna,
@@ -111,7 +111,11 @@ export function TarefaCard({
           <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
             <div className="flex items-center gap-3">
               {tarefa.prazo && (
-                <span className="flex items-center gap-1">
+                <span className={cn(
+                  "flex items-center gap-1",
+                  isPrazoOverdue && "text-destructive font-medium"
+                )}>
+                  {isPrazoOverdue && <AlertTriangle className="h-3 w-3" />}
                   <Calendar className="h-3 w-3" />
                   {format(parseISO(tarefa.prazo), "dd/MM", { locale: ptBR })}
                 </span>
