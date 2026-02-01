@@ -129,7 +129,7 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[100]">
                   {Object.entries(CATEGORIA_LABELS).map(([key, label]) => (
                     <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
@@ -177,7 +177,7 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[100]">
                   {Object.entries(STATUS_LABELS).map(([key, label]) => (
                     <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
@@ -191,7 +191,7 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[100]">
                   {Object.entries(RECORRENCIA_LABELS).map(([key, label]) => (
                     <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
@@ -206,7 +206,7 @@ export function DespesaFormDialog({ open, onOpenChange, despesa }: DespesaFormDi
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um fornecedor" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[100]">
                 <SelectItem value="__none__">Nenhum</SelectItem>
                 {fornecedoresAtivos.map((f) => (
                   <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
