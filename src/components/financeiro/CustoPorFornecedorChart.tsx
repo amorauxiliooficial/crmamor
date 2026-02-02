@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Building2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import type { Despesa } from "@/types/despesa";
 import type { Fornecedor } from "@/types/fornecedor";
 
@@ -11,21 +11,19 @@ interface CustoPorFornecedorChartProps {
 }
 
 const COLORS = [
-  "hsl(var(--primary))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
-  "hsl(var(--destructive))",
+  "bg-primary",
+  "bg-chart-2",
+  "bg-chart-3",
+  "bg-chart-4",
+  "bg-chart-5",
+  "bg-destructive",
 ];
 
 export function CustoPorFornecedorChart({ despesas, fornecedores }: CustoPorFornecedorChartProps) {
   const chartData = useMemo(() => {
-    // Agrupa despesas por fornecedor
     const custosPorFornecedor: Record<string, { nome: string; total: number; pago: number; pendente: number }> = {};
 
     despesas.forEach((d) => {
-      // Usa fornecedor_id se disponível, senão usa o campo fornecedor (texto)
       const fornecedorId = d.fornecedor_id;
       const fornecedorNome = fornecedorId 
         ? fornecedores.find((f) => f.id === fornecedorId)?.nome || "Fornecedor removido"
@@ -45,10 +43,9 @@ export function CustoPorFornecedorChart({ despesas, fornecedores }: CustoPorForn
       }
     });
 
-    // Converte para array e ordena por total (maior para menor)
     return Object.values(custosPorFornecedor)
       .sort((a, b) => b.total - a.total)
-      .slice(0, 8); // Limita a 8 fornecedores para melhor visualização
+      .slice(0, 6);
   }, [despesas, fornecedores]);
 
   const formatCurrency = (value: number) => {
@@ -60,6 +57,7 @@ export function CustoPorFornecedorChart({ despesas, fornecedores }: CustoPorForn
   };
 
   const totalGeral = chartData.reduce((acc, d) => acc + d.total, 0);
+  const maxValue = chartData.length > 0 ? chartData[0].total : 0;
 
   if (chartData.length === 0) {
     return (
@@ -87,64 +85,61 @@ export function CustoPorFornecedorChart({ despesas, fornecedores }: CustoPorForn
             <Building2 className="h-4 w-4 text-primary" />
             Custo por Fornecedor
           </CardTitle>
-          <span className="text-sm font-medium text-muted-foreground">
+          <span className="text-sm font-semibold text-destructive">
             Total: {formatCurrency(totalGeral)}
           </span>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-64 md:h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart 
-              data={chartData} 
-              layout="vertical"
-              margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
-            >
-              <XAxis 
-                type="number"
-                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                tick={{ fontSize: 11 }}
-                className="text-muted-foreground"
-              />
-              <YAxis 
-                type="category"
-                dataKey="nome"
-                width={100}
-                tick={{ fontSize: 11 }}
-                className="text-muted-foreground"
-                tickFormatter={(value) => value.length > 12 ? `${value.slice(0, 12)}...` : value}
-              />
-              <Tooltip 
-                formatter={(value: number) => [formatCurrency(value), "Total"]}
-                labelClassName="font-semibold"
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--popover))', 
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px'
-                }}
-                content={({ active, payload }) => {
-                  if (!active || !payload?.length) return null;
-                  const data = payload[0].payload;
-                  return (
-                    <div className="bg-popover border border-border rounded-lg p-3 shadow-lg">
-                      <p className="font-semibold text-sm mb-2">{data.nome}</p>
-                      <div className="space-y-1 text-xs">
-                        <p>Total: <span className="font-medium">{formatCurrency(data.total)}</span></p>
-                        <p className="text-primary">Pago: {formatCurrency(data.pago)}</p>
-                        <p className="text-destructive">Pendente: {formatCurrency(data.pendente)}</p>
-                      </div>
-                    </div>
-                  );
-                }}
-              />
-              <Bar dataKey="total" radius={[0, 4, 4, 0]}>
-                {chartData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="space-y-4">
+          {chartData.map((item, index) => {
+            const percentage = maxValue > 0 ? (item.total / maxValue) * 100 : 0;
+            const percentOfTotal = totalGeral > 0 ? (item.total / totalGeral) * 100 : 0;
+            
+            return (
+              <div key={item.nome} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${COLORS[index % COLORS.length]}`} />
+                    <span className="text-sm font-medium truncate" title={item.nome}>
+                      {item.nome}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-xs text-muted-foreground">
+                      {percentOfTotal.toFixed(0)}%
+                    </span>
+                    <span className="text-sm font-semibold min-w-[80px] text-right">
+                      {formatCurrency(item.total)}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className={`absolute left-0 top-0 h-full rounded-full transition-all duration-500 ${COLORS[index % COLORS.length]}`}
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
+                
+                <div className="flex justify-between text-xs text-muted-foreground pl-4">
+                  <span>
+                    Pago: <span className="text-primary font-medium">{formatCurrency(item.pago)}</span>
+                  </span>
+                  <span>
+                    Pendente: <span className="text-destructive font-medium">{formatCurrency(item.pendente)}</span>
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
+
+        {fornecedores.length > 6 && (
+          <p className="text-xs text-muted-foreground text-center mt-4 pt-4 border-t">
+            Mostrando os 6 maiores fornecedores
+          </p>
+        )}
       </CardContent>
     </Card>
   );
