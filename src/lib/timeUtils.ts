@@ -77,3 +77,32 @@ export function isDeadlineOverdue(deadline: string | null | undefined): boolean 
   
   return date < today;
 }
+
+/**
+ * Get how long past the deadline (for overdue tasks)
+ */
+export function getOverdueDuration(deadline: string | null | undefined): string | null {
+  if (!deadline) return null;
+  
+  const date = parseISO(deadline);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  if (date >= today) return null;
+  
+  const days = differenceInDays(today, date);
+  
+  if (days === 0) return "hoje";
+  if (days === 1) return "1d";
+  if (days < 7) return `${days}d`;
+  
+  const weeks = Math.floor(days / 7);
+  const remainingDays = days % 7;
+  
+  if (weeks < 4) {
+    return remainingDays > 0 ? `${weeks}sem ${remainingDays}d` : `${weeks}sem`;
+  }
+  
+  const months = Math.floor(days / 30);
+  return `${months}mês${months > 1 ? "es" : ""}`;
+}

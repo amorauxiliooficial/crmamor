@@ -14,7 +14,7 @@ import {
 } from "@/types/tarefaInterna";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatDuration, getDurationColor, isTaskOverdue, isDeadlineOverdue } from "@/lib/timeUtils";
+import { formatDuration, getDurationColor, isTaskOverdue, isDeadlineOverdue, getOverdueDuration } from "@/lib/timeUtils";
 import {
   Collapsible,
   CollapsibleContent,
@@ -45,6 +45,7 @@ export function TarefaCard({
   const isColumnOverdue = !isCompleted && isTaskOverdue(currentTimestamp);
   const isPrazoOverdue = !isCompleted && isDeadlineOverdue(tarefa.prazo);
   const isOverdue = isColumnOverdue || isPrazoOverdue;
+  const overdueDuration = isPrazoOverdue ? getOverdueDuration(tarefa.prazo) : null;
 
   // Get all time history
   const timeHistory = [
@@ -87,12 +88,17 @@ export function TarefaCard({
                 {TASK_PRIORITY_LABELS[tarefa.prioridade]}
               </Badge>
             </div>
-            {duration && (
+            {overdueDuration ? (
+              <span className="flex items-center gap-0.5 text-[10px] font-semibold text-destructive">
+                <AlertTriangle className="h-3 w-3" />
+                {overdueDuration} atrasado
+              </span>
+            ) : duration ? (
               <span className={cn("flex items-center gap-0.5 text-[10px] font-medium", durationColor)}>
                 <Clock className="h-3 w-3" />
                 {duration}
               </span>
-            )}
+            ) : null}
           </div>
 
           {/* Title */}
