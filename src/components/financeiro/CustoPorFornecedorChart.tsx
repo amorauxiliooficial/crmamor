@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Building2, ChevronDown, ChevronUp } from "lucide-react";
 import type { Despesa } from "@/types/despesa";
 import type { Fornecedor } from "@/types/fornecedor";
 
@@ -20,7 +20,9 @@ const COLORS = [
 ];
 
 export function CustoPorFornecedorChart({ despesas, fornecedores }: CustoPorFornecedorChartProps) {
-  const chartData = useMemo(() => {
+  const [expanded, setExpanded] = useState(false);
+
+  const allData = useMemo(() => {
     const custosPorFornecedor: Record<string, { nome: string; total: number; pago: number; pendente: number }> = {};
 
     despesas.forEach((d) => {
@@ -44,9 +46,11 @@ export function CustoPorFornecedorChart({ despesas, fornecedores }: CustoPorForn
     });
 
     return Object.values(custosPorFornecedor)
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 6);
+      .sort((a, b) => b.total - a.total);
   }, [despesas, fornecedores]);
+
+  const chartData = expanded ? allData : allData.slice(0, 3);
+  const hasMore = allData.length > 3;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -135,10 +139,25 @@ export function CustoPorFornecedorChart({ despesas, fornecedores }: CustoPorForn
           })}
         </div>
 
-        {fornecedores.length > 6 && (
-          <p className="text-xs text-muted-foreground text-center mt-4 pt-4 border-t">
-            Mostrando os 6 maiores fornecedores
-          </p>
+        {hasMore && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full mt-4"
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? (
+              <>
+                <ChevronUp className="h-4 w-4 mr-1" />
+                Ver menos
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4 mr-1" />
+                Ver todos ({allData.length - 3} mais)
+              </>
+            )}
+          </Button>
         )}
       </CardContent>
     </Card>
