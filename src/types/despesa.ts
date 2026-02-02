@@ -20,6 +20,7 @@ export interface Despesa {
   status: StatusTransacao;
   recorrencia: TipoRecorrencia;
   fornecedor?: string | null;
+  fornecedor_id?: string | null;
   observacoes?: string | null;
   comprovante_url?: string | null;
   created_at: string;
