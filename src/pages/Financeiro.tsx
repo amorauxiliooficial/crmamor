@@ -160,7 +160,11 @@ const Financeiro = () => {
           </TabsContent>
 
           <TabsContent value="despesas" className="mt-4">
-            <DespesasTable />
+            <DespesasTable
+              period={period}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
           </TabsContent>
 
           <TabsContent value="fornecedores" className="mt-4">

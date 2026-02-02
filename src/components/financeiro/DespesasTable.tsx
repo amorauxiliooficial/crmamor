@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -21,19 +21,51 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Edit, Trash2, Plus, Receipt, CheckCircle2, Clock, AlertTriangle, XCircle } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, getMonth, getYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useDespesas } from "@/hooks/useDespesas";
 import { DespesaFormDialog } from "./DespesaFormDialog";
 import type { Despesa, StatusTransacao } from "@/types/despesa";
 import { CATEGORIA_LABELS, RECORRENCIA_LABELS } from "@/types/despesa";
+import type { FilterPeriod } from "./FinanceiroFilters";
 
-export function DespesasTable() {
+interface DespesasTableProps {
+  period?: FilterPeriod;
+  selectedMonth?: number;
+  selectedYear?: number;
+}
+
+export function DespesasTable({ period = "mes", selectedMonth, selectedYear }: DespesasTableProps) {
   const { despesas, deleteDespesa, isLoading } = useDespesas();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDespesa, setEditingDespesa] = useState<Despesa | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [despesaToDelete, setDespesaToDelete] = useState<string | null>(null);
+
+  // Filtrar despesas pelo período selecionado (usando data de lançamento created_at)
+  const filteredDespesas = useMemo(() => {
+    if (period === "total") return despesas;
+
+    const now = new Date();
+    const filterMonth = selectedMonth ?? getMonth(now);
+    const filterYear = selectedYear ?? getYear(now);
+
+    return despesas.filter((d) => {
+      try {
+        const createdDate = parseISO(d.created_at);
+        const despesaMonth = getMonth(createdDate);
+        const despesaYear = getYear(createdDate);
+
+        if (period === "ano") {
+          return despesaYear === filterYear;
+        }
+        // period === "mes"
+        return despesaYear === filterYear && despesaMonth === filterMonth;
+      } catch {
+        return false;
+      }
+    });
+  }, [despesas, period, selectedMonth, selectedYear]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -137,14 +169,14 @@ export function DespesasTable() {
                       Carregando...
                     </TableCell>
                   </TableRow>
-                ) : despesas.length === 0 ? (
+                ) : filteredDespesas.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      Nenhuma despesa cadastrada
+                      Nenhuma despesa neste período
                     </TableCell>
                   </TableRow>
                 ) : (
-                  despesas.map((d) => (
+                  filteredDespesas.map((d) => (
                     <TableRow key={d.id}>
                       <TableCell className="font-medium">{d.descricao}</TableCell>
                       <TableCell>{CATEGORIA_LABELS[d.categoria]}</TableCell>
@@ -183,12 +215,12 @@ export function DespesasTable() {
           <div className="md:hidden divide-y">
             {isLoading ? (
               <div className="text-center py-8">Carregando...</div>
-            ) : despesas.length === 0 ? (
+            ) : filteredDespesas.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                Nenhuma despesa cadastrada
+                Nenhuma despesa neste período
               </div>
             ) : (
-              despesas.map((d) => (
+              filteredDespesas.map((d) => (
                 <div key={d.id} className="p-3 space-y-2">
                   <div className="flex items-start justify-between">
                     <div>

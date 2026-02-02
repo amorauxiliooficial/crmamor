@@ -45,8 +45,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
       
       despesas.forEach((d) => {
         try {
-          // Usar data de lançamento (created_at) para facilitar visualização
-          const despesaDate = parseISO(d.created_at);
+          const despesaDate = parseISO(d.data_vencimento);
           if (despesaDate >= monthStart && despesaDate <= monthEnd) {
             despesasTotal += d.valor;
           }
