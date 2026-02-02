@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { ResumoFinanceiroCards } from "@/components/financeiro/ResumoFinanceiroCards";
 import { FluxoCaixaChart } from "@/components/financeiro/FluxoCaixaChart";
+import { CustoPorFornecedorChart } from "@/components/financeiro/CustoPorFornecedorChart";
 import { DespesasTable } from "@/components/financeiro/DespesasTable";
 import { ReceitasMaesTable } from "@/components/financeiro/ReceitasMaesTable";
 import { FornecedoresTable } from "@/components/financeiro/FornecedoresTable";
@@ -29,7 +30,7 @@ const Financeiro = () => {
   const navigate = useNavigate();
   const { pagamentos, isLoading: pagLoading, isFetching: pagFetching, refetch: refetchPag } = usePagamentos();
   const { despesas, isLoading: despLoading, isFetching: despFetching, refetch: refetchDesp } = useDespesas();
-  const { isLoading: fornLoading, refetch: refetchForn } = useFornecedores();
+  const { fornecedores, isLoading: fornLoading, refetch: refetchForn } = useFornecedores();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -131,13 +132,14 @@ const Financeiro = () => {
           <TabsContent value="dashboard" className="space-y-4 mt-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <FluxoCaixaChart pagamentos={pagamentos} despesas={despesas} />
-              <ReceitasMaesTable 
-                pagamentos={pagamentos}
-                period={period}
-                selectedMonth={selectedMonth}
-                selectedYear={selectedYear}
-              />
+              <CustoPorFornecedorChart despesas={despesas} fornecedores={fornecedores} />
             </div>
+            <ReceitasMaesTable 
+              pagamentos={pagamentos}
+              period={period}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
           </TabsContent>
 
           <TabsContent value="receitas" className="mt-4">
