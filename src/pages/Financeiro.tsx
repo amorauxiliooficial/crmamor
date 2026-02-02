@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { usePagamentos } from "@/hooks/usePagamentos";
 import { useDespesas } from "@/hooks/useDespesas";
 import { useFornecedores } from "@/hooks/useFornecedores";
@@ -27,6 +28,7 @@ import { getMonth, getYear } from "date-fns";
 
 const Financeiro = () => {
   const { user, loading: authLoading } = useAuth();
+  const { isAdmin, isLoading: adminLoading } = useIsAdmin();
   const navigate = useNavigate();
   const { pagamentos, isLoading: pagLoading, isFetching: pagFetching, refetch: refetchPag } = usePagamentos();
   const { despesas, isLoading: despLoading, isFetching: despFetching, refetch: refetchDesp } = useDespesas();
@@ -47,7 +49,13 @@ const Financeiro = () => {
     }
   }, [user, authLoading, navigate]);
 
-  const isLoading = pagLoading || despLoading || fornLoading;
+  useEffect(() => {
+    if (!authLoading && !adminLoading && user && !isAdmin) {
+      navigate("/");
+    }
+  }, [user, authLoading, adminLoading, isAdmin, navigate]);
+
+  const isLoading = pagLoading || despLoading || fornLoading || adminLoading;
   const isFetching = pagFetching || despFetching;
 
   const handleRefresh = () => {
@@ -64,7 +72,7 @@ const Financeiro = () => {
     );
   }
 
-  if (!user) {
+  if (!user || !isAdmin) {
     return null;
   }
 
