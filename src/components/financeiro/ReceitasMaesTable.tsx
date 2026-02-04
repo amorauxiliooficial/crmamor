@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, TrendingUp, CheckCircle2, Clock } from "lucide-react";
+import { Search, TrendingUp, CheckCircle2, Clock, Download } from "lucide-react";
 import type { PagamentoComMae } from "@/hooks/usePagamentos";
 import type { FilterPeriod } from "./FinanceiroFilters";
-import { parseISO, getMonth, getYear, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import { parseISO, getMonth, getYear, format } from "date-fns";
+import { formatCpf } from "@/lib/formatters";
 
 interface ReceitasMaesTableProps {
   pagamentos: PagamentoComMae[];
@@ -109,9 +111,38 @@ export function ReceitasMaesTable({
     }).format(value);
   };
 
-  const formatCpf = (cpf: string) => {
+  const formatCpfMasked = (cpf: string) => {
     if (cpf.length !== 11) return cpf;
     return `***.***.${cpf.slice(6, 9)}-**`;
+  };
+
+  const handleExportCSV = () => {
+    const headers = ["Nome Completo", "CPF", "Valor Recebido", "Valor Pendente", "Total"];
+    const rows = receitasPorMae.map((mae) => [
+      mae.mae_nome,
+      formatCpf(mae.mae_cpf),
+      (mae.valor_pago).toFixed(2).replace(".", ","),
+      (mae.valor_pendente).toFixed(2).replace(".", ","),
+      (mae.valor_pago + mae.valor_pendente).toFixed(2).replace(".", ","),
+    ]);
+
+    const csvContent = [
+      headers.join(";"),
+      ...rows.map((row) => row.join(";")),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const periodLabel = period === "mes" 
+      ? format(new Date(selectedYear, selectedMonth), "MM-yyyy")
+      : period === "ano" 
+        ? selectedYear.toString()
+        : "total";
+    link.download = `receitas-maes-${periodLabel}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -125,14 +156,26 @@ export function ReceitasMaesTable({
               {receitasPorMae.length} mães
             </Badge>
           </div>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar mãe..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-8 text-sm"
-            />
+          <div className="flex items-center gap-2">
+            <div className="relative w-full sm:w-48">
+              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar mãe..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8 h-8 text-sm"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              disabled={receitasPorMae.length === 0}
+              className="h-8 gap-1.5"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Exportar</span>
+            </Button>
           </div>
         </div>
         
@@ -181,7 +224,7 @@ export function ReceitasMaesTable({
                           {mae.mae_nome}
                         </p>
                         <p className="text-[10px] text-muted-foreground">
-                          {formatCpf(mae.mae_cpf)}
+                          {formatCpfMasked(mae.mae_cpf)}
                         </p>
                       </div>
                     </TableCell>
