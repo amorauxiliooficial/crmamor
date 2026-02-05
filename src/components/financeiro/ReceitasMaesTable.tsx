@@ -117,7 +117,7 @@ export function ReceitasMaesTable({
   };
 
   const handleExportCSV = () => {
-    const headers = ["Mês/Ano", "Nome Completo", "CPF", "Endereço", "Parcela", "Valor"];
+    const headers = ["Mês/Ano", "Nome Completo", "CPF", "Endereço", "Parcela", "Data Pagamento", "Valor"];
     const rows: string[][] = [];
 
     // Collect all paid parcelas with their data
@@ -128,6 +128,7 @@ export function ReceitasMaesTable({
       cpf: string;
       endereco: string;
       parcela: number;
+      dataPagamento: string;
       valor: number;
     }
 
@@ -154,6 +155,7 @@ export function ReceitasMaesTable({
               cpf: formatCpf(pag.mae_cpf),
               endereco,
               parcela: p.numero_parcela,
+                dataPagamento: format(parcelaDate, "dd/MM/yyyy"),
               valor: p.valor,
             });
           } catch {
@@ -177,8 +179,8 @@ export function ReceitasMaesTable({
     parcelasExport.forEach((p, index) => {
       // Add subtotal row when month changes
       if (currentMonth && currentMonth !== p.mesAno) {
-        rows.push([`TOTAL ${currentMonth}`, "", "", "", "", monthTotal.toFixed(2).replace(".", ",")]);
-        rows.push(["", "", "", "", "", ""]); // Empty row for spacing
+        rows.push([`TOTAL ${currentMonth}`, "", "", "", "", "", monthTotal.toFixed(2).replace(".", ",")]);
+        rows.push(["", "", "", "", "", "", ""]); // Empty row for spacing
         monthTotal = 0;
       }
       currentMonth = p.mesAno;
@@ -190,12 +192,13 @@ export function ReceitasMaesTable({
         p.cpf,
         p.endereco,
         p.parcela.toString(),
+        p.dataPagamento,
         p.valor.toFixed(2).replace(".", ","),
       ]);
 
       // Add final subtotal
       if (index === parcelasExport.length - 1) {
-        rows.push([`TOTAL ${currentMonth}`, "", "", "", "", monthTotal.toFixed(2).replace(".", ",")]);
+        rows.push([`TOTAL ${currentMonth}`, "", "", "", "", "", monthTotal.toFixed(2).replace(".", ",")]);
       }
     });
 
