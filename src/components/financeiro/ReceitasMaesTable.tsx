@@ -117,14 +117,41 @@ export function ReceitasMaesTable({
   };
 
   const handleExportCSV = () => {
-    const headers = ["Nome Completo", "CPF", "Valor Recebido", "Valor Pendente", "Total"];
-    const rows = receitasPorMae.map((mae) => [
-      mae.mae_nome,
-      formatCpf(mae.mae_cpf),
-      (mae.valor_pago).toFixed(2).replace(".", ","),
-      (mae.valor_pendente).toFixed(2).replace(".", ","),
-      (mae.valor_pago + mae.valor_pendente).toFixed(2).replace(".", ","),
-    ]);
+    const headers = ["Nome Completo", "CPF", "Mês/Ano", "Valor Recebido"];
+    const rows: string[][] = [];
+
+    // Group payments by mae and month
+    pagamentos.forEach((pag) => {
+      pag.parcelas.forEach((p) => {
+        if (p.status === "pago" && p.data_pagamento && p.valor) {
+          try {
+            const parcelaDate = parseISO(p.data_pagamento);
+            const parcelaYear = getYear(parcelaDate);
+            const parcelaMonth = getMonth(parcelaDate);
+
+            // Apply period filter
+            if (period === "ano" && parcelaYear !== selectedYear) return;
+            if (period === "mes" && (parcelaYear !== selectedYear || parcelaMonth !== selectedMonth)) return;
+
+            rows.push([
+              pag.mae_nome,
+              formatCpf(pag.mae_cpf),
+              format(parcelaDate, "MM/yyyy"),
+              p.valor.toFixed(2).replace(".", ","),
+            ]);
+          } catch {
+            // Skip invalid dates
+          }
+        }
+      });
+    });
+
+    // Sort by name, then by date
+    rows.sort((a, b) => {
+      const nameCompare = a[0].localeCompare(b[0]);
+      if (nameCompare !== 0) return nameCompare;
+      return a[2].localeCompare(b[2]);
+    });
 
     const csvContent = [
       headers.join(";"),
