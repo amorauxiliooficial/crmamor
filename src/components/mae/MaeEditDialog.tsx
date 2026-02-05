@@ -214,8 +214,8 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       mes_gestacao: formData.is_gestante ? formData.mes_gestacao : null,
     };
 
-    // Admin can reassign to different user
-    if (isAdmin && selectedUserId && selectedUserId !== mae.user_id) {
+    // Admin can reassign to different user - always update if admin has selected a user
+    if (isAdmin && selectedUserId) {
       updateData.user_id = selectedUserId;
     }
 
