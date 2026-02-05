@@ -117,57 +117,87 @@ export function ReceitasMaesTable({
   };
 
   const handleExportCSV = () => {
-    // Find max parcelas to create columns
-    const maxParcelas = Math.max(...pagamentos.map((p) => p.parcelas.length), 0);
-    
-    // Build dynamic headers: Nome, CPF, then for each parcela: "Parcela X", "Mês X", "Valor X"
-    const headers = ["Nome Completo", "CPF"];
-    for (let i = 1; i <= maxParcelas; i++) {
-      headers.push(`Parcela ${i}`, `Mês ${i}`, `Valor ${i}`);
-    }
-
+    const headers = ["Mês/Ano", "Nome Completo", "CPF", "Endereço", "Parcela", "Valor"];
     const rows: string[][] = [];
 
-    // Filter mães based on period (only include if they have payments in the period)
-    const maesWithPayments = pagamentos.filter((pag) => {
-      return pag.parcelas.some((p) => {
-        if (p.status !== "pago" || !p.data_pagamento) return false;
-        if (period === "total") return true;
-        try {
-          const parcelaDate = parseISO(p.data_pagamento);
-          const parcelaYear = getYear(parcelaDate);
-          const parcelaMonth = getMonth(parcelaDate);
-          if (period === "ano" && parcelaYear !== selectedYear) return false;
-          if (period === "mes" && (parcelaYear !== selectedYear || parcelaMonth !== selectedMonth)) return false;
-          return true;
-        } catch {
-          return false;
+    // Collect all paid parcelas with their data
+    interface ParcelaExport {
+      mesAno: string;
+      mesAnoSort: string;
+      nome: string;
+      cpf: string;
+      endereco: string;
+      parcela: number;
+      valor: number;
+    }
+
+    const parcelasExport: ParcelaExport[] = [];
+
+    pagamentos.forEach((pag) => {
+      const endereco = [pag.mae_cep, pag.mae_uf].filter(Boolean).join(" - ") || "-";
+      
+      pag.parcelas.forEach((p) => {
+        if (p.status === "pago" && p.data_pagamento && p.valor) {
+          try {
+            const parcelaDate = parseISO(p.data_pagamento);
+            const parcelaYear = getYear(parcelaDate);
+            const parcelaMonth = getMonth(parcelaDate);
+
+            // Apply period filter
+            if (period === "ano" && parcelaYear !== selectedYear) return;
+            if (period === "mes" && (parcelaYear !== selectedYear || parcelaMonth !== selectedMonth)) return;
+
+            parcelasExport.push({
+              mesAno: format(parcelaDate, "MM/yyyy"),
+              mesAnoSort: format(parcelaDate, "yyyy-MM"),
+              nome: pag.mae_nome,
+              cpf: formatCpf(pag.mae_cpf),
+              endereco,
+              parcela: p.numero_parcela,
+              valor: p.valor,
+            });
+          } catch {
+            // Skip invalid dates
+          }
         }
       });
     });
 
-    maesWithPayments.forEach((pag) => {
-      const row: string[] = [pag.mae_nome, formatCpf(pag.mae_cpf)];
-      
-      // Sort parcelas by numero_parcela
-      const sortedParcelas = [...pag.parcelas].sort((a, b) => a.numero_parcela - b.numero_parcela);
-      
-      sortedParcelas.forEach((p) => {
-        const mesAno = p.data_pagamento ? format(parseISO(p.data_pagamento), "MM/yyyy") : "-";
-        const valor = p.status === "pago" && p.valor ? p.valor.toFixed(2).replace(".", ",") : "-";
-        row.push(p.numero_parcela.toString(), mesAno, valor);
-      });
-      
-      // Fill remaining columns if this mãe has fewer parcelas
-      while (row.length < headers.length) {
-        row.push("-");
-      }
-      
-      rows.push(row);
+    // Sort by month, then by name
+    parcelasExport.sort((a, b) => {
+      const monthCompare = a.mesAnoSort.localeCompare(b.mesAnoSort);
+      if (monthCompare !== 0) return monthCompare;
+      return a.nome.localeCompare(b.nome);
     });
 
-    // Sort by name
-    rows.sort((a, b) => a[0].localeCompare(b[0]));
+    // Group by month and add subtotals
+    let currentMonth = "";
+    let monthTotal = 0;
+
+    parcelasExport.forEach((p, index) => {
+      // Add subtotal row when month changes
+      if (currentMonth && currentMonth !== p.mesAno) {
+        rows.push([`TOTAL ${currentMonth}`, "", "", "", "", monthTotal.toFixed(2).replace(".", ",")]);
+        rows.push(["", "", "", "", "", ""]); // Empty row for spacing
+        monthTotal = 0;
+      }
+      currentMonth = p.mesAno;
+      monthTotal += p.valor;
+
+      rows.push([
+        p.mesAno,
+        p.nome,
+        p.cpf,
+        p.endereco,
+        p.parcela.toString(),
+        p.valor.toFixed(2).replace(".", ","),
+      ]);
+
+      // Add final subtotal
+      if (index === parcelasExport.length - 1) {
+        rows.push([`TOTAL ${currentMonth}`, "", "", "", "", monthTotal.toFixed(2).replace(".", ",")]);
+      }
+    });
 
     const csvContent = [
       headers.join(";"),
