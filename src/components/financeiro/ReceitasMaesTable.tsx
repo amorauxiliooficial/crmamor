@@ -117,41 +117,57 @@ export function ReceitasMaesTable({
   };
 
   const handleExportCSV = () => {
-    const headers = ["Nome Completo", "CPF", "Mês/Ano", "Valor Recebido"];
+    // Find max parcelas to create columns
+    const maxParcelas = Math.max(...pagamentos.map((p) => p.parcelas.length), 0);
+    
+    // Build dynamic headers: Nome, CPF, then for each parcela: "Parcela X", "Mês X", "Valor X"
+    const headers = ["Nome Completo", "CPF"];
+    for (let i = 1; i <= maxParcelas; i++) {
+      headers.push(`Parcela ${i}`, `Mês ${i}`, `Valor ${i}`);
+    }
+
     const rows: string[][] = [];
 
-    // Group payments by mae and month
-    pagamentos.forEach((pag) => {
-      pag.parcelas.forEach((p) => {
-        if (p.status === "pago" && p.data_pagamento && p.valor) {
-          try {
-            const parcelaDate = parseISO(p.data_pagamento);
-            const parcelaYear = getYear(parcelaDate);
-            const parcelaMonth = getMonth(parcelaDate);
-
-            // Apply period filter
-            if (period === "ano" && parcelaYear !== selectedYear) return;
-            if (period === "mes" && (parcelaYear !== selectedYear || parcelaMonth !== selectedMonth)) return;
-
-            rows.push([
-              pag.mae_nome,
-              formatCpf(pag.mae_cpf),
-              format(parcelaDate, "MM/yyyy"),
-              p.valor.toFixed(2).replace(".", ","),
-            ]);
-          } catch {
-            // Skip invalid dates
-          }
+    // Filter mães based on period (only include if they have payments in the period)
+    const maesWithPayments = pagamentos.filter((pag) => {
+      return pag.parcelas.some((p) => {
+        if (p.status !== "pago" || !p.data_pagamento) return false;
+        if (period === "total") return true;
+        try {
+          const parcelaDate = parseISO(p.data_pagamento);
+          const parcelaYear = getYear(parcelaDate);
+          const parcelaMonth = getMonth(parcelaDate);
+          if (period === "ano" && parcelaYear !== selectedYear) return false;
+          if (period === "mes" && (parcelaYear !== selectedYear || parcelaMonth !== selectedMonth)) return false;
+          return true;
+        } catch {
+          return false;
         }
       });
     });
 
-    // Sort by name, then by date
-    rows.sort((a, b) => {
-      const nameCompare = a[0].localeCompare(b[0]);
-      if (nameCompare !== 0) return nameCompare;
-      return a[2].localeCompare(b[2]);
+    maesWithPayments.forEach((pag) => {
+      const row: string[] = [pag.mae_nome, formatCpf(pag.mae_cpf)];
+      
+      // Sort parcelas by numero_parcela
+      const sortedParcelas = [...pag.parcelas].sort((a, b) => a.numero_parcela - b.numero_parcela);
+      
+      sortedParcelas.forEach((p) => {
+        const mesAno = p.data_pagamento ? format(parseISO(p.data_pagamento), "MM/yyyy") : "-";
+        const valor = p.status === "pago" && p.valor ? p.valor.toFixed(2).replace(".", ",") : "-";
+        row.push(p.numero_parcela.toString(), mesAno, valor);
+      });
+      
+      // Fill remaining columns if this mãe has fewer parcelas
+      while (row.length < headers.length) {
+        row.push("-");
+      }
+      
+      rows.push(row);
     });
+
+    // Sort by name
+    rows.sort((a, b) => a[0].localeCompare(b[0]));
 
     const csvContent = [
       headers.join(";"),
