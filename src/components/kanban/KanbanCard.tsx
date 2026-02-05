@@ -119,22 +119,26 @@ export function KanbanCard({
             )}
           </div>
 
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            {mae.data_evento && (
-              <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                {new Date(mae.data_evento).toLocaleDateString("pt-BR")}
-              </span>
-            )}
+          <div className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-2">
+              {mae.data_evento && (
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {new Date(mae.data_evento).toLocaleDateString("pt-BR")}
+                </span>
+              )}
+              {mae.link_documentos && (
+                <span className="flex items-center gap-1 text-primary" title="Documentos anexados">
+                  <FolderOpen className="h-3 w-3 fill-current" />
+                </span>
+              )}
+            </div>
             {mae.protocolo_inss && (
-              <span className="flex items-center gap-1">
-                <FileText className="h-3 w-3" />
-                Protocolo
-              </span>
-            )}
-            {mae.link_documentos && (
-              <span className="flex items-center gap-1 text-primary" title="Documentos anexados">
-                <FolderOpen className="h-3 w-3 fill-current" />
+              <span className="flex items-center gap-1 font-mono text-[10px] bg-muted/50 px-1.5 py-0.5 rounded w-fit">
+                <FileText className="h-3 w-3 shrink-0" />
+                <span className="truncate max-w-[120px]" title={mae.protocolo_inss}>
+                  {mae.protocolo_inss}
+                </span>
               </span>
             )}
           </div>
