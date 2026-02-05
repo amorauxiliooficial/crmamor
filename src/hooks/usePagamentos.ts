@@ -13,6 +13,8 @@ export interface PagamentoComMae {
   percentual_comissao: number | null;
   mae_nome: string;
   mae_cpf: string;
+  mae_cep: string | null;
+  mae_uf: string | null;
   parcelas: {
     id: string;
     numero_parcela: number;
@@ -50,7 +52,7 @@ async function fetchPagamentos(): Promise<PagamentoComMae[]> {
   // Fetch all maes in one query
   const { data: maes } = await supabase
     .from("mae_processo")
-    .select("id, nome_mae, cpf")
+    .select("id, nome_mae, cpf, cep, uf")
     .in("id", maeIds);
 
   // Fetch all parcelas in one query
@@ -101,6 +103,8 @@ async function fetchPagamentos(): Promise<PagamentoComMae[]> {
       percentual_comissao: pag.percentual_comissao,
       mae_nome: mae?.nome_mae || "N/A",
       mae_cpf: mae?.cpf || "",
+      mae_cep: mae?.cep || null,
+      mae_uf: mae?.uf || null,
       parcelas: parcelas.map((p) => ({
         id: p.id,
         numero_parcela: p.numero_parcela,
