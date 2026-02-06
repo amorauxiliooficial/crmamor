@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,7 +33,6 @@ import {
   Plus,
   Users,
   TrendingUp,
-  CalendarIcon,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { format, parseISO, getMonth, getYear } from "date-fns";
@@ -88,20 +88,135 @@ interface PagamentosTabProps {
   selectedUserId?: string;
 }
 
+// Optimized fetch function - all queries in parallel
+async function fetchPagamentosData() {
+  // Run all queries in parallel
+  const [maesResult, pagamentosResult] = await Promise.all([
+    supabase
+      .from("mae_processo")
+      .select("id, nome_mae, cpf, user_id")
+      .eq("status_processo", "Aprovada")
+      .order("nome_mae", { ascending: true }),
+    supabase
+      .from("pagamentos_mae")
+      .select("*")
+      .order("created_at", { ascending: false }),
+  ]);
+
+  if (maesResult.error) throw maesResult.error;
+  if (pagamentosResult.error) throw pagamentosResult.error;
+
+  const maesData = maesResult.data || [];
+  const pagamentosData = pagamentosResult.data || [];
+
+  if (pagamentosData.length === 0) {
+    // No payments - return early with just the approved mothers
+    const maesComStatus: MaeAprovada[] = maesData.map((mae) => ({
+      id: mae.id,
+      nome_mae: mae.nome_mae,
+      cpf: mae.cpf,
+      temPagamento: false,
+      user_id: mae.user_id,
+      statusParcelas: { pagas: 0, pendentes: 0, inadimplentes: 0, total: 0 },
+    }));
+
+    return { maesAprovadas: maesComStatus, pagamentos: [] };
+  }
+
+  // Get all pagamento IDs
+  const pagamentoIds = pagamentosData.map((p) => p.id);
+
+  // Fetch all parcelas in one query
+  const { data: todasParcelas } = await supabase
+    .from("parcelas_pagamento")
+    .select("*")
+    .in("pagamento_id", pagamentoIds)
+    .order("numero_parcela", { ascending: true });
+
+  // Create lookup maps
+  const maeMap = new Map(maesData.map((m) => [m.id, m]));
+  const parcelasMap = new Map<string, typeof todasParcelas>();
+
+  (todasParcelas || []).forEach((p) => {
+    if (!parcelasMap.has(p.pagamento_id)) {
+      parcelasMap.set(p.pagamento_id, []);
+    }
+    parcelasMap.get(p.pagamento_id)!.push(p);
+  });
+
+  // Build pagamentos completos
+  const pagamentosCompletos: PagamentoComMae[] = pagamentosData.map((pag) => {
+    const mae = maeMap.get(pag.mae_id);
+    const parcelas = parcelasMap.get(pag.id) || [];
+
+    return {
+      id: pag.id,
+      mae_id: pag.mae_id,
+      tipo_pagamento: pag.tipo_pagamento,
+      total_parcelas: pag.total_parcelas ?? 0,
+      valor_total: pag.valor_total,
+      mae_nome: mae?.nome_mae || "N/A",
+      mae_cpf: mae?.cpf || "",
+      user_id: mae?.user_id || "",
+      parcelas: parcelas.map((p: any) => ({
+        id: p.id,
+        numero_parcela: p.numero_parcela,
+        data_pagamento: p.data_pagamento,
+        status: p.status,
+        observacoes: p.observacoes,
+        valor: p.valor,
+      })),
+    };
+  });
+
+  // Create mae payment map for status
+  const maePaymentMap = new Map<string, { pagamentoId: string; parcelas: any[] }>();
+  pagamentosData.forEach((pag) => {
+    const parcelas = parcelasMap.get(pag.id) || [];
+    maePaymentMap.set(pag.mae_id, {
+      pagamentoId: pag.id,
+      parcelas,
+    });
+  });
+
+  // Build maes aprovadas list with payment status
+  const maesComStatus: MaeAprovada[] = maesData.map((mae) => {
+    const paymentInfo = maePaymentMap.get(mae.id);
+    const parcelas = paymentInfo?.parcelas || [];
+
+    const statusParcelas = {
+      pagas: parcelas.filter((p: any) => p.status === "pago").length,
+      pendentes: parcelas.filter((p: any) => p.status === "pendente").length,
+      inadimplentes: parcelas.filter((p: any) => p.status === "inadimplente").length,
+      total: parcelas.length,
+    };
+
+    return {
+      id: mae.id,
+      nome_mae: mae.nome_mae,
+      cpf: mae.cpf,
+      temPagamento: maePaymentMap.has(mae.id),
+      pagamentoId: paymentInfo?.pagamentoId,
+      user_id: mae.user_id,
+      statusParcelas,
+    };
+  });
+
+  return { maesAprovadas: maesComStatus, pagamentos: pagamentosCompletos };
+}
+
 export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const [loading, setLoading] = useState(true);
-  const [pagamentos, setPagamentos] = useState<PagamentoComMae[]>([]);
-  const [maesAprovadas, setMaesAprovadas] = useState<MaeAprovada[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedMaeId, setSelectedMaeId] = useState<string | null>(null);
   const [selectedMaeNome, setSelectedMaeNome] = useState("");
   const [editingPagamentoId, setEditingPagamentoId] = useState<string | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pagamentoToDelete, setPagamentoToDelete] = useState<string | null>(null);
-  
+
   // Filtro de mês/ano para "Recebido"
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState<number>(getMonth(currentDate));
@@ -109,129 +224,27 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
 
   const meses = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
   ];
 
   const anos = Array.from({ length: 5 }, (_, i) => getYear(currentDate) - 2 + i);
 
-  const fetchData = async () => {
-    setLoading(true);
+  // Use React Query with caching - prevents constant refetching
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ["pagamentos_tab_data"],
+    queryFn: fetchPagamentosData,
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5, // 5 minutes - data stays fresh
+    gcTime: 1000 * 60 * 10, // 10 minutes garbage collection
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: false, // Use cached data when remounting
+  });
 
-    // Fetch mães aprovadas
-    const { data: maesData, error: maesError } = await supabase
-      .from("mae_processo")
-      .select("id, nome_mae, cpf, user_id")
-      .eq("status_processo", "Aprovada")
-      .order("nome_mae", { ascending: true });
+  const { maesAprovadas = [], pagamentos = [] } = data || {};
 
-    if (maesError) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao carregar mães",
-        description: maesError.message,
-      });
-    }
-
-    // Fetch pagamentos
-    const { data: pagamentosData, error: pagError } = await supabase
-      .from("pagamentos_mae")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (pagError) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao carregar pagamentos",
-        description: pagError.message,
-      });
-      setLoading(false);
-      return;
-    }
-
-    // Get mae_ids with payments and their status
-    const maePaymentMap = new Map<string, { pagamentoId: string; parcelas: any[] }>();
-    
-    for (const pag of pagamentosData || []) {
-      const { data: parcelas } = await supabase
-        .from("parcelas_pagamento")
-        .select("*")
-        .eq("pagamento_id", pag.id);
-      
-      maePaymentMap.set(pag.mae_id, {
-        pagamentoId: pag.id,
-        parcelas: parcelas || [],
-      });
-    }
-
-    // Build maes aprovadas list with payment status
-    const maesComStatus: MaeAprovada[] = (maesData || []).map(mae => {
-      const paymentInfo = maePaymentMap.get(mae.id);
-      const parcelas = paymentInfo?.parcelas || [];
-      
-      const statusParcelas = {
-        pagas: parcelas.filter((p: any) => p.status === "pago").length,
-        pendentes: parcelas.filter((p: any) => p.status === "pendente").length,
-        inadimplentes: parcelas.filter((p: any) => p.status === "inadimplente").length,
-        total: parcelas.length,
-      };
-
-      return {
-        id: mae.id,
-        nome_mae: mae.nome_mae,
-        cpf: mae.cpf,
-        temPagamento: maePaymentMap.has(mae.id),
-        pagamentoId: paymentInfo?.pagamentoId,
-        user_id: mae.user_id,
-        statusParcelas,
-      };
-    });
-    setMaesAprovadas(maesComStatus);
-
-    // Build pagamentos completos
-    const pagamentosCompletos: PagamentoComMae[] = [];
-
-    for (const pag of pagamentosData || []) {
-      const { data: mae } = await supabase
-        .from("mae_processo")
-        .select("nome_mae, cpf, user_id")
-        .eq("id", pag.mae_id)
-        .single();
-
-      const { data: parcelas } = await supabase
-        .from("parcelas_pagamento")
-        .select("*")
-        .eq("pagamento_id", pag.id)
-        .order("numero_parcela", { ascending: true });
-
-      pagamentosCompletos.push({
-        id: pag.id,
-        mae_id: pag.mae_id,
-        tipo_pagamento: pag.tipo_pagamento,
-        total_parcelas: pag.total_parcelas ?? 0,
-        valor_total: pag.valor_total,
-        mae_nome: mae?.nome_mae || "N/A",
-        mae_cpf: mae?.cpf || "",
-        user_id: mae?.user_id || "",
-        parcelas: (parcelas || []).map((p: any) => ({
-          id: p.id,
-          numero_parcela: p.numero_parcela,
-          data_pagamento: p.data_pagamento,
-          status: p.status,
-          observacoes: p.observacoes,
-          valor: p.valor,
-        })),
-      });
-    }
-
-    setPagamentos(pagamentosCompletos);
-    setLoading(false);
+  const refetch = () => {
+    queryClient.invalidateQueries({ queryKey: ["pagamentos_tab_data"] });
   };
-
-  useEffect(() => {
-    if (user) {
-      fetchData();
-    }
-  }, [user]);
 
   // First filter by user, then calculate stats
   const userFilteredPagamentos = useMemo(() => {
@@ -282,13 +295,13 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
       });
     });
 
-    const maesSemPagamento = userFilteredMaesAprovadas.filter(m => !m.temPagamento).length;
+    const maesSemPagamento = userFilteredMaesAprovadas.filter((m) => !m.temPagamento).length;
 
-    return { 
-      totalParcelas, 
-      pagas, 
-      pendentes, 
-      inadimplentes, 
+    return {
+      totalParcelas,
+      pagas,
+      pendentes,
+      inadimplentes,
       maesSemPagamento,
       valorTotal,
       valorPago,
@@ -299,7 +312,7 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
 
   const filteredPagamentos = useMemo(() => {
     let filtered = userFilteredPagamentos;
-    
+
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -308,13 +321,13 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
           p.mae_cpf.replace(/\D/g, "").includes(query.replace(/\D/g, ""))
       );
     }
-    
+
     return filtered;
   }, [userFilteredPagamentos, searchQuery]);
 
   const filteredMaesAprovadas = useMemo(() => {
     let filtered = userFilteredMaesAprovadas;
-    
+
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -323,7 +336,7 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
           m.cpf.replace(/\D/g, "").includes(query.replace(/\D/g, ""))
       );
     }
-    
+
     return filtered;
   }, [userFilteredMaesAprovadas, searchQuery]);
 
@@ -337,7 +350,7 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
   const handleAddPagamento = (mae: MaeAprovada) => {
     setSelectedMaeId(mae.id);
     setSelectedMaeNome(mae.nome_mae);
-    setEditingPagamentoId(undefined);
+    setEditingPagamentoId(mae.pagamentoId);
     setDialogOpen(true);
   };
 
@@ -360,7 +373,7 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
         title: "Sucesso",
         description: "Pagamento excluído com sucesso",
       });
-      fetchData();
+      refetch();
     }
 
     setDeleteDialogOpen(false);
@@ -394,7 +407,7 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
     }).format(value);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -653,10 +666,10 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
                     </TableRow>
                   ) : (
                     filteredPagamentos.map((pag) => {
-                      const parcelasPagas = pag.parcelas.filter(p => p.status === "pago").length;
+                      const parcelasPagas = pag.parcelas.filter((p) => p.status === "pago").length;
                       const totalParcelas = pag.parcelas.length;
                       const parcelasRestantes = totalParcelas - parcelasPagas;
-                      
+
                       return (
                         <TableRow key={pag.id}>
                           <TableCell className="font-medium">{pag.mae_nome}</TableCell>
@@ -750,7 +763,7 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
           }}
           maeId={selectedMaeId}
           maeNome={selectedMaeNome}
-          onSuccess={fetchData}
+          onSuccess={refetch}
           existingPagamentoId={editingPagamentoId}
         />
       )}
