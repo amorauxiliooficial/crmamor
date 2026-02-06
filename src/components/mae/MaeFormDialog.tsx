@@ -114,50 +114,14 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const draftKey = useMemo(() => {
-    const userId = user?.id ?? "anon";
-    return `mae_form_draft_v1:${userId}`;
-  }, [user?.id]);
-
   const [formData, setFormData] = useState<MaeFormData>(getEmptyFormData);
 
-  const clearDraft = () => {
-    try {
-      localStorage.removeItem(draftKey);
-    } catch {
-      // ignore
-    }
-  };
-
-  // Restore draft when dialog opens (prevents losing typed data if the app reloads)
+  // Reset form to empty state when dialog opens
   useEffect(() => {
-    if (!open) return;
-
-    try {
-      const raw = localStorage.getItem(draftKey);
-      if (!raw) return;
-
-      const parsed = JSON.parse(raw) as Partial<MaeFormData>;
-      setFormData((prev) => ({
-        ...prev,
-        ...parsed,
-      }));
-    } catch {
-      clearDraft();
+    if (open) {
+      setFormData(getEmptyFormData());
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, draftKey]);
-
-  // Persist draft while typing
-  useEffect(() => {
-    if (!open) return;
-
-    try {
-      localStorage.setItem(draftKey, JSON.stringify(formData));
-    } catch {
-      // ignore
-    }
-  }, [open, draftKey, formData]);
+  }, [open]);
 
   const formatCpf = (value: string) => {
     const numbers = value.replace(/\D/g, "").slice(0, 11);
@@ -191,11 +155,11 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
       return;
     }
 
-    if (!formData.nome_mae.trim() || !formData.cpf.trim()) {
+    if (!formData.nome_mae.trim() || !formData.cpf.trim() || !formData.senha_gov.trim()) {
       toast({
         variant: "destructive",
         title: "Campos obrigatórios",
-        description: "Nome e CPF são obrigatórios.",
+        description: "Nome, CPF e Senha Gov.br são obrigatórios.",
       });
       return;
     }
@@ -280,10 +244,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
         data_ultima_atualizacao: data.data_ultima_atualizacao,
       };
 
-      // Clear saved draft + reset form
-      clearDraft();
       setFormData(getEmptyFormData());
-
       onOpenChange(false);
       onSuccess(createdMae);
     }
@@ -370,12 +331,13 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="senha_gov">Senha Gov.br</Label>
+                <Label htmlFor="senha_gov">Senha Gov.br *</Label>
                 <Input
                   id="senha_gov"
                   value={formData.senha_gov}
                   onChange={(e) => setFormData({ ...formData, senha_gov: e.target.value })}
                   placeholder="Senha do Gov.br"
+                  required
                 />
               </div>
               <div className="flex items-center space-x-2 pt-6">
