@@ -482,7 +482,15 @@ const Index = () => {
         <section>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2 md:gap-3">
-              <h2 className="text-base md:text-lg font-semibold">Processos</h2>
+              <h2 className="text-base md:text-lg font-semibold">
+                {viewMode === "kanban" && "Kanban"}
+                {viewMode === "table" && "Tabela"}
+                {viewMode === "atividades" && "Atividades CRM"}
+                {viewMode === "gestantes" && "Gestantes"}
+                {viewMode === "conferencia" && "Conferência INSS"}
+                {viewMode === "pagamentos" && "Pagamentos"}
+                {viewMode === "indicacoes" && "Indicações"}
+              </h2>
               {searchQuery.trim() && (
                 <Badge variant="secondary" className="gap-1 text-xs">
                   "{searchQuery}" ({filteredMaes.length})
