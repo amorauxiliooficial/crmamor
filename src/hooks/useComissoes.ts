@@ -246,8 +246,10 @@ export function useComissoes() {
     queryKey: ["comissoes"],
     queryFn: fetchComissoes,
     enabled: !!user,
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   // Real-time subscriptions
