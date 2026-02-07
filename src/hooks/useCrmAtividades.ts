@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useMemo, useCallback, useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Atividade, StatusFollowUp } from "@/types/atividade";
-import { startOfDay, endOfDay, isToday, isPast, isFuture, parseISO } from "date-fns";
+import { startOfDay, endOfDay, isToday, isPast, parseISO } from "date-fns";
 
 export interface PendingFollowUp extends Atividade {
   mae_nome: string;
@@ -10,50 +11,54 @@ export interface PendingFollowUp extends Atividade {
   mae_telefone?: string | null;
 }
 
+// Fetch function for React Query
+async function fetchPendingFollowUpsData(): Promise<PendingFollowUp[]> {
+  const { data, error } = await supabase
+    .from("atividades_mae")
+    .select(`
+      *,
+      mae_processo!inner(
+        id,
+        nome_mae,
+        cpf,
+        telefone,
+        status_processo
+      )
+    `)
+    .eq("status_followup", "agendado")
+    .eq("concluido", false)
+    .not("data_proxima_acao", "is", null)
+    .order("data_proxima_acao", { ascending: true });
+
+  if (error) {
+    console.error("Erro ao carregar follow-ups:", error);
+    return [];
+  }
+
+  return (data || []).map((item: any) => ({
+    ...item,
+    mae_nome: item.mae_processo.nome_mae,
+    mae_cpf: item.mae_processo.cpf,
+    mae_status: item.mae_processo.status_processo,
+    mae_telefone: item.mae_processo.telefone,
+  }));
+}
+
 export function useCrmAtividades() {
-  const [pendingFollowUps, setPendingFollowUps] = useState<PendingFollowUp[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchPendingFollowUps = useCallback(async () => {
-    setLoading(true);
+  const { data: pendingFollowUps = [], isLoading: loading } = useQuery({
+    queryKey: ["crm_atividades_pending"],
+    queryFn: fetchPendingFollowUpsData,
+    staleTime: 1000 * 60 * 3, // 3 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
-    // Fetch activities with scheduled follow-ups that aren't completed
-    const { data, error } = await supabase
-      .from("atividades_mae")
-      .select(`
-        *,
-        mae_processo!inner(
-          id,
-          nome_mae,
-          cpf,
-          telefone,
-          status_processo
-        )
-      `)
-      .eq("status_followup", "agendado")
-      .eq("concluido", false)
-      .not("data_proxima_acao", "is", null)
-      .order("data_proxima_acao", { ascending: true });
-
-    if (error) {
-      console.error("Erro ao carregar follow-ups:", error);
-    } else if (data) {
-      const mapped = data.map((item: any) => ({
-        ...item,
-        mae_nome: item.mae_processo.nome_mae,
-        mae_cpf: item.mae_processo.cpf,
-        mae_status: item.mae_processo.status_processo,
-        mae_telefone: item.mae_processo.telefone,
-      }));
-      setPendingFollowUps(mapped);
-    }
-
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchPendingFollowUps();
-  }, [fetchPendingFollowUps]);
+  const refetch = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["crm_atividades_pending"] });
+  }, [queryClient]);
 
   // Categorize follow-ups
   const categorized = useMemo(() => {
@@ -90,7 +95,7 @@ export function useCrmAtividades() {
       .eq("id", atividadeId);
 
     if (!error) {
-      fetchPendingFollowUps();
+      refetch();
     }
 
     return { error };
@@ -106,7 +111,7 @@ export function useCrmAtividades() {
       .eq("id", atividadeId);
 
     if (!error) {
-      fetchPendingFollowUps();
+      refetch();
     }
 
     return { error };
@@ -122,7 +127,7 @@ export function useCrmAtividades() {
       .eq("id", atividadeId);
 
     if (!error) {
-      fetchPendingFollowUps();
+      refetch();
     }
 
     return { error };
@@ -132,7 +137,7 @@ export function useCrmAtividades() {
     pendingFollowUps,
     loading,
     categorized,
-    refetch: fetchPendingFollowUps,
+    refetch,
     completeFollowUp,
     cancelFollowUp,
     rescheduleFollowUp,

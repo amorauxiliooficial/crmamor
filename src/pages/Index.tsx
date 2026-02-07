@@ -29,6 +29,7 @@ import { useTour } from "@/hooks/useTour";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useFollowUpSound } from "@/hooks/useFollowUpSound";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useMaesData, MaeProcessoComAtividade, mapDbStatusToDisplay } from "@/hooks/useMaesData";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso } from "@/types/mae";
 import {
@@ -59,7 +60,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { differenceInMonths, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -68,26 +69,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Extended MaeProcesso with activity data
-interface MaeProcessoComAtividade extends MaeProcesso {
-  ultima_atividade_em?: string | null;
-}
-
-// Map database status to display status with emoji
-const mapDbStatusToDisplay = (status: string): StatusProcesso => {
-  const statusMap: Record<string, StatusProcesso> = {
-    "Pendência Documental": "⚠️ Pendência Documental",
-    "Elegível (Análise Positiva)": "🟡 Elegível (Análise Positiva)",
-    "Aguardando Análise INSS": "⏳ Aguardando Análise INSS",
-    "Aprovada": "✅ Aprovada",
-    "Indeferida": "❌ Indeferida",
-    "Recurso / Judicial": "⚖️ Recurso / Judicial",
-    "Inadimplência": "💳 Inadimplência",
-    "Processo Encerrado": "📦 Processo Encerrado",
-  };
-  return statusMap[status] || ("⚠️ Pendência Documental" as StatusProcesso);
-};
-
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -95,6 +76,19 @@ const Index = () => {
   const { run: tourRun, stepIndex, setStepIndex, stopTour, startTour } = useTour();
   const isMobile = useIsMobile();
   const { playSound } = useFollowUpSound();
+  const { isAdmin } = useIsAdmin();
+  
+  // Use optimized hook for data fetching with caching
+  const { 
+    maes, 
+    allMaesRaw, 
+    users, 
+    alertasNaoLidos, 
+    loading, 
+    refetch: fetchMaes,
+    refetchAlertas,
+    refreshSingleMae 
+  } = useMaesData();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMae, setSelectedMae] = useState<MaeProcessoComAtividade | null>(null);
@@ -103,19 +97,12 @@ const Index = () => {
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [atividadeDialogOpen, setAtividadeDialogOpen] = useState(false);
   const [maeAtividadesDialogOpen, setMaeAtividadesDialogOpen] = useState(false);
-  const [maes, setMaes] = useState<MaeProcessoComAtividade[]>([]);
-  const [allMaesRaw, setAllMaesRaw] = useState<{ id: string; user_id: string }[]>([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all" | "gestantes">("all");
   const [viewMode, setViewMode] = useState<"kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes" | "atividades">("kanban");
   const [selectedIndicacaoFromNotification, setSelectedIndicacaoFromNotification] = useState<Indicacao | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const [showOnboardingOnLoad, setShowOnboardingOnLoad] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [users, setUsers] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
   const [metasConfigOpen, setMetasConfigOpen] = useState(false);
-  const [alertasNaoLidos, setAlertasNaoLidos] = useState<Set<string>>(new Set());
-  const { isAdmin } = useIsAdmin();
 
   const handleOpenMetasConfig = useCallback(() => {
     setMetasConfigOpen(true);
@@ -141,134 +128,12 @@ const Index = () => {
     }
   }, [user, isAdmin, selectedUserId]);
 
-  // Onboarding modal is now opened manually via header button only
-  // Removed automatic popup on first load
-
-  // Map a single database item to MaeProcessoComAtividade
-  const mapDbToMae = (item: Record<string, unknown>): MaeProcessoComAtividade => ({
-    id: item.id as string,
-    user_id: item.user_id as string,
-    nome_mae: item.nome_mae as string,
-    cpf: item.cpf as string,
-    telefone: (item.telefone as string) || undefined,
-    email: (item.email as string) || undefined,
-    tipo_evento: item.tipo_evento as MaeProcesso["tipo_evento"],
-    data_evento: (item.data_evento as string) || undefined,
-    data_evento_tipo: ((item.data_evento_tipo as string) || "") as MaeProcesso["data_evento_tipo"],
-    categoria_previdenciaria: item.categoria_previdenciaria as MaeProcesso["categoria_previdenciaria"],
-    status_processo: mapDbStatusToDisplay(item.status_processo as string),
-    protocolo_inss: (item.protocolo_inss as string) || undefined,
-    parcelas: (item.parcelas as string) || undefined,
-    contrato_assinado: item.contrato_assinado as boolean,
-    segurada: (item.segurada as string) || undefined,
-    precisa_gps: (item.precisa_gps as string) || undefined,
-    uf: (item.uf as string) || undefined,
-    observacoes: (item.observacoes as string) || undefined,
-    origem: (item.origem as string) || undefined,
-    senha_gov: (item.senha_gov as string) || undefined,
-    verificacao_duas_etapas: (item.verificacao_duas_etapas as boolean) ?? false,
-    is_gestante: (item.is_gestante as boolean) ?? false,
-    mes_gestacao: (item.mes_gestacao as number) ?? null,
-    data_ultima_atualizacao: item.data_ultima_atualizacao as string,
-    link_documentos: (item.link_documentos as string) || null,
-    ultima_atividade_em: (item.ultima_atividade_em as string) || null,
-  });
-
-  // Fetch processes from database
-  const fetchMaes = async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("mae_processo")
-      .select("*")
-      .order("data_ultima_atualizacao", { ascending: false });
-
-    if (error) {
-      logError('fetch_maes', error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao carregar dados",
-        description: getUserFriendlyError(error),
-      });
-    } else if (data) {
-      // Store raw data for user extraction
-      setAllMaesRaw(data.map((item) => ({ id: item.id, user_id: item.user_id })));
-      const mappedData = data.map((item) => mapDbToMae(item as Record<string, unknown>));
-      setMaes(mappedData);
-    }
-    setLoading(false);
-  };
-
-  // Refresh a single mae in the state without reloading all data
-  const refreshSingleMae = async (maeId: string) => {
-    const { data, error } = await supabase
-      .from("mae_processo")
-      .select("*")
-      .eq("id", maeId)
-      .single();
-
-    if (error) {
-      logError('refresh_single_mae', error);
-      // Fallback to full refresh on error
-      fetchMaes();
-      return;
-    }
-
-    if (data) {
-      const updatedMae = mapDbToMae(data as Record<string, unknown>);
-      setMaes((prevMaes) => 
-        prevMaes.map((m) => (m.id === maeId ? updatedMae : m))
-      );
-      // Update selectedMae if it's the same
-      if (selectedMae?.id === maeId) {
-        setSelectedMae(updatedMae);
-      }
-    }
-  };
-
-  // Fetch all users (profiles) for user selector
-  const fetchUsers = async () => {
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, full_name, email")
-      .order("full_name", { ascending: true, nullsFirst: false });
-    
-    if (profiles) {
-      setUsers(profiles);
-    }
-  };
-
-  // Fetch unread alerts for all maes (to show indicator on cards)
-  const fetchAlertasNaoLidos = async () => {
-    if (!user) return;
-    
-    const { data: alertas } = await supabase
-      .from("alertas_mae")
-      .select("mae_id")
-      .eq("lido", false)
-      .or(`destinatario_id.eq.${user.id},destinatario_id.is.null`);
-    
-    if (alertas) {
-      const maeIdsComAlertas = new Set(alertas.map(a => a.mae_id));
-      setAlertasNaoLidos(maeIdsComAlertas);
-    }
-  };
-
   // Helper to get display name for user
   const getUserDisplayName = (u: { id: string; full_name: string | null; email: string | null }) => {
     if (u.full_name) return u.full_name;
     if (u.email) return u.email.split("@")[0];
     return "Sem nome";
   };
-
-  useEffect(() => {
-    if (user) {
-      fetchMaes();
-      fetchUsers();
-      fetchAlertasNaoLidos();
-    }
-  }, [user]);
 
   // Função para remover acentos
   const removeAccents = (str: string) => {
@@ -376,13 +241,6 @@ const Index = () => {
   };
 
   const handleStatusChange = async (maeId: string, newStatus: StatusProcesso) => {
-    // Optimistic update - update UI immediately
-    setMaes((prevMaes) =>
-      prevMaes.map((m) =>
-        m.id === maeId ? { ...m, status_processo: newStatus } : m
-      )
-    );
-
     const dbStatus = mapDisplayStatusToDb(newStatus) as 
       "Pendência Documental" | "Elegível (Análise Positiva)" | 
       "Aguardando Análise INSS" | "Aprovada" | "Indeferida" | 
@@ -403,6 +261,8 @@ const Index = () => {
       // Revert on error - refresh from server
       fetchMaes();
     } else {
+      // Refresh single mae to update UI
+      refreshSingleMae(maeId);
       toast({
         title: "Status atualizado",
         description: `Processo movido para ${newStatus}`,
@@ -792,14 +652,14 @@ const Index = () => {
             setMaeAtividadesDialogOpen(open);
             // Refresh alerts when dialog closes (user may have marked alerts as read)
             if (!open) {
-              fetchAlertasNaoLidos();
+              refetchAlertas();
             }
           }}
           onRefresh={() => {
             if (selectedMae?.id) {
               refreshSingleMae(selectedMae.id);
             }
-            fetchAlertasNaoLidos();
+            refetchAlertas();
           }}
           onOpenEdit={(mae) => {
             setSelectedMae(mae);

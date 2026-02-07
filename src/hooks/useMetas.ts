@@ -121,7 +121,47 @@ function getPeriodDates(periodo: string, now: Date) {
   }
 }
 
-// Helper to count records for a period
+// Optimized: Fetch all counts for all metas in parallel
+async function fetchAllCounts(
+  metas: MetaConfig[],
+  userId: string,
+  now: Date
+): Promise<MetaProgress[]> {
+  if (metas.length === 0) return [];
+
+  // Group metas by period to optimize date calculations
+  const progressPromises = metas.map(async (meta) => {
+    const { startDate, endDate, prevStartDate, prevEndDate } = getPeriodDates(meta.periodo, now);
+
+    // Run current and previous period counts in parallel
+    const [realizado, realizadoAnterior] = await Promise.all([
+      countForPeriod(meta.tipo_meta, userId, startDate, endDate),
+      countForPeriod(meta.tipo_meta, userId, prevStartDate, prevEndDate),
+    ]);
+
+    const percentual = meta.valor_meta > 0 ? (realizado / meta.valor_meta) * 100 : 0;
+    
+    let variacao = 0;
+    if (realizadoAnterior > 0) {
+      variacao = ((realizado - realizadoAnterior) / realizadoAnterior) * 100;
+    } else if (realizado > 0) {
+      variacao = 100;
+    }
+
+    return {
+      meta,
+      realizado,
+      realizadoAnterior,
+      percentual,
+      variacao,
+    };
+  });
+
+  // Execute ALL meta progress calculations in parallel
+  return Promise.all(progressPromises);
+}
+
+// Helper to count records for a period (optimized with count only)
 async function countForPeriod(
   tipoMeta: string,
   userId: string,
@@ -173,40 +213,16 @@ async function countForPeriod(
   }
 }
 
-// Fetch progress data
+// Fetch progress data - optimized with parallel execution
 async function fetchMetasProgress(userId: string): Promise<MetaProgress[]> {
   const metas = await fetchMetasConfig();
   
   if (metas.length === 0) return [];
 
   const now = new Date();
-  const progressData: MetaProgress[] = [];
-
-  for (const meta of metas) {
-    const { startDate, endDate, prevStartDate, prevEndDate } = getPeriodDates(meta.periodo, now);
-
-    const realizado = await countForPeriod(meta.tipo_meta, userId, startDate, endDate);
-    const realizadoAnterior = await countForPeriod(meta.tipo_meta, userId, prevStartDate, prevEndDate);
-
-    const percentual = meta.valor_meta > 0 ? (realizado / meta.valor_meta) * 100 : 0;
-    
-    let variacao = 0;
-    if (realizadoAnterior > 0) {
-      variacao = ((realizado - realizadoAnterior) / realizadoAnterior) * 100;
-    } else if (realizado > 0) {
-      variacao = 100;
-    }
-
-    progressData.push({
-      meta,
-      realizado,
-      realizadoAnterior,
-      percentual,
-      variacao,
-    });
-  }
-
-  return progressData;
+  
+  // Execute all counts in parallel instead of sequential
+  return fetchAllCounts(metas, userId, now);
 }
 
 // Hook to calculate progress for a specific user
