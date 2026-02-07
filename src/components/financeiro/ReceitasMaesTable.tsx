@@ -176,6 +176,8 @@ export function ReceitasMaesTable({
     let currentMonth = "";
     let monthTotal = 0;
 
+    let totalGeral = 0;
+
     parcelasExport.forEach((p, index) => {
       // Add subtotal row when month changes
       if (currentMonth && currentMonth !== p.mesAno) {
@@ -185,6 +187,7 @@ export function ReceitasMaesTable({
       }
       currentMonth = p.mesAno;
       monthTotal += p.valor;
+      totalGeral += p.valor;
 
       rows.push([
         p.mesAno,
@@ -196,9 +199,11 @@ export function ReceitasMaesTable({
         p.valor.toFixed(2).replace(".", ","),
       ]);
 
-      // Add final subtotal
+      // Add final subtotal and grand total
       if (index === parcelasExport.length - 1) {
         rows.push([`TOTAL ${currentMonth}`, "", "", "", "", "", monthTotal.toFixed(2).replace(".", ",")]);
+        rows.push(["", "", "", "", "", "", ""]); // Empty row for spacing
+        rows.push(["TOTAL GERAL", "", "", "", "", "", totalGeral.toFixed(2).replace(".", ",")]);
       }
     });
 
