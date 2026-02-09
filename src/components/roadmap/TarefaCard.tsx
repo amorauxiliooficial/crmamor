@@ -44,8 +44,11 @@ export function TarefaCard({
   const isCompleted = tarefa.status === "concluido";
   const isColumnOverdue = !isCompleted && isTaskOverdue(currentTimestamp);
   const isPrazoOverdue = !isCompleted && isDeadlineOverdue(tarefa.prazo);
+  const isPrazoWarning = !isCompleted && isDeadlineWarning(tarefa.prazo);
   const isOverdue = isColumnOverdue || isPrazoOverdue;
+  const isWarning = !isOverdue && isPrazoWarning;
   const overdueDuration = isPrazoOverdue ? getOverdueDuration(tarefa.prazo) : null;
+  const warningDuration = isPrazoWarning ? getOverdueDuration(tarefa.prazo) : null;
 
   // Get all time history
   const timeHistory = [
