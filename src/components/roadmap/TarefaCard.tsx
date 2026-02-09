@@ -140,9 +140,11 @@ export function TarefaCard({
               {tarefa.prazo && (
                 <span className={cn(
                   "flex items-center gap-1",
-                  isPrazoOverdue && "text-destructive font-medium"
+                  isPrazoOverdue && "text-destructive font-medium",
+                  isPrazoWarning && !isPrazoOverdue && "text-amber-600 dark:text-amber-400 font-medium"
                 )}>
                   {isPrazoOverdue && <AlertTriangle className="h-3 w-3" />}
+                  {isPrazoWarning && !isPrazoOverdue && <Clock className="h-3 w-3" />}
                   <Calendar className="h-3 w-3" />
                   {format(parseISO(tarefa.prazo), "dd/MM", { locale: ptBR })}
                 </span>
