@@ -97,6 +97,11 @@ export function TarefaCard({
                 <AlertTriangle className="h-3 w-3" />
                 {overdueDuration} atrasado
               </span>
+            ) : warningDuration ? (
+              <span className="flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                <Clock className="h-3 w-3" />
+                {warningDuration} atrasado
+              </span>
             ) : duration ? (
               <span className={cn("flex items-center gap-0.5 text-[10px] font-medium", durationColor)}>
                 <Clock className="h-3 w-3" />
