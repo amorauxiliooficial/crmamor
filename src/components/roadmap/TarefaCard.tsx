@@ -14,7 +14,7 @@ import {
 } from "@/types/tarefaInterna";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatDuration, getDurationColor, isTaskOverdue, isDeadlineOverdue, getOverdueDuration } from "@/lib/timeUtils";
+import { formatDuration, getDurationColor, isTaskOverdue, isDeadlineOverdue, isDeadlineWarning, getOverdueDuration } from "@/lib/timeUtils";
 import {
   Collapsible,
   CollapsibleContent,

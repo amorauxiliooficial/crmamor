@@ -66,7 +66,7 @@ export function isTaskOverdue(timestamp: string | null | undefined): boolean {
 }
 
 /**
- * Check if task deadline has passed
+ * Check if task deadline is critically overdue (3+ days past deadline = red)
  */
 export function isDeadlineOverdue(deadline: string | null | undefined): boolean {
   if (!deadline) return false;
@@ -75,7 +75,22 @@ export function isDeadlineOverdue(deadline: string | null | undefined): boolean 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  return date < today;
+  const days = differenceInDays(today, date);
+  return days >= 3;
+}
+
+/**
+ * Check if task deadline is in warning state (2 days past deadline = yellow)
+ */
+export function isDeadlineWarning(deadline: string | null | undefined): boolean {
+  if (!deadline) return false;
+  
+  const date = parseISO(deadline);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const days = differenceInDays(today, date);
+  return days >= 2 && days < 3;
 }
 
 /**
