@@ -70,7 +70,8 @@ export function TarefaCard({
         "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20",
         isDragging && "shadow-lg ring-2 ring-primary rotate-2",
         isCompleted && !isDragging && "ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20",
-        isOverdue && !isDragging && "ring-2 ring-destructive/70 bg-destructive/5"
+        isOverdue && !isDragging && "ring-2 ring-destructive/70 bg-destructive/5",
+        isWarning && !isDragging && "ring-2 ring-amber-500/70 bg-amber-50/50 dark:bg-amber-950/20"
       )}
     >
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
