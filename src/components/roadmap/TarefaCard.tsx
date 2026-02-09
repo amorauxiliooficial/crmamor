@@ -14,7 +14,7 @@ import {
 } from "@/types/tarefaInterna";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatDuration, getDurationColor, isTaskOverdue, isDeadlineOverdue, getOverdueDuration } from "@/lib/timeUtils";
+import { formatDuration, getDurationColor, isTaskOverdue, isDeadlineOverdue, isDeadlineWarning, getOverdueDuration } from "@/lib/timeUtils";
 import {
   Collapsible,
   CollapsibleContent,
@@ -44,8 +44,11 @@ export function TarefaCard({
   const isCompleted = tarefa.status === "concluido";
   const isColumnOverdue = !isCompleted && isTaskOverdue(currentTimestamp);
   const isPrazoOverdue = !isCompleted && isDeadlineOverdue(tarefa.prazo);
+  const isPrazoWarning = !isCompleted && isDeadlineWarning(tarefa.prazo);
   const isOverdue = isColumnOverdue || isPrazoOverdue;
+  const isWarning = !isOverdue && isPrazoWarning;
   const overdueDuration = isPrazoOverdue ? getOverdueDuration(tarefa.prazo) : null;
+  const warningDuration = isPrazoWarning ? getOverdueDuration(tarefa.prazo) : null;
 
   // Get all time history
   const timeHistory = [
@@ -67,7 +70,8 @@ export function TarefaCard({
         "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20",
         isDragging && "shadow-lg ring-2 ring-primary rotate-2",
         isCompleted && !isDragging && "ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20",
-        isOverdue && !isDragging && "ring-2 ring-destructive/70 bg-destructive/5"
+        isOverdue && !isDragging && "ring-2 ring-destructive/70 bg-destructive/5",
+        isWarning && !isDragging && "ring-2 ring-amber-500/70 bg-amber-50/50 dark:bg-amber-950/20"
       )}
     >
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
@@ -92,6 +96,11 @@ export function TarefaCard({
               <span className="flex items-center gap-0.5 text-[10px] font-semibold text-destructive">
                 <AlertTriangle className="h-3 w-3" />
                 {overdueDuration} atrasado
+              </span>
+            ) : warningDuration ? (
+              <span className="flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                <Clock className="h-3 w-3" />
+                {warningDuration} atrasado
               </span>
             ) : duration ? (
               <span className={cn("flex items-center gap-0.5 text-[10px] font-medium", durationColor)}>
@@ -131,9 +140,11 @@ export function TarefaCard({
               {tarefa.prazo && (
                 <span className={cn(
                   "flex items-center gap-1",
-                  isPrazoOverdue && "text-destructive font-medium"
+                  isPrazoOverdue && "text-destructive font-medium",
+                  isPrazoWarning && !isPrazoOverdue && "text-amber-600 dark:text-amber-400 font-medium"
                 )}>
                   {isPrazoOverdue && <AlertTriangle className="h-3 w-3" />}
+                  {isPrazoWarning && !isPrazoOverdue && <Clock className="h-3 w-3" />}
                   <Calendar className="h-3 w-3" />
                   {format(parseISO(tarefa.prazo), "dd/MM", { locale: ptBR })}
                 </span>
