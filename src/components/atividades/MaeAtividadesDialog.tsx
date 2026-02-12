@@ -720,14 +720,21 @@ export function MaeAtividadesDialog({
 
 function SenhaGovInline({ senha }: { senha: string }) {
   const [revealed, setRevealed] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const partial = senha.length >= 4
     ? `${senha.slice(0, 2)}${"•".repeat(senha.length - 4)}${senha.slice(-2)}`
     : "•".repeat(senha.length);
 
   useEffect(() => {
-    if (!revealed) return;
-    const timer = setTimeout(() => setRevealed(false), 10000);
-    return () => clearTimeout(timer);
+    if (!revealed) { setCountdown(0); return; }
+    setCountdown(10);
+    const interval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) { setRevealed(false); clearInterval(interval); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
   }, [revealed]);
 
   const handleCopy = async () => {
@@ -752,8 +759,8 @@ function SenhaGovInline({ senha }: { senha: string }) {
       <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setRevealed(!revealed)}>
         {revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
       </Button>
-      {revealed && (
-        <span className="text-[10px] text-muted-foreground animate-pulse">10s</span>
+      {revealed && countdown > 0 && (
+        <span className="text-[10px] text-muted-foreground font-mono">{countdown}s</span>
       )}
     </div>
   );
