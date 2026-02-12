@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,8 @@ import {
   Key,
   ShieldCheck,
   FolderOpen,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -78,6 +80,11 @@ export function MaeDetailDialog({
             </div>
           </div>
         </DialogHeader>
+
+        {/* Senha Gov.br Card - Destacado */}
+        {mae.senha_gov && (
+          <SenhaGovCard senha={mae.senha_gov} />
+        )}
 
         <div className="space-y-6">
           {/* Status Badge and Actions */}
@@ -137,9 +144,7 @@ export function MaeDetailDialog({
             {mae.email && (
               <InfoItemWithCopy icon={Mail} label="Email" value={mae.email} onCopy={() => copyToClipboard(mae.email!, "Email")} />
             )}
-            {mae.senha_gov && (
-              <InfoItemWithCopy icon={Key} label="Senha Gov" value={mae.senha_gov} onCopy={() => copyToClipboard(mae.senha_gov!, "Senha Gov")} />
-            )}
+            {/* senha_gov removida daqui - agora está no card destacado acima */}
             <InfoItem
               icon={ShieldCheck}
               label="Verificação 2 Etapas"
@@ -278,6 +283,69 @@ function InfoItemWithCopy({ icon: Icon, label, value, onCopy }: InfoItemWithCopy
             <Copy className="h-3 w-3" />
           </Button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SenhaGovCard({ senha }: { senha: string }) {
+  const [revealed, setRevealed] = useState(false);
+  const masked = "•".repeat(Math.max(senha.length, 8));
+  const partial = senha.length >= 4
+    ? `${senha.slice(0, 2)}${"•".repeat(senha.length - 4)}${senha.slice(-2)}`
+    : masked;
+
+  const handleReveal = useCallback(() => {
+    setRevealed(true);
+  }, []);
+
+  useEffect(() => {
+    if (!revealed) return;
+    const timer = setTimeout(() => setRevealed(false), 10000);
+    return () => clearTimeout(timer);
+  }, [revealed]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(senha);
+      toast.success("Senha gov.br copiada!");
+    } catch {
+      toast.error("Erro ao copiar senha");
+    }
+  };
+
+  return (
+    <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Key className="h-4 w-4 text-primary" />
+        <span className="text-sm font-semibold text-primary">Senha gov.br</span>
+        {revealed && (
+          <Badge variant="secondary" className="text-[10px] ml-auto animate-pulse">
+            Visível por 10s
+          </Badge>
+        )}
+      </div>
+      <div className="flex items-center gap-3">
+        <p className="text-lg font-mono font-semibold tracking-wider flex-1 select-none">
+          {revealed ? senha : partial}
+        </p>
+        <Button
+          size="sm"
+          onClick={handleCopy}
+          className="gap-1.5 shrink-0"
+        >
+          <Copy className="h-4 w-4" />
+          Copiar
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => revealed ? setRevealed(false) : handleReveal()}
+          className="gap-1.5 shrink-0"
+        >
+          {revealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {revealed ? "Ocultar" : "Revelar"}
+        </Button>
       </div>
     </div>
   );
