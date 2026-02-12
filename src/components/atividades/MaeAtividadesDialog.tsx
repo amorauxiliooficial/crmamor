@@ -318,31 +318,7 @@ export function MaeAtividadesDialog({
                   )}
                 </div>
                 {mae.senha_gov && (
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <Key className="h-3 w-3 text-primary" />
-                    <span className="text-xs text-primary font-medium">gov.br:</span>
-                    <span className="font-mono text-xs tracking-wider select-none">
-                      {mae.senha_gov.length >= 4
-                        ? `${mae.senha_gov.slice(0, 2)}${"•".repeat(mae.senha_gov.length - 4)}${mae.senha_gov.slice(-2)}`
-                        : "•".repeat(mae.senha_gov.length)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 w-5 p-0 ml-1"
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        try {
-                          await navigator.clipboard.writeText(mae.senha_gov!);
-                          sonnerToast.success("Senha gov.br copiada!");
-                        } catch {
-                          sonnerToast.error("Erro ao copiar");
-                        }
-                      }}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
+                  <SenhaGovInline senha={mae.senha_gov} />
                 )}
                 <Badge variant="outline" className={`mt-2 text-xs ${statusBg}`}>
                   {mae.status_processo}
@@ -764,31 +740,21 @@ function SenhaGovInline({ senha }: { senha: string }) {
   };
 
   return (
-    <div className="mt-2 rounded-md border-2 border-primary/30 bg-primary/5 px-3 py-2 w-full">
-      <div className="flex items-center gap-2">
-        <Key className="h-3.5 w-3.5 text-primary shrink-0" />
-        <span className="text-xs font-semibold text-primary">Senha gov.br:</span>
-        <span className="font-mono text-sm font-semibold tracking-wider select-none">
-          {revealed ? senha : partial}
-        </span>
-        {revealed && (
-          <Badge variant="secondary" className="text-[10px] animate-pulse">10s</Badge>
-        )}
-        <div className="ml-auto flex items-center gap-1">
-          <Button size="sm" onClick={handleCopy} className="h-7 gap-1 text-xs">
-            <Copy className="h-3 w-3" />
-            Copiar
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setRevealed(!revealed)}
-            className="h-7 w-7 p-0"
-          >
-            {revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-          </Button>
-        </div>
-      </div>
+    <div className="flex items-center gap-1.5 mt-1">
+      <Key className="h-3 w-3 text-primary shrink-0" />
+      <span className="text-xs text-primary font-medium">gov.br:</span>
+      <span className="font-mono text-xs tracking-wider select-none">
+        {revealed ? senha : partial}
+      </span>
+      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 ml-0.5" onClick={handleCopy}>
+        <Copy className="h-3 w-3" />
+      </Button>
+      <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setRevealed(!revealed)}>
+        {revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+      </Button>
+      {revealed && (
+        <span className="text-[10px] text-muted-foreground animate-pulse">10s</span>
+      )}
     </div>
   );
 }
