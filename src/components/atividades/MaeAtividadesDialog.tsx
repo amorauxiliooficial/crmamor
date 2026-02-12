@@ -317,13 +317,36 @@ export function MaeAtividadesDialog({
                     </>
                   )}
                 </div>
+                {mae.senha_gov && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Key className="h-3 w-3 text-primary" />
+                    <span className="text-xs text-primary font-medium">gov.br:</span>
+                    <span className="font-mono text-xs tracking-wider select-none">
+                      {mae.senha_gov.length >= 4
+                        ? `${mae.senha_gov.slice(0, 2)}${"•".repeat(mae.senha_gov.length - 4)}${mae.senha_gov.slice(-2)}`
+                        : "•".repeat(mae.senha_gov.length)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 w-5 p-0 ml-1"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          await navigator.clipboard.writeText(mae.senha_gov!);
+                          sonnerToast.success("Senha gov.br copiada!");
+                        } catch {
+                          sonnerToast.error("Erro ao copiar");
+                        }
+                      }}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
                 <Badge variant="outline" className={`mt-2 text-xs ${statusBg}`}>
                   {mae.status_processo}
                 </Badge>
-                {/* Senha gov.br inline */}
-                {mae.senha_gov && (
-                  <SenhaGovInline senha={mae.senha_gov} />
-                )}
               </div>
               {onOpenEdit && (
                 <Button
