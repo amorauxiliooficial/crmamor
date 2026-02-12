@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { MaeProcesso, STATUS_COLORS } from "@/types/mae";
 import { TipoAtividade, TIPO_ATIVIDADE_LABELS, RESULTADO_CONTATO_LABELS, ResultadoContato } from "@/types/atividade";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatCpf, formatPhone } from "@/lib/formatters";
 import { RegistrarAtividadeDialog } from "./RegistrarAtividadeDialog";
 import { AgendarFollowUpDialog } from "./AgendarFollowUpDialog";
+import { toast as sonnerToast } from "sonner";
 import {
   Phone,
   MessageCircle,
@@ -38,6 +39,10 @@ import {
   Bell,
   Send,
   X,
+  Key,
+  Copy,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { format, formatDistanceToNow, isPast, parseISO, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -315,6 +320,10 @@ export function MaeAtividadesDialog({
                 <Badge variant="outline" className={`mt-2 text-xs ${statusBg}`}>
                   {mae.status_processo}
                 </Badge>
+                {/* Senha gov.br inline */}
+                {mae.senha_gov && (
+                  <SenhaGovInline senha={mae.senha_gov} />
+                )}
               </div>
               {onOpenEdit && (
                 <Button
@@ -707,5 +716,56 @@ export function MaeAtividadesDialog({
         </>
       )}
     </>
+  );
+}
+
+function SenhaGovInline({ senha }: { senha: string }) {
+  const [revealed, setRevealed] = useState(false);
+  const partial = senha.length >= 4
+    ? `${senha.slice(0, 2)}${"•".repeat(senha.length - 4)}${senha.slice(-2)}`
+    : "•".repeat(senha.length);
+
+  useEffect(() => {
+    if (!revealed) return;
+    const timer = setTimeout(() => setRevealed(false), 10000);
+    return () => clearTimeout(timer);
+  }, [revealed]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(senha);
+      sonnerToast.success("Senha gov.br copiada!");
+    } catch {
+      sonnerToast.error("Erro ao copiar");
+    }
+  };
+
+  return (
+    <div className="mt-2 rounded-md border-2 border-primary/30 bg-primary/5 px-3 py-2 w-full">
+      <div className="flex items-center gap-2">
+        <Key className="h-3.5 w-3.5 text-primary shrink-0" />
+        <span className="text-xs font-semibold text-primary">Senha gov.br:</span>
+        <span className="font-mono text-sm font-semibold tracking-wider select-none">
+          {revealed ? senha : partial}
+        </span>
+        {revealed && (
+          <Badge variant="secondary" className="text-[10px] animate-pulse">10s</Badge>
+        )}
+        <div className="ml-auto flex items-center gap-1">
+          <Button size="sm" onClick={handleCopy} className="h-7 gap-1 text-xs">
+            <Copy className="h-3 w-3" />
+            Copiar
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setRevealed(!revealed)}
+            className="h-7 w-7 p-0"
+          >
+            {revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -81,10 +81,6 @@ export function MaeDetailDialog({
           </div>
         </DialogHeader>
 
-        {/* Senha Gov.br Card - Destacado */}
-        {mae.senha_gov && (
-          <SenhaGovCard senha={mae.senha_gov} />
-        )}
 
         <div className="space-y-6">
           {/* Status Badge and Actions */}
