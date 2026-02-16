@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CheckCircle, Loader2, Instagram, Heart, Gift, UserPlus, Phone, DollarSign } from "lucide-react";
-import logoAmor from "@/assets/logo-amor-sem-fundo.png";
+import logoAmor from "@/assets/logo-aam.png";
 import confetti from "canvas-confetti";
 
 // Phone mask helper
