@@ -113,10 +113,16 @@ const Index = () => {
     setSelectedIndicacaoFromNotification(indicacao);
   };
 
-  // Redirect to auth if not logged in
+  // Redirect to /indicar if accessing from indicar subdomain without auth
+  // Redirect to auth if not logged in (only on main domain)
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate("/auth");
+      const hostname = window.location.hostname;
+      if (hostname.startsWith("indicar.")) {
+        navigate("/indicar");
+      } else {
+        navigate("/auth");
+      }
     }
   }, [user, authLoading, navigate]);
 
