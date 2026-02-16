@@ -59,29 +59,33 @@ export default function Indicar() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('public-indicacao', {
-        body: {
-          nome_indicada: formData.nome_indicada.trim(),
-          telefone_indicada: formData.telefone_indicada.trim(),
-          nome_indicadora: formData.nome_indicadora.trim(),
-          telefone_indicadora: formData.telefone_indicadora.trim(),
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-indicacao`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            nome_indicada: formData.nome_indicada.trim(),
+            telefone_indicada: formData.telefone_indicada.trim(),
+            nome_indicadora: formData.nome_indicadora.trim(),
+            telefone_indicadora: formData.telefone_indicadora.trim(),
+          }),
         }
-      });
+      );
 
-      if (error) {
-        console.error('Error submitting indication:', error);
-        toast.error("Erro ao enviar indicação. Tente novamente.");
-        return;
-      }
+      const data = await response.json();
 
-      if (data?.error) {
-        if (data.duplicate) {
+      if (!response.ok) {
+        if (data?.duplicate) {
           toast.info("Esta pessoa já foi indicada! 💜", {
             description: "Obrigada pelo carinho, mas ela já está na nossa lista.",
             duration: 5000,
           });
         } else {
-          toast.error(data.error);
+          toast.error(data?.error || "Erro ao enviar indicação. Tente novamente.");
         }
         return;
       }
