@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -18,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { mockConversas as initialConversas, mockMensagens as initialMensagens, type Conversa, type Mensagem } from "@/data/atendimentoMock";
+import { respostasRapidas } from "@/data/respostasRapidas";
 
 const STATUS_COLORS: Record<string, string> = {
   Aberto: "bg-green-500",
@@ -60,6 +61,26 @@ export default function Atendimento() {
   const [msgText, setMsgText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [quickReplyIndex, setQuickReplyIndex] = useState(0);
+
+  const filteredReplies = useMemo(() => {
+    if (!msgText.startsWith("/")) return [];
+    const query = msgText.slice(1).toLowerCase();
+    return respostasRapidas.filter(r => r.atalho.toLowerCase().includes(query));
+  }, [msgText]);
+
+  useEffect(() => {
+    const shouldShow = msgText.startsWith("/") && filteredReplies.length > 0;
+    setShowQuickReplies(shouldShow);
+    if (shouldShow) setQuickReplyIndex(0);
+  }, [msgText, filteredReplies.length]);
+
+  const selectQuickReply = useCallback((texto: string) => {
+    setMsgText(texto);
+    setShowQuickReplies(false);
+    textareaRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     if (routeId) setSelectedId(routeId);
@@ -123,6 +144,12 @@ export default function Atendimento() {
     if (textareaRef.current) textareaRef.current.style.height = "auto";
   }
   function handleKeyDown(e: React.KeyboardEvent) {
+    if (showQuickReplies) {
+      if (e.key === "ArrowDown") { e.preventDefault(); setQuickReplyIndex(i => Math.min(i + 1, filteredReplies.length - 1)); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); setQuickReplyIndex(i => Math.max(i - 1, 0)); return; }
+      if (e.key === "Enter") { e.preventDefault(); selectQuickReply(filteredReplies[quickReplyIndex].texto); return; }
+      if (e.key === "Escape") { e.preventDefault(); setShowQuickReplies(false); return; }
+    }
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   }
 
@@ -271,10 +298,27 @@ export default function Atendimento() {
       </ScrollArea>
 
       {/* footer */}
-      <div className="border-t border-border p-3 flex gap-2 shrink-0">
+      <div className="relative border-t border-border p-3 flex gap-2 shrink-0">
+        {showQuickReplies && (
+          <div className="absolute bottom-full left-3 right-3 mb-1 bg-popover border border-border rounded-lg shadow-lg max-h-[220px] overflow-y-auto z-50">
+            {filteredReplies.map((r, i) => (
+              <button
+                key={r.id}
+                className={cn(
+                  "w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors",
+                  i === quickReplyIndex && "bg-accent"
+                )}
+                onMouseDown={e => { e.preventDefault(); selectQuickReply(r.texto); }}
+              >
+                <span className="font-medium text-foreground">/{r.atalho}</span>
+                <span className="ml-2 text-muted-foreground">{r.titulo}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <Textarea
           ref={textareaRef}
-          placeholder="Digite uma mensagem..."
+          placeholder='Digite uma mensagem... (use "/" para respostas rápidas)'
           value={msgText}
           onChange={e => { setMsgText(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 80) + "px"; }}
           onKeyDown={handleKeyDown}
