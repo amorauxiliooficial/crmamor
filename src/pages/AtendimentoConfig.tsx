@@ -1,29 +1,37 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Wifi } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
 
-const atendentesMock = [
-  { nome: "Maria Souza", ativo: true },
-  { nome: "João Pereira", ativo: true },
-  { nome: "Ana Costa", ativo: false },
+const initialAtendentes = [
+  { nome: "Maria Silva", email: "maria@aam.com", ativo: true },
+  { nome: "João Santos", email: "joao@aam.com", ativo: true },
+  { nome: "Ana Lima", email: "ana@aam.com", ativo: false },
 ];
 
 export default function AtendimentoConfig() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const [foraHorarioAtivo, setForaHorarioAtivo] = useState(true);
+  const [boasVindasAtivo, setBoasVindasAtivo] = useState(true);
+  const [atendentes, setAtendentes] = useState(initialAtendentes);
 
   if (loading) return null;
-  if (!user) {
-    navigate("/auth");
-    return null;
+  if (!user) { navigate("/auth"); return null; }
+
+  function toggleAtendente(idx: number) {
+    setAtendentes(prev => prev.map((a, i) => i === idx ? { ...a, ativo: !a.ativo } : a));
   }
 
   return (
@@ -32,7 +40,7 @@ export default function AtendimentoConfig() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/atendimento")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="font-semibold text-base">Configurações do Atendimento</h1>
+        <h1 className="font-semibold text-base">Configurações de Atendimento</h1>
       </header>
 
       <div className="max-w-2xl mx-auto p-6 space-y-6">
@@ -40,57 +48,76 @@ export default function AtendimentoConfig() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Conexão WhatsApp</CardTitle>
-            <CardDescription>Gerencie a conexão com o WhatsApp Business</CardDescription>
+            <CardDescription>Status da integração com WhatsApp</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="h-3 w-3 rounded-full bg-chart-1" />
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
+              </span>
               <span className="text-sm font-medium">Conectado</span>
-              <Badge variant="outline" className="ml-auto">
-                <Wifi className="h-3 w-3 mr-1" />
-                Ativo
-              </Badge>
+              <span className="text-sm text-muted-foreground ml-2">+55 (11) 99999-0000</span>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">Desconectar</Button>
               <Button variant="outline" size="sm">Ver QR Code</Button>
+              <Button variant="destructive" size="sm">Desconectar</Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Regras de Atendimento */}
+        {/* Horário de Atendimento */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Regras de Atendimento</CardTitle>
-            <CardDescription>Configure horários e mensagens automáticas</CardDescription>
+            <CardTitle className="text-lg">Horário de Atendimento</CardTitle>
+            <CardDescription>Configure horário e mensagem automática</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Horário de início</Label>
-                <Input type="time" defaultValue="08:00" />
-              </div>
-              <div className="space-y-2">
-                <Label>Horário de fim</Label>
-                <Input type="time" defaultValue="18:00" />
-              </div>
+            <div className="flex items-center justify-between">
+              <Label>Ativar mensagem fora do horário</Label>
+              <Switch checked={foraHorarioAtivo} onCheckedChange={setForaHorarioAtivo} />
             </div>
+            {foraHorarioAtivo && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Início</Label>
+                    <Input type="time" defaultValue="08:00" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Fim</Label>
+                    <Input type="time" defaultValue="18:00" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Mensagem fora do horário</Label>
+                  <Textarea
+                    defaultValue="Nosso horário de atendimento é de segunda a sexta, das 8h às 18h. Retornaremos em breve!"
+                    className="min-h-[80px] text-sm"
+                  />
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
-            <div className="space-y-2">
-              <Label>Mensagem de fora do horário</Label>
+        {/* Boas-vindas */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Mensagem de Boas-vindas</CardTitle>
+            <CardDescription>Mensagem automática ao iniciar conversa</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Ativar boas-vindas</Label>
+              <Switch checked={boasVindasAtivo} onCheckedChange={setBoasVindasAtivo} />
+            </div>
+            {boasVindasAtivo && (
               <Textarea
-                defaultValue="Olá! No momento estamos fora do horário de atendimento. Retornaremos em breve!"
+                defaultValue="Olá! Seja bem-vindo. Em breve um atendente irá te atender. 😊"
                 className="min-h-[80px] text-sm"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Mensagem de boas-vindas</Label>
-              <Textarea
-                defaultValue="Olá! Seja bem-vindo(a) ao nosso atendimento. Como podemos ajudar?"
-                className="min-h-[80px] text-sm"
-              />
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -100,25 +127,30 @@ export default function AtendimentoConfig() {
             <CardTitle className="text-lg">Atendentes</CardTitle>
             <CardDescription>Gerencie os atendentes do sistema</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {atendentesMock.map((a, i) => (
+          <CardContent className="space-y-1">
+            {atendentes.map((a, i) => (
               <div key={i}>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm font-medium">{a.nome}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {a.ativo ? "Ativo" : "Inativo"}
-                    </span>
-                    <Switch defaultChecked={a.ativo} />
+                <div className="flex items-center gap-3 py-3">
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback className="text-sm">{a.nome.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{a.nome}</p>
+                    <p className="text-xs text-muted-foreground">{a.email}</p>
                   </div>
+                  <Switch checked={a.ativo} onCheckedChange={() => toggleAtendente(i)} />
                 </div>
-                {i < atendentesMock.length - 1 && <Separator />}
+                {i < atendentes.length - 1 && <Separator />}
               </div>
             ))}
           </CardContent>
         </Card>
 
-        <Button className="w-full" size="lg">
+        <Button
+          className="w-full"
+          size="lg"
+          onClick={() => toast({ title: "Configurações salvas com sucesso!" })}
+        >
           Salvar configurações
         </Button>
       </div>
