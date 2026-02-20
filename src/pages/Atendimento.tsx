@@ -7,7 +7,9 @@ import { mockConversas as initialConversas, mockMensagens as initialMensagens, t
 import { respostasRapidas } from "@/data/respostasRapidas";
 import { InboxSidebar } from "@/components/atendimento/InboxSidebar";
 import { ChatPanel } from "@/components/atendimento/ChatPanel";
+import { CrmContextPanel } from "@/components/atendimento/CrmContextPanel";
 import { CommandPalette } from "@/components/atendimento/CommandPalette";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 type TabFilter = "nao_lidas" | "Aberto" | "Pendente" | "Fechado";
 
@@ -25,6 +27,17 @@ export default function Atendimento() {
   const [statusFilter, setStatusFilter] = useState<TabFilter | null>(null);
   const [atendenteFilter, setAtendenteFilter] = useState<"todos" | "meus">("todos");
   const [msgText, setMsgText] = useState("");
+  const [showContext, setShowContext] = useState(true);
+  const [showContextDrawer, setShowContextDrawer] = useState(false);
+
+  // Check if tablet (between mobile and desktop)
+  const [isTablet, setIsTablet] = useState(false);
+  useEffect(() => {
+    const check = () => setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1280);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     if (routeId) setSelectedId(routeId);
@@ -94,7 +107,7 @@ export default function Atendimento() {
 
   if (loading || !user) return null;
 
-  // Mobile: show one at a time
+  // Mobile: single column
   if (isMobile) {
     return (
       <div className="h-screen flex flex-col bg-background">
@@ -136,13 +149,15 @@ export default function Atendimento() {
             onStatusFilterChange={setStatusFilter}
             atendenteFilter={atendenteFilter}
             onAtendenteFilterChange={setAtendenteFilter}
+            onAssume={handleAssume}
+            onPendente={handlePendente}
           />
         )}
       </div>
     );
   }
 
-  // Desktop
+  // Desktop / Tablet
   return (
     <div className="flex h-screen bg-background">
       <CommandPalette
@@ -156,6 +171,8 @@ export default function Atendimento() {
         onFilterSemAtendente={() => setAtendenteFilter("todos")}
         onInsertTemplate={(t) => setMsgText(t)}
       />
+
+      {/* Inbox */}
       <InboxSidebar
         conversas={conversas}
         selectedId={selectedId}
@@ -167,7 +184,11 @@ export default function Atendimento() {
         onStatusFilterChange={setStatusFilter}
         atendenteFilter={atendenteFilter}
         onAtendenteFilterChange={setAtendenteFilter}
+        onAssume={handleAssume}
+        onPendente={handlePendente}
       />
+
+      {/* Chat */}
       <ChatPanel
         conversa={conversa}
         mensagens={msgs}
@@ -181,7 +202,29 @@ export default function Atendimento() {
         onFinalizar={() => handleFinalizar()}
         onToggleEtiqueta={toggleEtiqueta}
         respostas={respostasRapidas}
+        showContext={showContext}
+        onToggleContext={() => {
+          if (isTablet) {
+            setShowContextDrawer(!showContextDrawer);
+          } else {
+            setShowContext(!showContext);
+          }
+        }}
       />
+
+      {/* CRM Context - Desktop (inline) */}
+      {!isTablet && showContext && (
+        <CrmContextPanel conversa={conversa} />
+      )}
+
+      {/* CRM Context - Tablet (drawer) */}
+      {isTablet && (
+        <Sheet open={showContextDrawer} onOpenChange={setShowContextDrawer}>
+          <SheetContent side="right" className="p-0 w-[340px]">
+            <CrmContextPanel conversa={conversa} className="w-full border-l-0" />
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 }
