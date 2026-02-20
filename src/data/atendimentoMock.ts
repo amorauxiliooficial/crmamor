@@ -8,6 +8,8 @@ export interface Conversa {
   atendente: string | null;
   naoLidas: number;
   etiquetas: string[];
+  prioridade?: "normal" | "alta";
+  slaMinutos?: number;
 }
 
 export interface Mensagem {

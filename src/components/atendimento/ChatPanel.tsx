@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import {
   Send, ArrowLeft, User, UserCheck, Clock, CheckCircle, Tag,
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
+  Loader2, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { smartTemplates, type SmartTemplate } from "@/data/smartTemplates";
 import type { Conversa, Mensagem } from "@/data/atendimentoMock";
 import type { RespostaRapida } from "@/data/respostasRapidas";
 
@@ -28,7 +32,6 @@ function formatDayLabel(d: Date): string {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-
   if (d.toDateString() === today.toDateString()) return "Hoje";
   if (d.toDateString() === yesterday.toDateString()) return "Ontem";
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
@@ -36,7 +39,7 @@ function formatDayLabel(d: Date): string {
 
 function shouldShowTimestamp(current: Mensagem, prev: Mensagem | null): boolean {
   if (!prev) return true;
-  return current.horario.getTime() - prev.horario.getTime() > 5 * 60000; // 5 min gap
+  return current.horario.getTime() - prev.horario.getTime() > 5 * 60000;
 }
 
 function isSameAuthorGroup(current: Mensagem, prev: Mensagem | null): boolean {
@@ -81,6 +84,9 @@ export function ChatPanel({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [quickReplyIndex, setQuickReplyIndex] = useState(0);
+  const [summarizing, setSummarizing] = useState(false);
+  const [summary, setSummary] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const filteredReplies = useMemo(() => {
     if (!msgText.startsWith("/")) return [];
@@ -107,6 +113,11 @@ export function ChatPanel({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversa?.id, mensagens]);
 
+  // Reset summary when conversation changes
+  useEffect(() => {
+    setSummary(null);
+  }, [conversa?.id]);
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (showQuickReplies) {
       if (e.key === "ArrowDown") { e.preventDefault(); setQuickReplyIndex((i) => Math.min(i + 1, filteredReplies.length - 1)); return; }
@@ -119,6 +130,45 @@ export function ChatPanel({
       onSend();
     }
   }
+
+  // AI Summary
+  const handleSummarize = useCallback(async () => {
+    if (!conversa || mensagens.length === 0) return;
+    setSummarizing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("summarize-conversation", {
+        body: {
+          messages: mensagens.map((m) => ({ de: m.de, texto: m.texto })),
+          contactName: conversa.nome ?? conversa.telefone,
+        },
+      });
+      if (error) throw error;
+      setSummary(data.summary);
+      toast({ title: "Resumo gerado ✨" });
+    } catch (err) {
+      console.error("Summary error:", err);
+      toast({ title: "Erro ao resumir", description: "Tente novamente.", variant: "destructive" });
+    } finally {
+      setSummarizing(false);
+    }
+  }, [conversa, mensagens, toast]);
+
+  // Smart template click
+  const handleSmartTemplate = useCallback((template: SmartTemplate) => {
+    onMsgTextChange(template.texto);
+    textareaRef.current?.focus();
+
+    // Show toast with action info
+    if (template.actions) {
+      const actionLabels: string[] = [];
+      if (template.actions.createFollowUp) actionLabels.push("📅 Follow-up agendado");
+      if (template.actions.timelineEvent) actionLabels.push("📝 Registrado na timeline");
+      if (template.actions.updateChecklist) actionLabels.push("✅ Checklist atualizado");
+      if (actionLabels.length > 0) {
+        toast({ title: "Ações vinculadas", description: actionLabels.join(" • ") });
+      }
+    }
+  }, [onMsgTextChange, toast]);
 
   // Group messages by day
   const messageGroups = useMemo(() => {
@@ -183,14 +233,30 @@ export function ChatPanel({
         {/* Action buttons */}
         <TooltipProvider delayDuration={200}>
           <div className="flex items-center gap-1">
+            {/* AI Summary button */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   size="sm"
                   variant="ghost"
                   className="h-8 gap-1.5 rounded-lg text-xs"
-                  onClick={onAssume}
+                  onClick={handleSummarize}
+                  disabled={summarizing || mensagens.length === 0}
                 >
+                  {summarizing ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5 text-violet-500" />
+                  )}
+                  <span className="hidden lg:inline">Resumir</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Resumir caso com IA</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="ghost" className="h-8 gap-1.5 rounded-lg text-xs" onClick={onAssume}>
                   <UserCheck className="h-3.5 w-3.5 text-blue-500" />
                   <span className="hidden lg:inline">Assumir</span>
                 </Button>
@@ -200,12 +266,7 @@ export function ChatPanel({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 gap-1.5 rounded-lg text-xs"
-                  onClick={onPendente}
-                >
+                <Button size="sm" variant="ghost" className="h-8 gap-1.5 rounded-lg text-xs" onClick={onPendente}>
                   <Clock className="h-3.5 w-3.5 text-amber-500" />
                   <span className="hidden lg:inline">Pendente</span>
                 </Button>
@@ -215,12 +276,7 @@ export function ChatPanel({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 gap-1.5 rounded-lg text-xs"
-                  onClick={onFinalizar}
-                >
+                <Button size="sm" variant="ghost" className="h-8 gap-1.5 rounded-lg text-xs" onClick={onFinalizar}>
                   <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
                   <span className="hidden lg:inline">Concluir</span>
                 </Button>
@@ -258,12 +314,28 @@ export function ChatPanel({
         </TooltipProvider>
       </div>
 
+      {/* AI Summary banner */}
+      {summary && (
+        <div className="mx-4 mt-3 p-3 bg-violet-500/5 border border-violet-500/15 rounded-xl relative">
+          <button
+            onClick={() => setSummary(null)}
+            className="absolute top-2 right-2 text-muted-foreground/40 hover:text-foreground text-xs"
+          >
+            ✕
+          </button>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Sparkles className="h-3 w-3 text-violet-500" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">Resumo IA</span>
+          </div>
+          <p className="text-xs leading-relaxed text-foreground/80 whitespace-pre-line">{summary}</p>
+        </div>
+      )}
+
       {/* Messages */}
       <ScrollArea className="flex-1">
         <div className="px-4 py-4 space-y-1 max-w-2xl mx-auto">
           {messageGroups.map((group) => (
             <div key={group.label}>
-              {/* Day separator */}
               <div className="flex items-center justify-center my-4">
                 <span className="text-[10px] font-medium text-muted-foreground/60 bg-muted/40 px-3 py-0.5 rounded-full">
                   {group.label}
@@ -285,26 +357,16 @@ export function ChatPanel({
                       isGrouped ? "mt-0.5" : "mt-3"
                     )}
                   >
-                    <div
-                      className={cn(
-                        "max-w-[75%] group",
-                        isMe ? "items-end" : "items-start"
-                      )}
-                    >
+                    <div className={cn("max-w-[75%] group", isMe ? "items-end" : "items-start")}>
                       <div
                         className={cn(
                           "px-3.5 py-2 shadow-sm",
                           isMe
                             ? "bg-primary text-primary-foreground"
                             : "bg-card border border-border/40",
-                          // Rounded corners based on grouping
                           isMe
-                            ? isGrouped
-                              ? "rounded-2xl rounded-br-md"
-                              : "rounded-2xl rounded-br-md"
-                            : isGrouped
-                              ? "rounded-2xl rounded-bl-md"
-                              : "rounded-2xl rounded-bl-md"
+                            ? "rounded-2xl rounded-br-md"
+                            : "rounded-2xl rounded-bl-md"
                         )}
                       >
                         <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{m.texto}</p>
@@ -348,21 +410,26 @@ export function ChatPanel({
           </div>
         )}
 
-        {/* Template chips */}
+        {/* Smart template chips */}
         <div className="flex gap-1.5 px-4 pt-3 pb-1 overflow-x-auto scrollbar-none">
-          {respostas.slice(0, 4).map((r) => (
+          {smartTemplates.map((t) => (
             <button
-              key={r.id}
-              onClick={() => onMsgTextChange(r.texto)}
-              className="shrink-0 text-[10px] px-2.5 py-1 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all"
+              key={t.id}
+              onClick={() => handleSmartTemplate(t)}
+              className={cn(
+                "shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border transition-all",
+                "border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5",
+                t.actions ? "hover:shadow-sm" : ""
+              )}
             >
-              {r.titulo}
+              <span>{t.emoji}</span>
+              <span>{t.label}</span>
+              {t.actions && <Zap className="h-2.5 w-2.5 text-amber-500" />}
             </button>
           ))}
         </div>
 
         <div className="flex gap-2 items-end px-4 pb-3 pt-1">
-          {/* Compact action buttons */}
           <div className="flex gap-0.5 shrink-0">
             <TooltipProvider delayDuration={200}>
               <Tooltip>
@@ -377,14 +444,6 @@ export function ChatPanel({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Templates (/)</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" disabled>
-                    <Sparkles className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Sugerir resposta (em breve)</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
