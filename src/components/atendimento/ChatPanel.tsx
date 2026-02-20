@@ -52,12 +52,12 @@ function isSameAuthorGroup(current: Mensagem, prev: Mensagem | null): boolean {
 
 function MessageSkeleton() {
   return (
-    <div className="px-4 py-3 space-y-3 max-w-2xl mx-auto">
+    <div className="px-6 py-4 space-y-4 max-w-3xl mx-auto">
       {[1, 2, 3].map((i) => (
         <div key={i} className={cn("flex", i % 2 === 0 ? "justify-end" : "justify-start")}>
-          <div className="space-y-1">
-            <Skeleton className={cn("h-8 rounded-2xl", i % 2 === 0 ? "w-48" : "w-56")} />
-            <Skeleton className="h-2 w-10" />
+          <div className="space-y-1.5">
+            <Skeleton className={cn("h-10 rounded-2xl", i % 2 === 0 ? "w-56" : "w-64")} />
+            <Skeleton className="h-3 w-12" />
           </div>
         </div>
       ))}
@@ -225,13 +225,13 @@ export function ChatPanel({
 
   if (!conversa) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-3 h-full bg-background">
-        <div className="h-12 w-12 rounded-2xl bg-muted/20 flex items-center justify-center">
-          <MessageSquare className="h-5 w-5 text-muted-foreground/25" />
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 h-full bg-background">
+        <div className="h-14 w-14 rounded-2xl bg-muted/20 flex items-center justify-center">
+          <MessageSquare className="h-6 w-6 text-muted-foreground/25" />
         </div>
-        <div className="text-center space-y-0.5">
+        <div className="text-center space-y-1">
           <p className="text-sm font-medium text-muted-foreground/60">Selecione uma conversa</p>
-          <p className="text-[10px] text-muted-foreground/35">⌘K para buscar</p>
+          <p className="text-xs text-muted-foreground/35">⌘K para buscar</p>
         </div>
       </div>
     );
@@ -240,111 +240,111 @@ export function ChatPanel({
   return (
     <div className="flex-1 flex flex-col h-full min-w-0 bg-background">
       {/* Header */}
-      <div className="border-b border-border/20 px-3 py-2 flex items-center gap-2.5 shrink-0 bg-card/30 backdrop-blur-sm">
+      <div className="border-b border-border/20 px-4 py-3 flex items-center gap-3 shrink-0 bg-card/30 backdrop-blur-sm">
         {isMobile && (
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md" onClick={onBack}>
-            <ArrowLeft className="h-3.5 w-3.5" />
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
         )}
 
-        <Avatar className="h-7 w-7 shrink-0">
-          <AvatarFallback className="text-[9px] font-semibold bg-primary/10 text-primary">
-            {conversa.nome ? conversa.nome.charAt(0) : <User className="h-3 w-3" />}
+        <Avatar className="h-9 w-9 shrink-0">
+          <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+            {conversa.nome ? conversa.nome.charAt(0) : <User className="h-4 w-4" />}
           </AvatarFallback>
         </Avatar>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <p className="font-semibold text-xs truncate">{conversa.nome ?? conversa.telefone}</p>
-            <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", STATUS_COLORS[conversa.status])} />
-            <span className="text-[9px] text-muted-foreground/40">{conversa.status}</span>
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-sm truncate">{conversa.nome ?? conversa.telefone}</p>
+            <span className={cn("h-2 w-2 rounded-full shrink-0", STATUS_COLORS[conversa.status])} />
+            <span className="text-xs text-muted-foreground/50">{conversa.status}</span>
           </div>
           <div className="flex items-center gap-2">
-            {conversa.nome && <p className="text-[9px] text-muted-foreground/40 font-mono">{conversa.telefone}</p>}
-            {conversa.atendente && <p className="text-[9px] text-muted-foreground/40">• {conversa.atendente}</p>}
+            {conversa.nome && <p className="text-xs text-muted-foreground/50 font-mono">{conversa.telefone}</p>}
+            {conversa.atendente && <p className="text-xs text-muted-foreground/50">• {conversa.atendente}</p>}
           </div>
         </div>
 
         {/* Actions */}
         <TooltipProvider delayDuration={200}>
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-1">
             {/* AI Actions dropdown */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-6 gap-1 rounded-md text-[9px] text-primary/70 hover:text-primary">
-                  {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                <Button size="sm" variant="ghost" className="h-8 gap-1.5 rounded-lg text-xs text-primary/70 hover:text-primary">
+                  {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   <span className="hidden lg:inline">IA</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-44 p-1" align="end">
+              <PopoverContent className="w-48 p-1.5" align="end">
                 <button
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-[11px] hover:bg-accent/30 rounded-md transition-colors disabled:opacity-50"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50"
                   onClick={() => handleAiAction("suggest")}
                   disabled={!!aiLoading}
                 >
-                  <Brain className="h-3 w-3 text-primary/70" /> Sugerir resposta
+                  <Brain className="h-4 w-4 text-primary/70" /> Sugerir resposta
                 </button>
                 <button
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-[11px] hover:bg-accent/30 rounded-md transition-colors disabled:opacity-50"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50"
                   onClick={() => handleAiAction("summarize")}
                   disabled={!!aiLoading}
                 >
-                  <Sparkles className="h-3 w-3 text-primary/70" /> Resumir caso
+                  <Sparkles className="h-4 w-4 text-primary/70" /> Resumir caso
                 </button>
                 <button
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-[11px] hover:bg-accent/30 rounded-md transition-colors disabled:opacity-50"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50"
                   onClick={() => handleAiAction("extract")}
                   disabled={!!aiLoading}
                 >
-                  <Database className="h-3 w-3 text-primary/70" /> Extrair dados
+                  <Database className="h-4 w-4 text-primary/70" /> Extrair dados
                 </button>
                 <button
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-[11px] hover:bg-accent/30 rounded-md transition-colors disabled:opacity-50"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50"
                   onClick={() => handleAiAction("next_action")}
                   disabled={!!aiLoading}
                 >
-                  <ArrowRight className="h-3 w-3 text-primary/70" /> Próxima ação
+                  <ArrowRight className="h-4 w-4 text-primary/70" /> Próxima ação
                 </button>
               </PopoverContent>
             </Popover>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-6 w-6 rounded-md text-muted-foreground/60" onClick={onAssume}>
-                  <UserCheck className="h-3 w-3" />
+                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground/60" onClick={onAssume}>
+                  <UserCheck className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent className="text-[10px]">Assumir</TooltipContent>
+              <TooltipContent className="text-xs">Assumir</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-6 w-6 rounded-md text-muted-foreground/60" onClick={onPendente}>
-                  <Clock className="h-3 w-3" />
+                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground/60" onClick={onPendente}>
+                  <Clock className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent className="text-[10px]">Pendente</TooltipContent>
+              <TooltipContent className="text-xs">Pendente</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-6 w-6 rounded-md text-muted-foreground/60 hover:text-emerald-600 dark:hover:text-emerald-400" onClick={onFinalizar}>
-                  <CheckCircle className="h-3 w-3" />
+                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground/60 hover:text-emerald-600 dark:hover:text-emerald-400" onClick={onFinalizar}>
+                  <CheckCircle className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent className="text-[10px]">Concluir</TooltipContent>
+              <TooltipContent className="text-xs">Concluir</TooltipContent>
             </Tooltip>
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-6 w-6 rounded-md text-muted-foreground/60">
-                  <Tag className="h-3 w-3" />
+                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground/60">
+                  <Tag className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-36 p-1" align="end">
+              <PopoverContent className="w-44 p-1.5" align="end">
                 {ETIQUETAS_OPTIONS.map((e) => (
-                  <label key={e} className="flex items-center gap-2 py-1 px-2 hover:bg-accent/30 rounded-md cursor-pointer text-[11px]">
-                    <Checkbox checked={conversa.etiquetas.includes(e)} onCheckedChange={() => onToggleEtiqueta(e)} className="h-3 w-3" />
+                  <label key={e} className="flex items-center gap-2.5 py-1.5 px-2.5 hover:bg-accent/30 rounded-lg cursor-pointer text-xs">
+                    <Checkbox checked={conversa.etiquetas.includes(e)} onCheckedChange={() => onToggleEtiqueta(e)} className="h-4 w-4" />
                     {e}
                   </label>
                 ))}
@@ -354,11 +354,11 @@ export function ChatPanel({
             {onToggleContext && !isMobile && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-6 w-6 rounded-md text-muted-foreground/60" onClick={onToggleContext}>
-                    {showContext ? <PanelRightClose className="h-3 w-3" /> : <PanelRightOpen className="h-3 w-3" />}
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground/60" onClick={onToggleContext}>
+                    {showContext ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="text-[10px]">{showContext ? "Modo foco" : "Contexto CRM"}</TooltipContent>
+                <TooltipContent className="text-xs">{showContext ? "Modo foco" : "Contexto CRM"}</TooltipContent>
               </Tooltip>
             )}
           </div>
@@ -367,24 +367,24 @@ export function ChatPanel({
 
       {/* AI Result banner */}
       {(summary || aiResult) && (
-        <div className="mx-3 mt-1.5 p-2 bg-primary/5 border border-primary/10 rounded-lg relative animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className="mx-4 mt-2 p-3 bg-primary/5 border border-primary/10 rounded-xl relative animate-in fade-in slide-in-from-top-1 duration-200">
           <button
             onClick={() => { setSummary(null); setAiResult(null); }}
-            className="absolute top-1 right-1.5 text-muted-foreground/30 hover:text-foreground text-[10px]"
+            className="absolute top-2 right-2 text-muted-foreground/30 hover:text-foreground text-xs"
           >
             ✕
           </button>
-          <div className="flex items-center gap-1 mb-0.5">
-            <Sparkles className="h-2.5 w-2.5 text-primary" />
-            <span className="text-[8px] font-semibold uppercase tracking-wider text-primary/60">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary/60">
               {summary ? "Resumo IA" : aiResult?.type === "extract" ? "Dados Extraídos" : aiResult?.type === "next_action" ? "Próxima Ação" : "IA"}
             </span>
           </div>
-          <p className="text-[10px] leading-relaxed text-foreground/70 whitespace-pre-line pr-4">
+          <p className="text-xs leading-relaxed text-foreground/70 whitespace-pre-line pr-6">
             {summary || aiResult?.text}
           </p>
           {aiResult?.type === "next_action" && (
-            <Button size="sm" variant="outline" className="mt-1.5 h-5 text-[9px] rounded-md" onClick={() => { toast({ title: "Ação aplicada ✅" }); setAiResult(null); }}>
+            <Button size="sm" variant="outline" className="mt-2 h-7 text-xs rounded-lg" onClick={() => { toast({ title: "Ação aplicada ✅" }); setAiResult(null); }}>
               Aplicar
             </Button>
           )}
@@ -393,14 +393,14 @@ export function ChatPanel({
 
       {/* Messages */}
       <ScrollArea className="flex-1">
-        <div className="px-4 py-2 space-y-0.5 max-w-2xl mx-auto">
+        <div className="px-6 py-3 space-y-1 max-w-3xl mx-auto">
           {/* Load more */}
           {hasMore && (
-            <div className="flex justify-center py-2">
+            <div className="flex justify-center py-3">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 text-[10px] text-muted-foreground/50 hover:text-foreground"
+                className="h-8 text-xs text-muted-foreground/50 hover:text-foreground"
                 onClick={() => setVisibleCount((v) => v + MESSAGES_PER_PAGE)}
               >
                 Carregar mais mensagens ({mensagens.length - visibleCount} anteriores)
@@ -413,8 +413,8 @@ export function ChatPanel({
           ) : (
             messageGroups.map((group) => (
               <div key={group.label}>
-                <div className="flex items-center justify-center my-2.5">
-                  <span className="text-[8px] font-medium text-muted-foreground/35 bg-muted/15 px-2 py-0.5 rounded-full">
+                <div className="flex items-center justify-center my-3">
+                  <span className="text-[10px] font-medium text-muted-foreground/40 bg-muted/15 px-3 py-1 rounded-full">
                     {group.label}
                   </span>
                 </div>
@@ -431,24 +431,24 @@ export function ChatPanel({
                       className={cn(
                         "flex animate-in fade-in duration-150",
                         isMe ? "justify-end" : "justify-start",
-                        isGrouped ? "mt-0.5" : "mt-1.5"
+                        isGrouped ? "mt-0.5" : "mt-2"
                       )}
                     >
                       <div className={cn("max-w-[72%]", isMe ? "items-end" : "items-start")}>
                         <div
                           className={cn(
-                            "px-2.5 py-1.5",
+                            "px-3.5 py-2",
                             isMe
                               ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
                               : "bg-card border border-border/20 rounded-2xl rounded-bl-sm"
                           )}
                         >
-                          <p className="text-[12px] leading-relaxed whitespace-pre-wrap">{m.texto}</p>
+                          <p className="text-[14px] leading-relaxed whitespace-pre-wrap">{m.texto}</p>
                         </div>
                         {showTime && (
                           <p className={cn(
-                            "text-[8px] mt-0.5 px-1",
-                            isMe ? "text-right text-muted-foreground/30" : "text-muted-foreground/30"
+                            "text-[10px] mt-0.5 px-1.5",
+                            isMe ? "text-right text-muted-foreground/40" : "text-muted-foreground/40"
                           )}>
                             {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
@@ -468,79 +468,79 @@ export function ChatPanel({
       <div className="relative border-t border-border/20 bg-card/20 backdrop-blur-sm">
         {/* Quick replies */}
         {showQuickReplies && (
-          <div className="absolute bottom-full left-0 right-0 mx-3 mb-1 bg-popover border border-border/30 rounded-lg shadow-lg max-h-[160px] overflow-y-auto z-50">
+          <div className="absolute bottom-full left-0 right-0 mx-4 mb-1.5 bg-popover border border-border/30 rounded-xl shadow-lg max-h-[200px] overflow-y-auto z-50">
             {filteredReplies.map((r, i) => (
               <button
                 key={r.id}
                 className={cn(
-                  "w-full text-left px-2.5 py-1.5 text-[11px] hover:bg-accent/30 transition-colors first:rounded-t-lg last:rounded-b-lg",
+                  "w-full text-left px-3 py-2 text-xs hover:bg-accent/30 transition-colors first:rounded-t-xl last:rounded-b-xl",
                   i === quickReplyIndex && "bg-accent/30"
                 )}
                 onMouseDown={(e) => { e.preventDefault(); selectQuickReply(r.texto); }}
               >
-                <span className="font-medium text-primary text-[9px]">/{r.atalho}</span>
-                <span className="ml-1.5 text-muted-foreground/50 text-[9px]">{r.titulo}</span>
+                <span className="font-medium text-primary text-[11px]">/{r.atalho}</span>
+                <span className="ml-2 text-muted-foreground/50 text-[11px]">{r.titulo}</span>
               </button>
             ))}
           </div>
         )}
 
         {/* Template + Action chips */}
-        <div className="flex gap-1 px-3 pt-1.5 pb-0.5 overflow-x-auto scrollbar-none">
+        <div className="flex gap-1.5 px-4 pt-2 pb-1 overflow-x-auto scrollbar-none">
           {smartTemplates.map((t) => (
             <button
               key={t.id}
               onClick={() => handleSmartTemplate(t)}
-              className="shrink-0 flex items-center gap-0.5 text-[8px] px-1.5 py-0.5 rounded-full border border-border/15 text-muted-foreground/45 hover:text-foreground hover:border-primary/20 hover:bg-primary/5 transition-all"
+              className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border border-border/15 text-muted-foreground/50 hover:text-foreground hover:border-primary/20 hover:bg-primary/5 transition-all"
             >
               <span>{t.emoji}</span>
               <span>{t.label}</span>
-              {t.actions && <Zap className="h-1.5 w-1.5 text-primary/40" />}
+              {t.actions && <Zap className="h-2.5 w-2.5 text-primary/40" />}
             </button>
           ))}
-          <div className="w-px bg-border/20 mx-0.5 shrink-0" />
+          <div className="w-px bg-border/20 mx-1 shrink-0" />
           {/* Action chips */}
           <button
             onClick={() => { toast({ title: "Follow-up 24h criado 📅" }); }}
-            className="shrink-0 flex items-center gap-0.5 text-[8px] px-1.5 py-0.5 rounded-full border border-primary/15 text-primary/50 hover:text-primary hover:bg-primary/5 transition-all"
+            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border border-primary/15 text-primary/50 hover:text-primary hover:bg-primary/5 transition-all"
           >
-            <CalendarPlus className="h-2 w-2" /> 24h
+            <CalendarPlus className="h-3 w-3" /> 24h
           </button>
           <button
             onClick={() => { toast({ title: "Follow-up 48h criado 📅" }); }}
-            className="shrink-0 flex items-center gap-0.5 text-[8px] px-1.5 py-0.5 rounded-full border border-primary/15 text-primary/50 hover:text-primary hover:bg-primary/5 transition-all"
+            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border border-primary/15 text-primary/50 hover:text-primary hover:bg-primary/5 transition-all"
           >
-            <CalendarPlus className="h-2 w-2" /> 48h
+            <CalendarPlus className="h-3 w-3" /> 48h
           </button>
           <button
             onClick={onPendente}
-            className="shrink-0 flex items-center gap-0.5 text-[8px] px-1.5 py-0.5 rounded-full border border-amber-500/15 text-amber-600/50 dark:text-amber-400/50 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/5 transition-all"
+            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border border-amber-500/15 text-amber-600/50 dark:text-amber-400/50 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/5 transition-all"
           >
-            <Clock className="h-2 w-2" /> Pendente
+            <Clock className="h-3 w-3" /> Pendente
           </button>
           <button
             onClick={() => onToggleEtiqueta("Urgente")}
-            className="shrink-0 flex items-center gap-0.5 text-[8px] px-1.5 py-0.5 rounded-full border border-destructive/15 text-destructive/50 hover:text-destructive hover:bg-destructive/5 transition-all"
+            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border border-destructive/15 text-destructive/50 hover:text-destructive hover:bg-destructive/5 transition-all"
           >
-            <AlertTriangle className="h-2 w-2" /> Urgente
+            <AlertTriangle className="h-3 w-3" /> Urgente
           </button>
         </div>
 
-        <div className="flex gap-1.5 items-end px-3 pb-2 pt-1">
-          <div className="flex gap-0.5 shrink-0">
+        <div className="flex gap-2 items-end px-4 pb-3 pt-1.5">
+          <div className="flex gap-1 shrink-0">
             <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-6 w-6 rounded-md text-muted-foreground/40"
+                    className="h-8 w-8 rounded-lg text-muted-foreground/40"
                     onClick={() => onMsgTextChange(msgText.startsWith("/") ? msgText : "/")}
                   >
-                    <FileText className="h-3 w-3" />
+                    <FileText className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="text-[10px]">Templates (/)</TooltipContent>
+                <TooltipContent className="text-xs">Templates (/)</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
@@ -552,10 +552,10 @@ export function ChatPanel({
             onChange={(e) => {
               onMsgTextChange(e.target.value);
               e.target.style.height = "auto";
-              e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px";
+              e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
             }}
             onKeyDown={handleKeyDown}
-            className="min-h-[32px] max-h-[100px] resize-none text-[11px] flex-1 rounded-lg bg-muted/15 border-border/15 focus-visible:border-primary/25 focus-visible:bg-background transition-all"
+            className="min-h-[40px] max-h-[120px] resize-none text-sm flex-1 rounded-xl bg-muted/15 border-border/15 focus-visible:border-primary/25 focus-visible:bg-background transition-all"
             rows={1}
           />
 
@@ -563,14 +563,14 @@ export function ChatPanel({
             size="icon"
             onClick={onSend}
             disabled={!msgText.trim()}
-            className="shrink-0 rounded-lg h-8 w-8"
+            className="shrink-0 rounded-xl h-10 w-10"
           >
-            <Send className="h-3 w-3" />
+            <Send className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="text-center pb-0.5">
-          <span className="text-[7px] text-muted-foreground/25">Enter envia • Shift+Enter nova linha • / templates • ⌘K buscar</span>
+        <div className="text-center pb-1">
+          <span className="text-[9px] text-muted-foreground/30">Enter envia • Shift+Enter nova linha • / templates • ⌘K buscar</span>
         </div>
       </div>
     </div>
