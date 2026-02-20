@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import {
   Send, ArrowLeft, User, UserCheck, Clock, CheckCircle, Tag,
-  FileText, Sparkles, Mic,
+  FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,12 +17,32 @@ import type { Conversa, Mensagem } from "@/data/atendimentoMock";
 import type { RespostaRapida } from "@/data/respostasRapidas";
 
 const STATUS_COLORS: Record<string, string> = {
-  Aberto: "bg-green-500",
-  Pendente: "bg-yellow-500",
-  Fechado: "bg-muted-foreground",
+  Aberto: "bg-emerald-500",
+  Pendente: "bg-amber-500",
+  Fechado: "bg-muted-foreground/50",
 };
 
 const ETIQUETAS_OPTIONS = ["Suporte", "Financeiro", "Reclamação", "Venda", "Urgente"];
+
+function formatDayLabel(d: Date): string {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (d.toDateString() === today.toDateString()) return "Hoje";
+  if (d.toDateString() === yesterday.toDateString()) return "Ontem";
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+}
+
+function shouldShowTimestamp(current: Mensagem, prev: Mensagem | null): boolean {
+  if (!prev) return true;
+  return current.horario.getTime() - prev.horario.getTime() > 5 * 60000; // 5 min gap
+}
+
+function isSameAuthorGroup(current: Mensagem, prev: Mensagem | null): boolean {
+  if (!prev) return false;
+  return current.de === prev.de && current.horario.getTime() - prev.horario.getTime() < 2 * 60000;
+}
 
 interface ChatPanelProps {
   conversa: Conversa | null;
@@ -37,6 +57,8 @@ interface ChatPanelProps {
   onFinalizar: () => void;
   onToggleEtiqueta: (e: string) => void;
   respostas: RespostaRapida[];
+  showContext?: boolean;
+  onToggleContext?: () => void;
 }
 
 export function ChatPanel({
@@ -52,6 +74,8 @@ export function ChatPanel({
   onFinalizar,
   onToggleEtiqueta,
   respostas,
+  showContext,
+  onToggleContext,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -90,20 +114,39 @@ export function ChatPanel({
       if (e.key === "Enter") { e.preventDefault(); selectQuickReply(filteredReplies[quickReplyIndex].texto); return; }
       if (e.key === "Escape") { e.preventDefault(); setShowQuickReplies(false); return; }
     }
-    // Ctrl+Enter or Enter (without shift) sends
-    if ((e.key === "Enter" && (e.ctrlKey || e.metaKey)) || (e.key === "Enter" && !e.shiftKey)) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSend();
     }
   }
 
+  // Group messages by day
+  const messageGroups = useMemo(() => {
+    const groups: { label: string; messages: Mensagem[] }[] = [];
+    let currentLabel = "";
+    mensagens.forEach((m) => {
+      const label = formatDayLabel(m.horario);
+      if (label !== currentLabel) {
+        currentLabel = label;
+        groups.push({ label, messages: [m] });
+      } else {
+        groups[groups.length - 1].messages.push(m);
+      }
+    });
+    return groups;
+  }, [mensagens]);
+
   if (!conversa) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3 h-full">
-        <MessageSquare className="h-16 w-16 opacity-20" />
-        <p className="text-lg font-medium">Selecione uma conversa</p>
-        <p className="text-sm">Escolha uma conversa à esquerda para começar</p>
-        <kbd className="hidden md:inline-flex items-center gap-1 rounded border border-border bg-muted px-2 py-1 text-xs text-muted-foreground font-mono mt-2">
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 h-full bg-background/50">
+        <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center">
+          <MessageSquare className="h-7 w-7 text-muted-foreground/40" />
+        </div>
+        <div className="text-center space-y-1">
+          <p className="text-base font-medium text-muted-foreground">Selecione uma conversa</p>
+          <p className="text-sm text-muted-foreground/60">Escolha uma conversa na lista para começar</p>
+        </div>
+        <kbd className="hidden md:inline-flex items-center gap-1 rounded-lg border border-border/50 bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground/60 font-mono">
           ⌘K para buscar
         </kbd>
       </div>
@@ -111,91 +154,173 @@ export function ChatPanel({
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full min-w-0">
+    <div className="flex-1 flex flex-col h-full min-w-0 bg-background/30">
       {/* Header */}
-      <div className="border-b border-border px-3 py-2.5 flex items-center gap-3 shrink-0">
+      <div className="border-b border-border/50 px-4 py-3 flex items-center gap-3 shrink-0 bg-card/60 backdrop-blur-sm">
         {isMobile && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onBack}>
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
         )}
+
         <Avatar className="h-9 w-9 shrink-0">
-          <AvatarFallback className="text-sm bg-primary/10 text-primary">
+          <AvatarFallback className="text-xs font-semibold bg-primary/8 text-primary">
             {conversa.nome ? conversa.nome.charAt(0) : <User className="h-4 w-4" />}
           </AvatarFallback>
         </Avatar>
+
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-sm truncate">{conversa.nome ?? conversa.telefone}</p>
-          {conversa.nome && <p className="text-xs text-muted-foreground">{conversa.telefone}</p>}
+          <div className="flex items-center gap-2 mt-0.5">
+            {conversa.nome && <p className="text-[11px] text-muted-foreground">{conversa.telefone}</p>}
+            <Badge variant="outline" className="h-4 text-[9px] px-1.5 gap-1 border-border/40">
+              <span className={cn("h-1.5 w-1.5 rounded-full", STATUS_COLORS[conversa.status])} />
+              {conversa.status}
+            </Badge>
+          </div>
         </div>
-        <Badge variant="outline" className="text-[11px] shrink-0 gap-1">
-          <span className={cn("h-2 w-2 rounded-full", STATUS_COLORS[conversa.status])} />
-          {conversa.status}
-        </Badge>
 
+        {/* Action buttons */}
         <TooltipProvider delayDuration={200}>
-          <div className="ml-auto flex gap-1">
+          <div className="flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onAssume}>
-                  <UserCheck className="h-4 w-4 text-blue-500" />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 gap-1.5 rounded-lg text-xs"
+                  onClick={onAssume}
+                >
+                  <UserCheck className="h-3.5 w-3.5 text-blue-500" />
+                  <span className="hidden lg:inline">Assumir</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Assumir</TooltipContent>
+              <TooltipContent>Assumir conversa</TooltipContent>
             </Tooltip>
+
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onPendente}>
-                  <Clock className="h-4 w-4 text-yellow-500" />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 gap-1.5 rounded-lg text-xs"
+                  onClick={onPendente}
+                >
+                  <Clock className="h-3.5 w-3.5 text-amber-500" />
+                  <span className="hidden lg:inline">Pendente</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Pendente</TooltipContent>
+              <TooltipContent>Marcar como pendente</TooltipContent>
             </Tooltip>
+
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onFinalizar}>
-                  <CheckCircle className="h-4 w-4 text-green-500" />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 gap-1.5 rounded-lg text-xs"
+                  onClick={onFinalizar}
+                >
+                  <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+                  <span className="hidden lg:inline">Concluir</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Finalizar</TooltipContent>
+              <TooltipContent>Finalizar atendimento</TooltipContent>
             </Tooltip>
+
             <Popover>
               <PopoverTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8">
-                  <Tag className="h-4 w-4 text-purple-500" />
+                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
+                  <Tag className="h-3.5 w-3.5 text-purple-500" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-48 p-2" align="end">
+              <PopoverContent className="w-44 p-1.5" align="end">
                 {ETIQUETAS_OPTIONS.map((e) => (
-                  <label key={e} className="flex items-center gap-2 py-1.5 px-2 hover:bg-accent rounded cursor-pointer text-sm">
+                  <label key={e} className="flex items-center gap-2 py-1.5 px-2.5 hover:bg-accent/50 rounded-md cursor-pointer text-sm">
                     <Checkbox checked={conversa.etiquetas.includes(e)} onCheckedChange={() => onToggleEtiqueta(e)} />
                     {e}
                   </label>
                 ))}
               </PopoverContent>
             </Popover>
+
+            {onToggleContext && !isMobile && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={onToggleContext}>
+                    {showContext ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRightOpen className="h-3.5 w-3.5" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{showContext ? "Modo foco" : "Contexto CRM"}</TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </TooltipProvider>
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-3 max-w-3xl mx-auto">
-          {mensagens.map((m) => (
-            <div key={m.id} className={cn("flex", m.de === "atendente" ? "justify-end" : "justify-start")}>
-              <div
-                className={cn(
-                  "rounded-2xl px-3.5 py-2 max-w-[75%] shadow-sm",
-                  m.de === "atendente"
-                    ? "bg-primary text-primary-foreground rounded-br-md"
-                    : "bg-muted rounded-bl-md"
-                )}
-              >
-                <p className="text-sm whitespace-pre-wrap">{m.texto}</p>
-                <p className={cn("text-[10px] mt-1", m.de === "atendente" ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                  {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                </p>
+      <ScrollArea className="flex-1">
+        <div className="px-4 py-4 space-y-1 max-w-2xl mx-auto">
+          {messageGroups.map((group) => (
+            <div key={group.label}>
+              {/* Day separator */}
+              <div className="flex items-center justify-center my-4">
+                <span className="text-[10px] font-medium text-muted-foreground/60 bg-muted/40 px-3 py-0.5 rounded-full">
+                  {group.label}
+                </span>
               </div>
+
+              {group.messages.map((m, idx) => {
+                const prev = idx > 0 ? group.messages[idx - 1] : null;
+                const isGrouped = isSameAuthorGroup(m, prev);
+                const showTime = shouldShowTimestamp(m, prev);
+                const isMe = m.de === "atendente";
+
+                return (
+                  <div
+                    key={m.id}
+                    className={cn(
+                      "flex",
+                      isMe ? "justify-end" : "justify-start",
+                      isGrouped ? "mt-0.5" : "mt-3"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "max-w-[75%] group",
+                        isMe ? "items-end" : "items-start"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "px-3.5 py-2 shadow-sm",
+                          isMe
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-card border border-border/40",
+                          // Rounded corners based on grouping
+                          isMe
+                            ? isGrouped
+                              ? "rounded-2xl rounded-br-md"
+                              : "rounded-2xl rounded-br-md"
+                            : isGrouped
+                              ? "rounded-2xl rounded-bl-md"
+                              : "rounded-2xl rounded-bl-md"
+                        )}
+                      >
+                        <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{m.texto}</p>
+                      </div>
+                      {showTime && (
+                        <p className={cn(
+                          "text-[10px] mt-0.5 px-1",
+                          isMe ? "text-right text-muted-foreground/50" : "text-muted-foreground/50"
+                        )}>
+                          {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ))}
           <div ref={messagesEndRef} />
@@ -203,74 +328,101 @@ export function ChatPanel({
       </ScrollArea>
 
       {/* Composer */}
-      <div className="relative border-t border-border p-3 shrink-0">
+      <div className="relative border-t border-border/50 bg-card/60 backdrop-blur-sm">
+        {/* Quick replies dropdown */}
         {showQuickReplies && (
-          <div className="absolute bottom-full left-3 right-3 mb-1 bg-popover border border-border rounded-lg shadow-lg max-h-[220px] overflow-y-auto z-50">
+          <div className="absolute bottom-full left-0 right-0 mx-4 mb-1 bg-popover border border-border/60 rounded-xl shadow-lg max-h-[200px] overflow-y-auto z-50">
             {filteredReplies.map((r, i) => (
               <button
                 key={r.id}
                 className={cn(
-                  "w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors",
-                  i === quickReplyIndex && "bg-accent"
+                  "w-full text-left px-3 py-2 text-sm hover:bg-accent/50 transition-colors first:rounded-t-xl last:rounded-b-xl",
+                  i === quickReplyIndex && "bg-accent/50"
                 )}
                 onMouseDown={(e) => { e.preventDefault(); selectQuickReply(r.texto); }}
               >
-                <span className="font-medium text-foreground">/{r.atalho}</span>
-                <span className="ml-2 text-muted-foreground">{r.titulo}</span>
+                <span className="font-medium text-primary text-xs">/{r.atalho}</span>
+                <span className="ml-2 text-muted-foreground text-xs">{r.titulo}</span>
               </button>
             ))}
           </div>
         )}
-        <div className="flex gap-2 items-end">
-          {/* Compact buttons */}
+
+        {/* Template chips */}
+        <div className="flex gap-1.5 px-4 pt-3 pb-1 overflow-x-auto scrollbar-none">
+          {respostas.slice(0, 4).map((r) => (
+            <button
+              key={r.id}
+              onClick={() => onMsgTextChange(r.texto)}
+              className="shrink-0 text-[10px] px-2.5 py-1 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all"
+            >
+              {r.titulo}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2 items-end px-4 pb-3 pt-1">
+          {/* Compact action buttons */}
           <div className="flex gap-0.5 shrink-0">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8"
-                  onClick={() => onMsgTextChange(msgText.startsWith("/") ? msgText : "/")}
-                >
-                  <FileText className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Templates (/)</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8" disabled>
-                  <Sparkles className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>IA (em breve)</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8" disabled>
-                  <Mic className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Áudio (em breve)</TooltipContent>
-            </Tooltip>
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-lg"
+                    onClick={() => onMsgTextChange(msgText.startsWith("/") ? msgText : "/")}
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Templates (/)</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" disabled>
+                    <Sparkles className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Sugerir resposta (em breve)</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" disabled>
+                    <Mic className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Áudio (em breve)</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
 
           <Textarea
             ref={textareaRef}
-            placeholder='Mensagem... (/ para templates, Ctrl+Enter envia)'
+            placeholder="Mensagem... (Shift+Enter quebra linha)"
             value={msgText}
             onChange={(e) => {
               onMsgTextChange(e.target.value);
               e.target.style.height = "auto";
-              e.target.style.height = Math.min(e.target.scrollHeight, 80) + "px";
+              e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px";
             }}
             onKeyDown={handleKeyDown}
-            className="min-h-[40px] max-h-[80px] resize-none text-sm flex-1"
+            className="min-h-[40px] max-h-[100px] resize-none text-sm flex-1 rounded-xl bg-muted/30 border-border/40 focus-visible:bg-background transition-colors"
             rows={1}
           />
-          <Button size="icon" onClick={onSend} disabled={!msgText.trim()} className="shrink-0">
+
+          <Button
+            size="icon"
+            onClick={onSend}
+            disabled={!msgText.trim()}
+            className="shrink-0 rounded-xl h-10 w-10"
+          >
             <Send className="h-4 w-4" />
           </Button>
+        </div>
+
+        <div className="text-center pb-1.5">
+          <span className="text-[9px] text-muted-foreground/40">Enter envia • Shift+Enter nova linha • / templates</span>
         </div>
       </div>
     </div>
