@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -11,6 +11,17 @@ import { CrmContextPanel } from "@/components/atendimento/CrmContextPanel";
 import { CommandPalette } from "@/components/atendimento/CommandPalette";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
+const URGENCY_KEYWORDS = [
+  "urgente", "urgência", "cancelar", "problema", "reclamação",
+  "advogado", "processo", "prazo", "vencendo", "atraso",
+  "não recebi", "cobranç", "desesper",
+];
+
+function detectUrgency(text: string): boolean {
+  const lower = text.toLowerCase();
+  return URGENCY_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
 type TabFilter = "nao_lidas" | "Aberto" | "Pendente" | "Fechado";
 
 export default function Atendimento() {
@@ -20,7 +31,13 @@ export default function Atendimento() {
   const isMobile = useIsMobile();
   const { toast } = useToast();
 
-  const [conversas, setConversas] = useState<Conversa[]>(initialConversas);
+  const [conversas, setConversas] = useState<Conversa[]>(() =>
+    initialConversas.map((c) => ({
+      ...c,
+      prioridade: detectUrgency(c.ultimaMensagem) ? "alta" as const : "normal" as const,
+      slaMinutos: Math.floor((Date.now() - c.horario.getTime()) / 60000),
+    }))
+  );
   const [mensagens, setMensagens] = useState<Record<string, Mensagem[]>>(initialMensagens);
   const [selectedId, setSelectedId] = useState<string | null>(routeId ?? null);
   const [search, setSearch] = useState("");
@@ -99,11 +116,30 @@ export default function Atendimento() {
 
   const handleSend = useCallback(() => {
     if (!selectedId || !msgText.trim()) return;
-    const newMsg: Mensagem = { id: `m${Date.now()}`, texto: msgText.trim(), de: "atendente", horario: new Date() };
+    const text = msgText.trim();
+    const isUrgent = detectUrgency(text);
+    const newMsg: Mensagem = { id: `m${Date.now()}`, texto: text, de: "atendente", horario: new Date() };
     setMensagens((prev) => ({ ...prev, [selectedId]: [...(prev[selectedId] ?? []), newMsg] }));
-    setConversas((prev) => prev.map((c) => (c.id === selectedId ? { ...c, ultimaMensagem: newMsg.texto, horario: newMsg.horario } : c)));
+    setConversas((prev) => prev.map((c) => {
+      if (c.id !== selectedId) return c;
+      const updated: Conversa = { ...c, ultimaMensagem: newMsg.texto, horario: newMsg.horario, slaMinutos: 0 };
+      if (isUrgent && !c.etiquetas.includes("Urgente")) {
+        updated.prioridade = "alta";
+        updated.etiquetas = [...c.etiquetas, "Urgente"];
+      }
+      return updated;
+    }));
     setMsgText("");
   }, [selectedId, msgText]);
+
+  // Sort conversas: urgent first, then by horario
+  const sortedConversas = useMemo(() => {
+    return [...conversas].sort((a, b) => {
+      if (a.prioridade === "alta" && b.prioridade !== "alta") return -1;
+      if (b.prioridade === "alta" && a.prioridade !== "alta") return 1;
+      return b.horario.getTime() - a.horario.getTime();
+    });
+  }, [conversas]);
 
   if (loading || !user) return null;
 
@@ -139,7 +175,7 @@ export default function Atendimento() {
           />
         ) : (
           <InboxSidebar
-            conversas={conversas}
+            conversas={sortedConversas}
             selectedId={selectedId}
             search={search}
             onSearchChange={setSearch}
@@ -174,7 +210,7 @@ export default function Atendimento() {
 
       {/* Inbox */}
       <InboxSidebar
-        conversas={conversas}
+        conversas={sortedConversas}
         selectedId={selectedId}
         search={search}
         onSearchChange={setSearch}

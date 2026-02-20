@@ -277,7 +277,23 @@ export function InboxSidebar({
                   {!c.atendente && (
                     <span className="text-[10px] text-destructive font-medium">• Sem atendente</span>
                   )}
-                  {c.etiquetas.slice(0, 2).map((e) => (
+                  {c.prioridade === "alta" && (
+                    <Badge
+                      variant="destructive"
+                      className="h-4 text-[9px] px-1.5 py-0 font-bold animate-pulse"
+                    >
+                      🔥 Urgente
+                    </Badge>
+                  )}
+                  {c.slaMinutos != null && c.status !== "Fechado" && (
+                    <span className={cn(
+                      "text-[9px] font-mono font-medium tabular-nums",
+                      c.slaMinutos <= 5 ? "text-destructive" : c.slaMinutos <= 15 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground/60"
+                    )}>
+                      SLA {c.slaMinutos}m
+                    </span>
+                  )}
+                  {c.etiquetas.filter(e => e !== "Urgente" || c.prioridade !== "alta").slice(0, 2).map((e) => (
                     <Badge
                       key={e}
                       variant="outline"
