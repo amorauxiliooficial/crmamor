@@ -90,6 +90,50 @@ export type Database = {
           },
         ]
       }
+      assignment_events: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          from_user_id: string | null
+          id: string
+          mae_id: string | null
+          reason: string | null
+          summary: string | null
+          to_user_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          from_user_id?: string | null
+          id?: string
+          mae_id?: string | null
+          reason?: string | null
+          summary?: string | null
+          to_user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          from_user_id?: string | null
+          id?: string
+          mae_id?: string | null
+          reason?: string | null
+          summary?: string | null
+          to_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_events_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       atividades_mae: {
         Row: {
           concluido: boolean | null
@@ -713,6 +757,53 @@ export type Database = {
           valor_meta?: number
         }
         Relationships: []
+      }
+      mother_contacts: {
+        Row: {
+          active: boolean
+          contact_type: string
+          created_at: string
+          id: string
+          is_primary: boolean
+          mae_id: string
+          updated_at: string
+          value_e164: string
+          verified_at: string | null
+          wa_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          contact_type?: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          mae_id: string
+          updated_at?: string
+          value_e164: string
+          verified_at?: string | null
+          wa_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          contact_type?: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          mae_id?: string
+          updated_at?: string
+          value_e164?: string
+          verified_at?: string | null
+          wa_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mother_contacts_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       onboarding_items: {
         Row: {

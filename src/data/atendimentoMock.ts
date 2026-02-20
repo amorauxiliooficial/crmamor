@@ -10,6 +10,7 @@ export interface Conversa {
   etiquetas: string[];
   prioridade?: "normal" | "alta";
   slaMinutos?: number;
+  maeId?: string | null;
 }
 
 export interface Mensagem {

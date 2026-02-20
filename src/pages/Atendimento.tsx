@@ -8,6 +8,8 @@ import { respostasRapidas } from "@/data/respostasRapidas";
 import { InboxSidebar } from "@/components/atendimento/InboxSidebar";
 import { ChatPanel } from "@/components/atendimento/ChatPanel";
 import { CrmContextPanel } from "@/components/atendimento/CrmContextPanel";
+import { useAssignmentActions } from "@/hooks/useAssignmentEvents";
+import { useTimelineActions } from "@/hooks/useTimelineEvents";
 import { CommandPalette } from "@/components/atendimento/CommandPalette";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
@@ -30,7 +32,8 @@ export default function Atendimento() {
   const { id: routeId } = useParams<{ id: string }>();
   const isMobile = useIsMobile();
   const { toast } = useToast();
-
+  const { recordAssignment } = useAssignmentActions();
+  const { addEvent } = useTimelineActions();
   const [conversas, setConversas] = useState<Conversa[]>(() =>
     initialConversas.map((c) => ({
       ...c,
@@ -75,10 +78,23 @@ export default function Atendimento() {
     (id?: string) => {
       const target = id || selectedId;
       if (!target) return;
+      const prev = conversas.find(c => c.id === target);
       setConversas((prev) => prev.map((c) => (c.id === target ? { ...c, atendente: "Você" } : c)));
       toast({ title: "Conversa assumida" });
+      // Record assignment event
+      recordAssignment.mutate({
+        conversation_id: target,
+        from_user_id: null,
+        to_user_id: user?.id,
+        reason: "Conversa assumida manualmente",
+      });
+      addEvent({
+        conversation_id: target,
+        event_type: "assignment_changed",
+        title: "Atendente assumiu a conversa",
+      });
     },
-    [selectedId, toast]
+    [selectedId, toast, conversas, recordAssignment, addEvent, user]
   );
 
   const handlePendente = useCallback(
@@ -250,14 +266,14 @@ export default function Atendimento() {
 
       {/* CRM Context - Desktop (inline) */}
       {!isTablet && showContext && (
-        <CrmContextPanel conversa={conversa} />
+        <CrmContextPanel conversa={conversa} maeId={conversa?.maeId ?? null} />
       )}
 
       {/* CRM Context - Tablet (drawer) */}
       {isTablet && (
         <Sheet open={showContextDrawer} onOpenChange={setShowContextDrawer}>
           <SheetContent side="right" className="p-0 w-[340px]">
-            <CrmContextPanel conversa={conversa} className="w-full border-l-0" />
+            <CrmContextPanel conversa={conversa} maeId={conversa?.maeId ?? null} className="w-full border-l-0" />
           </SheetContent>
         </Sheet>
       )}
