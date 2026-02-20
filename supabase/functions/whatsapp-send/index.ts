@@ -55,7 +55,7 @@ serve(async (req: Request): Promise<Response> => {
 
     if (!META_WA_TOKEN || !META_PHONE_NUMBER_ID) {
       console.error('❌ Missing META_WA_TOKEN or META_PHONE_NUMBER_ID');
-      return new Response(JSON.stringify({ error: 'Server misconfigured' }), {
+      return new Response(JSON.stringify({ error: 'Server misconfigured: missing Meta credentials' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -64,6 +64,8 @@ serve(async (req: Request): Promise<Response> => {
     const cleanPhone = to.replace(/\D/g, '');
 
     console.log(`📤 Sending to +${cleanPhone}: ${text.slice(0, 80)}`);
+    console.log(`🔑 Using PHONE_NUMBER_ID: ${META_PHONE_NUMBER_ID}`);
+    console.log(`🔑 Token prefix: ${META_WA_TOKEN.slice(0, 20)}...`);
 
     // Call Meta Cloud API
     const metaRes = await fetch(
@@ -88,7 +90,15 @@ serve(async (req: Request): Promise<Response> => {
     console.log(`📡 Meta API response (${metaRes.status}):`, JSON.stringify(metaBody).slice(0, 300));
 
     if (!metaRes.ok) {
-      return new Response(JSON.stringify({ error: 'Meta API error', details: metaBody }), {
+      const metaError = metaBody?.error;
+      console.error(`❌ Meta API error ${metaRes.status}: code=${metaError?.code}, subcode=${metaError?.error_subcode}, msg=${metaError?.message}`);
+      
+      let userMessage = 'Meta API error';
+      if (metaError?.error_subcode === 33 || metaError?.code === 100) {
+        userMessage = `Invalid META_PHONE_NUMBER_ID (${META_PHONE_NUMBER_ID}) or token lacks permissions. Verify credentials in Meta for Developers.`;
+      }
+      
+      return new Response(JSON.stringify({ error: userMessage, details: metaBody }), {
         status: metaRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
