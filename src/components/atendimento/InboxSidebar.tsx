@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo } from "react";
 import { Search, Settings, User, UserCheck, Clock, Inbox, AlertTriangle, Hourglass, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +51,7 @@ interface InboxSidebarProps {
   selectedId: string | null;
   search: string;
   onSearchChange: (v: string) => void;
+  debouncedSearch?: string;
   onSelect: (id: string) => void;
   onOpenConfig: () => void;
   statusFilter: TabFilter | null;
@@ -67,7 +68,7 @@ function InboxSkeleton() {
     <div className="space-y-1">
       {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
         <div key={i} className="flex items-center gap-3 px-4 py-3">
-          <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+          <Skeleton className="h-11 w-11 rounded-full shrink-0" />
           <div className="flex-1 space-y-1.5">
             <div className="flex justify-between">
               <Skeleton className="h-4 w-24" />
@@ -146,7 +147,7 @@ function QueueSection({ title, icon: Icon, conversas, selectedId, onSelect, hove
   );
 }
 
-function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, onAssume, onPendente }: {
+const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, onAssume, onPendente }: {
   conversa: Conversa;
   isSelected: boolean;
   isHovered: boolean;
@@ -158,10 +159,10 @@ function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, o
   return (
     <div
       className={cn(
-        "group relative flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all duration-150",
+        "group relative flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-150",
         isSelected
           ? "bg-primary/8 ring-1 ring-primary/15 rounded-lg mx-2"
-          : "hover:bg-muted/30 mx-2 rounded-lg"
+          : "hover:bg-muted/30 active:bg-muted/50 mx-2 rounded-lg"
       )}
       onClick={() => onSelect(c.id)}
       onMouseEnter={() => onHover(c.id)}
@@ -169,16 +170,16 @@ function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, o
     >
       {/* Avatar */}
       <div className="relative shrink-0">
-        <Avatar className="h-10 w-10">
+        <Avatar className="h-11 w-11">
           <AvatarFallback className={cn(
-            "text-xs font-semibold",
+            "text-sm font-semibold",
             isSelected ? "bg-primary/15 text-primary" : "bg-muted/50 text-muted-foreground"
           )}>
-            {c.nome ? c.nome.charAt(0).toUpperCase() : <User className="h-4 w-4" />}
+            {c.nome ? c.nome.charAt(0).toUpperCase() : <User className="h-5 w-5" />}
           </AvatarFallback>
         </Avatar>
         {c.status === "Aberto" && (
-          <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-background" />
+          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-background" />
         )}
       </div>
 
@@ -186,7 +187,7 @@ function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, o
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-1.5">
           <span className={cn(
-            "text-[13px] truncate",
+            "text-[14px] truncate",
             c.naoLidas > 0 ? "font-bold text-foreground" : "font-medium text-foreground/80"
           )}>
             {c.nome ?? c.telefone}
@@ -197,7 +198,7 @@ function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, o
         </div>
 
         <p className={cn(
-          "text-[12px] truncate mt-0.5",
+          "text-[13px] truncate mt-0.5",
           c.naoLidas > 0 ? "text-foreground/60" : "text-muted-foreground/50"
         )}>
           {c.ultimaMensagem}
@@ -207,16 +208,16 @@ function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, o
         <div className="flex items-center gap-1.5 mt-1">
           <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", STATUS_DOT[c.status])} />
           {c.prioridade === "alta" && (
-            <Badge variant="destructive" className="h-4 text-[9px] px-1.5 py-0 font-bold rounded-full">
+            <Badge variant="destructive" className="h-5 text-[10px] px-1.5 py-0 font-bold rounded-full">
               🔥
             </Badge>
           )}
           {!c.atendente && (
-            <span className="text-[10px] text-primary/60 font-medium">Sem atendente</span>
+            <span className="text-[11px] text-primary/60 font-medium">Sem atendente</span>
           )}
           {c.slaMinutos != null && c.status !== "Fechado" && (
             <span className={cn(
-              "text-[10px] font-mono font-medium tabular-nums",
+              "text-[11px] font-mono font-medium tabular-nums",
               c.slaMinutos <= 5 ? "text-destructive/70" : c.slaMinutos <= 15 ? "text-amber-600/60 dark:text-amber-400/60" : "text-muted-foreground/40"
             )}>
               {c.slaMinutos}m
@@ -226,7 +227,7 @@ function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, o
             <Badge
               key={e}
               variant="outline"
-              className="h-4 text-[9px] px-1.5 py-0 font-medium border-border/20 text-muted-foreground/50 rounded-full"
+              className="h-5 text-[10px] px-1.5 py-0 font-medium border-border/20 text-muted-foreground/50 rounded-full"
             >
               {e}
             </Badge>
@@ -236,7 +237,7 @@ function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, o
 
       {/* Unread count */}
       {c.naoLidas > 0 && (
-        <span className="bg-primary text-primary-foreground h-5 min-w-5 px-1.5 flex items-center justify-center rounded-full text-[10px] font-bold shrink-0">
+        <span className="bg-primary text-primary-foreground h-6 min-w-6 px-1.5 flex items-center justify-center rounded-full text-[11px] font-bold shrink-0">
           {c.naoLidas}
         </span>
       )}
@@ -251,9 +252,9 @@ function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, o
             {onAssume && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="icon" variant="secondary" className="h-7 w-7 rounded-md"
+                  <Button size="icon" variant="secondary" className="h-8 w-8 rounded-md"
                     onClick={(e) => { e.stopPropagation(); onAssume(c.id); }}>
-                    <UserCheck className="h-3.5 w-3.5" />
+                    <UserCheck className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">Assumir</TooltipContent>
@@ -262,9 +263,9 @@ function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, o
             {onPendente && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="icon" variant="secondary" className="h-7 w-7 rounded-md"
+                  <Button size="icon" variant="secondary" className="h-8 w-8 rounded-md"
                     onClick={(e) => { e.stopPropagation(); onPendente(c.id); }}>
-                    <Clock className="h-3.5 w-3.5" />
+                    <Clock className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">Pendente</TooltipContent>
@@ -275,13 +276,14 @@ function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, o
       )}
     </div>
   );
-}
+});
 
 export function InboxSidebar({
   conversas,
   selectedId,
   search,
   onSearchChange,
+  debouncedSearch,
   onSelect,
   onOpenConfig,
   statusFilter,
@@ -296,6 +298,9 @@ export function InboxSidebar({
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [queueMode, setQueueMode] = useState<QueueMode>("smart");
 
+  // Use debounced search for filtering, fall back to search if no debounced value provided
+  const searchTerm = debouncedSearch ?? search;
+
   const filtered = useMemo(() => {
     return conversas.filter((c) => {
       if (statusFilter === "nao_lidas" && c.naoLidas === 0) return false;
@@ -303,8 +308,8 @@ export function InboxSidebar({
       if (chipFilter === "meus" && c.atendente !== "Você") return false;
       if (chipFilter === "sem_atendente" && c.atendente !== null) return false;
       if (chipFilter === "urgentes" && !c.etiquetas.includes("Urgente")) return false;
-      if (search) {
-        const s = search.toLowerCase();
+      if (searchTerm) {
+        const s = searchTerm.toLowerCase();
         if (
           !(
             c.nome?.toLowerCase().includes(s) ||
@@ -317,7 +322,7 @@ export function InboxSidebar({
       }
       return true;
     });
-  }, [conversas, statusFilter, chipFilter, search]);
+  }, [conversas, statusFilter, chipFilter, searchTerm]);
 
   const smartQueue = useMemo(() => categorizeConversas(filtered), [filtered]);
   const naoLidasCount = conversas.filter((c) => c.naoLidas > 0).length;
@@ -328,7 +333,7 @@ export function InboxSidebar({
       <div className="px-4 pt-4 pb-2 space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
               <Inbox className="h-4 w-4 text-primary" />
             </div>
             <h1 className="font-semibold text-sm tracking-tight">Atendimento</h1>
@@ -351,7 +356,7 @@ export function InboxSidebar({
             placeholder="Buscar..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 h-10 text-sm rounded-lg bg-muted/20 border-border/20 focus-visible:border-primary/30 transition-all"
+            className="pl-9 h-11 text-sm rounded-lg bg-muted/20 border-border/20 focus-visible:border-primary/30 transition-all"
           />
         </div>
 
@@ -365,7 +370,7 @@ export function InboxSidebar({
                   key={tab.value}
                   onClick={() => onStatusFilterChange(tab.value === "all" ? null : (tab.value as TabFilter))}
                   className={cn(
-                    "flex-1 text-[11px] font-medium py-1 rounded-md transition-all duration-150",
+                    "flex-1 text-[11px] font-medium py-1.5 rounded-md transition-all duration-150 min-h-[36px]",
                     isActive
                       ? "bg-card text-foreground shadow-sm"
                       : "text-muted-foreground/60 hover:text-foreground"
@@ -387,7 +392,7 @@ export function InboxSidebar({
                 <Button
                   variant={queueMode === "smart" ? "default" : "ghost"}
                   size="icon"
-                  className="h-8 w-8 rounded-lg shrink-0"
+                  className="h-9 w-9 rounded-lg shrink-0"
                   onClick={() => setQueueMode(queueMode === "smart" ? "all" : "smart")}
                 >
                   <AlertTriangle className="h-4 w-4" />
@@ -411,7 +416,7 @@ export function InboxSidebar({
                 else onAtendenteFilterChange("todos");
               }}
               className={cn(
-                "px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-all border",
+                "px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all border min-h-[32px]",
                 chipFilter === chip.value
                   ? "bg-primary/10 text-primary border-primary/20"
                   : "bg-transparent text-muted-foreground/50 border-transparent hover:text-foreground hover:bg-muted/20"
@@ -429,10 +434,11 @@ export function InboxSidebar({
           <InboxSkeleton />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-6">
-            <div className="h-10 w-10 rounded-xl bg-muted/20 flex items-center justify-center mb-3">
-              <Search className="h-4 w-4 text-muted-foreground/30" />
+            <div className="h-12 w-12 rounded-xl bg-muted/20 flex items-center justify-center mb-3">
+              <Search className="h-5 w-5 text-muted-foreground/30" />
             </div>
-            <p className="text-xs font-medium text-muted-foreground/60">Nenhuma conversa</p>
+            <p className="text-sm font-medium text-muted-foreground/60">Nenhuma conversa</p>
+            <p className="text-xs text-muted-foreground/40 mt-1">Tente outro filtro</p>
           </div>
         ) : queueMode === "smart" ? (
           <div className="py-1">
@@ -504,7 +510,7 @@ export function InboxSidebar({
       </ScrollArea>
 
       {/* Footer stats */}
-      <div className="px-4 py-2 border-t border-border/20 flex items-center justify-between">
+      <div className="px-4 py-2.5 border-t border-border/20 flex items-center justify-between">
         <span className="text-[11px] text-muted-foreground/50">{filtered.length} conversas</span>
         <div className="flex items-center gap-3">
           {smartQueue.urgentes.length > 0 && (

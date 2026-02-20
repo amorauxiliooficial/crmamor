@@ -1,8 +1,9 @@
-import { useRef, useEffect, useState, useMemo, useCallback } from "react";
+import { useRef, useEffect, useState, useMemo, useCallback, memo } from "react";
 import {
   Send, ArrowLeft, User, UserCheck, Clock, CheckCircle, Tag,
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
   Loader2, Zap, Brain, Database, ArrowRight, CalendarPlus, AlertTriangle,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +65,49 @@ function MessageSkeleton() {
     </div>
   );
 }
+
+// Memoized message bubble to prevent re-renders when typing
+const MessageBubble = memo(function MessageBubble({
+  message: m,
+  isGrouped,
+  showTime,
+}: {
+  message: Mensagem;
+  isGrouped: boolean;
+  showTime: boolean;
+}) {
+  const isMe = m.de === "atendente";
+  return (
+    <div
+      className={cn(
+        "flex",
+        isMe ? "justify-end" : "justify-start",
+        isGrouped ? "mt-0.5" : "mt-2"
+      )}
+    >
+      <div className={cn("max-w-[72%]", isMe ? "items-end" : "items-start")}>
+        <div
+          className={cn(
+            "px-3.5 py-2.5",
+            isMe
+              ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
+              : "bg-card border border-border/20 rounded-2xl rounded-bl-sm"
+          )}
+        >
+          <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{m.texto}</p>
+        </div>
+        {showTime && (
+          <p className={cn(
+            "text-[10px] mt-0.5 px-1.5",
+            isMe ? "text-right text-muted-foreground/40" : "text-muted-foreground/40"
+          )}>
+            {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+});
 
 type AiAction = "suggest" | "summarize" | "extract" | "next_action";
 
@@ -242,20 +286,20 @@ export function ChatPanel({
       {/* Header */}
       <div className="border-b border-border/20 px-4 py-3 flex items-center gap-3 shrink-0 bg-card/30 backdrop-blur-sm">
         {isMobile && (
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg" onClick={onBack}>
+            <ArrowLeft className="h-5 w-5" />
           </Button>
         )}
 
-        <Avatar className="h-9 w-9 shrink-0">
-          <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+        <Avatar className="h-10 w-10 shrink-0">
+          <AvatarFallback className="text-sm font-semibold bg-primary/10 text-primary">
             {conversa.nome ? conversa.nome.charAt(0) : <User className="h-4 w-4" />}
           </AvatarFallback>
         </Avatar>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="font-semibold text-sm truncate">{conversa.nome ?? conversa.telefone}</p>
+            <p className="font-semibold text-[15px] truncate">{conversa.nome ?? conversa.telefone}</p>
             <span className={cn("h-2 w-2 rounded-full shrink-0", STATUS_COLORS[conversa.status])} />
             <span className="text-xs text-muted-foreground/50">{conversa.status}</span>
           </div>
@@ -271,35 +315,35 @@ export function ChatPanel({
             {/* AI Actions dropdown */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-8 gap-1.5 rounded-lg text-xs text-primary/70 hover:text-primary">
+                <Button size="sm" variant="ghost" className="h-9 gap-1.5 rounded-lg text-xs text-primary/70 hover:text-primary">
                   {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   <span className="hidden lg:inline">IA</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-48 p-1.5" align="end">
                 <button
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50"
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50 min-h-[40px]"
                   onClick={() => handleAiAction("suggest")}
                   disabled={!!aiLoading}
                 >
                   <Brain className="h-4 w-4 text-primary/70" /> Sugerir resposta
                 </button>
                 <button
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50"
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50 min-h-[40px]"
                   onClick={() => handleAiAction("summarize")}
                   disabled={!!aiLoading}
                 >
                   <Sparkles className="h-4 w-4 text-primary/70" /> Resumir caso
                 </button>
                 <button
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50"
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50 min-h-[40px]"
                   onClick={() => handleAiAction("extract")}
                   disabled={!!aiLoading}
                 >
                   <Database className="h-4 w-4 text-primary/70" /> Extrair dados
                 </button>
                 <button
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50"
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50 min-h-[40px]"
                   onClick={() => handleAiAction("next_action")}
                   disabled={!!aiLoading}
                 >
@@ -308,42 +352,46 @@ export function ChatPanel({
               </PopoverContent>
             </Popover>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground/60" onClick={onAssume}>
-                  <UserCheck className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">Assumir</TooltipContent>
-            </Tooltip>
+            {!isMobile && (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60" onClick={onAssume}>
+                      <UserCheck className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-xs">Assumir</TooltipContent>
+                </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground/60" onClick={onPendente}>
-                  <Clock className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">Pendente</TooltipContent>
-            </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60" onClick={onPendente}>
+                      <Clock className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-xs">Pendente</TooltipContent>
+                </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground/60 hover:text-emerald-600 dark:hover:text-emerald-400" onClick={onFinalizar}>
-                  <CheckCircle className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">Concluir</TooltipContent>
-            </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60 hover:text-emerald-600 dark:hover:text-emerald-400" onClick={onFinalizar}>
+                      <CheckCircle className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-xs">Concluir</TooltipContent>
+                </Tooltip>
+              </>
+            )}
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground/60">
+                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60">
                   <Tag className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-44 p-1.5" align="end">
                 {ETIQUETAS_OPTIONS.map((e) => (
-                  <label key={e} className="flex items-center gap-2.5 py-1.5 px-2.5 hover:bg-accent/30 rounded-lg cursor-pointer text-xs">
+                  <label key={e} className="flex items-center gap-2.5 py-2 px-2.5 hover:bg-accent/30 rounded-lg cursor-pointer text-xs min-h-[40px]">
                     <Checkbox checked={conversa.etiquetas.includes(e)} onCheckedChange={() => onToggleEtiqueta(e)} className="h-4 w-4" />
                     {e}
                   </label>
@@ -351,14 +399,22 @@ export function ChatPanel({
               </PopoverContent>
             </Popover>
 
-            {onToggleContext && !isMobile && (
+            {onToggleContext && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground/60" onClick={onToggleContext}>
-                    {showContext ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60" onClick={onToggleContext}>
+                    {isMobile ? (
+                      <Info className="h-4 w-4" />
+                    ) : showContext ? (
+                      <PanelRightClose className="h-4 w-4" />
+                    ) : (
+                      <PanelRightOpen className="h-4 w-4" />
+                    )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="text-xs">{showContext ? "Modo foco" : "Contexto CRM"}</TooltipContent>
+                <TooltipContent className="text-xs">
+                  {isMobile ? "Contexto CRM" : showContext ? "Modo foco" : "Contexto CRM"}
+                </TooltipContent>
               </Tooltip>
             )}
           </div>
@@ -384,7 +440,7 @@ export function ChatPanel({
             {summary || aiResult?.text}
           </p>
           {aiResult?.type === "next_action" && (
-            <Button size="sm" variant="outline" className="mt-2 h-7 text-xs rounded-lg" onClick={() => { toast({ title: "Ação aplicada ✅" }); setAiResult(null); }}>
+            <Button size="sm" variant="outline" className="mt-2 h-8 text-xs rounded-lg" onClick={() => { toast({ title: "Ação aplicada ✅" }); setAiResult(null); }}>
               Aplicar
             </Button>
           )}
@@ -393,14 +449,14 @@ export function ChatPanel({
 
       {/* Messages */}
       <ScrollArea className="flex-1">
-        <div className="px-6 py-3 space-y-1 max-w-3xl mx-auto">
+        <div className="px-4 md:px-6 py-3 space-y-1 max-w-3xl mx-auto">
           {/* Load more */}
           {hasMore && (
             <div className="flex justify-center py-3">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 text-xs text-muted-foreground/50 hover:text-foreground"
+                className="h-9 text-xs text-muted-foreground/50 hover:text-foreground"
                 onClick={() => setVisibleCount((v) => v + MESSAGES_PER_PAGE)}
               >
                 Carregar mais mensagens ({mensagens.length - visibleCount} anteriores)
@@ -423,38 +479,14 @@ export function ChatPanel({
                   const prev = idx > 0 ? group.messages[idx - 1] : null;
                   const isGrouped = isSameAuthorGroup(m, prev);
                   const showTime = shouldShowTimestamp(m, prev);
-                  const isMe = m.de === "atendente";
 
                   return (
-                    <div
+                    <MessageBubble
                       key={m.id}
-                      className={cn(
-                        "flex animate-in fade-in duration-150",
-                        isMe ? "justify-end" : "justify-start",
-                        isGrouped ? "mt-0.5" : "mt-2"
-                      )}
-                    >
-                      <div className={cn("max-w-[72%]", isMe ? "items-end" : "items-start")}>
-                        <div
-                          className={cn(
-                            "px-3.5 py-2",
-                            isMe
-                              ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
-                              : "bg-card border border-border/20 rounded-2xl rounded-bl-sm"
-                          )}
-                        >
-                          <p className="text-[14px] leading-relaxed whitespace-pre-wrap">{m.texto}</p>
-                        </div>
-                        {showTime && (
-                          <p className={cn(
-                            "text-[10px] mt-0.5 px-1.5",
-                            isMe ? "text-right text-muted-foreground/40" : "text-muted-foreground/40"
-                          )}>
-                            {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                      message={m}
+                      isGrouped={isGrouped}
+                      showTime={showTime}
+                    />
                   );
                 })}
               </div>
@@ -473,7 +505,7 @@ export function ChatPanel({
               <button
                 key={r.id}
                 className={cn(
-                  "w-full text-left px-3 py-2 text-xs hover:bg-accent/30 transition-colors first:rounded-t-xl last:rounded-b-xl",
+                  "w-full text-left px-3 py-2.5 text-xs hover:bg-accent/30 transition-colors first:rounded-t-xl last:rounded-b-xl min-h-[40px]",
                   i === quickReplyIndex && "bg-accent/30"
                 )}
                 onMouseDown={(e) => { e.preventDefault(); selectQuickReply(r.texto); }}
@@ -485,13 +517,13 @@ export function ChatPanel({
           </div>
         )}
 
-        {/* Template + Action chips */}
+        {/* Template + Action chips - scrollable on mobile */}
         <div className="flex gap-1.5 px-4 pt-2 pb-1 overflow-x-auto scrollbar-none">
           {smartTemplates.map((t) => (
             <button
               key={t.id}
               onClick={() => handleSmartTemplate(t)}
-              className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border border-border/15 text-muted-foreground/50 hover:text-foreground hover:border-primary/20 hover:bg-primary/5 transition-all"
+              className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-full border border-border/15 text-muted-foreground/50 hover:text-foreground hover:border-primary/20 hover:bg-primary/5 transition-all min-h-[32px]"
             >
               <span>{t.emoji}</span>
               <span>{t.label}</span>
@@ -499,28 +531,27 @@ export function ChatPanel({
             </button>
           ))}
           <div className="w-px bg-border/20 mx-1 shrink-0" />
-          {/* Action chips */}
           <button
             onClick={() => { toast({ title: "Follow-up 24h criado 📅" }); }}
-            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border border-primary/15 text-primary/50 hover:text-primary hover:bg-primary/5 transition-all"
+            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-full border border-primary/15 text-primary/50 hover:text-primary hover:bg-primary/5 transition-all min-h-[32px]"
           >
             <CalendarPlus className="h-3 w-3" /> 24h
           </button>
           <button
             onClick={() => { toast({ title: "Follow-up 48h criado 📅" }); }}
-            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border border-primary/15 text-primary/50 hover:text-primary hover:bg-primary/5 transition-all"
+            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-full border border-primary/15 text-primary/50 hover:text-primary hover:bg-primary/5 transition-all min-h-[32px]"
           >
             <CalendarPlus className="h-3 w-3" /> 48h
           </button>
           <button
             onClick={onPendente}
-            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border border-amber-500/15 text-amber-600/50 dark:text-amber-400/50 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/5 transition-all"
+            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-full border border-amber-500/15 text-amber-600/50 dark:text-amber-400/50 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/5 transition-all min-h-[32px]"
           >
             <Clock className="h-3 w-3" /> Pendente
           </button>
           <button
             onClick={() => onToggleEtiqueta("Urgente")}
-            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border border-destructive/15 text-destructive/50 hover:text-destructive hover:bg-destructive/5 transition-all"
+            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-full border border-destructive/15 text-destructive/50 hover:text-destructive hover:bg-destructive/5 transition-all min-h-[32px]"
           >
             <AlertTriangle className="h-3 w-3" /> Urgente
           </button>
@@ -534,7 +565,7 @@ export function ChatPanel({
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8 rounded-lg text-muted-foreground/40"
+                    className="h-10 w-10 rounded-lg text-muted-foreground/40"
                     onClick={() => onMsgTextChange(msgText.startsWith("/") ? msgText : "/")}
                   >
                     <FileText className="h-4 w-4" />
@@ -555,7 +586,7 @@ export function ChatPanel({
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
             }}
             onKeyDown={handleKeyDown}
-            className="min-h-[40px] max-h-[120px] resize-none text-sm flex-1 rounded-xl bg-muted/15 border-border/15 focus-visible:border-primary/25 focus-visible:bg-background transition-all"
+            className="min-h-[44px] max-h-[120px] resize-none text-[15px] flex-1 rounded-xl bg-muted/15 border-border/15 focus-visible:border-primary/25 focus-visible:bg-background transition-all"
             rows={1}
           />
 
@@ -563,15 +594,17 @@ export function ChatPanel({
             size="icon"
             onClick={onSend}
             disabled={!msgText.trim()}
-            className="shrink-0 rounded-xl h-10 w-10"
+            className="shrink-0 rounded-xl h-11 w-11"
           >
             <Send className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="text-center pb-1">
-          <span className="text-[9px] text-muted-foreground/30">Enter envia • Shift+Enter nova linha • / templates • ⌘K buscar</span>
-        </div>
+        {!isMobile && (
+          <div className="text-center pb-1">
+            <span className="text-[9px] text-muted-foreground/30">Enter envia • Shift+Enter nova linha • / templates • ⌘K buscar</span>
+          </div>
+        )}
       </div>
     </div>
   );
