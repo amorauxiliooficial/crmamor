@@ -49,12 +49,12 @@ function InfoRow({ icon: Icon, label, value, copyable = false }: {
   copyable?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between py-0.5 group">
-      <div className="flex items-center gap-1.5 min-w-0">
-        <Icon className="h-2.5 w-2.5 text-muted-foreground/30 shrink-0" />
+    <div className="flex items-center justify-between py-1 group">
+      <div className="flex items-center gap-2 min-w-0">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
         <div className="min-w-0">
-          <p className="text-[8px] text-muted-foreground/35 uppercase tracking-wider">{label}</p>
-          <p className="text-[10px] font-medium truncate">{value}</p>
+          <p className="text-[10px] text-muted-foreground/45 uppercase tracking-wider">{label}</p>
+          <p className="text-xs font-medium truncate">{value}</p>
         </div>
       </div>
       {copyable && <CopyButton value={value} />}
@@ -74,19 +74,19 @@ function CollapsibleSection({ title, defaultOpen = true, children, count }: {
     <div>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full py-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/40 hover:text-foreground transition-colors"
+        className="flex items-center justify-between w-full py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 hover:text-foreground transition-colors"
       >
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1.5">
           {title}
-          {count != null && <span className="text-[8px] font-mono text-muted-foreground/25">({count})</span>}
+          {count != null && <span className="text-[10px] font-mono text-muted-foreground/30">({count})</span>}
         </span>
-        {open ? <ChevronUp className="h-2 w-2" /> : <ChevronDown className="h-2 w-2" />}
+        {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
       </button>
       <div className={cn(
         "overflow-hidden transition-all duration-200",
         open ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
       )}>
-        <div className="pb-1.5">{children}</div>
+        <div className="pb-2">{children}</div>
       </div>
     </div>
   );
@@ -133,29 +133,29 @@ export function CrmContextPanel({ conversa, className }: CrmContextPanelProps) {
   const pendenciasDone = mockCrmData.pendencias.filter((p) => p.done).length;
 
   return (
-    <div className={cn("w-[280px] shrink-0 border-l border-border/20 flex flex-col h-full bg-background", className)}>
+    <div className={cn("w-[360px] shrink-0 border-l border-border/20 flex flex-col h-full bg-background", className)}>
       {/* Header */}
-      <div className="px-3 py-2 border-b border-border/15">
-        <p className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/35">Contexto CRM</p>
-        <p className="text-[11px] font-medium mt-0.5 truncate">{conversa.nome ?? conversa.telefone}</p>
+      <div className="px-4 py-3 border-b border-border/15">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/45">Contexto CRM</p>
+        <p className="text-sm font-medium mt-1 truncate">{conversa.nome ?? conversa.telefone}</p>
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="px-3 py-2 space-y-0.5">
+        <div className="px-4 py-3 space-y-1">
 
           {/* Status card */}
-          <div className="bg-muted/10 rounded-lg p-2 space-y-1">
+          <div className="bg-muted/10 rounded-xl p-3 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/35">Etapa</span>
-              <Badge variant="outline" className="text-[8px] h-3.5 px-1 border-primary/15 text-primary rounded-full">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/45">Etapa</span>
+              <Badge variant="outline" className="text-[10px] h-5 px-2 border-primary/15 text-primary rounded-full">
                 {mockCrmData.etapa}
               </Badge>
             </div>
-            <div className="flex items-center gap-1">
-              <Badge variant="secondary" className="text-[8px] h-3.5 px-1 rounded-full">{mockCrmData.categoria}</Badge>
+            <div className="flex items-center gap-1.5">
+              <Badge variant="secondary" className="text-[10px] h-5 px-2 rounded-full">{mockCrmData.categoria}</Badge>
               {mockCrmData.contrato && (
-                <Badge variant="outline" className="text-[8px] h-3.5 px-1 border-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-full">
-                  <FileCheck className="h-2 w-2 mr-0.5" /> Contrato
+                <Badge variant="outline" className="text-[10px] h-5 px-2 border-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-full">
+                  <FileCheck className="h-3 w-3 mr-1" /> Contrato
                 </Badge>
               )}
             </div>
@@ -163,16 +163,16 @@ export function CrmContextPanel({ conversa, className }: CrmContextPanelProps) {
 
           {/* Timeline unificada */}
           <CollapsibleSection title="Timeline" count={mockTimeline.length}>
-            <div className="relative pl-3">
-              <div className="absolute left-[5px] top-0 bottom-0 w-px bg-border/20" />
+            <div className="relative pl-4">
+              <div className="absolute left-[7px] top-0 bottom-0 w-px bg-border/20" />
               {mockTimeline.map((event) => (
-                <div key={event.id} className="relative flex items-start gap-2 py-1">
-                  <div className="absolute left-[-8px] top-1.5 h-2.5 w-2.5 rounded-full bg-background border border-border/30 flex items-center justify-center">
-                    <event.icon className={cn("h-1.5 w-1.5", event.color)} />
+                <div key={event.id} className="relative flex items-start gap-2.5 py-1.5">
+                  <div className="absolute left-[-9px] top-2 h-3 w-3 rounded-full bg-background border border-border/30 flex items-center justify-center">
+                    <event.icon className={cn("h-2 w-2", event.color)} />
                   </div>
-                  <div className="flex-1 min-w-0 ml-1">
-                    <p className="text-[10px] truncate">{event.title}</p>
-                    <p className="text-[8px] text-muted-foreground/30 font-mono">{event.time}</p>
+                  <div className="flex-1 min-w-0 ml-1.5">
+                    <p className="text-xs truncate">{event.title}</p>
+                    <p className="text-[10px] text-muted-foreground/40 font-mono">{event.time}</p>
                   </div>
                 </div>
               ))}
@@ -181,17 +181,17 @@ export function CrmContextPanel({ conversa, className }: CrmContextPanelProps) {
 
           {/* Pendências */}
           <CollapsibleSection title="Pendências" count={pendenciasDone} defaultOpen={false}>
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {mockCrmData.pendencias.map((p, i) => (
-                <div key={i} className="flex items-center gap-1.5 py-0.5">
+                <div key={i} className="flex items-center gap-2 py-1">
                   <div className={cn(
-                    "h-3 w-3 rounded-full border flex items-center justify-center shrink-0",
+                    "h-4 w-4 rounded-full border flex items-center justify-center shrink-0",
                     p.done ? "bg-emerald-500/10 border-emerald-500/40" : "border-border/30"
                   )}>
-                    {p.done && <Check className="h-1.5 w-1.5 text-emerald-600 dark:text-emerald-400" />}
+                    {p.done && <Check className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400" />}
                   </div>
                   <span className={cn(
-                    "text-[10px]",
+                    "text-xs",
                     p.done ? "text-muted-foreground/40 line-through" : "text-foreground/70"
                   )}>
                     {p.label}
@@ -203,22 +203,22 @@ export function CrmContextPanel({ conversa, className }: CrmContextPanelProps) {
 
           {/* Follow-ups */}
           <CollapsibleSection title="Follow-ups" count={mockCrmData.followUps.length} defaultOpen={false}>
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {mockCrmData.followUps.map((f, i) => (
                 <div key={i} className={cn(
-                  "flex items-center justify-between py-0.5 px-1.5 rounded-md",
+                  "flex items-center justify-between py-1.5 px-2.5 rounded-lg",
                   f.urgente ? "bg-destructive/5" : "bg-muted/5"
                 )}>
-                  <div className="flex items-center gap-1 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <CalendarClock className={cn(
-                      "h-2 w-2 shrink-0",
-                      f.urgente ? "text-destructive/50" : "text-muted-foreground/30"
+                      "h-3 w-3 shrink-0",
+                      f.urgente ? "text-destructive/50" : "text-muted-foreground/40"
                     )} />
-                    <span className="text-[10px] truncate">{f.label}</span>
+                    <span className="text-xs truncate">{f.label}</span>
                   </div>
                   <span className={cn(
-                    "text-[8px] shrink-0 ml-1 font-mono",
-                    f.urgente ? "text-destructive/50" : "text-muted-foreground/30"
+                    "text-[10px] shrink-0 ml-2 font-mono",
+                    f.urgente ? "text-destructive/50" : "text-muted-foreground/40"
                   )}>
                     {f.data}
                   </span>

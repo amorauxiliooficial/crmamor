@@ -195,7 +195,7 @@ export default function Atendimento() {
 
   // Desktop / Tablet
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background max-w-[1600px] mx-auto">
       <CommandPalette
         conversas={conversas}
         respostas={respostasRapidas}
