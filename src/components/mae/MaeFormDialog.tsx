@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
+import { normalizePhoneToE164BR } from "@/lib/phoneUtils";
 
 interface MaeFormDialogProps {
   open: boolean;
@@ -184,11 +185,15 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
       return;
     }
     
+    const phoneRaw = formData.telefone || null;
+    const phoneE164 = normalizePhoneToE164BR(phoneRaw);
+
     const { data, error } = await supabase.from("mae_processo").insert({
       user_id: user.id,
       nome_mae: formData.nome_mae.trim(),
       cpf: cpfClean,
-      telefone: formData.telefone || null,
+      telefone: phoneRaw,
+      telefone_e164: phoneE164,
       email: formData.email || null,
       tipo_evento: formData.tipo_evento,
       data_evento: formData.data_evento || null,

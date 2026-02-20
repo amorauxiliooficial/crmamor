@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
+import { normalizePhoneToE164BR } from "@/lib/phoneUtils";
 import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
 import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -190,10 +191,14 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       "Recurso / Judicial" | "Inadimplência" | "Processo Encerrado";
 
     // Build update object - include user_id only if admin is changing it
+    const phoneRaw = formData.telefone || null;
+    const phoneE164 = normalizePhoneToE164BR(phoneRaw);
+
     const updateData: Record<string, unknown> = {
       nome_mae: formData.nome_mae.trim(),
       cpf: formData.cpf.replace(/\D/g, ""),
-      telefone: formData.telefone || null,
+      telefone: phoneRaw,
+      telefone_e164: phoneE164,
       email: formData.email || null,
       tipo_evento: formData.tipo_evento,
       data_evento: formData.data_evento || null,
