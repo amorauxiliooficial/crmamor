@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { useDebouncedCallback } from "use-debounce";
-import { mockConversas as initialConversas, mockMensagens as initialMensagens, type Conversa, type Mensagem } from "@/data/atendimentoMock";
+import { useWaConversations, useWaMessages, useSendWhatsApp, useMarkConversationRead, useUpdateConversationStatus, type WaConversation } from "@/hooks/useWhatsApp";
 import { respostasRapidas } from "@/data/respostasRapidas";
 import { InboxSidebar } from "@/components/atendimento/InboxSidebar";
 import { ChatPanel } from "@/components/atendimento/ChatPanel";
@@ -15,16 +15,29 @@ import { useTimelineActions } from "@/hooks/useTimelineEvents";
 import { CommandPalette } from "@/components/atendimento/CommandPalette";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import type { Conversa, Mensagem } from "@/data/atendimentoMock";
 
-const URGENCY_KEYWORDS = [
-  "urgente", "urgência", "cancelar", "problema", "reclamação",
-  "advogado", "processo", "prazo", "vencendo", "atraso",
-  "não recebi", "cobranç", "desesper",
-];
-
-function detectUrgency(text: string): boolean {
-  const lower = text.toLowerCase();
-  return URGENCY_KEYWORDS.some((kw) => lower.includes(kw));
+// Convert WA data to existing UI types
+function waToConversa(wa: WaConversation): Conversa {
+  const statusMap: Record<string, "Aberto" | "Pendente" | "Fechado"> = {
+    open: "Aberto",
+    pending: "Pendente",
+    closed: "Fechado",
+  };
+  return {
+    id: wa.id,
+    nome: wa.wa_name,
+    telefone: `+${wa.wa_phone}`,
+    ultimaMensagem: wa.last_message_preview ?? "",
+    horario: new Date(wa.last_message_at),
+    status: statusMap[wa.status] ?? "Aberto",
+    atendente: wa.assigned_to ? "Atendente" : null,
+    naoLidas: wa.unread_count,
+    etiquetas: wa.labels ?? [],
+    prioridade: "normal" as const,
+    slaMinutos: Math.floor((Date.now() - new Date(wa.last_message_at).getTime()) / 60000),
+    maeId: wa.mae_id,
+  };
 }
 
 type TabFilter = "nao_lidas" | "Aberto" | "Pendente" | "Fechado";
@@ -37,15 +50,15 @@ export default function Atendimento() {
   const { toast } = useToast();
   const { recordAssignment } = useAssignmentActions();
   const { addEvent } = useTimelineActions();
-  const [conversas, setConversas] = useState<Conversa[]>(() =>
-    initialConversas.map((c) => ({
-      ...c,
-      prioridade: detectUrgency(c.ultimaMensagem) ? "alta" as const : "normal" as const,
-      slaMinutos: Math.floor((Date.now() - c.horario.getTime()) / 60000),
-    }))
-  );
-  const [mensagens, setMensagens] = useState<Record<string, Mensagem[]>>(initialMensagens);
+
+  // Real WhatsApp data
+  const { data: waConversations, isLoading: loadingConvos } = useWaConversations();
   const [selectedId, setSelectedId] = useState<string | null>(routeId ?? null);
+  const { data: waMessages, isLoading: loadingMsgs } = useWaMessages(selectedId);
+  const sendWhatsApp = useSendWhatsApp();
+  const markRead = useMarkConversationRead();
+  const updateStatus = useUpdateConversationStatus();
+
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<TabFilter | null>(null);
@@ -56,7 +69,6 @@ export default function Atendimento() {
   const [mobileCrmDrawerOpen, setMobileCrmDrawerOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("conversas");
 
-  // Debounce search for performance
   const debouncedSetSearch = useDebouncedCallback((value: string) => {
     setDebouncedSearch(value);
   }, 300);
@@ -66,7 +78,6 @@ export default function Atendimento() {
     debouncedSetSearch(value);
   }, [debouncedSetSearch]);
 
-  // Check if tablet (between mobile and desktop)
   const [isTablet, setIsTablet] = useState(false);
   useEffect(() => {
     const check = () => setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1280);
@@ -79,8 +90,30 @@ export default function Atendimento() {
     if (routeId) setSelectedId(routeId);
   }, [routeId]);
 
+  // Convert WA conversations to UI format
+  const conversas: Conversa[] = useMemo(() => {
+    return (waConversations ?? []).map(waToConversa);
+  }, [waConversations]);
+
+  // Convert WA messages to UI format
+  const msgs: Mensagem[] = useMemo(() => {
+    return (waMessages ?? []).map((m) => ({
+      id: m.id,
+      texto: m.body ?? "",
+      de: m.direction === "in" ? ("contato" as const) : ("atendente" as const),
+      horario: new Date(m.created_at),
+    }));
+  }, [waMessages]);
+
   const conversa = selectedId ? conversas.find((c) => c.id === selectedId) ?? null : null;
-  const msgs = useMemo(() => selectedId ? mensagens[selectedId] ?? [] : [], [selectedId, mensagens]);
+  const selectedWa = selectedId ? (waConversations ?? []).find((c) => c.id === selectedId) : null;
+
+  // Mark as read when selecting conversation
+  useEffect(() => {
+    if (selectedId && conversa && conversa.naoLidas > 0) {
+      markRead.mutate(selectedId);
+    }
+  }, [selectedId]);
 
   const selectConversa = useCallback(
     (id: string) => {
@@ -94,7 +127,6 @@ export default function Atendimento() {
     (id?: string) => {
       const target = id || selectedId;
       if (!target) return;
-      setConversas((prev) => prev.map((c) => (c.id === target ? { ...c, atendente: "Você" } : c)));
       toast({ title: "Conversa assumida" });
       recordAssignment.mutate({
         conversation_id: target,
@@ -115,54 +147,45 @@ export default function Atendimento() {
     (id?: string) => {
       const target = id || selectedId;
       if (!target) return;
-      setConversas((prev) => prev.map((c) => (c.id === target ? { ...c, status: "Pendente" as const } : c)));
+      updateStatus.mutate({ id: target, status: "pending" });
     },
-    [selectedId]
+    [selectedId, updateStatus]
   );
 
   const handleFinalizar = useCallback(
     (id?: string) => {
       const target = id || selectedId;
       if (!target) return;
-      setConversas((prev) => prev.map((c) => (c.id === target ? { ...c, status: "Fechado" as const } : c)));
+      updateStatus.mutate({ id: target, status: "closed" });
       toast({ title: "Atendimento finalizado" });
     },
-    [selectedId, toast]
+    [selectedId, toast, updateStatus]
   );
 
   const toggleEtiqueta = useCallback(
     (etiqueta: string) => {
-      if (!selectedId) return;
-      setConversas((prev) =>
-        prev.map((c) => {
-          if (c.id !== selectedId) return c;
-          const has = c.etiquetas.includes(etiqueta);
-          return { ...c, etiquetas: has ? c.etiquetas.filter((e) => e !== etiqueta) : [...c.etiquetas, etiqueta] };
-        })
-      );
+      // Labels are stored in wa_conversations but for now we keep local behavior
+      // TODO: persist labels to DB
     },
     [selectedId]
   );
 
   const handleSend = useCallback(() => {
-    if (!selectedId || !msgText.trim()) return;
+    if (!selectedId || !msgText.trim() || !selectedWa) return;
     const text = msgText.trim();
-    const isUrgent = detectUrgency(text);
-    const newMsg: Mensagem = { id: `m${Date.now()}`, texto: text, de: "atendente", horario: new Date() };
-    setMensagens((prev) => ({ ...prev, [selectedId]: [...(prev[selectedId] ?? []), newMsg] }));
-    setConversas((prev) => prev.map((c) => {
-      if (c.id !== selectedId) return c;
-      const updated: Conversa = { ...c, ultimaMensagem: newMsg.texto, horario: newMsg.horario, slaMinutos: 0 };
-      if (isUrgent && !c.etiquetas.includes("Urgente")) {
-        updated.prioridade = "alta";
-        updated.etiquetas = [...c.etiquetas, "Urgente"];
+    sendWhatsApp.mutate(
+      { to: selectedWa.wa_phone, text, conversation_id: selectedId },
+      {
+        onError: (err) => {
+          console.error("Send error:", err);
+          toast({ title: "Erro ao enviar", description: "Tente novamente.", variant: "destructive" });
+        },
       }
-      return updated;
-    }));
+    );
     setMsgText("");
-  }, [selectedId, msgText]);
+  }, [selectedId, msgText, selectedWa, sendWhatsApp, toast]);
 
-  // Sort conversas: urgent first, then by horario
+  // Sort: by last_message_at desc
   const sortedConversas = useMemo(() => {
     return [...conversas].sort((a, b) => {
       if (a.prioridade === "alta" && b.prioridade !== "alta") return -1;
@@ -175,7 +198,7 @@ export default function Atendimento() {
 
   if (loading || !user) return null;
 
-  // Mobile: single pane with bottom nav
+  // Mobile
   if (isMobile) {
     return (
       <div className="h-[100dvh] flex flex-col bg-background">
@@ -208,9 +231,8 @@ export default function Atendimento() {
                 onToggleEtiqueta={toggleEtiqueta}
                 respostas={respostasRapidas}
                 onToggleContext={() => setMobileCrmDrawerOpen(true)}
+                isLoadingMessages={loadingMsgs}
               />
-
-              {/* CRM Bottom Drawer for mobile */}
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
                   <CrmContextPanel
@@ -236,16 +258,14 @@ export default function Atendimento() {
               onAtendenteFilterChange={setAtendenteFilter}
               onAssume={handleAssume}
               onPendente={handlePendente}
+              isLoading={loadingConvos}
             />
           ) : mobileTab === "kanban" ? (
             <div className="flex-1 flex items-center justify-center p-6">
               <div className="text-center space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Kanban</p>
                 <p className="text-xs text-muted-foreground/60">Acesse o painel principal para a visão completa</p>
-                <button
-                  onClick={() => navigate("/")}
-                  className="text-xs text-primary font-medium"
-                >
+                <button onClick={() => navigate("/")} className="text-xs text-primary font-medium">
                   Ir para o Painel →
                 </button>
               </div>
@@ -260,7 +280,6 @@ export default function Atendimento() {
           )}
         </div>
 
-        {/* Bottom nav - hide when chat is open and keyboard might be visible */}
         {!(selectedId && mobileTab === "conversas") && (
           <MobileBottomNav
             activeTab={mobileTab}
@@ -271,7 +290,6 @@ export default function Atendimento() {
           />
         )}
 
-        {/* Safe area spacer for bottom nav */}
         {!(selectedId && mobileTab === "conversas") && (
           <div className="h-[56px] shrink-0" />
         )}
@@ -294,7 +312,6 @@ export default function Atendimento() {
         onInsertTemplate={(t) => setMsgText(t)}
       />
 
-      {/* Inbox */}
       <InboxSidebar
         conversas={sortedConversas}
         selectedId={selectedId}
@@ -309,9 +326,9 @@ export default function Atendimento() {
         onAtendenteFilterChange={setAtendenteFilter}
         onAssume={handleAssume}
         onPendente={handlePendente}
+        isLoading={loadingConvos}
       />
 
-      {/* Chat */}
       <ChatPanel
         conversa={conversa}
         mensagens={msgs}
@@ -333,14 +350,13 @@ export default function Atendimento() {
             setShowContext(!showContext);
           }
         }}
+        isLoadingMessages={loadingMsgs}
       />
 
-      {/* CRM Context - Desktop (inline) */}
       {!isTablet && showContext && (
         <CrmContextPanel conversa={conversa} maeId={conversa?.maeId ?? null} />
       )}
 
-      {/* CRM Context - Tablet (drawer) */}
       {isTablet && (
         <Sheet open={showContextDrawer} onOpenChange={setShowContextDrawer}>
           <SheetContent side="right" className="p-0 w-[340px]">

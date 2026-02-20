@@ -1489,6 +1489,103 @@ export type Database = {
           },
         ]
       }
+      wa_conversations: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          id: string
+          labels: string[] | null
+          last_message_at: string | null
+          last_message_preview: string | null
+          mae_id: string | null
+          status: string
+          unread_count: number
+          updated_at: string
+          wa_name: string | null
+          wa_phone: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          labels?: string[] | null
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          mae_id?: string | null
+          status?: string
+          unread_count?: number
+          updated_at?: string
+          wa_name?: string | null
+          wa_phone: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          labels?: string[] | null
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          mae_id?: string | null
+          status?: string
+          unread_count?: number
+          updated_at?: string
+          wa_name?: string | null
+          wa_phone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_conversations_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wa_messages: {
+        Row: {
+          body: string | null
+          conversation_id: string
+          created_at: string
+          direction: string
+          id: string
+          meta_message_id: string | null
+          msg_type: string
+          sent_by: string | null
+          status: string | null
+        }
+        Insert: {
+          body?: string | null
+          conversation_id: string
+          created_at?: string
+          direction: string
+          id?: string
+          meta_message_id?: string | null
+          msg_type?: string
+          sent_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          body?: string | null
+          conversation_id?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          meta_message_id?: string | null
+          msg_type?: string
+          sent_by?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "wa_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
