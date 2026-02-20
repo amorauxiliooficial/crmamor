@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, LogOut, UserPlus, Settings, X, Key, Map, Wallet } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -261,6 +262,7 @@ export function Header({
           )}
           
           <div className="tour-notifications flex items-center gap-0.5 md:gap-1">
+            <ThemeToggle className="h-9 w-9" />
             <Button
               variant="ghost"
               size="icon"
