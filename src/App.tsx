@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Conferencia from "./pages/Conferencia";
@@ -31,33 +32,35 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/conferencia" element={<Conferencia />} />
-            <Route path="/pagamentos" element={<Pagamentos />} />
-            <Route path="/financeiro" element={<Financeiro />} />
-            <Route path="/playbook" element={<Playbook />} />
-            <Route path="/senhas" element={<Senhas />} />
-            <Route path="/marketing" element={<Marketing />} />
-            <Route path="/indicar" element={<Indicar />} />
-            
-            <Route path="/atendimento" element={<Atendimento />} />
-            <Route path="/atendimento/chat/:id" element={<Atendimento />} />
-            <Route path="/atendimento/config" element={<AtendimentoConfig />} />
-            <Route path="/pre-analises" element={<PreAnalises />} />
-            <Route path="/roadmap" element={<Roadmap />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="crm-amor-theme">
+      <TooltipProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <Toaster />
+            <Sonner />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/conferencia" element={<Conferencia />} />
+              <Route path="/pagamentos" element={<Pagamentos />} />
+              <Route path="/financeiro" element={<Financeiro />} />
+              <Route path="/playbook" element={<Playbook />} />
+              <Route path="/senhas" element={<Senhas />} />
+              <Route path="/marketing" element={<Marketing />} />
+              <Route path="/indicar" element={<Indicar />} />
+              
+              <Route path="/atendimento" element={<Atendimento />} />
+              <Route path="/atendimento/chat/:id" element={<Atendimento />} />
+              <Route path="/atendimento/config" element={<AtendimentoConfig />} />
+              <Route path="/pre-analises" element={<PreAnalises />} />
+              <Route path="/roadmap" element={<Roadmap />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

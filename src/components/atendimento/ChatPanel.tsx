@@ -23,7 +23,7 @@ import type { RespostaRapida } from "@/data/respostasRapidas";
 const STATUS_COLORS: Record<string, string> = {
   Aberto: "bg-emerald-500",
   Pendente: "bg-amber-500",
-  Fechado: "bg-muted-foreground/50",
+  Fechado: "bg-muted-foreground/40",
 };
 
 const ETIQUETAS_OPTIONS = ["Suporte", "Financeiro", "Reclamação", "Venda", "Urgente"];
@@ -113,7 +113,6 @@ export function ChatPanel({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversa?.id, mensagens]);
 
-  // Reset summary when conversation changes
   useEffect(() => {
     setSummary(null);
   }, [conversa?.id]);
@@ -131,7 +130,6 @@ export function ChatPanel({
     }
   }
 
-  // AI Summary
   const handleSummarize = useCallback(async () => {
     if (!conversa || mensagens.length === 0) return;
     setSummarizing(true);
@@ -153,24 +151,20 @@ export function ChatPanel({
     }
   }, [conversa, mensagens, toast]);
 
-  // Smart template click
   const handleSmartTemplate = useCallback((template: SmartTemplate) => {
     onMsgTextChange(template.texto);
     textareaRef.current?.focus();
-
-    // Show toast with action info
     if (template.actions) {
       const actionLabels: string[] = [];
-      if (template.actions.createFollowUp) actionLabels.push("📅 Follow-up agendado");
-      if (template.actions.timelineEvent) actionLabels.push("📝 Registrado na timeline");
-      if (template.actions.updateChecklist) actionLabels.push("✅ Checklist atualizado");
+      if (template.actions.createFollowUp) actionLabels.push("📅 Follow-up");
+      if (template.actions.timelineEvent) actionLabels.push("📝 Timeline");
+      if (template.actions.updateChecklist) actionLabels.push("✅ Checklist");
       if (actionLabels.length > 0) {
         toast({ title: "Ações vinculadas", description: actionLabels.join(" • ") });
       }
     }
   }, [onMsgTextChange, toast]);
 
-  // Group messages by day
   const messageGroups = useMemo(() => {
     const groups: { label: string; messages: Mensagem[] }[] = [];
     let currentLabel = "";
@@ -188,112 +182,113 @@ export function ChatPanel({
 
   if (!conversa) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 h-full bg-background/50">
-        <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center">
-          <MessageSquare className="h-7 w-7 text-muted-foreground/40" />
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 h-full bg-background">
+        <div className="h-14 w-14 rounded-2xl bg-muted/30 flex items-center justify-center">
+          <MessageSquare className="h-6 w-6 text-muted-foreground/30" />
         </div>
-        <div className="text-center space-y-1">
-          <p className="text-base font-medium text-muted-foreground">Selecione uma conversa</p>
-          <p className="text-sm text-muted-foreground/60">Escolha uma conversa na lista para começar</p>
+        <div className="text-center space-y-0.5">
+          <p className="text-sm font-medium text-muted-foreground/70">Selecione uma conversa</p>
+          <p className="text-xs text-muted-foreground/40">Escolha um contato na lista</p>
         </div>
-        <kbd className="hidden md:inline-flex items-center gap-1 rounded-lg border border-border/50 bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground/60 font-mono">
-          ⌘K para buscar
+        <kbd className="hidden md:inline-flex items-center gap-1 rounded-lg border border-border/30 bg-muted/20 px-2 py-0.5 text-[10px] text-muted-foreground/40 font-mono">
+          ⌘K buscar
         </kbd>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full min-w-0 bg-background/30">
+    <div className="flex-1 flex flex-col h-full min-w-0 bg-background">
       {/* Header */}
-      <div className="border-b border-border/50 px-4 py-3 flex items-center gap-3 shrink-0 bg-card/60 backdrop-blur-sm">
+      <div className="border-b border-border/30 px-4 py-2.5 flex items-center gap-3 shrink-0 bg-card/50 backdrop-blur-sm">
         {isMobile && (
           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={onBack}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
         )}
 
-        <Avatar className="h-9 w-9 shrink-0">
-          <AvatarFallback className="text-xs font-semibold bg-primary/8 text-primary">
-            {conversa.nome ? conversa.nome.charAt(0) : <User className="h-4 w-4" />}
+        <Avatar className="h-8 w-8 shrink-0">
+          <AvatarFallback className="text-[10px] font-semibold bg-primary/10 text-primary">
+            {conversa.nome ? conversa.nome.charAt(0) : <User className="h-3.5 w-3.5" />}
           </AvatarFallback>
         </Avatar>
 
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-sm truncate">{conversa.nome ?? conversa.telefone}</p>
-          <div className="flex items-center gap-2 mt-0.5">
-            {conversa.nome && <p className="text-[11px] text-muted-foreground">{conversa.telefone}</p>}
-            <Badge variant="outline" className="h-4 text-[9px] px-1.5 gap-1 border-border/40">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-sm truncate">{conversa.nome ?? conversa.telefone}</p>
+            <Badge variant="outline" className="h-4 text-[8px] px-1.5 gap-1 border-border/30 rounded-full shrink-0">
               <span className={cn("h-1.5 w-1.5 rounded-full", STATUS_COLORS[conversa.status])} />
               {conversa.status}
             </Badge>
           </div>
+          {conversa.nome && (
+            <p className="text-[10px] text-muted-foreground/50 font-mono">{conversa.telefone}</p>
+          )}
         </div>
 
-        {/* Action buttons */}
+        {/* Actions */}
         <TooltipProvider delayDuration={200}>
-          <div className="flex items-center gap-1">
-            {/* AI Summary button */}
+          <div className="flex items-center gap-0.5">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 gap-1.5 rounded-lg text-xs"
+                  className="h-7 gap-1 rounded-lg text-[10px] text-muted-foreground hover:text-primary"
                   onClick={handleSummarize}
                   disabled={summarizing || mensagens.length === 0}
                 >
                   {summarizing ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />
+                    <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
-                    <Sparkles className="h-3.5 w-3.5 text-violet-500" />
+                    <Sparkles className="h-3 w-3" />
                   )}
                   <span className="hidden lg:inline">Resumir</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Resumir caso com IA</TooltipContent>
+              <TooltipContent className="text-[10px]">Resumir caso com IA</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-8 gap-1.5 rounded-lg text-xs" onClick={onAssume}>
-                  <UserCheck className="h-3.5 w-3.5 text-blue-500" />
+                <Button size="sm" variant="ghost" className="h-7 gap-1 rounded-lg text-[10px] text-muted-foreground hover:text-foreground" onClick={onAssume}>
+                  <UserCheck className="h-3 w-3" />
                   <span className="hidden lg:inline">Assumir</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Assumir conversa</TooltipContent>
+              <TooltipContent className="text-[10px]">Assumir conversa</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-8 gap-1.5 rounded-lg text-xs" onClick={onPendente}>
-                  <Clock className="h-3.5 w-3.5 text-amber-500" />
+                <Button size="sm" variant="ghost" className="h-7 gap-1 rounded-lg text-[10px] text-muted-foreground hover:text-foreground" onClick={onPendente}>
+                  <Clock className="h-3 w-3" />
                   <span className="hidden lg:inline">Pendente</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Marcar como pendente</TooltipContent>
+              <TooltipContent className="text-[10px]">Marcar pendente</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-8 gap-1.5 rounded-lg text-xs" onClick={onFinalizar}>
-                  <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+                <Button size="sm" variant="ghost" className="h-7 gap-1 rounded-lg text-[10px] text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400" onClick={onFinalizar}>
+                  <CheckCircle className="h-3 w-3" />
                   <span className="hidden lg:inline">Concluir</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Finalizar atendimento</TooltipContent>
+              <TooltipContent className="text-[10px]">Finalizar</TooltipContent>
             </Tooltip>
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
-                  <Tag className="h-3.5 w-3.5 text-purple-500" />
+                <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-muted-foreground">
+                  <Tag className="h-3 w-3" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-44 p-1.5" align="end">
+              <PopoverContent className="w-40 p-1" align="end">
                 {ETIQUETAS_OPTIONS.map((e) => (
-                  <label key={e} className="flex items-center gap-2 py-1.5 px-2.5 hover:bg-accent/50 rounded-md cursor-pointer text-sm">
-                    <Checkbox checked={conversa.etiquetas.includes(e)} onCheckedChange={() => onToggleEtiqueta(e)} />
+                  <label key={e} className="flex items-center gap-2 py-1.5 px-2 hover:bg-accent/30 rounded-md cursor-pointer text-xs">
+                    <Checkbox checked={conversa.etiquetas.includes(e)} onCheckedChange={() => onToggleEtiqueta(e)} className="h-3.5 w-3.5" />
                     {e}
                   </label>
                 ))}
@@ -303,11 +298,11 @@ export function ChatPanel({
             {onToggleContext && !isMobile && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={onToggleContext}>
-                    {showContext ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRightOpen className="h-3.5 w-3.5" />}
+                  <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-muted-foreground" onClick={onToggleContext}>
+                    {showContext ? <PanelRightClose className="h-3 w-3" /> : <PanelRightOpen className="h-3 w-3" />}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>{showContext ? "Modo foco" : "Contexto CRM"}</TooltipContent>
+                <TooltipContent className="text-[10px]">{showContext ? "Modo foco" : "Contexto CRM"}</TooltipContent>
               </Tooltip>
             )}
           </div>
@@ -316,28 +311,28 @@ export function ChatPanel({
 
       {/* AI Summary banner */}
       {summary && (
-        <div className="mx-4 mt-3 p-3 bg-violet-500/5 border border-violet-500/15 rounded-xl relative">
+        <div className="mx-3 mt-2 p-2.5 bg-primary/5 border border-primary/10 rounded-xl relative">
           <button
             onClick={() => setSummary(null)}
-            className="absolute top-2 right-2 text-muted-foreground/40 hover:text-foreground text-xs"
+            className="absolute top-1.5 right-2 text-muted-foreground/30 hover:text-foreground text-[10px]"
           >
             ✕
           </button>
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <Sparkles className="h-3 w-3 text-violet-500" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">Resumo IA</span>
+          <div className="flex items-center gap-1.5 mb-1">
+            <Sparkles className="h-2.5 w-2.5 text-primary" />
+            <span className="text-[9px] font-semibold uppercase tracking-wider text-primary/70">Resumo IA</span>
           </div>
-          <p className="text-xs leading-relaxed text-foreground/80 whitespace-pre-line">{summary}</p>
+          <p className="text-[11px] leading-relaxed text-foreground/70 whitespace-pre-line">{summary}</p>
         </div>
       )}
 
       {/* Messages */}
       <ScrollArea className="flex-1">
-        <div className="px-4 py-4 space-y-1 max-w-2xl mx-auto">
+        <div className="px-4 py-3 space-y-0.5 max-w-2xl mx-auto">
           {messageGroups.map((group) => (
             <div key={group.label}>
-              <div className="flex items-center justify-center my-4">
-                <span className="text-[10px] font-medium text-muted-foreground/60 bg-muted/40 px-3 py-0.5 rounded-full">
+              <div className="flex items-center justify-center my-3">
+                <span className="text-[9px] font-medium text-muted-foreground/40 bg-muted/20 px-2.5 py-0.5 rounded-full">
                   {group.label}
                 </span>
               </div>
@@ -354,27 +349,24 @@ export function ChatPanel({
                     className={cn(
                       "flex",
                       isMe ? "justify-end" : "justify-start",
-                      isGrouped ? "mt-0.5" : "mt-3"
+                      isGrouped ? "mt-0.5" : "mt-2"
                     )}
                   >
-                    <div className={cn("max-w-[75%] group", isMe ? "items-end" : "items-start")}>
+                    <div className={cn("max-w-[72%] group", isMe ? "items-end" : "items-start")}>
                       <div
                         className={cn(
-                          "px-3.5 py-2 shadow-sm",
+                          "px-3 py-1.5",
                           isMe
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-card border border-border/40",
-                          isMe
-                            ? "rounded-2xl rounded-br-md"
-                            : "rounded-2xl rounded-bl-md"
+                            ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
+                            : "bg-card border border-border/30 rounded-2xl rounded-bl-sm"
                         )}
                       >
                         <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{m.texto}</p>
                       </div>
                       {showTime && (
                         <p className={cn(
-                          "text-[10px] mt-0.5 px-1",
-                          isMe ? "text-right text-muted-foreground/50" : "text-muted-foreground/50"
+                          "text-[9px] mt-0.5 px-1",
+                          isMe ? "text-right text-muted-foreground/35" : "text-muted-foreground/35"
                         )}>
                           {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                         </p>
@@ -390,46 +382,45 @@ export function ChatPanel({
       </ScrollArea>
 
       {/* Composer */}
-      <div className="relative border-t border-border/50 bg-card/60 backdrop-blur-sm">
-        {/* Quick replies dropdown */}
+      <div className="relative border-t border-border/30 bg-card/30 backdrop-blur-sm">
+        {/* Quick replies */}
         {showQuickReplies && (
-          <div className="absolute bottom-full left-0 right-0 mx-4 mb-1 bg-popover border border-border/60 rounded-xl shadow-lg max-h-[200px] overflow-y-auto z-50">
+          <div className="absolute bottom-full left-0 right-0 mx-3 mb-1 bg-popover border border-border/40 rounded-xl shadow-lg max-h-[180px] overflow-y-auto z-50">
             {filteredReplies.map((r, i) => (
               <button
                 key={r.id}
                 className={cn(
-                  "w-full text-left px-3 py-2 text-sm hover:bg-accent/50 transition-colors first:rounded-t-xl last:rounded-b-xl",
-                  i === quickReplyIndex && "bg-accent/50"
+                  "w-full text-left px-3 py-1.5 text-xs hover:bg-accent/30 transition-colors first:rounded-t-xl last:rounded-b-xl",
+                  i === quickReplyIndex && "bg-accent/30"
                 )}
                 onMouseDown={(e) => { e.preventDefault(); selectQuickReply(r.texto); }}
               >
-                <span className="font-medium text-primary text-xs">/{r.atalho}</span>
-                <span className="ml-2 text-muted-foreground text-xs">{r.titulo}</span>
+                <span className="font-medium text-primary text-[10px]">/{r.atalho}</span>
+                <span className="ml-2 text-muted-foreground/60 text-[10px]">{r.titulo}</span>
               </button>
             ))}
           </div>
         )}
 
         {/* Smart template chips */}
-        <div className="flex gap-1.5 px-4 pt-3 pb-1 overflow-x-auto scrollbar-none">
+        <div className="flex gap-1 px-3 pt-2 pb-0.5 overflow-x-auto scrollbar-none">
           {smartTemplates.map((t) => (
             <button
               key={t.id}
               onClick={() => handleSmartTemplate(t)}
               className={cn(
-                "shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border transition-all",
-                "border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5",
-                t.actions ? "hover:shadow-sm" : ""
+                "shrink-0 flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full border transition-all",
+                "border-border/20 text-muted-foreground/50 hover:text-foreground hover:border-primary/20 hover:bg-primary/5"
               )}
             >
               <span>{t.emoji}</span>
               <span>{t.label}</span>
-              {t.actions && <Zap className="h-2.5 w-2.5 text-amber-500" />}
+              {t.actions && <Zap className="h-2 w-2 text-primary/50" />}
             </button>
           ))}
         </div>
 
-        <div className="flex gap-2 items-end px-4 pb-3 pt-1">
+        <div className="flex gap-2 items-end px-3 pb-2.5 pt-1">
           <div className="flex gap-0.5 shrink-0">
             <TooltipProvider delayDuration={200}>
               <Tooltip>
@@ -437,28 +428,28 @@ export function ChatPanel({
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8 rounded-lg"
+                    className="h-7 w-7 rounded-lg text-muted-foreground/50"
                     onClick={() => onMsgTextChange(msgText.startsWith("/") ? msgText : "/")}
                   >
-                    <FileText className="h-3.5 w-3.5" />
+                    <FileText className="h-3 w-3" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Templates (/)</TooltipContent>
+                <TooltipContent className="text-[10px]">Templates (/)</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" disabled>
-                    <Mic className="h-3.5 w-3.5" />
+                  <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-muted-foreground/50" disabled>
+                    <Mic className="h-3 w-3" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Áudio (em breve)</TooltipContent>
+                <TooltipContent className="text-[10px]">Em breve</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
 
           <Textarea
             ref={textareaRef}
-            placeholder="Mensagem... (Shift+Enter quebra linha)"
+            placeholder="Mensagem..."
             value={msgText}
             onChange={(e) => {
               onMsgTextChange(e.target.value);
@@ -466,7 +457,7 @@ export function ChatPanel({
               e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px";
             }}
             onKeyDown={handleKeyDown}
-            className="min-h-[40px] max-h-[100px] resize-none text-sm flex-1 rounded-xl bg-muted/30 border-border/40 focus-visible:bg-background transition-colors"
+            className="min-h-[36px] max-h-[100px] resize-none text-xs flex-1 rounded-xl bg-muted/20 border-border/20 focus-visible:border-primary/30 focus-visible:bg-background transition-all"
             rows={1}
           />
 
@@ -474,14 +465,14 @@ export function ChatPanel({
             size="icon"
             onClick={onSend}
             disabled={!msgText.trim()}
-            className="shrink-0 rounded-xl h-10 w-10"
+            className="shrink-0 rounded-xl h-9 w-9"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-3.5 w-3.5" />
           </Button>
         </div>
 
-        <div className="text-center pb-1.5">
-          <span className="text-[9px] text-muted-foreground/40">Enter envia • Shift+Enter nova linha • / templates</span>
+        <div className="text-center pb-1">
+          <span className="text-[8px] text-muted-foreground/30">Enter envia • Shift+Enter nova linha • / templates</span>
         </div>
       </div>
     </div>
