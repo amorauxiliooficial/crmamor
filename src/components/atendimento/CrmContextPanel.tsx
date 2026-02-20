@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   FileCheck, Phone, Mail, Copy, Check, MapPin,
   CalendarClock, ChevronDown, ChevronUp, Shield,
+  MessageSquare, Clock, Sparkles, FileText, UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,14 +26,14 @@ function CopyButton({ value }: { value: string }) {
           <Button
             size="icon"
             variant="ghost"
-            className="h-5 w-5 rounded-md text-muted-foreground/40 hover:text-foreground"
+            className="h-4 w-4 rounded text-muted-foreground/30 hover:text-foreground"
             onClick={() => {
               navigator.clipboard.writeText(value);
               setCopied(true);
               setTimeout(() => setCopied(false), 1500);
             }}
           >
-            {copied ? <Check className="h-2.5 w-2.5 text-emerald-500" /> : <Copy className="h-2.5 w-2.5" />}
+            {copied ? <Check className="h-2 w-2 text-emerald-500" /> : <Copy className="h-2 w-2" />}
           </Button>
         </TooltipTrigger>
         <TooltipContent side="left" className="text-[10px]">Copiar</TooltipContent>
@@ -48,12 +49,12 @@ function InfoRow({ icon: Icon, label, value, copyable = false }: {
   copyable?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between py-1 group">
-      <div className="flex items-center gap-2 min-w-0">
-        <Icon className="h-3 w-3 text-muted-foreground/40 shrink-0" />
+    <div className="flex items-center justify-between py-0.5 group">
+      <div className="flex items-center gap-1.5 min-w-0">
+        <Icon className="h-2.5 w-2.5 text-muted-foreground/30 shrink-0" />
         <div className="min-w-0">
-          <p className="text-[9px] text-muted-foreground/40 uppercase tracking-wider">{label}</p>
-          <p className="text-[11px] font-medium truncate">{value}</p>
+          <p className="text-[8px] text-muted-foreground/35 uppercase tracking-wider">{label}</p>
+          <p className="text-[10px] font-medium truncate">{value}</p>
         </div>
       </div>
       {copyable && <CopyButton value={value} />}
@@ -61,10 +62,11 @@ function InfoRow({ icon: Icon, label, value, copyable = false }: {
   );
 }
 
-function CollapsibleSection({ title, defaultOpen = true, children }: {
+function CollapsibleSection({ title, defaultOpen = true, children, count }: {
   title: string;
   defaultOpen?: boolean;
   children: React.ReactNode;
+  count?: number;
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -72,20 +74,42 @@ function CollapsibleSection({ title, defaultOpen = true, children }: {
     <div>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50 hover:text-foreground transition-colors"
+        className="flex items-center justify-between w-full py-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/40 hover:text-foreground transition-colors"
       >
-        {title}
-        {open ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
+        <span className="flex items-center gap-1">
+          {title}
+          {count != null && <span className="text-[8px] font-mono text-muted-foreground/25">({count})</span>}
+        </span>
+        {open ? <ChevronUp className="h-2 w-2" /> : <ChevronDown className="h-2 w-2" />}
       </button>
       <div className={cn(
         "overflow-hidden transition-all duration-200",
         open ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
       )}>
-        <div className="pb-2">{children}</div>
+        <div className="pb-1.5">{children}</div>
       </div>
     </div>
   );
 }
+
+// Mock timeline events for unified view
+interface TimelineItem {
+  id: string;
+  type: "message" | "activity" | "status_change" | "note" | "follow_up";
+  title: string;
+  time: string;
+  icon: React.ElementType;
+  color: string;
+}
+
+const mockTimeline: TimelineItem[] = [
+  { id: "t1", type: "message", title: "Mensagem enviada", time: "há 5m", icon: MessageSquare, color: "text-primary/60" },
+  { id: "t2", type: "activity", title: "Documentos solicitados", time: "há 2h", icon: FileText, color: "text-amber-500/60" },
+  { id: "t3", type: "follow_up", title: "Follow-up: verificar INSS", time: "há 1d", icon: CalendarClock, color: "text-primary/60" },
+  { id: "t4", type: "status_change", title: "Status → Aguardando INSS", time: "há 2d", icon: Clock, color: "text-muted-foreground/50" },
+  { id: "t5", type: "note", title: "Contrato assinado", time: "há 5d", icon: FileCheck, color: "text-emerald-500/60" },
+  { id: "t6", type: "activity", title: "Conversa assumida por Maria", time: "há 7d", icon: UserCheck, color: "text-primary/60" },
+];
 
 export function CrmContextPanel({ conversa, className }: CrmContextPanelProps) {
   if (!conversa) return null;
@@ -103,55 +127,72 @@ export function CrmContextPanel({ conversa, className }: CrmContextPanelProps) {
     followUps: [
       { label: "Verificar retorno INSS", data: "Amanhã", urgente: true },
       { label: "Enviar lembrete documentos", data: "Em 3 dias", urgente: false },
-      { label: "Conferência mensal", data: "22/03", urgente: false },
     ],
   };
 
   const pendenciasDone = mockCrmData.pendencias.filter((p) => p.done).length;
 
   return (
-    <div className={cn("w-[300px] shrink-0 border-l border-border/30 flex flex-col h-full bg-background", className)}>
+    <div className={cn("w-[280px] shrink-0 border-l border-border/20 flex flex-col h-full bg-background", className)}>
       {/* Header */}
-      <div className="px-4 py-2.5 border-b border-border/20">
-        <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/40">Contexto CRM</p>
-        <p className="text-xs font-medium mt-0.5 truncate">{conversa.nome ?? conversa.telefone}</p>
+      <div className="px-3 py-2 border-b border-border/15">
+        <p className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/35">Contexto CRM</p>
+        <p className="text-[11px] font-medium mt-0.5 truncate">{conversa.nome ?? conversa.telefone}</p>
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="px-4 py-2.5 space-y-1">
+        <div className="px-3 py-2 space-y-0.5">
 
           {/* Status card */}
-          <div className="bg-muted/15 rounded-xl p-2.5 space-y-1.5">
+          <div className="bg-muted/10 rounded-lg p-2 space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/40">Etapa</span>
-              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-primary/20 text-primary rounded-full">
+              <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/35">Etapa</span>
+              <Badge variant="outline" className="text-[8px] h-3.5 px-1 border-primary/15 text-primary rounded-full">
                 {mockCrmData.etapa}
               </Badge>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 rounded-full">{mockCrmData.categoria}</Badge>
+            <div className="flex items-center gap-1">
+              <Badge variant="secondary" className="text-[8px] h-3.5 px-1 rounded-full">{mockCrmData.categoria}</Badge>
               {mockCrmData.contrato && (
-                <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full">
+                <Badge variant="outline" className="text-[8px] h-3.5 px-1 border-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-full">
                   <FileCheck className="h-2 w-2 mr-0.5" /> Contrato
                 </Badge>
               )}
             </div>
           </div>
 
+          {/* Timeline unificada */}
+          <CollapsibleSection title="Timeline" count={mockTimeline.length}>
+            <div className="relative pl-3">
+              <div className="absolute left-[5px] top-0 bottom-0 w-px bg-border/20" />
+              {mockTimeline.map((event) => (
+                <div key={event.id} className="relative flex items-start gap-2 py-1">
+                  <div className="absolute left-[-8px] top-1.5 h-2.5 w-2.5 rounded-full bg-background border border-border/30 flex items-center justify-center">
+                    <event.icon className={cn("h-1.5 w-1.5", event.color)} />
+                  </div>
+                  <div className="flex-1 min-w-0 ml-1">
+                    <p className="text-[10px] truncate">{event.title}</p>
+                    <p className="text-[8px] text-muted-foreground/30 font-mono">{event.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CollapsibleSection>
+
           {/* Pendências */}
-          <CollapsibleSection title={`Pendências (${pendenciasDone}/${mockCrmData.pendencias.length})`}>
-            <div className="space-y-1">
+          <CollapsibleSection title="Pendências" count={pendenciasDone} defaultOpen={false}>
+            <div className="space-y-0.5">
               {mockCrmData.pendencias.map((p, i) => (
-                <div key={i} className="flex items-center gap-2 py-0.5">
+                <div key={i} className="flex items-center gap-1.5 py-0.5">
                   <div className={cn(
-                    "h-3.5 w-3.5 rounded-full border flex items-center justify-center shrink-0",
-                    p.done ? "bg-emerald-500/15 border-emerald-500/50" : "border-border/40"
+                    "h-3 w-3 rounded-full border flex items-center justify-center shrink-0",
+                    p.done ? "bg-emerald-500/10 border-emerald-500/40" : "border-border/30"
                   )}>
-                    {p.done && <Check className="h-2 w-2 text-emerald-600 dark:text-emerald-400" />}
+                    {p.done && <Check className="h-1.5 w-1.5 text-emerald-600 dark:text-emerald-400" />}
                   </div>
                   <span className={cn(
-                    "text-[11px]",
-                    p.done ? "text-muted-foreground/50 line-through" : "text-foreground/80"
+                    "text-[10px]",
+                    p.done ? "text-muted-foreground/40 line-through" : "text-foreground/70"
                   )}>
                     {p.label}
                   </span>
@@ -161,23 +202,23 @@ export function CrmContextPanel({ conversa, className }: CrmContextPanelProps) {
           </CollapsibleSection>
 
           {/* Follow-ups */}
-          <CollapsibleSection title="Follow-ups">
-            <div className="space-y-1">
+          <CollapsibleSection title="Follow-ups" count={mockCrmData.followUps.length} defaultOpen={false}>
+            <div className="space-y-0.5">
               {mockCrmData.followUps.map((f, i) => (
                 <div key={i} className={cn(
-                  "flex items-center justify-between py-1 px-2 rounded-lg",
-                  f.urgente ? "bg-destructive/5" : "bg-muted/10"
+                  "flex items-center justify-between py-0.5 px-1.5 rounded-md",
+                  f.urgente ? "bg-destructive/5" : "bg-muted/5"
                 )}>
-                  <div className="flex items-center gap-1.5 min-w-0">
+                  <div className="flex items-center gap-1 min-w-0">
                     <CalendarClock className={cn(
-                      "h-2.5 w-2.5 shrink-0",
-                      f.urgente ? "text-destructive/60" : "text-muted-foreground/40"
+                      "h-2 w-2 shrink-0",
+                      f.urgente ? "text-destructive/50" : "text-muted-foreground/30"
                     )} />
-                    <span className="text-[11px] truncate">{f.label}</span>
+                    <span className="text-[10px] truncate">{f.label}</span>
                   </div>
                   <span className={cn(
-                    "text-[9px] shrink-0 ml-1.5 font-medium font-mono",
-                    f.urgente ? "text-destructive/60" : "text-muted-foreground/40"
+                    "text-[8px] shrink-0 ml-1 font-mono",
+                    f.urgente ? "text-destructive/50" : "text-muted-foreground/30"
                   )}>
                     {f.data}
                   </span>
@@ -187,7 +228,7 @@ export function CrmContextPanel({ conversa, className }: CrmContextPanelProps) {
           </CollapsibleSection>
 
           {/* Dados cadastrais */}
-          <CollapsibleSection title="Dados Cadastrais" defaultOpen={false}>
+          <CollapsibleSection title="Dados" defaultOpen={false}>
             <div className="space-y-0">
               <InfoRow icon={Phone} label="Telefone" value={conversa.telefone} copyable />
               {conversa.nome && (
