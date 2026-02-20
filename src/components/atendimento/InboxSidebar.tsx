@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Search, Settings, User, UserCheck, Clock } from "lucide-react";
+import { Search, Settings, User, UserCheck, Clock, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -7,13 +7,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 import type { Conversa } from "@/data/atendimentoMock";
 
 const STATUS_DOT: Record<string, string> = {
   Aberto: "bg-emerald-500",
   Pendente: "bg-amber-500",
-  Fechado: "bg-muted-foreground/50",
+  Fechado: "bg-muted-foreground/40",
 };
 
 function formatHorario(d: Date) {
@@ -25,13 +26,6 @@ function formatHorario(d: Date) {
   const diffD = Math.floor(diffH / 24);
   if (diffD === 1) return "ontem";
   return `${diffD}d`;
-}
-
-function slaColor(d: Date) {
-  const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
-  if (diffMin < 10) return "text-emerald-600 dark:text-emerald-400";
-  if (diffMin <= 30) return "text-amber-600 dark:text-amber-400";
-  return "text-destructive";
 }
 
 type TabFilter = "nao_lidas" | "Aberto" | "Pendente" | "Fechado";
@@ -48,7 +42,7 @@ const CHIPS: { value: string; label: string }[] = [
   { value: "todos", label: "Todos" },
   { value: "meus", label: "Meus" },
   { value: "sem_atendente", label: "Sem atendente" },
-  { value: "urgentes", label: "Urgentes" },
+  { value: "urgentes", label: "🔥 Urgentes" },
 ];
 
 interface InboxSidebarProps {
@@ -70,19 +64,15 @@ interface InboxSidebarProps {
 function InboxSkeleton() {
   return (
     <div className="space-y-0">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="flex items-start gap-3 p-3 border-b border-border/30">
-          <Skeleton className="h-10 w-10 rounded-full shrink-0" />
-          <div className="flex-1 space-y-2">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div key={i} className="flex items-center gap-3 px-3 py-2.5">
+          <Skeleton className="h-9 w-9 rounded-full shrink-0" />
+          <div className="flex-1 space-y-1.5">
             <div className="flex justify-between">
-              <Skeleton className="h-3.5 w-24" />
+              <Skeleton className="h-3 w-24" />
               <Skeleton className="h-3 w-8" />
             </div>
-            <Skeleton className="h-3 w-full" />
-            <div className="flex gap-1.5">
-              <Skeleton className="h-4 w-14 rounded-full" />
-              <Skeleton className="h-4 w-16 rounded-full" />
-            </div>
+            <Skeleton className="h-2.5 w-[80%]" />
           </div>
         </div>
       ))}
@@ -134,16 +124,22 @@ export function InboxSidebar({
   const naoLidasCount = conversas.filter((c) => c.naoLidas > 0).length;
 
   return (
-    <div className="w-full md:w-[340px] shrink-0 border-r border-border/60 flex flex-col h-full bg-card/80 backdrop-blur-sm">
+    <div className="w-full md:w-[340px] shrink-0 border-r border-border/40 flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="px-4 pt-4 pb-3 space-y-3">
+      <div className="px-4 pt-4 pb-2 space-y-2.5">
         <div className="flex items-center justify-between">
-          <h1 className="font-semibold text-base tracking-tight">Atendimento</h1>
-          <div className="flex items-center gap-1.5">
-            <kbd className="hidden md:inline-flex items-center gap-0.5 rounded-md border border-border/60 bg-muted/50 px-1.5 py-0.5 text-[10px] text-muted-foreground font-mono">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Inbox className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <h1 className="font-semibold text-sm tracking-tight">Atendimento</h1>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <kbd className="hidden md:inline-flex items-center gap-0.5 rounded-md border border-border/50 bg-muted/30 px-1.5 py-0.5 text-[10px] text-muted-foreground/60 font-mono">
               ⌘K
             </kbd>
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={onOpenConfig}>
+            <ThemeToggle className="h-7 w-7 rounded-lg" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground" onClick={onOpenConfig}>
               <Settings className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -151,17 +147,17 @@ export function InboxSidebar({
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
           <Input
             placeholder="Buscar conversa..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-8 h-8 text-sm rounded-lg bg-muted/40 border-border/40 focus-visible:bg-background transition-colors"
+            className="pl-8 h-8 text-xs rounded-lg bg-muted/30 border-border/30 focus-visible:border-primary/40 focus-visible:bg-background transition-all"
           />
         </div>
 
         {/* Tab filters */}
-        <div className="flex gap-0.5 bg-muted/40 rounded-lg p-0.5">
+        <div className="flex gap-0.5 bg-muted/30 rounded-lg p-0.5">
           {TABS.map((tab) => {
             const isActive = (tab.value === "all" && !statusFilter) || statusFilter === tab.value;
             return (
@@ -169,15 +165,15 @@ export function InboxSidebar({
                 key={tab.value}
                 onClick={() => onStatusFilterChange(tab.value === "all" ? null : (tab.value as TabFilter))}
                 className={cn(
-                  "flex-1 text-[11px] font-medium py-1.5 rounded-md transition-all duration-200 relative",
+                  "flex-1 text-[10px] font-medium py-1 rounded-md transition-all duration-200 relative",
                   isActive
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground/70 hover:text-foreground"
                 )}
               >
                 {tab.label}
                 {tab.value === "nao_lidas" && naoLidasCount > 0 && (
-                  <span className="ml-1 bg-primary text-primary-foreground text-[9px] rounded-full px-1 leading-4 font-bold">
+                  <span className="ml-0.5 bg-primary text-primary-foreground text-[8px] rounded-full px-1 leading-3.5 font-bold">
                     {naoLidasCount}
                   </span>
                 )}
@@ -187,7 +183,7 @@ export function InboxSidebar({
         </div>
 
         {/* Chips */}
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+        <div className="flex gap-1 overflow-x-auto scrollbar-none">
           {CHIPS.map((chip) => (
             <button
               key={chip.value}
@@ -197,10 +193,10 @@ export function InboxSidebar({
                 else onAtendenteFilterChange("todos");
               }}
               className={cn(
-                "px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-all duration-200 border",
+                "px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap transition-all duration-200 border",
                 chipFilter === chip.value
-                  ? "bg-primary/10 text-primary border-primary/30"
-                  : "bg-transparent text-muted-foreground border-border/40 hover:border-border hover:text-foreground"
+                  ? "bg-primary/10 text-primary border-primary/20"
+                  : "bg-transparent text-muted-foreground/60 border-transparent hover:text-foreground hover:bg-muted/30"
               )}
             >
               {chip.label}
@@ -215,150 +211,157 @@ export function InboxSidebar({
           <InboxSkeleton />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-4">
-            <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
-              <Search className="h-5 w-5 text-muted-foreground/50" />
+            <div className="h-10 w-10 rounded-xl bg-muted/30 flex items-center justify-center mb-3">
+              <Search className="h-4 w-4 text-muted-foreground/40" />
             </div>
-            <p className="text-sm font-medium text-muted-foreground">Nenhuma conversa</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">Tente ajustar os filtros</p>
+            <p className="text-xs font-medium text-muted-foreground/70">Nenhuma conversa</p>
+            <p className="text-[10px] text-muted-foreground/50 mt-0.5">Ajuste os filtros</p>
           </div>
         ) : (
-          filtered.map((c) => (
-            <div
-              key={c.id}
-              className={cn(
-                "group relative flex items-start gap-3 px-4 py-3 cursor-pointer transition-all duration-150",
-                "hover:bg-accent/30",
-                selectedId === c.id
-                  ? "bg-primary/5 border-l-2 border-l-primary"
-                  : "border-l-2 border-l-transparent"
-              )}
-              onClick={() => onSelect(c.id)}
-              onMouseEnter={() => setHoveredId(c.id)}
-              onMouseLeave={() => setHoveredId(null)}
-            >
-              {/* Avatar */}
-              <div className="relative shrink-0">
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback className="text-xs font-semibold bg-primary/8 text-primary">
-                    {c.nome ? c.nome.charAt(0).toUpperCase() : <User className="h-4 w-4" />}
-                  </AvatarFallback>
-                </Avatar>
-                {/* Online dot */}
-                {c.status === "Aberto" && (
-                  <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-card" />
-                )}
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span className={cn(
-                    "text-sm truncate",
-                    c.naoLidas > 0 ? "font-bold" : "font-medium"
-                  )}>
-                    {c.nome ?? c.telefone}
-                  </span>
-                  <span className={cn("text-[10px] shrink-0 tabular-nums", slaColor(c.horario))}>
-                    {formatHorario(c.horario)}
-                  </span>
-                </div>
-
-                <p className={cn(
-                  "text-xs truncate mt-0.5 leading-relaxed",
-                  c.naoLidas > 0 ? "text-foreground/80 font-medium" : "text-muted-foreground"
-                )}>
-                  {c.ultimaMensagem}
-                </p>
-
-                {/* Badges row */}
-                <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                  <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", STATUS_DOT[c.status])} />
-                  <span className="text-[10px] text-muted-foreground">{c.status}</span>
-                  {!c.atendente && (
-                    <span className="text-[10px] text-destructive font-medium">• Sem atendente</span>
+          <div className="px-2 py-1 space-y-0.5">
+            {filtered.map((c) => {
+              const isSelected = selectedId === c.id;
+              return (
+                <div
+                  key={c.id}
+                  className={cn(
+                    "group relative flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-xl transition-all duration-200",
+                    isSelected
+                      ? "bg-primary/8 shadow-sm ring-1 ring-primary/15"
+                      : "hover:bg-muted/30"
                   )}
-                  {c.prioridade === "alta" && (
-                    <Badge
-                      variant="destructive"
-                      className="h-4 text-[9px] px-1.5 py-0 font-bold animate-pulse"
-                    >
-                      🔥 Urgente
-                    </Badge>
-                  )}
-                  {c.slaMinutos != null && c.status !== "Fechado" && (
-                    <span className={cn(
-                      "text-[9px] font-mono font-medium tabular-nums",
-                      c.slaMinutos <= 5 ? "text-destructive" : c.slaMinutos <= 15 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground/60"
+                  onClick={() => onSelect(c.id)}
+                  onMouseEnter={() => setHoveredId(c.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                >
+                  {/* Avatar */}
+                  <div className="relative shrink-0">
+                    <Avatar className="h-9 w-9">
+                      <AvatarFallback className={cn(
+                        "text-[11px] font-semibold",
+                        isSelected ? "bg-primary/15 text-primary" : "bg-muted/50 text-muted-foreground"
+                      )}>
+                        {c.nome ? c.nome.charAt(0).toUpperCase() : <User className="h-3.5 w-3.5" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    {c.status === "Aberto" && (
+                      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-background" />
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className={cn(
+                        "text-xs truncate",
+                        c.naoLidas > 0 ? "font-bold text-foreground" : "font-medium text-foreground/80"
+                      )}>
+                        {c.nome ?? c.telefone}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground/50 shrink-0 tabular-nums font-mono">
+                        {formatHorario(c.horario)}
+                      </span>
+                    </div>
+
+                    <p className={cn(
+                      "text-[11px] truncate mt-0.5",
+                      c.naoLidas > 0 ? "text-foreground/70" : "text-muted-foreground/60"
                     )}>
-                      SLA {c.slaMinutos}m
+                      {c.ultimaMensagem}
+                    </p>
+
+                    {/* Compact badges row */}
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", STATUS_DOT[c.status])} />
+                      {c.prioridade === "alta" && (
+                        <Badge variant="destructive" className="h-3.5 text-[8px] px-1 py-0 font-bold rounded-full">
+                          Urgente
+                        </Badge>
+                      )}
+                      {!c.atendente && (
+                        <span className="text-[9px] text-primary/70 font-medium">Sem atendente</span>
+                      )}
+                      {c.slaMinutos != null && c.status !== "Fechado" && (
+                        <span className={cn(
+                          "text-[8px] font-mono font-medium tabular-nums",
+                          c.slaMinutos <= 5 ? "text-destructive/70" : c.slaMinutos <= 15 ? "text-amber-600/70 dark:text-amber-400/70" : "text-muted-foreground/40"
+                        )}>
+                          {c.slaMinutos}m
+                        </span>
+                      )}
+                      {c.etiquetas.filter(e => e !== "Urgente").slice(0, 1).map((e) => (
+                        <Badge
+                          key={e}
+                          variant="outline"
+                          className="h-3.5 text-[8px] px-1 py-0 font-medium border-border/30 text-muted-foreground/60 rounded-full"
+                        >
+                          {e}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Unread count */}
+                  {c.naoLidas > 0 && (
+                    <span className="bg-primary text-primary-foreground h-4.5 min-w-4.5 px-1 flex items-center justify-center rounded-full text-[9px] font-bold shrink-0">
+                      {c.naoLidas}
                     </span>
                   )}
-                  {c.etiquetas.filter(e => e !== "Urgente" || c.prioridade !== "alta").slice(0, 2).map((e) => (
-                    <Badge
-                      key={e}
-                      variant="outline"
-                      className={cn(
-                        "h-4 text-[9px] px-1.5 py-0 font-medium border-border/40",
-                        e === "Urgente" && "border-destructive/30 text-destructive bg-destructive/5"
-                      )}
+
+                  {/* Hover actions */}
+                  {hoveredId === c.id && !isSelected && (onAssume || onPendente) && (
+                    <div
+                      className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      {e}
-                    </Badge>
-                  ))}
+                      <TooltipProvider delayDuration={100}>
+                        {onAssume && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="secondary"
+                                className="h-6 w-6 rounded-lg"
+                                onClick={(e) => { e.stopPropagation(); onAssume(c.id); }}
+                              >
+                                <UserCheck className="h-3 w-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-[10px]">Assumir</TooltipContent>
+                          </Tooltip>
+                        )}
+                        {onPendente && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="secondary"
+                                className="h-6 w-6 rounded-lg"
+                                onClick={(e) => { e.stopPropagation(); onPendente(c.id); }}
+                              >
+                                <Clock className="h-3 w-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-[10px]">Pendente</TooltipContent>
+                          </Tooltip>
+                        )}
+                      </TooltipProvider>
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {/* Unread badge */}
-              {c.naoLidas > 0 && (
-                <span className="absolute top-3 right-4 bg-primary text-primary-foreground h-5 min-w-5 px-1 flex items-center justify-center rounded-full text-[10px] font-bold">
-                  {c.naoLidas}
-                </span>
-              )}
-
-              {/* Hover actions */}
-              {hoveredId === c.id && (onAssume || onPendente) && (
-                <div
-                  className="absolute right-3 bottom-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <TooltipProvider delayDuration={100}>
-                    {onAssume && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="secondary"
-                            className="h-6 w-6 rounded-md"
-                            onClick={(e) => { e.stopPropagation(); onAssume(c.id); }}
-                          >
-                            <UserCheck className="h-3 w-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="text-xs">Assumir</TooltipContent>
-                      </Tooltip>
-                    )}
-                    {onPendente && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="secondary"
-                            className="h-6 w-6 rounded-md"
-                            onClick={(e) => { e.stopPropagation(); onPendente(c.id); }}
-                          >
-                            <Clock className="h-3 w-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="text-xs">Pendente</TooltipContent>
-                      </Tooltip>
-                    )}
-                  </TooltipProvider>
-                </div>
-              )}
-            </div>
-          ))
+              );
+            })}
+          </div>
         )}
       </ScrollArea>
+
+      {/* Footer stats */}
+      <div className="px-4 py-2 border-t border-border/30 flex items-center justify-between">
+        <span className="text-[10px] text-muted-foreground/50">{filtered.length} conversas</span>
+        <span className="text-[10px] text-muted-foreground/50 font-mono">
+          {naoLidasCount > 0 && `${naoLidasCount} não lidas`}
+        </span>
+      </div>
     </div>
   );
 }

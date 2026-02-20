@@ -6,7 +6,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { Conversa } from "@/data/atendimentoMock";
@@ -26,7 +25,7 @@ function CopyButton({ value }: { value: string }) {
           <Button
             size="icon"
             variant="ghost"
-            className="h-5 w-5 rounded-md"
+            className="h-5 w-5 rounded-md text-muted-foreground/40 hover:text-foreground"
             onClick={() => {
               navigator.clipboard.writeText(value);
               setCopied(true);
@@ -36,7 +35,7 @@ function CopyButton({ value }: { value: string }) {
             {copied ? <Check className="h-2.5 w-2.5 text-emerald-500" /> : <Copy className="h-2.5 w-2.5" />}
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="left" className="text-xs">Copiar</TooltipContent>
+        <TooltipContent side="left" className="text-[10px]">Copiar</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
@@ -49,12 +48,12 @@ function InfoRow({ icon: Icon, label, value, copyable = false }: {
   copyable?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between py-1.5 group">
+    <div className="flex items-center justify-between py-1 group">
       <div className="flex items-center gap-2 min-w-0">
-        <Icon className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+        <Icon className="h-3 w-3 text-muted-foreground/40 shrink-0" />
         <div className="min-w-0">
-          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">{label}</p>
-          <p className="text-xs font-medium truncate">{value}</p>
+          <p className="text-[9px] text-muted-foreground/40 uppercase tracking-wider">{label}</p>
+          <p className="text-[11px] font-medium truncate">{value}</p>
         </div>
       </div>
       {copyable && <CopyButton value={value} />}
@@ -73,12 +72,17 @@ function CollapsibleSection({ title, defaultOpen = true, children }: {
     <div>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 hover:text-foreground transition-colors"
+        className="flex items-center justify-between w-full py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50 hover:text-foreground transition-colors"
       >
         {title}
-        {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+        {open ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
       </button>
-      {open && <div className="pb-2">{children}</div>}
+      <div className={cn(
+        "overflow-hidden transition-all duration-200",
+        open ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+      )}>
+        <div className="pb-2">{children}</div>
+      </div>
     </div>
   );
 }
@@ -86,7 +90,6 @@ function CollapsibleSection({ title, defaultOpen = true, children }: {
 export function CrmContextPanel({ conversa, className }: CrmContextPanelProps) {
   if (!conversa) return null;
 
-  // Mock CRM data - will be replaced with real data when linked to mae_processo
   const mockCrmData = {
     etapa: "Aguardando Análise INSS",
     categoria: "CLT",
@@ -107,50 +110,48 @@ export function CrmContextPanel({ conversa, className }: CrmContextPanelProps) {
   const pendenciasDone = mockCrmData.pendencias.filter((p) => p.done).length;
 
   return (
-    <div className={cn("w-[320px] shrink-0 border-l border-border/50 flex flex-col h-full bg-card/60 backdrop-blur-sm", className)}>
+    <div className={cn("w-[300px] shrink-0 border-l border-border/30 flex flex-col h-full bg-background", className)}>
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border/40">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">Contexto CRM</h2>
-        <p className="text-sm font-medium mt-1 truncate">{conversa.nome ?? conversa.telefone}</p>
+      <div className="px-4 py-2.5 border-b border-border/20">
+        <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/40">Contexto CRM</p>
+        <p className="text-xs font-medium mt-0.5 truncate">{conversa.nome ?? conversa.telefone}</p>
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="px-4 py-3 space-y-1">
+        <div className="px-4 py-2.5 space-y-1">
 
           {/* Status card */}
-          <div className="bg-muted/30 rounded-xl p-3 space-y-2">
+          <div className="bg-muted/15 rounded-xl p-2.5 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Etapa do Processo</span>
-              <Badge variant="outline" className="text-[10px] h-5 px-2 border-primary/30 text-primary">
-                ⏳ {mockCrmData.etapa}
+              <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/40">Etapa</span>
+              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-primary/20 text-primary rounded-full">
+                {mockCrmData.etapa}
               </Badge>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-[10px] h-5 px-2">{mockCrmData.categoria}</Badge>
+            <div className="flex items-center gap-1.5">
+              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 rounded-full">{mockCrmData.categoria}</Badge>
               {mockCrmData.contrato && (
-                <Badge variant="outline" className="text-[10px] h-5 px-2 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-                  <FileCheck className="h-2.5 w-2.5 mr-1" /> Contrato
+                <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full">
+                  <FileCheck className="h-2 w-2 mr-0.5" /> Contrato
                 </Badge>
               )}
             </div>
           </div>
 
-          <Separator className="bg-border/30" />
-
           {/* Pendências */}
           <CollapsibleSection title={`Pendências (${pendenciasDone}/${mockCrmData.pendencias.length})`}>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {mockCrmData.pendencias.map((p, i) => (
-                <div key={i} className="flex items-center gap-2 py-1">
+                <div key={i} className="flex items-center gap-2 py-0.5">
                   <div className={cn(
-                    "h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0",
-                    p.done ? "bg-emerald-500/20 border-emerald-500" : "border-border/60"
+                    "h-3.5 w-3.5 rounded-full border flex items-center justify-center shrink-0",
+                    p.done ? "bg-emerald-500/15 border-emerald-500/50" : "border-border/40"
                   )}>
-                    {p.done && <Check className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400" />}
+                    {p.done && <Check className="h-2 w-2 text-emerald-600 dark:text-emerald-400" />}
                   </div>
                   <span className={cn(
-                    "text-xs",
-                    p.done ? "text-muted-foreground line-through" : "text-foreground"
+                    "text-[11px]",
+                    p.done ? "text-muted-foreground/50 line-through" : "text-foreground/80"
                   )}>
                     {p.label}
                   </span>
@@ -159,26 +160,24 @@ export function CrmContextPanel({ conversa, className }: CrmContextPanelProps) {
             </div>
           </CollapsibleSection>
 
-          <Separator className="bg-border/30" />
-
           {/* Follow-ups */}
-          <CollapsibleSection title="Próximos Follow-ups">
-            <div className="space-y-2">
+          <CollapsibleSection title="Follow-ups">
+            <div className="space-y-1">
               {mockCrmData.followUps.map((f, i) => (
                 <div key={i} className={cn(
-                  "flex items-center justify-between py-1.5 px-2.5 rounded-lg",
-                  f.urgente ? "bg-destructive/5 border border-destructive/10" : "bg-muted/20"
+                  "flex items-center justify-between py-1 px-2 rounded-lg",
+                  f.urgente ? "bg-destructive/5" : "bg-muted/10"
                 )}>
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <CalendarClock className={cn(
-                      "h-3 w-3 shrink-0",
-                      f.urgente ? "text-destructive" : "text-muted-foreground/60"
+                      "h-2.5 w-2.5 shrink-0",
+                      f.urgente ? "text-destructive/60" : "text-muted-foreground/40"
                     )} />
-                    <span className="text-xs truncate">{f.label}</span>
+                    <span className="text-[11px] truncate">{f.label}</span>
                   </div>
                   <span className={cn(
-                    "text-[10px] shrink-0 ml-2 font-medium",
-                    f.urgente ? "text-destructive" : "text-muted-foreground/60"
+                    "text-[9px] shrink-0 ml-1.5 font-medium font-mono",
+                    f.urgente ? "text-destructive/60" : "text-muted-foreground/40"
                   )}>
                     {f.data}
                   </span>
@@ -187,11 +186,9 @@ export function CrmContextPanel({ conversa, className }: CrmContextPanelProps) {
             </div>
           </CollapsibleSection>
 
-          <Separator className="bg-border/30" />
-
           {/* Dados cadastrais */}
           <CollapsibleSection title="Dados Cadastrais" defaultOpen={false}>
-            <div className="space-y-0.5">
+            <div className="space-y-0">
               <InfoRow icon={Phone} label="Telefone" value={conversa.telefone} copyable />
               {conversa.nome && (
                 <InfoRow icon={Shield} label="Nome" value={conversa.nome} copyable />
