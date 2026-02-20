@@ -585,6 +585,7 @@ export type Database = {
           email: string | null
           id: string
           is_gestante: boolean
+          last_contact_at: string | null
           link_documentos: string | null
           mes_gestacao: number | null
           nome_mae: string
@@ -598,6 +599,7 @@ export type Database = {
           senha_gov: string | null
           status_processo: Database["public"]["Enums"]["status_processo"]
           telefone: string | null
+          telefone_e164: string | null
           tipo_evento: Database["public"]["Enums"]["tipo_evento"]
           uf: string | null
           ultima_atividade_em: string | null
@@ -618,6 +620,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_gestante?: boolean
+          last_contact_at?: string | null
           link_documentos?: string | null
           mes_gestacao?: number | null
           nome_mae: string
@@ -631,6 +634,7 @@ export type Database = {
           senha_gov?: string | null
           status_processo?: Database["public"]["Enums"]["status_processo"]
           telefone?: string | null
+          telefone_e164?: string | null
           tipo_evento?: Database["public"]["Enums"]["tipo_evento"]
           uf?: string | null
           ultima_atividade_em?: string | null
@@ -651,6 +655,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_gestante?: boolean
+          last_contact_at?: string | null
           link_documentos?: string | null
           mes_gestacao?: number | null
           nome_mae?: string
@@ -664,6 +669,7 @@ export type Database = {
           senha_gov?: string | null
           status_processo?: Database["public"]["Enums"]["status_processo"]
           telefone?: string | null
+          telefone_e164?: string | null
           tipo_evento?: Database["public"]["Enums"]["tipo_evento"]
           uf?: string | null
           ultima_atividade_em?: string | null
@@ -1261,6 +1267,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      timeline_events: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          event_type: string
+          id: string
+          mae_id: string | null
+          payload: Json | null
+          title: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          event_type: string
+          id?: string
+          mae_id?: string | null
+          payload?: Json | null
+          title: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          event_type?: string
+          id?: string
+          mae_id?: string | null
+          payload?: Json | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_events_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tipos_conteudo: {
         Row: {
