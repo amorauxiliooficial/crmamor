@@ -20,13 +20,18 @@ serve(async (req: Request): Promise<Response> => {
     const token = url.searchParams.get('hub.verify_token');
     const challenge = url.searchParams.get('hub.challenge');
 
+    console.log(`🔍 Webhook verification attempt: mode=${mode}, token_match=${token === VERIFY_TOKEN}, challenge_present=${!!challenge}`);
+
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-      console.log('✅ Webhook verified successfully');
-      return new Response(challenge, { status: 200, headers: corsHeaders });
+      console.log('✅ Webhook verified successfully, returning challenge as plain text');
+      return new Response(challenge, {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+      });
     }
 
-    console.warn('❌ Webhook verification failed', { mode, token });
-    return new Response('Forbidden', { status: 403, headers: corsHeaders });
+    console.warn('❌ Webhook verification failed: token mismatch or wrong mode');
+    return new Response('Forbidden', { status: 403 });
   }
 
   // POST = incoming messages & status updates
