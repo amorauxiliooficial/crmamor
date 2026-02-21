@@ -140,7 +140,41 @@ serve(async (req: Request): Promise<Response> => {
         });
       }
       
-      const effectiveMime = media_mime || 'audio/ogg';
+      let effectiveMime = media_mime || 'audio/ogg';
+      
+      // If webm with opus codec, re-label as audio/ogg for Meta compatibility
+      // The opus codec is identical; only the container differs
+      if (effectiveMime.includes('webm') && effectiveMime.includes('opus')) {
+        effectiveMime = 'audio/ogg';
+        console.log('🔄 Re-labeling audio/webm;codecs=opus → audio/ogg for Meta compatibility');
+      } else if (effectiveMime.includes('webm')) {
+        // Pure webm without opus - Meta won't accept it
+        console.error('❌ Unsupported audio format:', effectiveMime);
+        
+        // Save as failed
+        if (conversation_id) {
+          await adminClient.from('wa_messages').insert({
+            conversation_id,
+            direction: 'out',
+            body: '[audio]',
+            msg_type: 'audio',
+            status: 'failed',
+            sent_by: userId,
+            sent_at: new Date().toISOString(),
+            media_url,
+            media_mime: effectiveMime,
+            error_code: 'UNSUPPORTED_FORMAT',
+            error_message: 'Formato de áudio não suportado pela Meta. Grave novamente (OGG/OPUS).',
+          });
+        }
+        
+        return new Response(JSON.stringify({
+          error: 'Unsupported audio format',
+          error_message: 'Formato de áudio não suportado. Grave novamente.',
+          error_code: 'UNSUPPORTED_FORMAT',
+        }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      
       const mediaId = await uploadMediaToMeta(media_url, effectiveMime, META_WA_TOKEN, META_PHONE_NUMBER_ID);
       
       metaPayload = {
