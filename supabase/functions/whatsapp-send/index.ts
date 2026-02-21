@@ -8,6 +8,61 @@ const corsHeaders = {
 
 const GRAPH_API_VERSION = 'v21.0';
 
+/**
+ * Upload a media file to Meta's servers and return the media_id.
+ * This is required for audio (and recommended for other types).
+ */
+async function uploadMediaToMeta(
+  mediaUrl: string,
+  mediaMime: string,
+  metaToken: string,
+  phoneNumberId: string,
+): Promise<string> {
+  // 1. Download the file from our storage
+  console.log(`⬇️ Downloading media from: ${mediaUrl.slice(0, 100)}...`);
+  const fileRes = await fetch(mediaUrl);
+  if (!fileRes.ok) {
+    throw new Error(`Failed to download media: ${fileRes.status} ${fileRes.statusText}`);
+  }
+  const fileBlob = await fileRes.blob();
+
+  // 2. Build multipart form data for Meta upload
+  const form = new FormData();
+  
+  // Meta requires specific MIME types for audio voice notes: audio/ogg, audio/aac, audio/amr, audio/mpeg
+  // If the file is webm, we'll upload it but Meta may reject it
+  const filename = mediaMime.includes('ogg') ? 'audio.ogg' 
+    : mediaMime.includes('webm') ? 'audio.webm'
+    : mediaMime.includes('mpeg') || mediaMime.includes('mp3') ? 'audio.mp3'
+    : mediaMime.includes('aac') ? 'audio.aac'
+    : 'media.bin';
+  
+  form.append('file', new File([fileBlob], filename, { type: mediaMime }));
+  form.append('messaging_product', 'whatsapp');
+  form.append('type', mediaMime);
+
+  console.log(`⬆️ Uploading media to Meta (${mediaMime}, ${fileBlob.size} bytes)...`);
+
+  const uploadRes = await fetch(
+    `https://graph.facebook.com/${GRAPH_API_VERSION}/${phoneNumberId}/media`,
+    {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${metaToken}` },
+      body: form,
+    }
+  );
+
+  const uploadBody = await uploadRes.json();
+  console.log(`📤 Meta upload response (${uploadRes.status}):`, JSON.stringify(uploadBody).slice(0, 300));
+
+  if (!uploadRes.ok || !uploadBody.id) {
+    const errMsg = uploadBody?.error?.message || 'Unknown upload error';
+    throw new Error(`Meta media upload failed (${uploadRes.status}): ${errMsg}`);
+  }
+
+  return uploadBody.id;
+}
+
 serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -77,6 +132,24 @@ serve(async (req: Request): Promise<Response> => {
         type: 'text',
         text: { preview_url: false, body: text },
       };
+    } else if (msgType === 'audio') {
+      // Audio MUST be uploaded to Meta first, then sent by media_id
+      if (!media_url) {
+        return new Response(JSON.stringify({ error: 'Missing media_url for audio' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      const effectiveMime = media_mime || 'audio/ogg';
+      const mediaId = await uploadMediaToMeta(media_url, effectiveMime, META_WA_TOKEN, META_PHONE_NUMBER_ID);
+      
+      metaPayload = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: cleanPhone,
+        type: 'audio',
+        audio: { id: mediaId },
+      };
     } else if (msgType === 'image') {
       metaPayload = {
         messaging_product: 'whatsapp',
@@ -92,14 +165,6 @@ serve(async (req: Request): Promise<Response> => {
         to: cleanPhone,
         type: 'video',
         video: { link: media_url, caption: caption || undefined },
-      };
-    } else if (msgType === 'audio') {
-      metaPayload = {
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: cleanPhone,
-        type: 'audio',
-        audio: { link: media_url },
       };
     } else if (msgType === 'document') {
       metaPayload = {
@@ -132,8 +197,35 @@ serve(async (req: Request): Promise<Response> => {
 
     if (!metaRes.ok) {
       const metaError = metaBody?.error;
-      console.error(`❌ Meta API error ${metaRes.status}: code=${metaError?.code}, msg=${metaError?.message}`);
-      return new Response(JSON.stringify({ error: 'Meta API error', details: metaBody }), {
+      const errorDetail = `code=${metaError?.code}, msg=${metaError?.message}, type=${metaError?.type}`;
+      console.error(`❌ Meta API error ${metaRes.status}: ${errorDetail}`);
+      
+      // Save failed message in DB so UI shows the error
+      let convoId = conversation_id;
+      if (convoId) {
+        const bodyText = msgType === 'text' ? text : (caption || `[${msgType}]`);
+        await adminClient.from('wa_messages').insert({
+          conversation_id: convoId,
+          direction: 'out',
+          body: bodyText,
+          msg_type: msgType,
+          status: 'failed',
+          sent_by: userId,
+          sent_at: new Date().toISOString(),
+          media_url: msgType !== 'text' ? media_url : null,
+          media_mime: media_mime || null,
+          media_filename: media_filename || null,
+          error_code: String(metaError?.code || metaRes.status),
+          error_message: metaError?.message || 'Erro desconhecido da Meta API',
+        });
+      }
+      
+      return new Response(JSON.stringify({ 
+        error: 'Meta API error', 
+        error_message: metaError?.message || 'Unknown error',
+        error_code: metaError?.code,
+        details: metaBody 
+      }), {
         status: metaRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -191,7 +283,7 @@ serve(async (req: Request): Promise<Response> => {
     });
   } catch (error) {
     console.error('❌ Send error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    return new Response(JSON.stringify({ error: 'Internal server error', error_message: String(error) }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { Download, FileText, Loader2, X } from "lucide-react";
+import { Download, ExternalLink, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,18 @@ function formatFileSize(bytes: number | null): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getDocumentIcon(mime: string | null, filename: string | null) {
+  const ext = filename?.split('.').pop()?.toLowerCase() || '';
+  const isPdf = mime?.includes('pdf') || ext === 'pdf';
+  const isSpreadsheet = ['xls', 'xlsx', 'csv'].includes(ext) || mime?.includes('spreadsheet') || mime?.includes('excel');
+  const isDoc = ['doc', 'docx'].includes(ext) || mime?.includes('word');
+
+  if (isPdf) return { icon: "📄", color: "text-red-500", bg: "bg-red-500/10", label: "PDF" };
+  if (isSpreadsheet) return { icon: "📊", color: "text-green-600", bg: "bg-green-500/10", label: "Planilha" };
+  if (isDoc) return { icon: "📝", color: "text-blue-500", bg: "bg-blue-500/10", label: "Documento" };
+  return { icon: "📎", color: "text-muted-foreground", bg: "bg-muted/20", label: "Arquivo" };
 }
 
 export const MediaBubble = memo(function MediaBubble({
@@ -159,34 +171,93 @@ export const MediaBubble = memo(function MediaBubble({
     );
   }
 
-  // Document
+  // Document - Enhanced card
   if (msgType === "document") {
     const displayName = mediaFilename || "Documento";
+    const truncatedName = displayName.length > 35 ? displayName.slice(0, 32) + "…" : displayName;
+    const docInfo = getDocumentIcon(mediaMime, mediaFilename);
+    const isPdf = mediaMime?.includes('pdf') || displayName.toLowerCase().endsWith('.pdf');
+
     return (
-      <div className="space-y-1">
-        <a
-          href={mediaUrl!}
-          target="_blank"
-          rel="noopener noreferrer"
-          download
-          className={cn(
-            "flex items-center gap-3 px-3 py-2.5 rounded-xl min-w-[200px] max-w-[300px] transition-colors",
-            isMe
-              ? "bg-primary-foreground/10 hover:bg-primary-foreground/20"
-              : "bg-muted/20 hover:bg-muted/40 border border-border/20"
-          )}
-        >
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <FileText className="h-5 w-5 text-primary" />
+      <div className="space-y-1.5">
+        <div className={cn(
+          "rounded-xl min-w-[240px] max-w-[320px] overflow-hidden",
+          isMe
+            ? "bg-primary-foreground/10 border border-primary-foreground/10"
+            : "bg-card border border-border/30"
+        )}>
+          {/* Document header with icon */}
+          <div className="flex items-center gap-3 px-4 py-3">
+            <div className={cn("h-11 w-11 rounded-xl flex items-center justify-center shrink-0", docInfo.bg)}>
+              <span className="text-xl">{docInfo.icon}</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className={cn(
+                "text-sm font-medium truncate",
+                isMe ? "text-primary-foreground" : "text-foreground"
+              )} title={displayName}>
+                {truncatedName}
+              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className={cn(
+                  "text-[10px] font-medium uppercase tracking-wide",
+                  isMe ? "text-primary-foreground/50" : "text-muted-foreground/60"
+                )}>
+                  {docInfo.label}
+                </span>
+                {mediaSize && (
+                  <>
+                    <span className={cn("text-[10px]", isMe ? "text-primary-foreground/30" : "text-muted-foreground/30")}>•</span>
+                    <span className={cn("text-[10px]", isMe ? "text-primary-foreground/50" : "text-muted-foreground/60")}>
+                      {formatFileSize(mediaSize)}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium truncate">{displayName}</p>
-            {mediaSize && (
-              <p className="text-[10px] opacity-50">{formatFileSize(mediaSize)}</p>
+
+          {/* Action buttons */}
+          <div className={cn(
+            "flex border-t",
+            isMe ? "border-primary-foreground/10" : "border-border/20"
+          )}>
+            {isPdf && (
+              <a
+                href={mediaUrl!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
+                  isMe
+                    ? "text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/5"
+                    : "text-primary/70 hover:text-primary hover:bg-primary/5",
+                  "border-r",
+                  isMe ? "border-primary-foreground/10" : "border-border/20"
+                )}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Abrir
+              </a>
             )}
+            <a
+              href={mediaUrl!}
+              download={displayName}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
+                isMe
+                  ? "text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/5"
+                  : "text-primary/70 hover:text-primary hover:bg-primary/5"
+              )}
+            >
+              <Download className="h-3.5 w-3.5" />
+              Baixar
+            </a>
           </div>
-          <Download className="h-4 w-4 opacity-40 shrink-0" />
-        </a>
+        </div>
+
         {caption && caption !== "[document]" && (
           <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{caption}</p>
         )}
