@@ -3,7 +3,7 @@ import {
   Send, ArrowLeft, User, UserCheck, Clock, CheckCircle, Tag,
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
   Loader2, Zap, Brain, Database, ArrowRight, CalendarPlus, AlertTriangle,
-  Info,
+  Info, Paperclip, X, Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { smartTemplates, type SmartTemplate } from "@/data/smartTemplates";
+import { MediaBubble } from "@/components/atendimento/MediaBubble";
 import type { Conversa, Mensagem } from "@/data/atendimentoMock";
 import type { RespostaRapida } from "@/data/respostasRapidas";
 
@@ -77,6 +78,8 @@ const MessageBubble = memo(function MessageBubble({
   showTime: boolean;
 }) {
   const isMe = m.de === "atendente";
+  const isMedia = m.msgType && m.msgType !== "text";
+
   return (
     <div
       className={cn(
@@ -94,7 +97,20 @@ const MessageBubble = memo(function MessageBubble({
               : "bg-card border border-border/20 rounded-2xl rounded-bl-sm"
           )}
         >
-          <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{m.texto}</p>
+          {isMedia ? (
+            <MediaBubble
+              msgType={m.msgType!}
+              mediaUrl={m.mediaUrl ?? null}
+              mediaMime={m.mediaMime ?? null}
+              mediaFilename={m.mediaFilename ?? null}
+              mediaSize={m.mediaSize ?? null}
+              mediaDuration={m.mediaDuration ?? null}
+              caption={m.texto !== `[${m.msgType}]` ? m.texto : null}
+              isMe={isMe}
+            />
+          ) : (
+            <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{m.texto}</p>
+          )}
         </div>
         {showTime && (
           <p className={cn(
@@ -118,6 +134,7 @@ interface ChatPanelProps {
   msgText: string;
   onMsgTextChange: (v: string) => void;
   onSend: () => void;
+  onSendMedia?: (file: File) => void;
   onBack: () => void;
   onAssume: () => void;
   onPendente: () => void;
@@ -136,6 +153,7 @@ export function ChatPanel({
   msgText,
   onMsgTextChange,
   onSend,
+  onSendMedia,
   onBack,
   onAssume,
   onPendente,
@@ -148,12 +166,15 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [quickReplyIndex, setQuickReplyIndex] = useState(0);
   const [aiLoading, setAiLoading] = useState<AiAction | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
   const [aiResult, setAiResult] = useState<{ type: AiAction; text: string } | null>(null);
   const [visibleCount, setVisibleCount] = useState(MESSAGES_PER_PAGE);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
   const { toast } = useToast();
 
   const filteredReplies = useMemo(() => {
@@ -557,9 +578,55 @@ export function ChatPanel({
           </button>
         </div>
 
+        {/* Pending file preview */}
+        {pendingFile && pendingPreview && (
+          <div className="mx-4 mt-2 mb-1 p-2 bg-muted/20 border border-border/20 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
+            {pendingFile.type.startsWith("image/") ? (
+              <img src={pendingPreview} alt="Preview" className="h-16 w-16 rounded-lg object-cover" />
+            ) : pendingFile.type.startsWith("video/") ? (
+              <video src={pendingPreview} className="h-16 w-16 rounded-lg object-cover" muted />
+            ) : pendingFile.type.startsWith("audio/") ? (
+              <div className="h-16 w-16 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Mic className="h-6 w-6 text-primary" />
+              </div>
+            ) : (
+              <div className="h-16 w-16 rounded-lg bg-primary/10 flex items-center justify-center">
+                <FileText className="h-6 w-6 text-primary" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{pendingFile.name}</p>
+              <p className="text-[10px] text-muted-foreground">
+                {(pendingFile.size / 1024).toFixed(0)} KB
+              </p>
+            </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 rounded-lg shrink-0"
+              onClick={() => { setPendingFile(null); setPendingPreview(null); }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
         <div className="flex gap-2 items-end px-4 pb-3 pt-1.5">
           <div className="flex gap-1 shrink-0">
             <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-10 w-10 rounded-lg text-muted-foreground/40"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="text-xs">Anexar arquivo</TooltipContent>
+              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -574,11 +641,28 @@ export function ChatPanel({
                 <TooltipContent className="text-xs">Templates (/)</TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setPendingFile(file);
+                if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
+                  setPendingPreview(URL.createObjectURL(file));
+                } else {
+                  setPendingPreview("file");
+                }
+                e.target.value = "";
+              }}
+            />
           </div>
 
           <Textarea
             ref={textareaRef}
-            placeholder="Mensagem..."
+            placeholder={pendingFile ? "Legenda (opcional)..." : "Mensagem..."}
             value={msgText}
             onChange={(e) => {
               onMsgTextChange(e.target.value);
@@ -592,8 +676,16 @@ export function ChatPanel({
 
           <Button
             size="icon"
-            onClick={onSend}
-            disabled={!msgText.trim()}
+            onClick={() => {
+              if (pendingFile && onSendMedia) {
+                onSendMedia(pendingFile);
+                setPendingFile(null);
+                setPendingPreview(null);
+              } else {
+                onSend();
+              }
+            }}
+            disabled={!msgText.trim() && !pendingFile}
             className="shrink-0 rounded-xl h-11 w-11"
           >
             <Send className="h-4 w-4" />

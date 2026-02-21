@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -102,6 +103,12 @@ export default function Atendimento() {
       texto: m.body ?? "",
       de: m.direction === "in" ? ("contato" as const) : ("atendente" as const),
       horario: new Date(m.created_at),
+      msgType: m.msg_type,
+      mediaUrl: m.media_url,
+      mediaMime: m.media_mime,
+      mediaFilename: m.media_filename,
+      mediaSize: m.media_size,
+      mediaDuration: m.media_duration,
     }));
   }, [waMessages]);
 
@@ -185,6 +192,53 @@ export default function Atendimento() {
     setMsgText("");
   }, [selectedId, msgText, selectedWa, sendWhatsApp, toast]);
 
+  const handleSendMedia = useCallback(async (file: File) => {
+    if (!selectedId || !selectedWa) return;
+
+    try {
+      // Upload to wa-media bucket
+      const ext = file.name.split('.').pop() || 'bin';
+      const path = `outbound/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      
+      const { error: uploadErr } = await supabase.storage
+        .from('wa-media')
+        .upload(path, file, { contentType: file.type, upsert: false });
+
+      if (uploadErr) throw uploadErr;
+
+      const { data: urlData } = supabase.storage.from('wa-media').getPublicUrl(path);
+      const publicUrl = urlData.publicUrl;
+
+      // Determine type
+      let msgType = 'document';
+      if (file.type.startsWith('image/')) msgType = 'image';
+      else if (file.type.startsWith('video/')) msgType = 'video';
+      else if (file.type.startsWith('audio/')) msgType = 'audio';
+
+      sendWhatsApp.mutate(
+        {
+          to: selectedWa.wa_phone,
+          conversation_id: selectedId,
+          type: msgType,
+          media_url: publicUrl,
+          media_mime: file.type,
+          media_filename: file.name,
+          caption: msgText.trim() || undefined,
+        },
+        {
+          onError: (err) => {
+            console.error("Send media error:", err);
+            toast({ title: "Erro ao enviar mídia", description: "Tente novamente.", variant: "destructive" });
+          },
+        }
+      );
+      setMsgText("");
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast({ title: "Erro ao fazer upload", description: "Tente novamente.", variant: "destructive" });
+    }
+  }, [selectedId, selectedWa, sendWhatsApp, msgText, toast]);
+
   // Sort: by last_message_at desc
   const sortedConversas = useMemo(() => {
     return [...conversas].sort((a, b) => {
@@ -224,6 +278,7 @@ export default function Atendimento() {
                 msgText={msgText}
                 onMsgTextChange={setMsgText}
                 onSend={handleSend}
+                onSendMedia={handleSendMedia}
                 onBack={() => { setSelectedId(null); navigate("/atendimento"); }}
                 onAssume={() => handleAssume()}
                 onPendente={() => handlePendente()}
@@ -336,6 +391,7 @@ export default function Atendimento() {
         msgText={msgText}
         onMsgTextChange={setMsgText}
         onSend={handleSend}
+        onSendMedia={handleSendMedia}
         onBack={() => {}}
         onAssume={() => handleAssume()}
         onPendente={() => handlePendente()}

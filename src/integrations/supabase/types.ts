@@ -1549,6 +1549,12 @@ export type Database = {
           created_at: string
           direction: string
           id: string
+          media_duration: number | null
+          media_filename: string | null
+          media_mime: string | null
+          media_size: number | null
+          media_url: string | null
+          meta_media_id: string | null
           meta_message_id: string | null
           msg_type: string
           sent_by: string | null
@@ -1560,6 +1566,12 @@ export type Database = {
           created_at?: string
           direction: string
           id?: string
+          media_duration?: number | null
+          media_filename?: string | null
+          media_mime?: string | null
+          media_size?: number | null
+          media_url?: string | null
+          meta_media_id?: string | null
           meta_message_id?: string | null
           msg_type?: string
           sent_by?: string | null
@@ -1571,6 +1583,12 @@ export type Database = {
           created_at?: string
           direction?: string
           id?: string
+          media_duration?: number | null
+          media_filename?: string | null
+          media_mime?: string | null
+          media_size?: number | null
+          media_url?: string | null
+          meta_media_id?: string | null
           meta_message_id?: string | null
           msg_type?: string
           sent_by?: string | null

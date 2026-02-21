@@ -18,6 +18,12 @@ export interface Mensagem {
   texto: string;
   de: "contato" | "atendente";
   horario: Date;
+  msgType?: string;
+  mediaUrl?: string | null;
+  mediaMime?: string | null;
+  mediaFilename?: string | null;
+  mediaSize?: number | null;
+  mediaDuration?: number | null;
 }
 
 export const mockConversas: Conversa[] = [
