@@ -3,6 +3,7 @@ import { Mic, Square, Send, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { remuxWebmToOgg } from "@/lib/webmToOgg";
 
 interface AudioRecorderProps {
   onSendAudio: (file: File) => void;
@@ -47,8 +48,22 @@ export const AudioRecorder = memo(function AudioRecorder({ onSendAudio, disabled
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType });
+      recorder.onstop = async () => {
+        let blob = new Blob(chunksRef.current, { type: mimeType });
+
+        // If browser recorded as WebM, convert to real OGG/Opus
+        // Meta rejects WebM even when re-labeled as OGG
+        if (mimeType.includes("webm")) {
+          try {
+            console.log("🔄 Converting WebM→OGG/Opus client-side…");
+            blob = await remuxWebmToOgg(blob);
+            console.log("✅ Conversion done:", blob.size, "bytes");
+          } catch (err) {
+            console.error("❌ WebM→OGG conversion failed:", err);
+            // Fall through with original blob — edge function will try re-label
+          }
+        }
+
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         setState("preview");
