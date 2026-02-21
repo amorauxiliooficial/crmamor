@@ -17,7 +17,6 @@ serve(async (req: Request): Promise<Response> => {
     return new Response('Method not allowed', { status: 405, headers: corsHeaders });
   }
 
-  // Authenticate user
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
@@ -27,7 +26,6 @@ serve(async (req: Request): Promise<Response> => {
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-  // Validate user
   const userClient = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: authHeader } },
   });
@@ -38,14 +36,13 @@ serve(async (req: Request): Promise<Response> => {
   }
   const userId = claimsData.claims.sub;
 
-  // Admin client for DB operations
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
   try {
-    const { to, text, conversation_id } = await req.json();
+    const { to, text, conversation_id, type, media_url, media_mime, media_filename, caption } = await req.json();
 
-    if (!to || !text) {
-      return new Response(JSON.stringify({ error: 'Missing "to" or "text"' }), {
+    if (!to) {
+      return new Response(JSON.stringify({ error: 'Missing "to"' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -54,20 +51,70 @@ serve(async (req: Request): Promise<Response> => {
     const META_PHONE_NUMBER_ID = Deno.env.get("META_PHONE_NUMBER_ID");
 
     if (!META_WA_TOKEN || !META_PHONE_NUMBER_ID) {
-      console.error('❌ Missing META_WA_TOKEN or META_PHONE_NUMBER_ID');
       return new Response(JSON.stringify({ error: 'Server misconfigured: missing Meta credentials' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Clean phone number (remove + if present, keep digits only)
     const cleanPhone = to.replace(/\D/g, '');
+    const msgType = type || 'text';
 
-    console.log(`📤 Sending to +${cleanPhone}: ${text.slice(0, 80)}`);
-    console.log(`🔑 Using PHONE_NUMBER_ID: ${META_PHONE_NUMBER_ID}`);
-    console.log(`🔑 Token prefix: ${META_WA_TOKEN.slice(0, 20)}...`);
+    console.log(`📤 Sending ${msgType} to +${cleanPhone}`);
 
-    // Call Meta Cloud API
+    // Build Meta API payload
+    let metaPayload: Record<string, unknown>;
+
+    if (msgType === 'text') {
+      if (!text) {
+        return new Response(JSON.stringify({ error: 'Missing "text" for text message' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      metaPayload = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: cleanPhone,
+        type: 'text',
+        text: { preview_url: false, body: text },
+      };
+    } else if (msgType === 'image') {
+      metaPayload = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: cleanPhone,
+        type: 'image',
+        image: { link: media_url, caption: caption || undefined },
+      };
+    } else if (msgType === 'video') {
+      metaPayload = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: cleanPhone,
+        type: 'video',
+        video: { link: media_url, caption: caption || undefined },
+      };
+    } else if (msgType === 'audio') {
+      metaPayload = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: cleanPhone,
+        type: 'audio',
+        audio: { link: media_url },
+      };
+    } else if (msgType === 'document') {
+      metaPayload = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: cleanPhone,
+        type: 'document',
+        document: { link: media_url, filename: media_filename || 'document', caption: caption || undefined },
+      };
+    } else {
+      return new Response(JSON.stringify({ error: `Unsupported message type: ${msgType}` }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const metaRes = await fetch(
       `https://graph.facebook.com/${GRAPH_API_VERSION}/${META_PHONE_NUMBER_ID}/messages`,
       {
@@ -76,13 +123,7 @@ serve(async (req: Request): Promise<Response> => {
           'Authorization': `Bearer ${META_WA_TOKEN}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          recipient_type: 'individual',
-          to: cleanPhone,
-          type: 'text',
-          text: { preview_url: false, body: text },
-        }),
+        body: JSON.stringify(metaPayload),
       }
     );
 
@@ -91,14 +132,8 @@ serve(async (req: Request): Promise<Response> => {
 
     if (!metaRes.ok) {
       const metaError = metaBody?.error;
-      console.error(`❌ Meta API error ${metaRes.status}: code=${metaError?.code}, subcode=${metaError?.error_subcode}, msg=${metaError?.message}`);
-      
-      let userMessage = 'Meta API error';
-      if (metaError?.error_subcode === 33 || metaError?.code === 100) {
-        userMessage = `Invalid META_PHONE_NUMBER_ID (${META_PHONE_NUMBER_ID}) or token lacks permissions. Verify credentials in Meta for Developers.`;
-      }
-      
-      return new Response(JSON.stringify({ error: userMessage, details: metaBody }), {
+      console.error(`❌ Meta API error ${metaRes.status}: code=${metaError?.code}, msg=${metaError?.message}`);
+      return new Response(JSON.stringify({ error: 'Meta API error', details: metaBody }), {
         status: metaRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -107,43 +142,38 @@ serve(async (req: Request): Promise<Response> => {
 
     // Resolve or create conversation
     let convoId = conversation_id;
-
     if (!convoId) {
-      // Find or create conversation by phone
       const { data: existing } = await adminClient
-        .from('wa_conversations')
-        .select('id')
-        .eq('wa_phone', cleanPhone)
-        .maybeSingle();
-
+        .from('wa_conversations').select('id').eq('wa_phone', cleanPhone).maybeSingle();
       if (existing) {
         convoId = existing.id;
       } else {
         const { data: newConvo, error: newErr } = await adminClient
-          .from('wa_conversations')
-          .insert({ wa_phone: cleanPhone, status: 'open' })
-          .select('id')
-          .single();
+          .from('wa_conversations').insert({ wa_phone: cleanPhone, status: 'open' }).select('id').single();
         if (newErr) throw newErr;
         convoId = newConvo.id;
       }
     }
 
     // Save outbound message
+    const bodyText = msgType === 'text' ? text : (caption || `[${msgType}]`);
     await adminClient.from('wa_messages').insert({
       conversation_id: convoId,
       meta_message_id: metaMsgId,
       direction: 'out',
-      body: text,
-      msg_type: 'text',
+      body: bodyText,
+      msg_type: msgType,
       status: 'sent',
       sent_by: userId,
+      media_url: msgType !== 'text' ? media_url : null,
+      media_mime: media_mime || null,
+      media_filename: media_filename || null,
     });
 
     // Update conversation
     await adminClient.from('wa_conversations').update({
       last_message_at: new Date().toISOString(),
-      last_message_preview: text.slice(0, 200),
+      last_message_preview: bodyText.slice(0, 200),
     }).eq('id', convoId);
 
     console.log(`✅ Message sent. Meta ID: ${metaMsgId}, Conversation: ${convoId}`);

@@ -27,6 +27,12 @@ export interface WaMessage {
   status: string | null;
   sent_by: string | null;
   created_at: string;
+  media_url: string | null;
+  media_mime: string | null;
+  media_filename: string | null;
+  media_size: number | null;
+  media_duration: number | null;
+  meta_media_id: string | null;
 }
 
 export function useWaConversations() {
@@ -124,9 +130,18 @@ export function useSendWhatsApp() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ to, text, conversation_id }: { to: string; text: string; conversation_id?: string }) => {
+    mutationFn: async (params: {
+      to: string;
+      text?: string;
+      conversation_id?: string;
+      type?: string;
+      media_url?: string;
+      media_mime?: string;
+      media_filename?: string;
+      caption?: string;
+    }) => {
       const { data, error } = await supabase.functions.invoke("whatsapp-send", {
-        body: { to, text, conversation_id },
+        body: params,
       });
       if (error) throw error;
       return data;
