@@ -1,9 +1,10 @@
 import { memo, useState } from "react";
 import { Download, ExternalLink, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { VoiceNote } from "@/components/atendimento/VoiceNote";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 
 interface MediaBubbleProps {
   msgType: string;
@@ -103,7 +104,8 @@ export const MediaBubble = memo(function MediaBubble({
         </div>
 
         <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
-          <DialogContent fullscreenOnMobile={false} className="max-w-[90vw] max-h-[90vh] p-2 bg-background/95 backdrop-blur">
+          <DialogContent fullscreenOnMobile={false} className="max-w-[90vw] max-h-[90vh] p-2 bg-background/95 backdrop-blur" aria-describedby={undefined}>
+            <VisuallyHidden.Root><DialogTitle>Imagem</DialogTitle></VisuallyHidden.Root>
             <div className="relative flex items-center justify-center">
               <img
                 src={mediaUrl!}
@@ -153,7 +155,8 @@ export const MediaBubble = memo(function MediaBubble({
         </div>
 
         <Dialog open={videoModalOpen} onOpenChange={setVideoModalOpen}>
-          <DialogContent fullscreenOnMobile={false} className="max-w-[90vw] max-h-[90vh] p-2 bg-background/95 backdrop-blur">
+          <DialogContent fullscreenOnMobile={false} className="max-w-[90vw] max-h-[90vh] p-2 bg-background/95 backdrop-blur" aria-describedby={undefined}>
+            <VisuallyHidden.Root><DialogTitle>Vídeo</DialogTitle></VisuallyHidden.Root>
             <div className="relative flex items-center justify-center">
               <video
                 controls
