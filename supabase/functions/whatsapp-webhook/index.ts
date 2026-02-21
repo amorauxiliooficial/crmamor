@@ -20,17 +20,22 @@ serve(async (req: Request): Promise<Response> => {
     const token = url.searchParams.get('hub.verify_token');
     const challenge = url.searchParams.get('hub.challenge');
 
-    console.log(`🔍 Webhook verification attempt: mode=${mode}, token_match=${token === VERIFY_TOKEN}, challenge_present=${!!challenge}`);
+    const envTokenExists = !!VERIFY_TOKEN;
+    const envTokenLength = VERIFY_TOKEN?.length ?? 0;
+    const receivedTokenLength = token?.length ?? 0;
+    const tokenMatch = token === VERIFY_TOKEN;
 
-    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-      console.log('✅ Webhook verified successfully, returning challenge as plain text');
-      return new Response(challenge, {
-        status: 200,
-        headers: { 'Content-Type': 'text/plain' },
-      });
+    console.log(`🔍 GET verification: mode=${mode}, challenge_present=${!!challenge}`);
+    console.log(`🔑 ENV token exists: ${envTokenExists}, length: ${envTokenLength}`);
+    console.log(`🔑 Received token length: ${receivedTokenLength}`);
+    console.log(`🔑 token_match: ${tokenMatch}`);
+
+    if (mode === 'subscribe' && tokenMatch) {
+      console.log('✅ Webhook verified! Returning challenge as plain text');
+      return new Response(challenge, { status: 200, headers: { 'Content-Type': 'text/plain' } });
     }
 
-    console.warn('❌ Webhook verification failed: token mismatch or wrong mode');
+    console.warn(`❌ Verification failed: mode_ok=${mode === 'subscribe'}, token_match=${tokenMatch}`);
     return new Response('Forbidden', { status: 403 });
   }
 
