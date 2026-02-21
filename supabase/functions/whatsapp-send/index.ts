@@ -140,6 +140,13 @@ serve(async (req: Request): Promise<Response> => {
 
     const metaMsgId = metaBody.messages?.[0]?.id ?? null;
 
+    if (!metaMsgId) {
+      console.error('❌ Meta did not return wamid');
+      return new Response(JSON.stringify({ error: 'Meta did not return message ID', details: metaBody }), {
+        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Resolve or create conversation
     let convoId = conversation_id;
     if (!convoId) {
@@ -155,7 +162,7 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // Save outbound message
+    // Save outbound message with status=sent (Meta accepted it)
     const bodyText = msgType === 'text' ? text : (caption || `[${msgType}]`);
     await adminClient.from('wa_messages').insert({
       conversation_id: convoId,
@@ -165,6 +172,7 @@ serve(async (req: Request): Promise<Response> => {
       msg_type: msgType,
       status: 'sent',
       sent_by: userId,
+      sent_at: new Date().toISOString(),
       media_url: msgType !== 'text' ? media_url : null,
       media_mime: media_mime || null,
       media_filename: media_filename || null,

@@ -154,15 +154,32 @@ serve(async (req: Request): Promise<Response> => {
         }
       }
 
-      // Process status updates
+      // Process status updates (sent/delivered/read/failed)
       if (value?.statuses) {
         for (const st of value.statuses) {
           const metaMsgId = st.id;
-          const newStatus = st.status;
+          const newStatus = st.status; // sent | delivered | read | failed
           console.log(`📊 Status update: ${metaMsgId} → ${newStatus}`);
+
+          const updatePayload: Record<string, unknown> = { status: newStatus };
+
+          // Add timestamp for each status
+          if (newStatus === 'sent') updatePayload.sent_at = new Date().toISOString();
+          if (newStatus === 'delivered') updatePayload.delivered_at = new Date().toISOString();
+          if (newStatus === 'read') updatePayload.read_at = new Date().toISOString();
+
+          // Capture error details on failure
+          if (newStatus === 'failed') {
+            const errors = st.errors;
+            if (errors && errors.length > 0) {
+              updatePayload.error_code = String(errors[0].code ?? '');
+              updatePayload.error_message = errors[0].title ?? errors[0].message ?? 'Unknown error';
+            }
+          }
+
           const { error } = await supabase
             .from('wa_messages')
-            .update({ status: newStatus })
+            .update(updatePayload)
             .eq('meta_message_id', metaMsgId);
           if (error) console.error('❌ Status update error:', error);
         }

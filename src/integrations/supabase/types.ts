@@ -1547,7 +1547,10 @@ export type Database = {
           body: string | null
           conversation_id: string
           created_at: string
+          delivered_at: string | null
           direction: string
+          error_code: string | null
+          error_message: string | null
           id: string
           media_duration: number | null
           media_filename: string | null
@@ -1557,6 +1560,8 @@ export type Database = {
           meta_media_id: string | null
           meta_message_id: string | null
           msg_type: string
+          read_at: string | null
+          sent_at: string | null
           sent_by: string | null
           status: string | null
         }
@@ -1564,7 +1569,10 @@ export type Database = {
           body?: string | null
           conversation_id: string
           created_at?: string
+          delivered_at?: string | null
           direction: string
+          error_code?: string | null
+          error_message?: string | null
           id?: string
           media_duration?: number | null
           media_filename?: string | null
@@ -1574,6 +1582,8 @@ export type Database = {
           meta_media_id?: string | null
           meta_message_id?: string | null
           msg_type?: string
+          read_at?: string | null
+          sent_at?: string | null
           sent_by?: string | null
           status?: string | null
         }
@@ -1581,7 +1591,10 @@ export type Database = {
           body?: string | null
           conversation_id?: string
           created_at?: string
+          delivered_at?: string | null
           direction?: string
+          error_code?: string | null
+          error_message?: string | null
           id?: string
           media_duration?: number | null
           media_filename?: string | null
@@ -1591,6 +1604,8 @@ export type Database = {
           meta_media_id?: string | null
           meta_message_id?: string | null
           msg_type?: string
+          read_at?: string | null
+          sent_at?: string | null
           sent_by?: string | null
           status?: string | null
         }
