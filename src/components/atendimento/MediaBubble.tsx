@@ -1,8 +1,9 @@
 import { memo, useState } from "react";
-import { Download, FileText, Loader2, Play, X, Image as ImageIcon } from "lucide-react";
+import { Download, FileText, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { VoiceNote } from "@/components/atendimento/VoiceNote";
 
 interface MediaBubbleProps {
   msgType: string;
@@ -22,13 +23,6 @@ function formatFileSize(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function formatDuration(seconds: number | null): string {
-  if (!seconds) return "";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
 export const MediaBubble = memo(function MediaBubble({
   msgType,
   mediaUrl,
@@ -40,6 +34,7 @@ export const MediaBubble = memo(function MediaBubble({
   isMe,
 }: MediaBubbleProps) {
   const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
 
   // Loading state - media not yet downloaded
   if (!mediaUrl && msgType !== "text") {
@@ -54,15 +49,17 @@ export const MediaBubble = memo(function MediaBubble({
     );
   }
 
-  // Audio
+  // Audio - WhatsApp-like voice note
   if (msgType === "audio") {
     return (
-      <div className="space-y-1 min-w-[220px] max-w-[300px]">
-        <audio controls preload="none" className="w-full h-10 rounded-lg" style={{ colorScheme: 'auto' }}>
-          <source src={mediaUrl!} type={mediaMime || "audio/ogg"} />
-        </audio>
-        {mediaDuration && (
-          <span className="text-[10px] opacity-50">{formatDuration(mediaDuration)}</span>
+      <div className="space-y-1">
+        <VoiceNote
+          src={mediaUrl!}
+          duration={mediaDuration}
+          isMe={isMe}
+        />
+        {caption && caption !== "[audio]" && (
+          <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{caption}</p>
         )}
       </div>
     );
@@ -88,13 +85,13 @@ export const MediaBubble = memo(function MediaBubble({
               )}
             />
           </button>
-          {caption && caption !== `[${msgType}]` && (
+          {caption && caption !== "[image]" && caption !== "[sticker]" && (
             <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{caption}</p>
           )}
         </div>
 
         <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
-          <DialogContent className="max-w-[90vw] max-h-[90vh] p-2 bg-background/95 backdrop-blur">
+          <DialogContent fullscreenOnMobile={false} className="max-w-[90vw] max-h-[90vh] p-2 bg-background/95 backdrop-blur">
             <div className="relative flex items-center justify-center">
               <img
                 src={mediaUrl!}
@@ -118,19 +115,47 @@ export const MediaBubble = memo(function MediaBubble({
   // Video
   if (msgType === "video") {
     return (
-      <div className="space-y-1 max-w-[300px]">
-        <video
-          controls
-          preload="metadata"
-          className="rounded-xl max-w-full max-h-[300px]"
-          playsInline
-        >
-          <source src={mediaUrl!} type={mediaMime || "video/mp4"} />
-        </video>
-        {caption && caption !== `[${msgType}]` && (
-          <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{caption}</p>
-        )}
-      </div>
+      <>
+        <div className="space-y-1 max-w-[300px]">
+          <button
+            onClick={() => setVideoModalOpen(true)}
+            className="block rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity relative"
+          >
+            <video
+              preload="metadata"
+              className="rounded-xl max-w-full max-h-[200px] object-cover"
+              playsInline
+              muted
+            >
+              <source src={mediaUrl!} type={mediaMime || "video/mp4"} />
+            </video>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-xl">
+              <div className="h-12 w-12 rounded-full bg-background/80 flex items-center justify-center">
+                <span className="text-lg ml-0.5">▶</span>
+              </div>
+            </div>
+          </button>
+          {caption && caption !== "[video]" && (
+            <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{caption}</p>
+          )}
+        </div>
+
+        <Dialog open={videoModalOpen} onOpenChange={setVideoModalOpen}>
+          <DialogContent fullscreenOnMobile={false} className="max-w-[90vw] max-h-[90vh] p-2 bg-background/95 backdrop-blur">
+            <div className="relative flex items-center justify-center">
+              <video
+                controls
+                autoPlay
+                preload="auto"
+                className="max-w-full max-h-[85vh] rounded-lg"
+                playsInline
+              >
+                <source src={mediaUrl!} type={mediaMime || "video/mp4"} />
+              </video>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
@@ -138,29 +163,34 @@ export const MediaBubble = memo(function MediaBubble({
   if (msgType === "document") {
     const displayName = mediaFilename || "Documento";
     return (
-      <a
-        href={mediaUrl!}
-        target="_blank"
-        rel="noopener noreferrer"
-        download
-        className={cn(
-          "flex items-center gap-3 px-3 py-2.5 rounded-xl min-w-[200px] max-w-[300px] transition-colors",
-          isMe
-            ? "bg-primary-foreground/10 hover:bg-primary-foreground/20"
-            : "bg-muted/20 hover:bg-muted/40 border border-border/20"
-        )}
-      >
-        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <FileText className="h-5 w-5 text-primary" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium truncate">{displayName}</p>
-          {mediaSize && (
-            <p className="text-[10px] opacity-50">{formatFileSize(mediaSize)}</p>
+      <div className="space-y-1">
+        <a
+          href={mediaUrl!}
+          target="_blank"
+          rel="noopener noreferrer"
+          download
+          className={cn(
+            "flex items-center gap-3 px-3 py-2.5 rounded-xl min-w-[200px] max-w-[300px] transition-colors",
+            isMe
+              ? "bg-primary-foreground/10 hover:bg-primary-foreground/20"
+              : "bg-muted/20 hover:bg-muted/40 border border-border/20"
           )}
-        </div>
-        <Download className="h-4 w-4 opacity-40 shrink-0" />
-      </a>
+        >
+          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <FileText className="h-5 w-5 text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium truncate">{displayName}</p>
+            {mediaSize && (
+              <p className="text-[10px] opacity-50">{formatFileSize(mediaSize)}</p>
+            )}
+          </div>
+          <Download className="h-4 w-4 opacity-40 shrink-0" />
+        </a>
+        {caption && caption !== "[document]" && (
+          <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{caption}</p>
+        )}
+      </div>
     );
   }
 
