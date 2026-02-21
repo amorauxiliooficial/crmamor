@@ -3,9 +3,10 @@ import {
   Send, ArrowLeft, User, UserCheck, Clock, CheckCircle, Tag,
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
   Loader2, Zap, Brain, Database, ArrowRight, CalendarPlus, AlertTriangle,
-  Info, Paperclip, X, Image as ImageIcon,
+  Info, Paperclip, X, Image as ImageIcon, RotateCcw,
 } from "lucide-react";
 import { AudioRecorder } from "@/components/atendimento/AudioRecorder";
+import { MessageStatusIcon } from "@/components/atendimento/MessageStatusIcon";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -73,13 +74,16 @@ const MessageBubble = memo(function MessageBubble({
   message: m,
   isGrouped,
   showTime,
+  onRetry,
 }: {
   message: Mensagem;
   isGrouped: boolean;
   showTime: boolean;
+  onRetry?: (m: Mensagem) => void;
 }) {
   const isMe = m.de === "atendente";
   const isMedia = m.msgType && m.msgType !== "text";
+  const isFailed = isMe && m.status === "failed";
 
   return (
     <div
@@ -95,7 +99,8 @@ const MessageBubble = memo(function MessageBubble({
             "px-3.5 py-2.5",
             isMe
               ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
-              : "bg-card border border-border/20 rounded-2xl rounded-bl-sm"
+              : "bg-card border border-border/20 rounded-2xl rounded-bl-sm",
+            isFailed && "ring-1 ring-destructive/30"
           )}
         >
           {isMedia ? (
@@ -116,13 +121,32 @@ const MessageBubble = memo(function MessageBubble({
             </p>
           )}
         </div>
-        {showTime && (
-          <p className={cn(
-            "text-[10px] mt-0.5 px-1.5",
-            isMe ? "text-right text-muted-foreground/40" : "text-muted-foreground/40"
-          )}>
-            {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-          </p>
+        {/* Status + timestamp row */}
+        <div className={cn(
+          "flex items-center gap-1 mt-0.5 px-1.5",
+          isMe ? "justify-end" : ""
+        )}>
+          {showTime && (
+            <span className="text-[10px] text-muted-foreground/40">
+              {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
+          {isMe && (
+            <MessageStatusIcon
+              status={m.status}
+              errorMessage={m.errorMessage}
+            />
+          )}
+        </div>
+        {/* Retry button for failed messages */}
+        {isFailed && onRetry && (
+          <button
+            onClick={() => onRetry(m)}
+            className="flex items-center gap-1 mt-1 px-2 py-1 text-[10px] text-destructive hover:text-destructive/80 hover:bg-destructive/5 rounded-md transition-colors"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Reenviar
+          </button>
         )}
       </div>
     </div>
@@ -139,6 +163,7 @@ interface ChatPanelProps {
   onMsgTextChange: (v: string) => void;
   onSend: () => void;
   onSendMedia?: (file: File) => void;
+  onRetry?: (messageId: string, body: string, msgType?: string, mediaUrl?: string, mediaMime?: string, mediaFilename?: string) => void;
   onBack: () => void;
   onAssume: () => void;
   onPendente: () => void;
@@ -158,6 +183,7 @@ export function ChatPanel({
   onMsgTextChange,
   onSend,
   onSendMedia,
+  onRetry,
   onBack,
   onAssume,
   onPendente,
@@ -511,6 +537,7 @@ export function ChatPanel({
                       message={m}
                       isGrouped={isGrouped}
                       showTime={showTime}
+                      onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
                     />
                   );
                 })}

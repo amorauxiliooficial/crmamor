@@ -155,6 +155,48 @@ export function useSendWhatsApp() {
   });
 }
 
+export function useRetryWhatsApp() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      messageId: string;
+      to: string;
+      text?: string;
+      conversation_id: string;
+      type?: string;
+      media_url?: string;
+      media_mime?: string;
+      media_filename?: string;
+    }) => {
+      // Delete the failed message first
+      await supabase
+        .from("wa_messages")
+        .delete()
+        .eq("id", params.messageId);
+
+      // Re-send
+      const { data, error } = await supabase.functions.invoke("whatsapp-send", {
+        body: {
+          to: params.to,
+          text: params.text,
+          conversation_id: params.conversation_id,
+          type: params.type,
+          media_url: params.media_url,
+          media_mime: params.media_mime,
+          media_filename: params.media_filename,
+        },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["wa_conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["wa_messages", variables.conversation_id] });
+    },
+  });
+}
+
 export function useMarkConversationRead() {
   const queryClient = useQueryClient();
 

@@ -24,6 +24,10 @@ export interface Mensagem {
   mediaFilename?: string | null;
   mediaSize?: number | null;
   mediaDuration?: number | null;
+  status?: string | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  metaMessageId?: string | null;
 }
 
 export const mockConversas: Conversa[] = [

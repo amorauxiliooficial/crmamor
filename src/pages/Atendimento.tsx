@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { useDebouncedCallback } from "use-debounce";
-import { useWaConversations, useWaMessages, useSendWhatsApp, useMarkConversationRead, useUpdateConversationStatus, type WaConversation } from "@/hooks/useWhatsApp";
+import { useWaConversations, useWaMessages, useSendWhatsApp, useRetryWhatsApp, useMarkConversationRead, useUpdateConversationStatus, type WaConversation } from "@/hooks/useWhatsApp";
 import { respostasRapidas } from "@/data/respostasRapidas";
 import { InboxSidebar } from "@/components/atendimento/InboxSidebar";
 import { ChatPanel } from "@/components/atendimento/ChatPanel";
@@ -57,6 +57,7 @@ export default function Atendimento() {
   const [selectedId, setSelectedId] = useState<string | null>(routeId ?? null);
   const { data: waMessages, isLoading: loadingMsgs } = useWaMessages(selectedId);
   const sendWhatsApp = useSendWhatsApp();
+  const retryWhatsApp = useRetryWhatsApp();
   const markRead = useMarkConversationRead();
   const updateStatus = useUpdateConversationStatus();
 
@@ -109,6 +110,10 @@ export default function Atendimento() {
       mediaFilename: m.media_filename,
       mediaSize: m.media_size,
       mediaDuration: m.media_duration,
+      status: m.status,
+      errorCode: (m as any).error_code ?? null,
+      errorMessage: (m as any).error_message ?? null,
+      metaMessageId: m.meta_message_id,
     }));
   }, [waMessages]);
 
@@ -239,6 +244,29 @@ export default function Atendimento() {
     }
   }, [selectedId, selectedWa, sendWhatsApp, msgText, toast]);
 
+  const handleRetry = useCallback((messageId: string, body: string, msgType?: string, mediaUrl?: string, mediaMime?: string, mediaFilename?: string) => {
+    if (!selectedId || !selectedWa) return;
+    retryWhatsApp.mutate(
+      {
+        messageId,
+        to: selectedWa.wa_phone,
+        text: msgType === 'text' || !msgType ? body : undefined,
+        conversation_id: selectedId,
+        type: msgType,
+        media_url: mediaUrl,
+        media_mime: mediaMime,
+        media_filename: mediaFilename,
+      },
+      {
+        onSuccess: () => toast({ title: "Mensagem reenviada ✅" }),
+        onError: (err) => {
+          console.error("Retry error:", err);
+          toast({ title: "Falha ao reenviar", description: "Tente novamente.", variant: "destructive" });
+        },
+      }
+    );
+  }, [selectedId, selectedWa, retryWhatsApp, toast]);
+
   // Sort: by last_message_at desc
   const sortedConversas = useMemo(() => {
     return [...conversas].sort((a, b) => {
@@ -279,6 +307,7 @@ export default function Atendimento() {
                 onMsgTextChange={setMsgText}
                 onSend={handleSend}
                 onSendMedia={handleSendMedia}
+                onRetry={handleRetry}
                 onBack={() => { setSelectedId(null); navigate("/atendimento"); }}
                 onAssume={() => handleAssume()}
                 onPendente={() => handlePendente()}
@@ -392,6 +421,7 @@ export default function Atendimento() {
         onMsgTextChange={setMsgText}
         onSend={handleSend}
         onSendMedia={handleSendMedia}
+        onRetry={handleRetry}
         onBack={() => {}}
         onAssume={() => handleAssume()}
         onPendente={() => handlePendente()}
