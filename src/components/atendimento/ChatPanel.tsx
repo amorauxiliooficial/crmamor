@@ -5,6 +5,7 @@ import {
   Loader2, Zap, Brain, Database, ArrowRight, CalendarPlus, AlertTriangle,
   Info, Paperclip, X, Image as ImageIcon,
 } from "lucide-react";
+import { AudioRecorder } from "@/components/atendimento/AudioRecorder";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -109,7 +110,10 @@ const MessageBubble = memo(function MessageBubble({
               isMe={isMe}
             />
           ) : (
-            <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{m.texto}</p>
+            <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+              {/* Never render raw [type] placeholders for media */}
+              {/^\[.+\]$/.test(m.texto.trim()) ? "" : m.texto}
+            </p>
           )}
         </div>
         {showTime && (
@@ -674,22 +678,31 @@ export function ChatPanel({
             rows={1}
           />
 
-          <Button
-            size="icon"
-            onClick={() => {
-              if (pendingFile && onSendMedia) {
-                onSendMedia(pendingFile);
-                setPendingFile(null);
-                setPendingPreview(null);
-              } else {
-                onSend();
-              }
-            }}
-            disabled={!msgText.trim() && !pendingFile}
-            className="shrink-0 rounded-xl h-11 w-11"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          {/* Show mic button when no text, send button when there is text/file */}
+          {!msgText.trim() && !pendingFile ? (
+            <AudioRecorder
+              onSendAudio={(file) => {
+                if (onSendMedia) onSendMedia(file);
+              }}
+            />
+          ) : (
+            <Button
+              size="icon"
+              onClick={() => {
+                if (pendingFile && onSendMedia) {
+                  onSendMedia(pendingFile);
+                  setPendingFile(null);
+                  setPendingPreview(null);
+                } else {
+                  onSend();
+                }
+              }}
+              disabled={!msgText.trim() && !pendingFile}
+              className="shrink-0 rounded-xl h-11 w-11"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {!isMobile && (

@@ -11,6 +11,21 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 import type { Conversa } from "@/data/atendimentoMock";
 
+function formatInboxPreview(text: string): string {
+  const trimmed = text.trim();
+  if (trimmed === "[audio]") return "🎤 Mensagem de voz";
+  if (trimmed === "[image]") return "🖼️ Foto";
+  if (trimmed === "[video]") return "🎞️ Vídeo";
+  if (trimmed === "[document]") return "📄 Documento";
+  if (trimmed === "[sticker]") return "🎨 Figurinha";
+  // Also handle brackets with content like "[audio] caption"
+  if (trimmed.startsWith("[audio]")) return `🎤 ${trimmed.slice(7).trim() || "Mensagem de voz"}`;
+  if (trimmed.startsWith("[image]")) return `🖼️ ${trimmed.slice(7).trim() || "Foto"}`;
+  if (trimmed.startsWith("[video]")) return `🎞️ ${trimmed.slice(7).trim() || "Vídeo"}`;
+  if (trimmed.startsWith("[document]")) return `📄 ${trimmed.slice(10).trim() || "Documento"}`;
+  return text;
+}
+
 const STATUS_DOT: Record<string, string> = {
   Aberto: "bg-emerald-500",
   Pendente: "bg-amber-500",
@@ -201,7 +216,7 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
           "text-[13px] truncate mt-0.5",
           c.naoLidas > 0 ? "text-foreground/60" : "text-muted-foreground/50"
         )}>
-          {c.ultimaMensagem}
+          {formatInboxPreview(c.ultimaMensagem)}
         </p>
 
         {/* Compact badges */}
