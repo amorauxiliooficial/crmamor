@@ -96,7 +96,8 @@ const MessageBubble = memo(function MessageBubble({
       <div className={cn("w-fit max-w-[85%] sm:max-w-[75%] overflow-hidden", isMe ? "items-end" : "items-start")}>
         <div
           className={cn(
-            "px-3.5 py-2.5 overflow-hidden break-words",
+            "py-2.5 overflow-hidden break-words min-w-0",
+            isMedia ? "px-1" : "px-3.5",
             isMe
               ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
               : "bg-card border border-border/20 rounded-2xl rounded-bl-sm",
@@ -115,8 +116,7 @@ const MessageBubble = memo(function MessageBubble({
               isMe={isMe}
             />
           ) : (
-            <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
-              {/* Never render raw [type] placeholders for media */}
+            <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words overflow-hidden px-0.5">
               {/^\[.+\]$/.test(m.texto.trim()) ? "" : m.texto}
             </p>
           )}
