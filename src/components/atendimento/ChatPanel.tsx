@@ -93,10 +93,10 @@ const MessageBubble = memo(function MessageBubble({
         isGrouped ? "mt-0.5" : "mt-2"
       )}
     >
-      <div className={cn("max-w-[72%]", isMe ? "items-end" : "items-start")}>
+      <div className={cn("w-fit max-w-[85%] sm:max-w-[75%] overflow-hidden", isMe ? "items-end" : "items-start")}>
         <div
           className={cn(
-            "px-3.5 py-2.5",
+            "px-3.5 py-2.5 overflow-hidden break-words",
             isMe
               ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
               : "bg-card border border-border/20 rounded-2xl rounded-bl-sm",
@@ -333,7 +333,7 @@ export function ChatPanel({
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full min-w-0 bg-background">
+    <div className="flex-1 flex flex-col h-full min-w-0 w-full overflow-x-hidden bg-background">
       {/* Header */}
       <div className="border-b border-border/20 px-4 py-3 flex items-center gap-3 shrink-0 bg-card/30 backdrop-blur-sm">
         {isMobile && (
@@ -499,8 +499,8 @@ export function ChatPanel({
       )}
 
       {/* Messages */}
-      <ScrollArea className="flex-1">
-        <div className="px-4 md:px-6 py-3 space-y-1 max-w-3xl mx-auto">
+      <ScrollArea className="flex-1 w-full overflow-x-hidden">
+        <div className="px-4 md:px-6 py-3 space-y-1 max-w-3xl mx-auto w-full overflow-x-hidden">
           {/* Load more */}
           {hasMore && (
             <div className="flex justify-center py-3">

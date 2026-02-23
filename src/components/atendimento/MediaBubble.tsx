@@ -53,7 +53,7 @@ export const MediaBubble = memo(function MediaBubble({
   if (!mediaUrl && msgType !== "text") {
     return (
       <div className={cn(
-        "flex items-center gap-2 px-3 py-2.5 rounded-xl min-w-[140px]",
+        "flex items-center gap-2 px-3 py-2.5 rounded-xl min-w-0 w-full",
         isMe ? "bg-primary/80 text-primary-foreground" : "bg-muted/30 border border-border/20"
       )}>
         <Loader2 className="h-4 w-4 animate-spin shrink-0 opacity-60" />
@@ -130,7 +130,7 @@ export const MediaBubble = memo(function MediaBubble({
   if (msgType === "video") {
     return (
       <>
-        <div className="space-y-1 max-w-[300px]">
+        <div className="space-y-1 min-w-0 w-full max-w-[300px]">
           <button
             onClick={() => setVideoModalOpen(true)}
             className="block rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity relative"
@@ -184,22 +184,22 @@ export const MediaBubble = memo(function MediaBubble({
     return (
       <div className="space-y-1.5">
         <div className={cn(
-          "rounded-xl min-w-[240px] max-w-[320px] overflow-hidden",
+          "rounded-xl min-w-0 w-full max-w-[320px] overflow-hidden",
           isMe
             ? "bg-primary-foreground/10 border border-primary-foreground/10"
             : "bg-card border border-border/30"
         )}>
           {/* Document header with icon */}
-          <div className="flex items-center gap-3 px-4 py-3">
+        <div className="flex items-center gap-3 px-4 py-3 min-w-0">
             <div className={cn("h-11 w-11 rounded-xl flex items-center justify-center shrink-0", docInfo.bg)}>
               <span className="text-xl">{docInfo.icon}</span>
             </div>
             <div className="min-w-0 flex-1">
               <p className={cn(
-                "text-sm font-medium truncate",
+                "text-sm font-medium truncate min-w-0",
                 isMe ? "text-primary-foreground" : "text-foreground"
               )} title={displayName}>
-                {truncatedName}
+                {displayName}
               </p>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className={cn(
