@@ -65,7 +65,7 @@ export const MediaBubble = memo(function MediaBubble({
   // Audio - WhatsApp-like voice note
   if (msgType === "audio") {
     return (
-      <div className="space-y-1">
+      <div className="space-y-1 min-w-0 w-full px-2.5">
         <VoiceNote
           src={mediaUrl!}
           duration={mediaDuration}
@@ -83,7 +83,7 @@ export const MediaBubble = memo(function MediaBubble({
     const isSticker = msgType === "sticker";
     return (
       <>
-        <div className="space-y-1">
+        <div className="space-y-1 min-w-0 px-2.5">
           <button
             onClick={() => setImageModalOpen(true)}
             className="block rounded-xl overflow-hidden cursor-zoom-in hover:opacity-90 transition-opacity"
@@ -130,7 +130,7 @@ export const MediaBubble = memo(function MediaBubble({
   if (msgType === "video") {
     return (
       <>
-        <div className="space-y-1 min-w-0 w-full max-w-[300px]">
+        <div className="space-y-1 min-w-0 w-full px-2.5">
           <button
             onClick={() => setVideoModalOpen(true)}
             className="block rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity relative"
@@ -182,9 +182,9 @@ export const MediaBubble = memo(function MediaBubble({
     const isPdf = mediaMime?.includes('pdf') || displayName.toLowerCase().endsWith('.pdf');
 
     return (
-      <div className="space-y-1.5">
+      <div className="space-y-1.5 min-w-0 w-full">
         <div className={cn(
-          "rounded-xl min-w-0 w-full max-w-[320px] overflow-hidden",
+          "rounded-xl min-w-0 w-full overflow-hidden",
           isMe
             ? "bg-primary-foreground/10 border border-primary-foreground/10"
             : "bg-card border border-border/30"
