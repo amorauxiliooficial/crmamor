@@ -88,12 +88,12 @@ const MessageBubble = memo(function MessageBubble({
   return (
     <div
       className={cn(
-        "flex",
+        "flex w-full min-w-0 overflow-hidden",
         isMe ? "justify-end" : "justify-start",
         isGrouped ? "mt-0.5" : "mt-2"
       )}
     >
-      <div className={cn("w-fit max-w-[85%] sm:max-w-[75%] overflow-hidden", isMe ? "items-end" : "items-start")}>
+      <div className={cn("max-w-[85%] sm:max-w-[75%] overflow-hidden min-w-0", isMe ? "items-end" : "items-start")}>
         <div
           className={cn(
             "py-2.5 overflow-hidden break-words min-w-0",
@@ -116,7 +116,7 @@ const MessageBubble = memo(function MessageBubble({
               isMe={isMe}
             />
           ) : (
-            <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words overflow-hidden px-0.5">
+            <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere px-0.5" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
               {/^\[.+\]$/.test(m.texto.trim()) ? "" : m.texto}
             </p>
           )}
