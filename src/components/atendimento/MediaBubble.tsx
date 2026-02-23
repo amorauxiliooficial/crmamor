@@ -93,8 +93,8 @@ export const MediaBubble = memo(function MediaBubble({
               alt={caption || "Imagem"}
               loading="lazy"
               className={cn(
-                "object-cover rounded-xl",
-                isSticker ? "max-w-[150px] max-h-[150px]" : "max-w-[280px] max-h-[300px]"
+                "object-cover rounded-xl w-full",
+                isSticker ? "max-w-[150px] max-h-[150px]" : "max-w-full max-h-[300px]"
               )}
             />
           </button>
