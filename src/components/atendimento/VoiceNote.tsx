@@ -114,7 +114,7 @@ export const VoiceNote = memo(function VoiceNote({ src, duration, isMe }: VoiceN
 
   return (
     <div className={cn(
-      "flex items-center gap-2 min-w-[220px] max-w-[320px] py-1",
+      "flex items-center gap-2 min-w-0 w-full max-w-[320px] py-1",
     )}>
       <audio ref={audioRef} src={src} preload="metadata" />
 
