@@ -343,7 +343,7 @@ export function InboxSidebar({
   const naoLidasCount = conversas.filter((c) => c.naoLidas > 0).length;
 
   return (
-    <div className="w-full md:w-[380px] shrink-0 border-r border-border/40 flex flex-col h-full bg-background">
+    <div className="w-full md:w-[380px] shrink-0 border-r border-border/40 flex flex-col h-full bg-background overflow-x-hidden">
       {/* Header */}
       <div className="px-4 pt-4 pb-2 space-y-2.5">
         <div className="flex items-center justify-between">

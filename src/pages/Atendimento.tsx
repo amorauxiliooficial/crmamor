@@ -283,7 +283,7 @@ export default function Atendimento() {
   // Mobile
   if (isMobile) {
     return (
-      <div className="h-[100dvh] flex flex-col bg-background">
+      <div className="h-[100dvh] flex flex-col bg-background w-full overflow-x-hidden">
         <CommandPalette
           conversas={conversas}
           respostas={respostasRapidas}
@@ -296,7 +296,7 @@ export default function Atendimento() {
           onInsertTemplate={(t) => setMsgText(t)}
         />
 
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 min-w-0 w-full overflow-x-hidden">
           {selectedId && mobileTab === "conversas" ? (
             <>
               <ChatPanel

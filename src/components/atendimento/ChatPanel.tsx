@@ -115,7 +115,7 @@ const MessageBubble = memo(function MessageBubble({
               isMe={isMe}
             />
           ) : (
-            <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+            <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
               {/* Never render raw [type] placeholders for media */}
               {/^\[.+\]$/.test(m.texto.trim()) ? "" : m.texto}
             </p>
@@ -549,7 +549,7 @@ export function ChatPanel({
       </ScrollArea>
 
       {/* Composer */}
-      <div className="relative border-t border-border/20 bg-card/20 backdrop-blur-sm">
+      <div className="relative border-t border-border/20 bg-card/20 backdrop-blur-sm w-full overflow-x-hidden">
         {/* Quick replies */}
         {showQuickReplies && (
           <div className="absolute bottom-full left-0 right-0 mx-4 mb-1.5 bg-popover border border-border/30 rounded-xl shadow-lg max-h-[200px] overflow-y-auto z-50">
