@@ -1,5 +1,6 @@
 import { useMemo, useState, memo } from "react";
-import { Search, Settings, User, UserCheck, Clock, Inbox, AlertTriangle, Hourglass, MessageCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, Settings, User, UserCheck, Clock, Inbox, AlertTriangle, Hourglass, MessageCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -293,6 +294,28 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
   );
 });
 
+function BackToPanel() {
+  const navigate = useNavigate();
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-lg text-muted-foreground"
+            onClick={() => navigate("/")}
+            aria-label="Voltar ao painel"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="text-xs">Voltar ao painel</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 export function InboxSidebar({
   conversas,
   selectedId,
@@ -348,6 +371,7 @@ export function InboxSidebar({
       <div className="px-4 pt-4 pb-2 space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
+            <BackToPanel />
             <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
               <Inbox className="h-4 w-4 text-primary" />
             </div>
