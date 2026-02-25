@@ -1,19 +1,55 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { Indicacao, StatusAbordagem, statusAbordagemLabels, motivoAbordagemLabels, MotivoAbordagem, origemIndicacaoLabels, origemIndicacaoColors, OrigemIndicacao } from "@/types/indicacao";
+import {
+  Indicacao,
+  StatusAbordagem,
+  statusAbordagemLabels,
+  statusAbordagemColors,
+  motivoAbordagemLabels,
+  MotivoAbordagem,
+  origemIndicacaoLabels,
+  origemIndicacaoColors,
+  OrigemIndicacao,
+} from "@/types/indicacao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { IndicacaoDialog } from "./IndicacaoDialog";
+import { IndicacaoDetailPanel } from "./IndicacaoDetailPanel";
 import { IndicacaoFormDialog } from "./IndicacaoFormDialog";
-import { AcaoPopover } from "./AcaoPopover";
-import { Plus, Phone, Search, Users, Clock, CheckCircle, Loader2, PlayCircle, AlertCircle, ExternalLink } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Plus,
+  Phone,
+  Search,
+  Users,
+  Clock,
+  CheckCircle,
+  Loader2,
+  PlayCircle,
+  AlertCircle,
+  ExternalLink,
+  MoreHorizontal,
+  MessageSquare,
+  UserPlus,
+  CalendarPlus,
+  Eye,
+  Copy,
+  Check,
+} from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -27,22 +63,41 @@ interface IndicacoesTabProps {
 export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onClearExternalSelection, selectedUserId }: IndicacoesTabProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [indicacoes, setIndicacoes] = useState<Indicacao[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIndicacao, setSelectedIndicacao] = useState<Indicacao | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState("");
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
+  const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
+
+  // Open indicacao from URL param
+  const openIndicacaoFromParam = useCallback((indicacaoList: Indicacao[]) => {
+    const indicacaoId = searchParams.get("indicacao");
+    if (indicacaoId && indicacaoList.length > 0) {
+      const found = indicacaoList.find((i) => i.id === indicacaoId);
+      if (found) {
+        setSelectedIndicacao(found);
+        setPanelOpen(true);
+      }
+    }
+  }, [searchParams]);
 
   // Handle external selection from notification
   useEffect(() => {
     if (externalSelectedIndicacao) {
       setSelectedIndicacao(externalSelectedIndicacao);
-      setEditDialogOpen(true);
+      setPanelOpen(true);
+      // Update URL
+      setSearchParams((prev) => {
+        prev.set("indicacao", externalSelectedIndicacao.id);
+        return prev;
+      });
       onClearExternalSelection?.();
     }
-  }, [externalSelectedIndicacao, onClearExternalSelection]);
+  }, [externalSelectedIndicacao, onClearExternalSelection, setSearchParams]);
 
   const fetchIndicacoes = async () => {
     if (!user) return;
@@ -55,28 +110,19 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
 
     if (error) {
       logError("fetch_indicacoes", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao carregar indicações",
-        description: getUserFriendlyError(error),
-      });
+      toast({ variant: "destructive", title: "Erro ao carregar indicações", description: getUserFriendlyError(error) });
     } else if (data) {
-      setIndicacoes(data as Indicacao[]);
+      const typedData = data as Indicacao[];
+      setIndicacoes(typedData);
+      openIndicacaoFromParam(typedData);
     }
     setLoading(false);
   };
 
   const fetchUserProfile = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("id", user.id)
-      .maybeSingle();
-    
-    if (data) {
-      setUserProfile(data);
-    }
+    const { data } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+    if (data) setUserProfile(data);
   };
 
   useEffect(() => {
@@ -86,19 +132,15 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     }
   }, [user]);
 
-  const removeAccents = (str: string) => {
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  };
+  const removeAccents = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   const filteredIndicacoes = useMemo(() => {
     let filtered = indicacoes;
-    
-    // Filter by user if selected
+
     if (selectedUserId && selectedUserId !== "all") {
       filtered = filtered.filter((ind) => ind.user_id === selectedUserId);
     }
-    
-    // Filter by search query
+
     const query = removeAccents((searchQuery || localSearch).toLowerCase().trim());
     if (query) {
       filtered = filtered.filter((ind) => {
@@ -115,47 +157,49 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         );
       });
     }
-    
+
     return filtered;
   }, [indicacoes, searchQuery, localSearch, selectedUserId]);
 
   const stats = useMemo(() => {
-    const dataToCount = filteredIndicacoes;
+    const d = filteredIndicacoes;
     return {
-      total: dataToCount.length,
-      aguardandoAprovacao: dataToCount.filter((i) => i.status_abordagem === "aguardando_aprovacao").length,
-      pendentes: dataToCount.filter((i) => i.status_abordagem === "pendente").length,
-      emAndamento: dataToCount.filter((i) => i.status_abordagem === "em_andamento").length,
-      concluidos: dataToCount.filter((i) => i.status_abordagem === "concluido").length,
-      externas: dataToCount.filter((i) => i.origem_indicacao === "externa").length,
+      total: d.length,
+      aguardandoAprovacao: d.filter((i) => i.status_abordagem === "aguardando_aprovacao").length,
+      pendentes: d.filter((i) => i.status_abordagem === "pendente").length,
+      emAndamento: d.filter((i) => i.status_abordagem === "em_andamento").length,
+      concluidos: d.filter((i) => i.status_abordagem === "concluido").length,
+      externas: d.filter((i) => i.origem_indicacao === "externa").length,
     };
   }, [filteredIndicacoes]);
 
-  const handleRowClick = (indicacao: Indicacao, e: React.MouseEvent) => {
-    // Prevent opening dialog when clicking on select or dropdown
-    const target = e.target as HTMLElement;
-    if (target.closest('[data-radix-collection-item]') || target.closest('[role="combobox"]') || target.closest('[role="menuitem"]') || target.closest('button')) {
-      return;
-    }
+  const handleRowClick = (indicacao: Indicacao) => {
     setSelectedIndicacao(indicacao);
-    setEditDialogOpen(true);
+    setPanelOpen(true);
+    setSearchParams((prev) => {
+      prev.set("indicacao", indicacao.id);
+      return prev;
+    });
+  };
+
+  const handlePanelClose = (open: boolean) => {
+    setPanelOpen(open);
+    if (!open) {
+      setSearchParams((prev) => {
+        prev.delete("indicacao");
+        return prev;
+      });
+    }
   };
 
   const handleStatusChange = async (indicacaoId: string, status: StatusAbordagem) => {
     const userName = userProfile?.full_name || user?.email || "Usuário";
-    
-    const { error } = await supabase
-      .from("indicacoes")
-      .update({ status_abordagem: status })
-      .eq("id", indicacaoId);
+
+    const { error } = await supabase.from("indicacoes").update({ status_abordagem: status }).eq("id", indicacaoId);
 
     if (error) {
       logError("update_status", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar",
-        description: getUserFriendlyError(error),
-      });
+      toast({ variant: "destructive", title: "Erro ao atualizar", description: getUserFriendlyError(error) });
     } else {
       await supabase.from("acoes_indicacao").insert({
         indicacao_id: indicacaoId,
@@ -163,25 +207,19 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         observacao: `Por: ${userName}`,
         user_id: user!.id,
       });
+      toast({ title: "Status atualizado" });
       fetchIndicacoes();
     }
   };
 
   const handleMotivoChange = async (indicacaoId: string, motivo: MotivoAbordagem) => {
     const userName = userProfile?.full_name || user?.email || "Usuário";
-    
-    const { error } = await supabase
-      .from("indicacoes")
-      .update({ motivo_abordagem: motivo })
-      .eq("id", indicacaoId);
+
+    const { error } = await supabase.from("indicacoes").update({ motivo_abordagem: motivo }).eq("id", indicacaoId);
 
     if (error) {
       logError("update_motivo", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar",
-        description: getUserFriendlyError(error),
-      });
+      toast({ variant: "destructive", title: "Erro ao atualizar", description: getUserFriendlyError(error) });
     } else {
       await supabase.from("acoes_indicacao").insert({
         indicacao_id: indicacaoId,
@@ -189,10 +227,21 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         observacao: `Por: ${userName}`,
         user_id: user!.id,
       });
+      toast({ title: "Motivo atualizado" });
       fetchIndicacoes();
     }
   };
 
+  const handleCopyPhone = async (phone: string, id: string) => {
+    await navigator.clipboard.writeText(phone);
+    setCopiedPhoneId(id);
+    setTimeout(() => setCopiedPhoneId(null), 2000);
+  };
+
+  const sanitizePhone = (phone: string | undefined | null): string => {
+    if (!phone) return "";
+    return phone.replace(/\D/g, "");
+  };
 
   if (loading) {
     return (
@@ -226,9 +275,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.aguardandoAprovacao}</div>
-            {stats.externas > 0 && (
-              <p className="text-xs text-muted-foreground">{stats.externas} externas</p>
-            )}
+            {stats.externas > 0 && <p className="text-xs text-muted-foreground">{stats.externas} externas</p>}
           </CardContent>
         </Card>
         <Card className="border-l-4 border-l-muted-foreground">
@@ -295,7 +342,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
               <TableHead>Indicadora</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Motivo</TableHead>
-              <TableHead>Ação</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -308,11 +355,12 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
             ) : (
               filteredIndicacoes.map((indicacao) => {
                 const origem = (indicacao.origem_indicacao || "interna") as OrigemIndicacao;
+                const phone = sanitizePhone(indicacao.telefone_indicada);
                 return (
                   <TableRow
                     key={indicacao.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={(e) => handleRowClick(indicacao, e)}
+                    className={`cursor-pointer hover:bg-muted/50 ${selectedIndicacao?.id === indicacao.id && panelOpen ? "bg-muted" : ""}`}
+                    onClick={() => handleRowClick(indicacao)}
                   >
                     <TableCell className="whitespace-nowrap">
                       <div className="flex flex-col">
@@ -324,26 +372,48 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                     </TableCell>
                     <TableCell className="font-medium">{indicacao.nome_indicada}</TableCell>
                     <TableCell>
-                      <Badge 
-                        variant="secondary" 
-                        className={`text-xs ${origemIndicacaoColors[origem]}`}
-                      >
+                      <Badge variant="secondary" className={`text-xs ${origemIndicacaoColors[origem]}`}>
                         {origem === "externa" && <ExternalLink className="h-3 w-3 mr-1" />}
                         {origemIndicacaoLabels[origem]}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       {indicacao.telefone_indicada && (
-                        <a
-                          href={`https://wa.me/${indicacao.telefone_indicada.replace(/\D/g, "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-emerald-600 hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Phone className="h-3 w-3" />
-                          {indicacao.telefone_indicada}
-                        </a>
+                        <TooltipProvider>
+                          <div className="flex items-center gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a
+                                  href={`https://wa.me/${phone}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 text-emerald-600 hover:underline text-sm"
+                                >
+                                  <MessageSquare className="h-3 w-3" />
+                                  {indicacao.telefone_indicada}
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent>Abrir WhatsApp</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => handleCopyPhone(indicacao.telefone_indicada!, indicacao.id)}
+                                >
+                                  {copiedPhoneId === indicacao.id ? (
+                                    <Check className="h-3 w-3 text-emerald-600" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Copiar telefone</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TooltipProvider>
                       )}
                     </TableCell>
                     <TableCell>{indicacao.nome_indicadora || "-"}</TableCell>
@@ -357,9 +427,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                         </SelectTrigger>
                         <SelectContent>
                           {Object.entries(statusAbordagemLabels).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                              {label}
-                            </SelectItem>
+                            <SelectItem key={value} value={value}>{label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -374,24 +442,57 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                         </SelectTrigger>
                         <SelectContent>
                           {Object.entries(motivoAbordagemLabels).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                              {label}
-                            </SelectItem>
+                            <SelectItem key={value} value={value}>{label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell>
-                      <div 
-                        className="flex flex-col gap-1"
-                        onClick={(e) => e.stopPropagation()}
-                        onMouseDown={(e) => e.stopPropagation()}
-                      >
-                        <AcaoPopover 
-                          indicacaoId={indicacao.id} 
-                          onSuccess={fetchIndicacoes}
-                        />
-                      </div>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleRowClick(indicacao)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver detalhes
+                          </DropdownMenuItem>
+                          {phone && (
+                            <>
+                              <DropdownMenuItem onClick={() => window.open(`https://wa.me/${phone}`, "_blank")}>
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                WhatsApp
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.open(`tel:+${phone}`, "_self")}>
+                                <Phone className="h-4 w-4 mr-2" />
+                                Ligar
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedIndicacao(indicacao);
+                              setPanelOpen(true);
+                              // The convert action is inside the panel
+                            }}
+                          >
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Converter em Processo
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedIndicacao(indicacao);
+                              setPanelOpen(true);
+                            }}
+                          >
+                            <CalendarPlus className="h-4 w-4 mr-2" />
+                            Criar atividade
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 );
@@ -401,10 +502,10 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         </Table>
       </div>
 
-      <IndicacaoDialog
+      <IndicacaoDetailPanel
         indicacao={selectedIndicacao}
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
+        open={panelOpen}
+        onOpenChange={handlePanelClose}
         onSuccess={fetchIndicacoes}
       />
 
