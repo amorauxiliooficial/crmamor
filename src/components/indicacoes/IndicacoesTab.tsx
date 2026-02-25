@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { IndicacaoDetailPanel } from "./IndicacaoDetailPanel";
 import { IndicacaoFormDialog } from "./IndicacaoFormDialog";
+import { IndicacaoMobileList } from "./IndicacaoMobileList";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,6 +65,7 @@ interface IndicacoesTabProps {
 export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onClearExternalSelection, selectedUserId }: IndicacoesTabProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const [indicacoes, setIndicacoes] = useState<Indicacao[]>([]);
   const [loading, setLoading] = useState(true);
@@ -334,177 +337,184 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         </Button>
       </div>
 
-      {/* Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Indicada</TableHead>
-              <TableHead>Origem</TableHead>
-              <TableHead>Telefone</TableHead>
-              <TableHead>Indicadora</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Motivo</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredIndicacoes.length === 0 ? (
+      {/* Content: Mobile cards vs Desktop table */}
+      {isMobile ? (
+        <IndicacaoMobileList
+          indicacoes={filteredIndicacoes}
+          selectedId={selectedIndicacao?.id}
+          onSelect={handleRowClick}
+        />
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  Nenhuma indicação encontrada
-                </TableCell>
+                <TableHead>Data</TableHead>
+                <TableHead>Indicada</TableHead>
+                <TableHead>Origem</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead>Indicadora</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Motivo</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
               </TableRow>
-            ) : (
-              filteredIndicacoes.map((indicacao) => {
-                const origem = (indicacao.origem_indicacao || "interna") as OrigemIndicacao;
-                const phone = sanitizePhone(indicacao.telefone_indicada);
-                return (
-                  <TableRow
-                    key={indicacao.id}
-                    className={`cursor-pointer hover:bg-muted/50 ${selectedIndicacao?.id === indicacao.id && panelOpen ? "bg-muted" : ""}`}
-                    onClick={() => handleRowClick(indicacao)}
-                  >
-                    <TableCell className="whitespace-nowrap">
-                      <div className="flex flex-col">
-                        <span>{format(parseISO(indicacao.data_indicacao), "dd/MM/yyyy", { locale: ptBR })}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {format(parseISO(indicacao.data_indicacao), "HH:mm", { locale: ptBR })}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">{indicacao.nome_indicada}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={`text-xs ${origemIndicacaoColors[origem]}`}>
-                        {origem === "externa" && <ExternalLink className="h-3 w-3 mr-1" />}
-                        {origemIndicacaoLabels[origem]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      {indicacao.telefone_indicada && (
-                        <TooltipProvider>
-                          <div className="flex items-center gap-1">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <a
-                                  href={`https://wa.me/${phone}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1 text-emerald-600 hover:underline text-sm"
-                                >
-                                  <MessageSquare className="h-3 w-3" />
-                                  {indicacao.telefone_indicada}
-                                </a>
-                              </TooltipTrigger>
-                              <TooltipContent>Abrir WhatsApp</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => handleCopyPhone(indicacao.telefone_indicada!, indicacao.id)}
-                                >
-                                  {copiedPhoneId === indicacao.id ? (
-                                    <Check className="h-3 w-3 text-emerald-600" />
-                                  ) : (
-                                    <Copy className="h-3 w-3" />
-                                  )}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Copiar telefone</TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </TooltipProvider>
-                      )}
-                    </TableCell>
-                    <TableCell>{indicacao.nome_indicadora || "-"}</TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Select
-                        value={indicacao.status_abordagem}
-                        onValueChange={(value) => handleStatusChange(indicacao.id, value as StatusAbordagem)}
-                      >
-                        <SelectTrigger className="w-[150px] h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(statusAbordagemLabels).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>{label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Select
-                        value={indicacao.motivo_abordagem || ""}
-                        onValueChange={(value) => handleMotivoChange(indicacao.id, value as MotivoAbordagem)}
-                      >
-                        <SelectTrigger className="w-[140px] h-8 text-xs">
-                          <SelectValue placeholder="Selecionar" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(motivoAbordagemLabels).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>{label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleRowClick(indicacao)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver detalhes
-                          </DropdownMenuItem>
-                          {phone && (
-                            <>
-                              <DropdownMenuItem onClick={() => window.open(`https://wa.me/${phone}`, "_blank")}>
-                                <MessageSquare className="h-4 w-4 mr-2" />
-                                WhatsApp
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => window.open(`tel:+${phone}`, "_self")}>
-                                <Phone className="h-4 w-4 mr-2" />
-                                Ligar
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedIndicacao(indicacao);
-                              setPanelOpen(true);
-                              // The convert action is inside the panel
-                            }}
-                          >
-                            <UserPlus className="h-4 w-4 mr-2" />
-                            Converter em Processo
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedIndicacao(indicacao);
-                              setPanelOpen(true);
-                            }}
-                          >
-                            <CalendarPlus className="h-4 w-4 mr-2" />
-                            Criar atividade
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {filteredIndicacoes.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    Nenhuma indicação encontrada
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredIndicacoes.map((indicacao) => {
+                  const origem = (indicacao.origem_indicacao || "interna") as OrigemIndicacao;
+                  const phone = sanitizePhone(indicacao.telefone_indicada);
+                  return (
+                    <TableRow
+                      key={indicacao.id}
+                      className={`cursor-pointer hover:bg-muted/50 ${selectedIndicacao?.id === indicacao.id && panelOpen ? "bg-muted" : ""}`}
+                      onClick={() => handleRowClick(indicacao)}
+                    >
+                      <TableCell className="whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span>{format(parseISO(indicacao.data_indicacao), "dd/MM/yyyy", { locale: ptBR })}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {format(parseISO(indicacao.data_indicacao), "HH:mm", { locale: ptBR })}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">{indicacao.nome_indicada}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={`text-xs ${origemIndicacaoColors[origem]}`}>
+                          {origem === "externa" && <ExternalLink className="h-3 w-3 mr-1" />}
+                          {origemIndicacaoLabels[origem]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        {indicacao.telefone_indicada && (
+                          <TooltipProvider>
+                            <div className="flex items-center gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <a
+                                    href={`https://wa.me/${phone}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-emerald-600 hover:underline text-sm"
+                                  >
+                                    <MessageSquare className="h-3 w-3" />
+                                    {indicacao.telefone_indicada}
+                                  </a>
+                                </TooltipTrigger>
+                                <TooltipContent>Abrir WhatsApp</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => handleCopyPhone(indicacao.telefone_indicada!, indicacao.id)}
+                                  >
+                                    {copiedPhoneId === indicacao.id ? (
+                                      <Check className="h-3 w-3 text-emerald-600" />
+                                    ) : (
+                                      <Copy className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copiar telefone</TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </TooltipProvider>
+                        )}
+                      </TableCell>
+                      <TableCell>{indicacao.nome_indicadora || "-"}</TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Select
+                          value={indicacao.status_abordagem}
+                          onValueChange={(value) => handleStatusChange(indicacao.id, value as StatusAbordagem)}
+                        >
+                          <SelectTrigger className="w-[150px] h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(statusAbordagemLabels).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>{label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Select
+                          value={indicacao.motivo_abordagem || ""}
+                          onValueChange={(value) => handleMotivoChange(indicacao.id, value as MotivoAbordagem)}
+                        >
+                          <SelectTrigger className="w-[140px] h-8 text-xs">
+                            <SelectValue placeholder="Selecionar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(motivoAbordagemLabels).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>{label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleRowClick(indicacao)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver detalhes
+                            </DropdownMenuItem>
+                            {phone && (
+                              <>
+                                <DropdownMenuItem onClick={() => window.open(`https://wa.me/${phone}`, "_blank")}>
+                                  <MessageSquare className="h-4 w-4 mr-2" />
+                                  WhatsApp
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.open(`tel:+${phone}`, "_self")}>
+                                  <Phone className="h-4 w-4 mr-2" />
+                                  Ligar
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedIndicacao(indicacao);
+                                setPanelOpen(true);
+                              }}
+                            >
+                              <UserPlus className="h-4 w-4 mr-2" />
+                              Converter em Processo
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedIndicacao(indicacao);
+                                setPanelOpen(true);
+                              }}
+                            >
+                              <CalendarPlus className="h-4 w-4 mr-2" />
+                              Criar atividade
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       <IndicacaoDetailPanel
         indicacao={selectedIndicacao}
