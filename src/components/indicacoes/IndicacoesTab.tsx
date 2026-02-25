@@ -72,6 +72,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   const [localSearch, setLocalSearch] = useState("");
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
+  const userId = user?.id;
 
   // Open indicacao from URL param
   const openIndicacaoFromParam = useCallback((indicacaoList: Indicacao[]) => {
@@ -92,15 +93,16 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
       setPanelOpen(true);
       // Update URL
       setSearchParams((prev) => {
-        prev.set("indicacao", externalSelectedIndicacao.id);
-        return prev;
+        const next = new URLSearchParams(prev);
+        next.set("indicacao", externalSelectedIndicacao.id);
+        return next;
       });
       onClearExternalSelection?.();
     }
   }, [externalSelectedIndicacao, onClearExternalSelection, setSearchParams]);
 
   const fetchIndicacoes = async () => {
-    if (!user) return;
+    if (!userId) return;
     setLoading(true);
 
     const { data, error } = await supabase
@@ -120,17 +122,17 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   };
 
   const fetchUserProfile = async () => {
-    if (!user) return;
-    const { data } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+    if (!userId) return;
+    const { data } = await supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle();
     if (data) setUserProfile(data);
   };
 
   useEffect(() => {
-    if (user) {
+    if (userId) {
       fetchIndicacoes();
       fetchUserProfile();
     }
-  }, [user]);
+  }, [userId]);
 
   const removeAccents = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
@@ -177,8 +179,9 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     setSelectedIndicacao(indicacao);
     setPanelOpen(true);
     setSearchParams((prev) => {
-      prev.set("indicacao", indicacao.id);
-      return prev;
+      const next = new URLSearchParams(prev);
+      next.set("indicacao", indicacao.id);
+      return next;
     });
   };
 
@@ -186,8 +189,9 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     setPanelOpen(open);
     if (!open) {
       setSearchParams((prev) => {
-        prev.delete("indicacao");
-        return prev;
+        const next = new URLSearchParams(prev);
+        next.delete("indicacao");
+        return next;
       });
     }
   };
