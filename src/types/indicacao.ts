@@ -53,10 +53,10 @@ export const statusAbordagemLabels: Record<StatusAbordagem, string> = {
 };
 
 export const statusAbordagemColors: Record<StatusAbordagem, string> = {
-  aguardando_aprovacao: "bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-500/30",
-  pendente: "bg-muted text-muted-foreground hover:bg-muted/80",
-  em_andamento: "bg-blue-500/20 text-blue-700 dark:text-blue-300 hover:bg-blue-500/30",
-  concluido: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/30",
+  aguardando_aprovacao: "bg-secondary text-secondary-foreground",
+  pendente: "bg-muted text-muted-foreground",
+  em_andamento: "bg-accent text-accent-foreground",
+  concluido: "bg-secondary text-secondary-foreground",
 };
 
 export const origemIndicacaoLabels: Record<OrigemIndicacao, string> = {
@@ -84,6 +84,6 @@ export const proximaAcaoLabels: Record<ProximaAcao, string> = {
 
 export const proximaAcaoColors: Record<ProximaAcao, string> = {
   primeiro_contato: "bg-primary text-primary-foreground hover:bg-primary/90",
-  follow_up: "bg-amber-500 text-white hover:bg-amber-600",
-  proxima_acao: "bg-blue-500 text-white hover:bg-blue-600",
+  follow_up: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+  proxima_acao: "bg-accent text-accent-foreground hover:bg-accent/80",
 };

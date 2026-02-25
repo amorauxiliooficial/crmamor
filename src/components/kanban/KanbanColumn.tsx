@@ -1,4 +1,4 @@
-import { MaeProcesso, StatusProcesso, STATUS_COLORS, FOLLOWUP_PRAZO_LABELS } from "@/types/mae";
+import { MaeProcesso, StatusProcesso, STATUS_COLORS, STATUS_BAR_COLORS, FOLLOWUP_PRAZO_LABELS } from "@/types/mae";
 import { KanbanCard } from "./KanbanCard";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,8 +42,8 @@ export function KanbanColumn({
     >
       <div
         className={cn(
-          "flex items-center gap-2 border-b px-4 py-3 cursor-pointer",
-          STATUS_COLORS[status],
+          "flex items-center gap-2 border-b border-t-[3px] px-4 py-3 cursor-pointer",
+          STATUS_BAR_COLORS[status],
           !isExpanded && "flex-col px-2 py-4"
         )}
         onClick={isExpanded ? onToggleExpand : undefined}

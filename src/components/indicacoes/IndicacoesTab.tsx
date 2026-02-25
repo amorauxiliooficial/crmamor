@@ -262,10 +262,10 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card className="border-l-4 border-l-primary">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Users className="h-4 w-4" />
+              <Users className="h-4 w-4 text-primary" />
               Total
             </CardTitle>
           </CardHeader>
@@ -273,10 +273,10 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
             <div className="text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-amber-500">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
+              <AlertCircle className="h-4 w-4 text-muted-foreground" />
               Aguardando
             </CardTitle>
           </CardHeader>
@@ -285,10 +285,10 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
             {stats.externas > 0 && <p className="text-xs text-muted-foreground">{stats.externas} externas</p>}
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-muted-foreground">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4" />
+              <Clock className="h-4 w-4 text-muted-foreground" />
               Pendentes
             </CardTitle>
           </CardHeader>
@@ -296,10 +296,10 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
             <div className="text-2xl font-bold">{stats.pendentes}</div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-blue-500">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <PlayCircle className="h-4 w-4" />
+              <PlayCircle className="h-4 w-4 text-muted-foreground" />
               Em Andamento
             </CardTitle>
           </CardHeader>
@@ -307,10 +307,10 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
             <div className="text-2xl font-bold">{stats.emAndamento}</div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-emerald-500">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
               Concluídos
             </CardTitle>
           </CardHeader>
@@ -401,7 +401,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                                     href={`https://wa.me/${phone}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-emerald-600 hover:underline text-sm"
+                                    className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors text-sm"
                                   >
                                     <MessageSquare className="h-3 w-3" />
                                     {indicacao.telefone_indicada}
@@ -418,7 +418,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                                     onClick={() => handleCopyPhone(indicacao.telefone_indicada!, indicacao.id)}
                                   >
                                     {copiedPhoneId === indicacao.id ? (
-                                      <Check className="h-3 w-3 text-emerald-600" />
+                                      <Check className="h-3 w-3 text-primary" />
                                     ) : (
                                       <Copy className="h-3 w-3" />
                                     )}

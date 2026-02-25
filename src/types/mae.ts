@@ -78,14 +78,26 @@ export const STATUS_ORDER: StatusProcesso[] = [
 ];
 
 export const STATUS_COLORS: Record<StatusProcesso, string> = {
-  "⚠️ Pendência Documental": "bg-accent",
-  "🟡 Elegível (Análise Positiva)": "bg-chart-1/30",
-  "⏳ Aguardando Análise INSS": "bg-chart-3/30",
-  "✅ Aprovada": "bg-emerald-500/20",
-  "❌ Indeferida": "bg-destructive/20",
-  "⚖️ Recurso / Judicial": "bg-chart-5/30",
-  "💳 Inadimplência": "bg-orange-500/20",
-  "📦 Processo Encerrado": "bg-muted",
+  "⚠️ Pendência Documental": "bg-muted/60",
+  "🟡 Elegível (Análise Positiva)": "bg-muted/60",
+  "⏳ Aguardando Análise INSS": "bg-muted/60",
+  "✅ Aprovada": "bg-muted/60",
+  "❌ Indeferida": "bg-muted/60",
+  "⚖️ Recurso / Judicial": "bg-muted/60",
+  "💳 Inadimplência": "bg-muted/60",
+  "📦 Processo Encerrado": "bg-muted/60",
+};
+
+// Thin top-bar accent colors per status (used as border-top on column headers)
+export const STATUS_BAR_COLORS: Record<StatusProcesso, string> = {
+  "⚠️ Pendência Documental": "border-t-amber-500/60",
+  "🟡 Elegível (Análise Positiva)": "border-t-primary/60",
+  "⏳ Aguardando Análise INSS": "border-t-sky-500/50",
+  "✅ Aprovada": "border-t-emerald-500/60",
+  "❌ Indeferida": "border-t-destructive/50",
+  "⚖️ Recurso / Judicial": "border-t-violet-500/50",
+  "💳 Inadimplência": "border-t-orange-500/50",
+  "📦 Processo Encerrado": "border-t-muted-foreground/30",
 };
 
 // Prazos de follow-up para exibição na UI (em dias)

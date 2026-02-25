@@ -97,55 +97,64 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 240 5% 10%;
-    --foreground: 0 0% 98%;
+    /* ── Fintech/Stripe layered neutrals ── */
+    --background: 220 10% 7%;
+    --foreground: 220 5% 93%;
 
-    --card: 240 3% 15%;
-    --card-foreground: 0 0% 98%;
+    --card: 220 8% 11%;
+    --card-foreground: 220 5% 93%;
 
-    --popover: 240 5% 26%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 8% 13%;
+    --popover-foreground: 220 5% 93%;
 
-    --primary: 328 85% 70%;
-    --primary-foreground: 336 83% 17%;
+    /* ── Brand accent (rosa) ── */
+    --primary: 330 65% 60%;
+    --primary-foreground: 330 20% 98%;
 
-    --secondary: 240 3% 46%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 220 6% 18%;
+    --secondary-foreground: 220 5% 85%;
 
-    --muted: 240 3% 46%;
-    --muted-foreground: 0 0% 98%;
+    --muted: 220 6% 16%;
+    --muted-foreground: 220 5% 55%;
 
-    --accent: 343 87% 15%;
-    --accent-foreground: 351 94% 71%;
+    --accent: 330 30% 14%;
+    --accent-foreground: 330 50% 70%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 85% 97%;
+    /* ── Semantic (low-sat tints) ── */
+    --destructive: 0 50% 50%;
+    --destructive-foreground: 0 60% 95%;
 
-    --border: 240 5% 33%;
-    --input: 240 5% 33%;
-    --ring: 328 85% 70%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 328 85% 70%;
-    --sidebar-primary-foreground: 336 83% 17%;
-    --sidebar-accent: 351 94% 71%;
-    --sidebar-accent-foreground: 343 87% 15%;
-    --sidebar-border: 240 5% 33%;
-    --sidebar-ring: 328 85% 70%;
-    --chart-1: 327 87% 81%;
-    --chart-2: 352 95% 81%;
-    --chart-3: 328 85% 70%;
-    --chart-4: 351 94% 71%;
-    --chart-5: 240 5% 33%;
-    --sidebar: 240 3% 15%;
-    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
-    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --border: 220 6% 18%;
+    --input: 220 6% 20%;
+    --ring: 330 65% 60%;
+
+    /* ── Sidebar ── */
+    --sidebar-background: 220 10% 7%;
+    --sidebar-foreground: 220 5% 93%;
+    --sidebar-primary: 330 65% 60%;
+    --sidebar-primary-foreground: 330 20% 98%;
+    --sidebar-accent: 220 6% 16%;
+    --sidebar-accent-foreground: 220 5% 85%;
+    --sidebar-border: 220 6% 18%;
+    --sidebar-ring: 330 65% 60%;
+
+    /* ── Charts (desaturated) ── */
+    --chart-1: 330 45% 60%;
+    --chart-2: 350 50% 65%;
+    --chart-3: 330 40% 55%;
+    --chart-4: 350 45% 60%;
+    --chart-5: 220 5% 35%;
+
+    --sidebar: 220 8% 11%;
+
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.15);
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.15);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.2), 0 1px 2px -1px hsl(0 0% 0% / 0.15);
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.2), 0 1px 2px -1px hsl(0 0% 0% / 0.15);
+    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.25), 0 2px 4px -1px hsl(0 0% 0% / 0.2);
+    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.25), 0 4px 6px -1px hsl(0 0% 0% / 0.2);
+    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.3), 0 8px 10px -1px hsl(0 0% 0% / 0.25);
+    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.4);
   }
 }
 
