@@ -43,6 +43,7 @@ import {
   ClipboardList,
   Brain,
   Activity,
+  MessageSquare,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -441,6 +442,15 @@ const Index = () => {
                   title="Pré-Análises"
                 >
                   <Brain className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => navigate("/atendimento")}
+                  title="Atendimento"
+                >
+                  <MessageSquare className="h-4 w-4" />
                 </Button>
               </div>
 
