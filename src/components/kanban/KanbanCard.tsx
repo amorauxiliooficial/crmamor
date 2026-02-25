@@ -62,21 +62,24 @@ export function KanbanCard({
   return (
     <Card
       className={cn(
-        "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-2 md:hover:ring-primary/20 relative overflow-hidden",
-        isDragging && "shadow-lg ring-2 ring-primary rotate-2",
-        followUpStatus === "overdue" && !hasUnreadAlert && "ring-1 ring-destructive/50"
+        "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-1 md:hover:ring-primary/20 relative",
+        isDragging && "shadow-lg ring-1 ring-primary/40 rotate-2",
+        followUpStatus === "overdue" && !hasUnreadAlert && "ring-1 ring-destructive/30",
+        hasUnreadAlert && "ring-1 ring-primary/40"
       )}
       onClick={onClick}
     >
-      {/* Faixa de alerta do admin */}
+      {/* Badge de alerta do admin */}
       {hasUnreadAlert && (
-        <div className="absolute top-0 left-0 right-0 bg-primary text-primary-foreground text-[10px] font-semibold py-0.5 px-2 flex items-center gap-1 z-10">
-          <AlertTriangle className="h-3 w-3" />
-          <span>Aviso Importante</span>
+        <div className="absolute top-1.5 right-1.5 z-10">
+          <Badge variant="default" className="text-[10px] px-1.5 py-0 h-5 gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            Aviso
+          </Badge>
         </div>
       )}
       
-      <CardContent className={cn("p-2.5 md:p-3 relative", hasUnreadAlert && "pt-6 md:pt-7")}>
+      <CardContent className={cn("p-2.5 md:p-3 relative")}>
         <div className="space-y-1.5 md:space-y-2">
           <div className="flex items-start justify-between gap-1.5">
             <h4 className="font-medium text-sm leading-tight line-clamp-2">
@@ -91,7 +94,7 @@ export function KanbanCard({
                 />
               )}
               {mae.is_gestante && mesGestacao && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-accent text-accent-foreground">
                   <Baby className="h-2.5 w-2.5 mr-0.5" />
                   {mesGestacao}º
                 </Badge>
