@@ -1,13 +1,11 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
-import { StatsCard } from "@/components/dashboard/StatsCard";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { KanbanMobileList } from "@/components/kanban/KanbanMobileList";
 import { GestantesBoard } from "@/components/kanban/GestantesBoard";
 import { MaeTable } from "@/components/mae/MaeTable";
 import { MaeCardList } from "@/components/mae/MaeCardList";
-import { MaeDetailDialog } from "@/components/mae/MaeDetailDialog";
 import { MaeFormDialog } from "@/components/mae/MaeFormDialog";
 import { MaeEditDialog } from "@/components/mae/MaeEditDialog";
 import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
@@ -27,17 +25,11 @@ import { Indicacao } from "@/types/indicacao";
 import { useAuth } from "@/hooks/useAuth";
 import { useTour } from "@/hooks/useTour";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useFollowUpSound } from "@/hooks/useFollowUpSound";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useMaesData, MaeProcessoComAtividade, mapDbStatusToDisplay } from "@/hooks/useMaesData";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso } from "@/types/mae";
 import {
-  Users,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  AlertTriangle,
   Baby,
   Loader2,
   LayoutGrid,
@@ -75,7 +67,6 @@ const Index = () => {
   const { toast } = useToast();
   const { run: tourRun, stepIndex, setStepIndex, stopTour, startTour } = useTour();
   const isMobile = useIsMobile();
-  const { playSound } = useFollowUpSound();
   const { isAdmin } = useIsAdmin();
   
   // Use optimized hook for data fetching with caching
@@ -92,7 +83,6 @@ const Index = () => {
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMae, setSelectedMae] = useState<MaeProcessoComAtividade | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [atividadeDialogOpen, setAtividadeDialogOpen] = useState(false);
@@ -206,31 +196,6 @@ const Index = () => {
 
   const gestantesCount = gestantes.length;
 
-  const stats = useMemo(() => {
-    const total = maesFilteredByUser.length;
-    const aprovadas = maesFilteredByUser.filter(
-      (m) => m.status_processo === "✅ Aprovada"
-    ).length;
-    const indeferidas = maesFilteredByUser.filter(
-      (m) => m.status_processo === "❌ Indeferida"
-    ).length;
-    const elegiveis = maesFilteredByUser.filter(
-      (m) => m.status_processo === "🟡 Elegível (Análise Positiva)"
-    ).length;
-    const pendencias = maesFilteredByUser.filter(
-      (m) => m.status_processo === "⚠️ Pendência Documental"
-    ).length;
-    const inadimplentes = maesFilteredByUser.filter(
-      (m) => m.status_processo === "💳 Inadimplência"
-    ).length;
-
-    return { total, aprovadas, indeferidas, elegiveis, pendencias, inadimplentes };
-  }, [maesFilteredByUser]);
-
-  const handleStatsClick = (filter: StatusProcesso | "all" | "gestantes") => {
-    setStatusFilter(statusFilter === filter ? "all" : filter);
-  };
-
   const handleCardClick = (mae: MaeProcessoComAtividade) => {
     setSelectedMae(mae);
     setMaeAtividadesDialogOpen(true);
@@ -241,13 +206,20 @@ const Index = () => {
     setAtividadeDialogOpen(true);
   };
 
-  // Map display status (with emoji) to db status (without emoji)
-  const mapDisplayStatusToDb = (status: StatusProcesso): string => {
-    return status.split(" ").slice(1).join(" ") || status;
+  // Map display status (with emoji) to db enum value
+  const DISPLAY_TO_DB_STATUS: Record<StatusProcesso, string> = {
+    "⚠️ Pendência Documental": "Pendência Documental",
+    "🟡 Elegível (Análise Positiva)": "Elegível (Análise Positiva)",
+    "⏳ Aguardando Análise INSS": "Aguardando Análise INSS",
+    "✅ Aprovada": "Aprovada",
+    "❌ Indeferida": "Indeferida",
+    "⚖️ Recurso / Judicial": "Recurso / Judicial",
+    "💳 Inadimplência": "Inadimplência",
+    "📦 Processo Encerrado": "Processo Encerrado",
   };
 
   const handleStatusChange = async (maeId: string, newStatus: StatusProcesso) => {
-    const dbStatus = mapDisplayStatusToDb(newStatus) as 
+    const dbStatus = DISPLAY_TO_DB_STATUS[newStatus] as 
       "Pendência Documental" | "Elegível (Análise Positiva)" | 
       "Aguardando Análise INSS" | "Aprovada" | "Indeferida" | 
       "Recurso / Judicial" | "Inadimplência" | "Processo Encerrado";
@@ -337,7 +309,7 @@ const Index = () => {
         {/* Metas Dashboard - replaces old stats cards */}
         <section className="tour-stats">
           <MetasDashboard 
-            userId={selectedUserId && selectedUserId !== "all" ? selectedUserId : user?.id || null}
+            userId={selectedUserId && selectedUserId !== "all" ? selectedUserId : null}
             isAdmin={isAdmin}
             onConfigClick={handleOpenMetasConfig}
           />
@@ -553,48 +525,80 @@ const Index = () => {
 
               <TabsContent value="active" className="mt-0">
                 <div className="rounded-lg border bg-muted/30 min-h-[500px]">
-                  <KanbanBoard
-                    maes={filteredMaes}
-                    onCardClick={handleCardClick}
-                    onStatusChange={handleStatusChange}
-                    onOpenAtividades={handleOpenAtividades}
-                    alertasNaoLidos={alertasNaoLidos}
-                    visibleStatuses={[
-                      "🟡 Elegível (Análise Positiva)",
-                      "⏳ Aguardando Análise INSS",
-                    ]}
-                  />
+                  {isMobile ? (
+                    <KanbanMobileList
+                      maes={filteredMaes}
+                      onCardClick={handleCardClick}
+                      visibleStatuses={[
+                        "🟡 Elegível (Análise Positiva)",
+                        "⏳ Aguardando Análise INSS",
+                      ]}
+                    />
+                  ) : (
+                    <KanbanBoard
+                      maes={filteredMaes}
+                      onCardClick={handleCardClick}
+                      onStatusChange={handleStatusChange}
+                      onOpenAtividades={handleOpenAtividades}
+                      alertasNaoLidos={alertasNaoLidos}
+                      visibleStatuses={[
+                        "🟡 Elegível (Análise Positiva)",
+                        "⏳ Aguardando Análise INSS",
+                      ]}
+                    />
+                  )}
                 </div>
               </TabsContent>
 
               <TabsContent value="pending" className="mt-0">
                 <div className="rounded-lg border bg-muted/30 min-h-[500px]">
-                  <KanbanBoard
-                    maes={filteredMaes}
-                    onCardClick={handleCardClick}
-                    onStatusChange={handleStatusChange}
-                    onOpenAtividades={handleOpenAtividades}
-                    alertasNaoLidos={alertasNaoLidos}
-                    visibleStatuses={["⚠️ Pendência Documental"]}
-                  />
+                  {isMobile ? (
+                    <KanbanMobileList
+                      maes={filteredMaes}
+                      onCardClick={handleCardClick}
+                      visibleStatuses={["⚠️ Pendência Documental"]}
+                    />
+                  ) : (
+                    <KanbanBoard
+                      maes={filteredMaes}
+                      onCardClick={handleCardClick}
+                      onStatusChange={handleStatusChange}
+                      onOpenAtividades={handleOpenAtividades}
+                      alertasNaoLidos={alertasNaoLidos}
+                      visibleStatuses={["⚠️ Pendência Documental"]}
+                    />
+                  )}
                 </div>
               </TabsContent>
 
               <TabsContent value="completed" className="mt-0">
                 <div className="rounded-lg border bg-muted/30 min-h-[500px]">
-                  <KanbanBoard
-                    maes={filteredMaes}
-                    onCardClick={handleCardClick}
-                    onStatusChange={handleStatusChange}
-                    onOpenAtividades={handleOpenAtividades}
-                    alertasNaoLidos={alertasNaoLidos}
-                    visibleStatuses={[
-                      "✅ Aprovada",
-                      "❌ Indeferida",
-                      "⚖️ Recurso / Judicial",
-                      "📦 Processo Encerrado",
-                    ]}
-                  />
+                  {isMobile ? (
+                    <KanbanMobileList
+                      maes={filteredMaes}
+                      onCardClick={handleCardClick}
+                      visibleStatuses={[
+                        "✅ Aprovada",
+                        "❌ Indeferida",
+                        "⚖️ Recurso / Judicial",
+                        "📦 Processo Encerrado",
+                      ]}
+                    />
+                  ) : (
+                    <KanbanBoard
+                      maes={filteredMaes}
+                      onCardClick={handleCardClick}
+                      onStatusChange={handleStatusChange}
+                      onOpenAtividades={handleOpenAtividades}
+                      alertasNaoLidos={alertasNaoLidos}
+                      visibleStatuses={[
+                        "✅ Aprovada",
+                        "❌ Indeferida",
+                        "⚖️ Recurso / Judicial",
+                        "📦 Processo Encerrado",
+                      ]}
+                    />
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
@@ -602,12 +606,6 @@ const Index = () => {
           </ViewTransition>
         </section>
       </main>
-
-      <MaeDetailDialog
-        mae={selectedMae}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-      />
 
       <MaeEditDialog
         mae={selectedMae}
