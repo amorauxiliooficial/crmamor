@@ -642,6 +642,8 @@ export function ChatPanel({
                       isGrouped={isGrouped}
                       showTime={showTime}
                       onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
+                      currentUserId={currentUserId}
+                      onEditMessage={onEditMessage}
                     />
                   );
                 })}
