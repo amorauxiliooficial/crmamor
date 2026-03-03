@@ -64,9 +64,12 @@ export default function Atendimento() {
   const markRead = useMarkConversationRead();
   const updateStatus = useUpdateConversationStatus();
   const editMessage = useEditMessage();
-  const { soundEnabled, autoplayBlocked, toggleSound, playNotification } = useInboundNotification();
+  const { soundEnabled, autoplayBlocked, toggleSound, playNotification, requestPermission } = useInboundNotification();
 
-  // Realtime listener for inbound messages – plays notification sound
+  // Request browser notification permission on mount
+  useEffect(() => { requestPermission(); }, [requestPermission]);
+
+  // Realtime listener for inbound messages – plays notification sound + visual alerts
   useEffect(() => {
     const channel = supabase
       .channel("inbound_notification")
@@ -78,14 +81,27 @@ export default function Atendimento() {
           table: "wa_messages",
           filter: "direction=eq.in",
         },
-        () => {
-          playNotification();
+        (payload: any) => {
+          const convId = payload.new?.conversation_id;
+          const body = payload.new?.body;
+          // Find conversation name
+          const conv = (waConversations ?? []).find((c) => c.id === convId);
+          const contactName = conv?.wa_name || undefined;
+          const preview = body?.slice(0, 80) || undefined;
+          playNotification(contactName, preview);
+
+          // Show in-app toast for better visibility
+          toast({
+            title: `💬 ${contactName || "Nova mensagem"}`,
+            description: preview || "Você recebeu uma nova mensagem",
+            duration: 6000,
+          });
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [playNotification]);
+  }, [playNotification, waConversations, toast]);
   // Fetch all profiles for agent name mapping
   const { data: profiles } = useQuery({
     queryKey: ["profiles_all"],
