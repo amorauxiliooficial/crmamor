@@ -59,7 +59,7 @@ export function PagamentoDialog({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tipoPagamento, setTipoPagamento] = useState<TipoPagamento>("parcelado");
-  const [percentualComissao, setPercentualComissao] = useState("");
+  
   const [valorAReceber, setValorAReceber] = useState("");
   const [parcelas, setParcelas] = useState<ParcelaForm[]>([{ ...DEFAULT_PARCELA }]);
 
@@ -68,7 +68,6 @@ export function PagamentoDialog({
       loadExistingPagamento();
     } else if (open && !existingPagamentoId) {
       setTipoPagamento("parcelado");
-      setPercentualComissao("");
       setValorAReceber("");
       setParcelas([{ ...DEFAULT_PARCELA }]);
     }
@@ -111,7 +110,6 @@ export function PagamentoDialog({
     }
 
     setTipoPagamento(pagamento.tipo_pagamento as TipoPagamento);
-    setPercentualComissao(pagamento.percentual_comissao?.toString() || "");
     setValorAReceber((pagamento as any).valor_a_receber?.toString() || "");
     if (parcelasData && parcelasData.length > 0) {
       setParcelas(
@@ -176,7 +174,6 @@ export function PagamentoDialog({
             tipo_pagamento: tipoPagamento,
             total_parcelas: parcelas.length,
             valor_total: valorTotal || null,
-            percentual_comissao: percentualComissao ? parseFloat(percentualComissao) : null,
             valor_a_receber: valorAReceber ? parseFloat(valorAReceber) : null,
           } as any)
           .eq("id", existingPagamentoId);
@@ -210,7 +207,6 @@ export function PagamentoDialog({
             tipo_pagamento: tipoPagamento,
             total_parcelas: parcelas.length,
             valor_total: valorTotal || null,
-            percentual_comissao: percentualComissao ? parseFloat(percentualComissao) : null,
             valor_a_receber: valorAReceber ? parseFloat(valorAReceber) : null,
           } as any)
           .select()
@@ -280,7 +276,7 @@ export function PagamentoDialog({
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tipo de Pagamento</Label>
                 <Select value={tipoPagamento} onValueChange={handleTipoPagamentoChange}>
@@ -292,19 +288,6 @@ export function PagamentoDialog({
                     <SelectItem value="parcelado">Mãe Parcelada</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Comissão (%)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={percentualComissao}
-                  onChange={(e) => setPercentualComissao(e.target.value)}
-                  placeholder="Ex: 10"
-                />
               </div>
 
               <div className="space-y-2">
