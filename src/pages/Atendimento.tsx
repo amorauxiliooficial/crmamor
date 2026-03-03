@@ -7,7 +7,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useDebouncedCallback } from "use-debounce";
 import { useQuery } from "@tanstack/react-query";
 import { useInboundNotification } from "@/hooks/useInboundNotification";
-import { useWaConversations, useWaMessages, useSendWhatsApp, useRetryWhatsApp, useMarkConversationRead, useUpdateConversationStatus, useEditMessage, useAssumeConversation, useTransferConversation, useCloseConversation, type WaConversation } from "@/hooks/useWhatsApp";
+import { useWaConversations, useWaMessages, useSendWhatsApp, useRetryWhatsApp, useMarkConversationRead, useUpdateConversationStatus, useEditMessage, useAssumeConversation, useTransferConversation, useCloseConversation, useReopenConversation, type WaConversation } from "@/hooks/useWhatsApp";
+import { useConversationEvents, useCreateConversationEvent } from "@/hooks/useConversationEvents";
+import { useRealtimeConnection } from "@/hooks/useRealtimeConnection";
 import { respostasRapidas } from "@/data/respostasRapidas";
 import { InboxSidebar } from "@/components/atendimento/InboxSidebar";
 import { ChatPanel } from "@/components/atendimento/ChatPanel";
@@ -82,6 +84,10 @@ export default function Atendimento() {
   const assumeConversation = useAssumeConversation();
   const transferConversation = useTransferConversation();
   const closeConversation = useCloseConversation();
+  const reopenConversation = useReopenConversation();
+  const createEvent = useCreateConversationEvent();
+  const { status: connectionStatus, reconnect: onReconnect } = useRealtimeConnection();
+  const { data: conversationEvents } = useConversationEvents(selectedId);
   const { soundEnabled, autoplayBlocked, toggleSound, playNotification, requestPermission } = useInboundNotification();
 
   // Request browser notification permission on mount
@@ -225,21 +231,17 @@ export default function Atendimento() {
       assumeConversation.mutate(target, {
         onSuccess: () => {
           toast({ title: "Conversa assumida ✅" });
+          createEvent.mutate({ conversation_id: target, event_type: "assumed", to_agent_id: user?.id });
           recordAssignment.mutate({
             conversation_id: target,
             from_user_id: null,
             to_user_id: user?.id,
             reason: "Conversa assumida manualmente",
           });
-          addEvent({
-            conversation_id: target,
-            event_type: "assignment_changed",
-            title: "Atendente assumiu a conversa",
-          });
         },
       });
     },
-    [selectedId, toast, recordAssignment, addEvent, user, assumeConversation]
+    [selectedId, toast, recordAssignment, user, assumeConversation, createEvent]
   );
 
   const handleTransfer = useCallback(
@@ -251,10 +253,12 @@ export default function Atendimento() {
           onSuccess: () => {
             toast({ title: "Atendimento transferido ✅" });
             setTransferDialogOpen(false);
-            addEvent({
+            createEvent.mutate({
               conversation_id: selectedId,
-              event_type: "assignment_changed",
-              title: "Atendimento transferido",
+              event_type: "transfer",
+              from_agent_id: conversa?.assignedAgentId,
+              to_agent_id: toAgentId,
+              meta: reason ? { reason } : {},
             });
           },
           onError: () => {
@@ -263,7 +267,7 @@ export default function Atendimento() {
         }
       );
     },
-    [selectedId, toast, transferConversation, addEvent]
+    [selectedId, toast, transferConversation, createEvent, conversa]
   );
 
   const handlePendente = useCallback(
@@ -280,11 +284,24 @@ export default function Atendimento() {
       const target = id || selectedId;
       if (!target) return;
       closeConversation.mutate({ conversationId: target }, {
-        onSuccess: () => toast({ title: "Atendimento finalizado ✅" }),
+        onSuccess: () => {
+          toast({ title: "Atendimento finalizado ✅" });
+          createEvent.mutate({ conversation_id: target, event_type: "closed" });
+        },
       });
     },
-    [selectedId, toast, closeConversation]
+    [selectedId, toast, closeConversation, createEvent]
   );
+
+  const handleReopen = useCallback(() => {
+    if (!selectedId) return;
+    reopenConversation.mutate(selectedId, {
+      onSuccess: () => {
+        toast({ title: "Conversa reaberta ✅" });
+        createEvent.mutate({ conversation_id: selectedId, event_type: "reopened" });
+      },
+    });
+  }, [selectedId, toast, reopenConversation, createEvent]);
 
   const toggleEtiqueta = useCallback(
     (etiqueta: string) => {
@@ -440,6 +457,11 @@ export default function Atendimento() {
                 soundEnabled={soundEnabled}
                 autoplayBlocked={autoplayBlocked}
                 onToggleSound={toggleSound}
+                onReopen={handleReopen}
+                connectionStatus={connectionStatus}
+                onReconnect={onReconnect}
+                conversationEvents={conversationEvents ?? []}
+                profileMap={profileMap}
               />
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
@@ -573,6 +595,11 @@ export default function Atendimento() {
         soundEnabled={soundEnabled}
         autoplayBlocked={autoplayBlocked}
         onToggleSound={toggleSound}
+        onReopen={handleReopen}
+        connectionStatus={connectionStatus}
+        onReconnect={onReconnect}
+        conversationEvents={conversationEvents ?? []}
+        profileMap={profileMap}
       />
 
       <TransferDialog

@@ -326,6 +326,47 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_events: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          created_by_agent_id: string | null
+          event_type: string
+          from_agent_id: string | null
+          id: string
+          meta: Json | null
+          to_agent_id: string | null
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          created_by_agent_id?: string | null
+          event_type: string
+          from_agent_id?: string | null
+          id?: string
+          meta?: Json | null
+          to_agent_id?: string | null
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          created_by_agent_id?: string | null
+          event_type?: string
+          from_agent_id?: string | null
+          id?: string
+          meta?: Json | null
+          to_agent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "wa_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_transfers: {
         Row: {
           conversation_id: string

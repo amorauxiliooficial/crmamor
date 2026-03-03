@@ -4,7 +4,7 @@ import {
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
   Loader2, Zap, Brain, Database, ArrowRight, CalendarPlus, AlertTriangle,
   Info, Paperclip, X, Image as ImageIcon, RotateCcw, MoreVertical, Pencil, Check,
-  Bell, BellOff, ArrowRightLeft,
+  Bell, BellOff, ArrowRightLeft, RefreshCw, Wifi, WifiOff, RotateCw,
 } from "lucide-react";
 import { AudioRecorder } from "@/components/atendimento/AudioRecorder";
 import { MessageStatusIcon } from "@/components/atendimento/MessageStatusIcon";
@@ -25,6 +25,8 @@ import { smartTemplates, type SmartTemplate } from "@/data/smartTemplates";
 import { MediaBubble } from "@/components/atendimento/MediaBubble";
 import type { Conversa, Mensagem } from "@/data/atendimentoMock";
 import type { RespostaRapida } from "@/data/respostasRapidas";
+import type { ConversationEvent } from "@/hooks/useConversationEvents";
+import type { ConnectionStatus } from "@/hooks/useRealtimeConnection";
 
 const STATUS_COLORS: Record<string, string> = {
   Aberto: "bg-emerald-500",
@@ -263,6 +265,36 @@ const MessageBubble = memo(function MessageBubble({
 
 type AiAction = "suggest" | "summarize" | "extract" | "next_action";
 
+const EVENT_LABELS: Record<string, { icon: string; label: string }> = {
+  assumed: { icon: "👤", label: "assumiu a conversa" },
+  transfer: { icon: "↗️", label: "transferiu a conversa" },
+  closed: { icon: "✅", label: "encerrou a conversa" },
+  reopened: { icon: "🔄", label: "reabriu a conversa" },
+  status_change: { icon: "📋", label: "alterou o status" },
+};
+
+function InlineEvent({ event, profileMap }: { event: ConversationEvent; profileMap?: Map<string, string> }) {
+  const info = EVENT_LABELS[event.event_type] || { icon: "📌", label: event.event_type };
+  const agentName = event.created_by_agent_id && profileMap ? profileMap.get(event.created_by_agent_id) ?? "Agente" : "Sistema";
+  const toAgent = event.to_agent_id && profileMap ? profileMap.get(event.to_agent_id) : null;
+  const reason = (event.meta as any)?.reason;
+
+  return (
+    <div className="flex items-center justify-center my-2">
+      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/20 border border-border/10 text-[11px] text-muted-foreground/60 max-w-[80%]">
+        <span>{info.icon}</span>
+        <span className="font-medium">{agentName}</span>
+        <span>{info.label}</span>
+        {toAgent && <span>para <span className="font-medium">{toAgent}</span></span>}
+        {reason && <span className="italic truncate max-w-[120px]">• {reason}</span>}
+        <span className="text-muted-foreground/30 ml-1">
+          {new Date(event.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 interface ChatPanelProps {
   conversa: Conversa | null;
   mensagens: Mensagem[];
@@ -276,6 +308,7 @@ interface ChatPanelProps {
   onAssume: () => void;
   onPendente: () => void;
   onFinalizar: () => void;
+  onReopen?: () => void;
   onTransfer?: () => void;
   onToggleEtiqueta: (e: string) => void;
   respostas: RespostaRapida[];
@@ -287,6 +320,10 @@ interface ChatPanelProps {
   soundEnabled?: boolean;
   autoplayBlocked?: boolean;
   onToggleSound?: () => void;
+  connectionStatus?: ConnectionStatus;
+  onReconnect?: () => void;
+  conversationEvents?: ConversationEvent[];
+  profileMap?: Map<string, string>;
 }
 
 export function ChatPanel({
@@ -302,6 +339,7 @@ export function ChatPanel({
   onAssume,
   onPendente,
   onFinalizar,
+  onReopen,
   onTransfer,
   onToggleEtiqueta,
   respostas,
@@ -313,6 +351,10 @@ export function ChatPanel({
   soundEnabled,
   autoplayBlocked,
   onToggleSound,
+  connectionStatus = "connected",
+  onReconnect,
+  conversationEvents = [],
+  profileMap,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -484,7 +526,7 @@ export function ChatPanel({
             ) : (
               <p className="text-xs text-destructive/60 font-medium">• Sem responsável</p>
             )}
-            {conversa.slaMinutos != null && conversa.status !== "Fechado" && (
+          {conversa.slaMinutos != null && conversa.status !== "Fechado" && (
               <span className={cn(
                 "text-[11px] font-mono tabular-nums",
                 (conversa.slaMinutos ?? 0) > 30 ? "text-destructive/70" : "text-muted-foreground/40"
@@ -492,6 +534,21 @@ export function ChatPanel({
                 SLA: {conversa.slaMinutos}m
               </span>
             )}
+            {/* Connection indicator */}
+            <span className={cn(
+              "inline-flex items-center gap-1 text-[10px] font-medium",
+              connectionStatus === "connected" ? "text-emerald-500" : connectionStatus === "connecting" ? "text-amber-500" : "text-destructive"
+            )}>
+              {connectionStatus === "connected" ? (
+                <><Wifi className="h-3 w-3" /> Conectado</>
+              ) : connectionStatus === "connecting" ? (
+                <><RefreshCw className="h-3 w-3 animate-spin" /> Conectando...</>
+              ) : (
+                <button onClick={onReconnect} className="inline-flex items-center gap-1 hover:underline">
+                  <WifiOff className="h-3 w-3" /> Reconectar
+                </button>
+              )}
+            </span>
           </div>
         </div>
 
@@ -540,14 +597,31 @@ export function ChatPanel({
 
             {!isMobile && (
               <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60" onClick={onAssume}>
-                      <UserCheck className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-xs">Assumir</TooltipContent>
-                </Tooltip>
+                {conversa.queueStatus === "resolvido" && onReopen ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-emerald-600" onClick={onReopen}>
+                        <RotateCw className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="text-xs">Reabrir</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9 rounded-lg text-muted-foreground/60"
+                        onClick={onAssume}
+                        disabled={conversa.assignedAgentId === currentUserId}
+                      >
+                        <UserCheck className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="text-xs">Assumir</TooltipContent>
+                  </Tooltip>
+                )}
 
                 {onTransfer && (
                   <Tooltip>
@@ -703,18 +777,36 @@ export function ChatPanel({
                   const isGrouped = isSameAuthorGroup(m, prev);
                   const showTime = shouldShowTimestamp(m, prev);
 
+                  // Find events that occurred between prev message and current
+                  const eventsBeforeThis = conversationEvents.filter((ev) => {
+                    const evTime = new Date(ev.created_at).getTime();
+                    const prevTime = prev ? prev.horario.getTime() : 0;
+                    const currTime = m.horario.getTime();
+                    return evTime > prevTime && evTime <= currTime;
+                  });
+
                   return (
-                    <MessageBubble
-                      key={m.id}
-                      message={m}
-                      isGrouped={isGrouped}
-                      showTime={showTime}
-                      onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
-                      currentUserId={currentUserId}
-                      onEditMessage={onEditMessage}
-                    />
+                    <div key={m.id}>
+                      {eventsBeforeThis.map((ev) => (
+                        <InlineEvent key={ev.id} event={ev} profileMap={profileMap} />
+                      ))}
+                      <MessageBubble
+                        message={m}
+                        isGrouped={isGrouped}
+                        showTime={showTime}
+                        onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
+                        currentUserId={currentUserId}
+                        onEditMessage={onEditMessage}
+                      />
+                    </div>
                   );
                 })}
+                {/* Events after last message */}
+                {(() => {
+                  const lastMsgTime = group.messages[group.messages.length - 1]?.horario.getTime() ?? 0;
+                  const trailingEvents = conversationEvents.filter((ev) => new Date(ev.created_at).getTime() > lastMsgTime);
+                  return trailingEvents.map((ev) => <InlineEvent key={ev.id} event={ev} profileMap={profileMap} />);
+                })()}
               </div>
             ))
           )}
