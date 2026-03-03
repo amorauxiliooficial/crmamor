@@ -561,6 +561,32 @@ export function ChatPanel({
               </PopoverContent>
             </Popover>
 
+            {/* Sound toggle */}
+            {onToggleSound && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className={cn(
+                      "h-9 w-9 rounded-lg",
+                      soundEnabled ? "text-primary/70" : "text-muted-foreground/40"
+                    )}
+                    onClick={onToggleSound}
+                  >
+                    {soundEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="text-xs">
+                  {autoplayBlocked
+                    ? "Clique para ativar som"
+                    : soundEnabled
+                      ? "Desativar som"
+                      : "Ativar som"}
+                </TooltipContent>
+              </Tooltip>
+            )}
+
             {onToggleContext && (
               <Tooltip>
                 <TooltipTrigger asChild>
