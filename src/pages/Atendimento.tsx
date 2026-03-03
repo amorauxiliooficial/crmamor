@@ -79,6 +79,9 @@ export default function Atendimento() {
   const markRead = useMarkConversationRead();
   const updateStatus = useUpdateConversationStatus();
   const editMessage = useEditMessage();
+  const assumeConversation = useAssumeConversation();
+  const transferConversation = useTransferConversation();
+  const closeConversation = useCloseConversation();
   const { soundEnabled, autoplayBlocked, toggleSound, playNotification, requestPermission } = useInboundNotification();
 
   // Request browser notification permission on mount
