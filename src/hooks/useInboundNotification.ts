@@ -96,8 +96,7 @@ export function useInboundNotification() {
           body: preview || "Você recebeu uma nova mensagem no WhatsApp",
           icon: "/favicon.png",
           tag: "wa-inbound",
-          renotify: true,
-        });
+        } as NotificationOptions);
         notif.onclick = () => {
           window.focus();
           notif.close();
