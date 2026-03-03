@@ -310,8 +310,8 @@ export function PagamentoDialog({
                     )}
                   </div>
 
-                  {/* Fields row */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {/* Fields - 2 rows on mobile, single row on desktop */}
+                  <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <DollarSign className="h-3 w-3" /> Valor (R$)
@@ -344,12 +344,12 @@ export function PagamentoDialog({
                         onValueChange={(value) => updateParcela(index, "status", value)}
                       >
                         <SelectTrigger className="h-9">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`inline-block h-2 w-2 rounded-full ${
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className={`shrink-0 inline-block h-2 w-2 rounded-full ${
                               parcela.status === "pago" ? "bg-emerald-500" :
                               parcela.status === "inadimplente" ? "bg-destructive" : "bg-amber-500"
                             }`} />
-                            <SelectValue />
+                            <span className="truncate"><SelectValue /></span>
                           </div>
                         </SelectTrigger>
                         <SelectContent className="z-[100]">
