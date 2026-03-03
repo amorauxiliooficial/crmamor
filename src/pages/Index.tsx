@@ -224,7 +224,7 @@ const Index = () => {
     const dbStatus = DISPLAY_TO_DB_STATUS[newStatus] as 
       "Pendência Documental" | "Elegível (Análise Positiva)" | 
       "Aguardando Análise INSS" | "Aprovada" | "Indeferida" | 
-      "Recurso / Judicial" | "Inadimplência" | "Processo Encerrado";
+      "Recurso / Judicial" | "Inadimplência" | "📄 Rescisão de Contrato" | "Processo Encerrado";
 
     const { error } = await supabase
       .from("mae_processo")
