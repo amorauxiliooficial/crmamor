@@ -514,19 +514,17 @@ export function ChatPanel({
           <div className="flex items-center gap-2">
             <p className="font-semibold text-[15px] truncate">{conversa.nome ?? conversa.telefone}</p>
             {conversa.queueStatus && (
-              <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 font-medium rounded-full border-border/30", QUEUE_STATUS_LABELS[conversa.queueStatus]?.color)}>
+              <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 font-medium rounded-full border-border/30 shrink-0", QUEUE_STATUS_LABELS[conversa.queueStatus]?.color)}>
                 {QUEUE_STATUS_LABELS[conversa.queueStatus]?.label}
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {conversa.nome && <p className="text-xs text-muted-foreground/50 font-mono">{conversa.telefone}</p>}
-            {conversa.atendente ? (
-              <p className="text-xs text-primary/60 font-medium">• com {conversa.atendente}</p>
-            ) : (
-              <p className="text-xs text-destructive/60 font-medium">• Sem responsável</p>
+          <div className="flex items-center gap-1.5 flex-wrap text-xs">
+            {conversa.nome && <span className="text-muted-foreground/50 font-mono">{conversa.telefone}</span>}
+            {conversa.atendente && (
+              <span className="text-primary/60 font-medium">• {conversa.atendente}</span>
             )}
-          {conversa.slaMinutos != null && conversa.status !== "Fechado" && (
+            {conversa.slaMinutos != null && conversa.status !== "Fechado" && (
               <span className={cn(
                 "text-[11px] font-mono tabular-nums",
                 (conversa.slaMinutos ?? 0) > 30 ? "text-destructive/70" : "text-muted-foreground/40"
