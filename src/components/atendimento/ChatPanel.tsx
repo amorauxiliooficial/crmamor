@@ -4,6 +4,7 @@ import {
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
   Loader2, Zap, Brain, Database, ArrowRight, CalendarPlus, AlertTriangle,
   Info, Paperclip, X, Image as ImageIcon, RotateCcw, MoreVertical, Pencil, Check,
+  Bell, BellOff,
 } from "lucide-react";
 import { AudioRecorder } from "@/components/atendimento/AudioRecorder";
 import { MessageStatusIcon } from "@/components/atendimento/MessageStatusIcon";
