@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -22,6 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Loader2,
   Edit,
@@ -33,11 +40,20 @@ import {
   Plus,
   Users,
   TrendingUp,
+  MoreHorizontal,
+  Eye,
+  Copy,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { format, parseISO, getMonth, getYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
+import { PagamentoDetailDrawer, StatusGeralBadge } from "@/components/pagamentos/PagamentoDetailDrawer";
+import {
+  calcularStatusGeral,
+  getProximoVencimento,
+  getStatusGeralOrder,
+} from "@/lib/pagamentoUtils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -106,12 +122,29 @@ async function fetchPagamentosData() {
   if (maesResult.error) throw maesResult.error;
   if (pagamentosResult.error) throw pagamentosResult.error;
 
-  const maesData = maesResult.data || [];
+  const maesAprovadas = maesResult.data || [];
   const pagamentosData = pagamentosResult.data || [];
+
+  // Also fetch ALL mães referenced by pagamentos (regardless of status)
+  const allMaeIds = [...new Set(pagamentosData.map((p) => p.mae_id))];
+  let allMaesMap = new Map<string, { id: string; nome_mae: string; cpf: string; user_id: string }>();
+  
+  // Add approved maes to map
+  maesAprovadas.forEach((m) => allMaesMap.set(m.id, m));
+  
+  // Fetch any missing mães (non-Aprovada)
+  const missingMaeIds = allMaeIds.filter((id) => !allMaesMap.has(id));
+  if (missingMaeIds.length > 0) {
+    const { data: extraMaes } = await supabase
+      .from("mae_processo")
+      .select("id, nome_mae, cpf, user_id")
+      .in("id", missingMaeIds);
+    extraMaes?.forEach((m) => allMaesMap.set(m.id, m));
+  }
 
   if (pagamentosData.length === 0) {
     // No payments - return early with just the approved mothers
-    const maesComStatus: MaeAprovada[] = maesData.map((mae) => ({
+    const maesComStatus: MaeAprovada[] = maesAprovadas.map((mae) => ({
       id: mae.id,
       nome_mae: mae.nome_mae,
       cpf: mae.cpf,
@@ -134,7 +167,6 @@ async function fetchPagamentosData() {
     .order("numero_parcela", { ascending: true });
 
   // Create lookup maps
-  const maeMap = new Map(maesData.map((m) => [m.id, m]));
   const parcelasMap = new Map<string, typeof todasParcelas>();
 
   (todasParcelas || []).forEach((p) => {
@@ -146,7 +178,7 @@ async function fetchPagamentosData() {
 
   // Build pagamentos completos
   const pagamentosCompletos: PagamentoComMae[] = pagamentosData.map((pag) => {
-    const mae = maeMap.get(pag.mae_id);
+    const mae = allMaesMap.get(pag.mae_id);
     const parcelas = parcelasMap.get(pag.id) || [];
 
     return {
@@ -180,7 +212,7 @@ async function fetchPagamentosData() {
   });
 
   // Build maes aprovadas list with payment status
-  const maesComStatus: MaeAprovada[] = maesData.map((mae) => {
+  const maesComStatus: MaeAprovada[] = maesAprovadas.map((mae) => {
     const paymentInfo = maePaymentMap.get(mae.id);
     const parcelas = paymentInfo?.parcelas || [];
 
@@ -216,6 +248,8 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
   const [editingPagamentoId, setEditingPagamentoId] = useState<string | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pagamentoToDelete, setPagamentoToDelete] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedPagamentoForDrawer, setSelectedPagamentoForDrawer] = useState<PagamentoComMae | null>(null);
 
   // Filtro de mês/ano para "Recebido"
   const currentDate = new Date();
@@ -322,7 +356,12 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
       );
     }
 
-    return filtered;
+    // Sort by status priority: vínculo pendente > inadimplente > pendente > pago
+    return [...filtered].sort((a, b) => {
+      const statusA = calcularStatusGeral(a.mae_nome, a.parcelas);
+      const statusB = calcularStatusGeral(b.mae_nome, b.parcelas);
+      return getStatusGeralOrder(statusA) - getStatusGeralOrder(statusB);
+    });
   }, [userFilteredPagamentos, searchQuery]);
 
   const filteredMaesAprovadas = useMemo(() => {
@@ -648,19 +687,18 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
                 <TableHeader>
                   <TableRow>
                     <TableHead>Mãe</TableHead>
-                    <TableHead>CPF</TableHead>
                     <TableHead>Tipo</TableHead>
-                    <TableHead>Parcelas</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Data Pagamento</TableHead>
+                    <TableHead>Progresso</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead>Próx. Vencimento</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-[100px]">Ações</TableHead>
+                    <TableHead className="w-[60px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPagamentos.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         Nenhum pagamento encontrado
                       </TableCell>
                     </TableRow>
@@ -668,77 +706,85 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
                     filteredPagamentos.map((pag) => {
                       const parcelasPagas = pag.parcelas.filter((p) => p.status === "pago").length;
                       const totalParcelas = pag.parcelas.length;
-                      const parcelasRestantes = totalParcelas - parcelasPagas;
+                      const progresso = totalParcelas > 0 ? (parcelasPagas / totalParcelas) * 100 : 0;
+                      const statusGeral = calcularStatusGeral(pag.mae_nome, pag.parcelas);
+                      const proximoVenc = getProximoVencimento(pag.parcelas);
 
                       return (
-                        <TableRow key={pag.id}>
-                          <TableCell className="font-medium">{pag.mae_nome}</TableCell>
-                          <TableCell className="font-mono text-sm">{formatCpf(pag.mae_cpf)}</TableCell>
+                        <TableRow
+                          key={pag.id}
+                          className="cursor-pointer"
+                          onClick={() => {
+                            setSelectedPagamentoForDrawer(pag);
+                            setDrawerOpen(true);
+                          }}
+                        >
                           <TableCell>
-                            <Badge variant="outline">
-                              {pag.tipo_pagamento === "a_vista" ? "Mãe Única" : `Mãe Parcelada (${pag.total_parcelas}x)`}
+                            <div>
+                              <div className="font-medium">{pag.mae_nome}</div>
+                              <div className="flex items-center gap-1">
+                                <span className="font-mono text-xs text-muted-foreground">
+                                  {pag.mae_cpf ? formatCpf(pag.mae_cpf) : "—"}
+                                </span>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {pag.tipo_pagamento === "a_vista" ? "À Vista" : "Parcelado"}
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{parcelasPagas}/{totalParcelas}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {parcelasRestantes > 0 ? `${parcelasRestantes} restante${parcelasRestantes > 1 ? "s" : ""}` : "Completo"}
-                              </span>
+                            <div className="flex items-center gap-2 min-w-[80px]">
+                              <span className="text-sm font-medium whitespace-nowrap">{parcelasPagas}/{totalParcelas}</span>
+                              <Progress value={progresso} className="h-1.5 w-16" />
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              {pag.parcelas.map((p) => (
-                                <div key={p.id} className="flex items-center gap-2 text-sm">
-                                  <span className="text-muted-foreground">{p.numero_parcela}ª:</span>
-                                  <span className="font-medium">{p.valor ? formatCurrency(p.valor) : "-"}</span>
-                                </div>
-                              ))}
-                              {pag.valor_total && (
-                                <div className="border-t pt-1 mt-1">
-                                  <span className="text-xs font-semibold">Total: {formatCurrency(pag.valor_total)}</span>
-                                </div>
-                              )}
-                            </div>
+                          <TableCell className="text-right font-medium">
+                            {pag.valor_total ? formatCurrency(pag.valor_total) : "—"}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {proximoVenc ? formatDate(proximoVenc) : "—"}
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-col gap-1">
-                              {pag.parcelas.map((p) => (
-                                <div key={p.id} className="flex items-center gap-2 text-sm">
-                                  <span className="text-muted-foreground">{p.numero_parcela}ª:</span>
-                                  <span>{formatDate(p.data_pagamento)}</span>
-                                </div>
-                              ))}
-                            </div>
+                            <StatusGeralBadge status={statusGeral} />
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-col gap-1">
-                              {pag.parcelas.map((p) => (
-                                <div key={p.id}>{getStatusBadge(p.status)}</div>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(pag)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setPagamentoToDelete(pag.id);
-                                  setDeleteDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPagamentoForDrawer(pag);
+                                  setDrawerOpen(true);
+                                }}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Ver detalhes
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(pag);
+                                }}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPagamentoToDelete(pag.id);
+                                    setDeleteDialogOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       );
@@ -767,6 +813,13 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
           existingPagamentoId={editingPagamentoId}
         />
       )}
+
+      <PagamentoDetailDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        pagamento={selectedPagamentoForDrawer}
+        onUpdated={refetch}
+      />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
