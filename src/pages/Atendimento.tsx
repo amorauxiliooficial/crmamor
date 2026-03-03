@@ -5,7 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { useDebouncedCallback } from "use-debounce";
-import { useWaConversations, useWaMessages, useSendWhatsApp, useRetryWhatsApp, useMarkConversationRead, useUpdateConversationStatus, type WaConversation } from "@/hooks/useWhatsApp";
+import { useQuery } from "@tanstack/react-query";
+import { useWaConversations, useWaMessages, useSendWhatsApp, useRetryWhatsApp, useMarkConversationRead, useUpdateConversationStatus, useEditMessage, type WaConversation } from "@/hooks/useWhatsApp";
 import { respostasRapidas } from "@/data/respostasRapidas";
 import { InboxSidebar } from "@/components/atendimento/InboxSidebar";
 import { ChatPanel } from "@/components/atendimento/ChatPanel";
@@ -60,6 +61,26 @@ export default function Atendimento() {
   const retryWhatsApp = useRetryWhatsApp();
   const markRead = useMarkConversationRead();
   const updateStatus = useUpdateConversationStatus();
+  const editMessage = useEditMessage();
+
+  // Fetch all profiles for agent name mapping
+  const { data: profiles } = useQuery({
+    queryKey: ["profiles_all"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("id, full_name");
+      if (error) throw error;
+      return data as { id: string; full_name: string | null }[];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const profileMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (profiles ?? []).forEach((p) => {
+      if (p.full_name) map.set(p.id, p.full_name);
+    });
+    return map;
+  }, [profiles]);
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
