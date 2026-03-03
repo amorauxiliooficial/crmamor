@@ -231,21 +231,17 @@ export default function Atendimento() {
       assumeConversation.mutate(target, {
         onSuccess: () => {
           toast({ title: "Conversa assumida ✅" });
+          createEvent.mutate({ conversation_id: target, event_type: "assumed", to_agent_id: user?.id });
           recordAssignment.mutate({
             conversation_id: target,
             from_user_id: null,
             to_user_id: user?.id,
             reason: "Conversa assumida manualmente",
           });
-          addEvent({
-            conversation_id: target,
-            event_type: "assignment_changed",
-            title: "Atendente assumiu a conversa",
-          });
         },
       });
     },
-    [selectedId, toast, recordAssignment, addEvent, user, assumeConversation]
+    [selectedId, toast, recordAssignment, user, assumeConversation, createEvent]
   );
 
   const handleTransfer = useCallback(
@@ -257,10 +253,12 @@ export default function Atendimento() {
           onSuccess: () => {
             toast({ title: "Atendimento transferido ✅" });
             setTransferDialogOpen(false);
-            addEvent({
+            createEvent.mutate({
               conversation_id: selectedId,
-              event_type: "assignment_changed",
-              title: "Atendimento transferido",
+              event_type: "transfer",
+              from_agent_id: conversa?.assignedAgentId,
+              to_agent_id: toAgentId,
+              meta: reason ? { reason } : {},
             });
           },
           onError: () => {
@@ -269,7 +267,7 @@ export default function Atendimento() {
         }
       );
     },
-    [selectedId, toast, transferConversation, addEvent]
+    [selectedId, toast, transferConversation, createEvent, conversa]
   );
 
   const handlePendente = useCallback(
