@@ -148,6 +148,7 @@ export default function Atendimento() {
   const [showContextDrawer, setShowContextDrawer] = useState(false);
   const [mobileCrmDrawerOpen, setMobileCrmDrawerOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("conversas");
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
 
   const debouncedSetSearch = useDebouncedCallback((value: string) => {
     setDebouncedSearch(value);
@@ -221,20 +222,48 @@ export default function Atendimento() {
     (id?: string) => {
       const target = id || selectedId;
       if (!target) return;
-      toast({ title: "Conversa assumida" });
-      recordAssignment.mutate({
-        conversation_id: target,
-        from_user_id: null,
-        to_user_id: user?.id,
-        reason: "Conversa assumida manualmente",
-      });
-      addEvent({
-        conversation_id: target,
-        event_type: "assignment_changed",
-        title: "Atendente assumiu a conversa",
+      assumeConversation.mutate(target, {
+        onSuccess: () => {
+          toast({ title: "Conversa assumida ✅" });
+          recordAssignment.mutate({
+            conversation_id: target,
+            from_user_id: null,
+            to_user_id: user?.id,
+            reason: "Conversa assumida manualmente",
+          });
+          addEvent({
+            conversation_id: target,
+            event_type: "assignment_changed",
+            title: "Atendente assumiu a conversa",
+          });
+        },
       });
     },
-    [selectedId, toast, recordAssignment, addEvent, user]
+    [selectedId, toast, recordAssignment, addEvent, user, assumeConversation]
+  );
+
+  const handleTransfer = useCallback(
+    (toAgentId: string, reason?: string) => {
+      if (!selectedId) return;
+      transferConversation.mutate(
+        { conversationId: selectedId, toAgentId, reason },
+        {
+          onSuccess: () => {
+            toast({ title: "Atendimento transferido ✅" });
+            setTransferDialogOpen(false);
+            addEvent({
+              conversation_id: selectedId,
+              event_type: "assignment_changed",
+              title: "Atendimento transferido",
+            });
+          },
+          onError: () => {
+            toast({ title: "Erro ao transferir", variant: "destructive" });
+          },
+        }
+      );
+    },
+    [selectedId, toast, transferConversation, addEvent]
   );
 
   const handlePendente = useCallback(
@@ -250,10 +279,11 @@ export default function Atendimento() {
     (id?: string) => {
       const target = id || selectedId;
       if (!target) return;
-      updateStatus.mutate({ id: target, status: "closed" });
-      toast({ title: "Atendimento finalizado" });
+      closeConversation.mutate({ conversationId: target }, {
+        onSuccess: () => toast({ title: "Atendimento finalizado ✅" }),
+      });
     },
-    [selectedId, toast, updateStatus]
+    [selectedId, toast, closeConversation]
   );
 
   const toggleEtiqueta = useCallback(
