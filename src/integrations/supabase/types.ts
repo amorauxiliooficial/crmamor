@@ -992,6 +992,7 @@ export type Database = {
           total_parcelas: number | null
           updated_at: string
           user_id: string
+          valor_a_receber: number | null
           valor_total: number | null
         }
         Insert: {
@@ -1003,6 +1004,7 @@ export type Database = {
           total_parcelas?: number | null
           updated_at?: string
           user_id: string
+          valor_a_receber?: number | null
           valor_total?: number | null
         }
         Update: {
@@ -1014,6 +1016,7 @@ export type Database = {
           total_parcelas?: number | null
           updated_at?: string
           user_id?: string
+          valor_a_receber?: number | null
           valor_total?: number | null
         }
         Relationships: [
