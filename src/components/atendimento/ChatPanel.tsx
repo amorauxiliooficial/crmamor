@@ -173,6 +173,8 @@ interface ChatPanelProps {
   showContext?: boolean;
   onToggleContext?: () => void;
   isLoadingMessages?: boolean;
+  currentUserId?: string | null;
+  onEditMessage?: (messageId: string, newBody: string) => void;
 }
 
 export function ChatPanel({
