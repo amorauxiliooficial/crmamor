@@ -278,6 +278,7 @@ interface ChatPanelProps {
   onAssume: () => void;
   onPendente: () => void;
   onFinalizar: () => void;
+  onReopen?: () => void;
   onTransfer?: () => void;
   onToggleEtiqueta: (e: string) => void;
   respostas: RespostaRapida[];
@@ -289,6 +290,10 @@ interface ChatPanelProps {
   soundEnabled?: boolean;
   autoplayBlocked?: boolean;
   onToggleSound?: () => void;
+  connectionStatus?: ConnectionStatus;
+  onReconnect?: () => void;
+  conversationEvents?: ConversationEvent[];
+  profileMap?: Map<string, string>;
 }
 
 export function ChatPanel({
