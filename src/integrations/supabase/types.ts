@@ -1767,6 +1767,7 @@ export type Database = {
         | "Recurso / Judicial"
         | "Processo Encerrado"
         | "Inadimplência"
+        | "📄 Rescisão de Contrato"
       status_transacao: "pendente" | "pago" | "cancelado" | "atrasado"
       task_category: "bug" | "melhoria" | "nova_funcionalidade" | "ajuste"
       task_priority: "baixa" | "media" | "alta" | "urgente"
@@ -1951,6 +1952,7 @@ export const Constants = {
         "Recurso / Judicial",
         "Processo Encerrado",
         "Inadimplência",
+        "📄 Rescisão de Contrato",
       ],
       status_transacao: ["pendente", "pago", "cancelado", "atrasado"],
       task_category: ["bug", "melhoria", "nova_funcionalidade", "ajuste"],
