@@ -142,12 +142,9 @@ async function fetchPagamentosData() {
     extraMaes?.forEach((m) => allMaesMap.set(m.id, m));
   }
 
-  const maesData = maesResult.data || [];
-  const pagamentosData = pagamentosResult.data || [];
-
   if (pagamentosData.length === 0) {
     // No payments - return early with just the approved mothers
-    const maesComStatus: MaeAprovada[] = maesData.map((mae) => ({
+    const maesComStatus: MaeAprovada[] = maesAprovadas.map((mae) => ({
       id: mae.id,
       nome_mae: mae.nome_mae,
       cpf: mae.cpf,
@@ -170,7 +167,6 @@ async function fetchPagamentosData() {
     .order("numero_parcela", { ascending: true });
 
   // Create lookup maps
-  const maeMap = new Map(maesData.map((m) => [m.id, m]));
   const parcelasMap = new Map<string, typeof todasParcelas>();
 
   (todasParcelas || []).forEach((p) => {
