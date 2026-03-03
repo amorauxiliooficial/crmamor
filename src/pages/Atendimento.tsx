@@ -20,12 +20,13 @@ import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import type { Conversa, Mensagem } from "@/data/atendimentoMock";
 
 // Convert WA data to existing UI types
-function waToConversa(wa: WaConversation): Conversa {
+function waToConversa(wa: WaConversation, profileMap: Map<string, string>): Conversa {
   const statusMap: Record<string, "Aberto" | "Pendente" | "Fechado"> = {
     open: "Aberto",
     pending: "Pendente",
     closed: "Fechado",
   };
+  const assignedName = wa.assigned_to ? profileMap.get(wa.assigned_to) ?? null : null;
   return {
     id: wa.id,
     nome: wa.wa_name,
@@ -33,7 +34,7 @@ function waToConversa(wa: WaConversation): Conversa {
     ultimaMensagem: wa.last_message_preview ?? "",
     horario: new Date(wa.last_message_at),
     status: statusMap[wa.status] ?? "Aberto",
-    atendente: wa.assigned_to ? "Atendente" : null,
+    atendente: assignedName ?? (wa.assigned_to ? "Atendente" : null),
     naoLidas: wa.unread_count,
     etiquetas: wa.labels ?? [],
     prioridade: "normal" as const,
