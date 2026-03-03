@@ -345,8 +345,9 @@ export function InboxSidebar({
       if (statusFilter === "nao_lidas" && c.naoLidas === 0) return false;
       if (statusFilter && statusFilter !== "nao_lidas" && c.status !== statusFilter) return false;
       if (chipFilter === "meus" && c.atendente !== "Você") return false;
-      if (chipFilter === "sem_atendente" && c.atendente !== null) return false;
+      if (chipFilter === "sem_responsavel" && c.queueStatus !== "sem_responsavel") return false;
       if (chipFilter === "urgentes" && !c.etiquetas.includes("Urgente")) return false;
+      if (chipFilter === "sla_estourando" && !((c.slaMinutos ?? 0) > 30 && c.status !== "Fechado")) return false;
       if (searchTerm) {
         const s = searchTerm.toLowerCase();
         if (
