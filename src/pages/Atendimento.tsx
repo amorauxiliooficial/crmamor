@@ -116,8 +116,8 @@ export default function Atendimento() {
 
   // Convert WA conversations to UI format
   const conversas: Conversa[] = useMemo(() => {
-    return (waConversations ?? []).map(waToConversa);
-  }, [waConversations]);
+    return (waConversations ?? []).map((wa) => waToConversa(wa, profileMap));
+  }, [waConversations, profileMap]);
 
   // Convert WA messages to UI format
   const msgs: Mensagem[] = useMemo(() => {
@@ -136,8 +136,12 @@ export default function Atendimento() {
       errorCode: (m as any).error_code ?? null,
       errorMessage: (m as any).error_message ?? null,
       metaMessageId: m.meta_message_id,
+      sentByAgentId: m.sent_by ?? null,
+      sentByAgentName: m.sent_by ? profileMap.get(m.sent_by) ?? null : null,
+      editedAt: (m as any).edited_at ?? null,
+      editedByAgentId: (m as any).edited_by_agent_id ?? null,
     }));
-  }, [waMessages]);
+  }, [waMessages, profileMap]);
 
   const conversa = selectedId ? conversas.find((c) => c.id === selectedId) ?? null : null;
   const selectedWa = selectedId ? (waConversations ?? []).find((c) => c.id === selectedId) : null;
