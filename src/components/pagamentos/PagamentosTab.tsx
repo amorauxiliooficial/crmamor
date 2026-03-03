@@ -356,7 +356,12 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
       );
     }
 
-    return filtered;
+    // Sort by status priority: vínculo pendente > inadimplente > pendente > pago
+    return [...filtered].sort((a, b) => {
+      const statusA = calcularStatusGeral(a.mae_nome, a.parcelas);
+      const statusB = calcularStatusGeral(b.mae_nome, b.parcelas);
+      return getStatusGeralOrder(statusA) - getStatusGeralOrder(statusB);
+    });
   }, [userFilteredPagamentos, searchQuery]);
 
   const filteredMaesAprovadas = useMemo(() => {
