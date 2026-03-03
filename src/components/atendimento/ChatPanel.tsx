@@ -4,7 +4,7 @@ import {
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
   Loader2, Zap, Brain, Database, ArrowRight, CalendarPlus, AlertTriangle,
   Info, Paperclip, X, Image as ImageIcon, RotateCcw, MoreVertical, Pencil, Check,
-  Bell, BellOff, ArrowRightLeft,
+  Bell, BellOff, ArrowRightLeft, RefreshCw, Wifi, WifiOff, RotateCw,
 } from "lucide-react";
 import { AudioRecorder } from "@/components/atendimento/AudioRecorder";
 import { MessageStatusIcon } from "@/components/atendimento/MessageStatusIcon";
@@ -25,6 +25,8 @@ import { smartTemplates, type SmartTemplate } from "@/data/smartTemplates";
 import { MediaBubble } from "@/components/atendimento/MediaBubble";
 import type { Conversa, Mensagem } from "@/data/atendimentoMock";
 import type { RespostaRapida } from "@/data/respostasRapidas";
+import type { ConversationEvent } from "@/hooks/useConversationEvents";
+import type { ConnectionStatus } from "@/hooks/useRealtimeConnection";
 
 const STATUS_COLORS: Record<string, string> = {
   Aberto: "bg-emerald-500",
