@@ -3,7 +3,7 @@ import {
   Send, ArrowLeft, User, UserCheck, Clock, CheckCircle, Tag,
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
   Loader2, Zap, Brain, Database, ArrowRight, CalendarPlus, AlertTriangle,
-  Info, Paperclip, X, Image as ImageIcon, RotateCcw,
+  Info, Paperclip, X, Image as ImageIcon, RotateCcw, MoreVertical, Pencil, Check,
 } from "lucide-react";
 import { AudioRecorder } from "@/components/atendimento/AudioRecorder";
 import { MessageStatusIcon } from "@/components/atendimento/MessageStatusIcon";
