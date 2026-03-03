@@ -340,3 +340,23 @@ export function useCloseConversation() {
     },
   });
 }
+
+export function useReopenConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (conversationId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      const { error } = await supabase
+        .from("wa_conversations")
+        .update({ status: "open", assigned_to: user.id } as any)
+        .eq("id", conversationId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["wa_conversations"] });
+    },
+  });
+}
