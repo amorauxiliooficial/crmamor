@@ -519,7 +519,6 @@ export function ChatPanel({
                 </button>
               )}
             </span>
-            )}
           </div>
         </div>
 
