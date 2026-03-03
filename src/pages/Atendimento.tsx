@@ -64,7 +64,28 @@ export default function Atendimento() {
   const markRead = useMarkConversationRead();
   const updateStatus = useUpdateConversationStatus();
   const editMessage = useEditMessage();
+  const { soundEnabled, autoplayBlocked, toggleSound, playNotification } = useInboundNotification();
 
+  // Realtime listener for inbound messages – plays notification sound
+  useEffect(() => {
+    const channel = supabase
+      .channel("inbound_notification")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "wa_messages",
+          filter: "direction=eq.in",
+        },
+        () => {
+          playNotification();
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [playNotification]);
   // Fetch all profiles for agent name mapping
   const { data: profiles } = useQuery({
     queryKey: ["profiles_all"],
