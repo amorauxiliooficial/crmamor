@@ -1549,6 +1549,8 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           direction: string
+          edited_at: string | null
+          edited_by_agent_id: string | null
           error_code: string | null
           error_message: string | null
           id: string
@@ -1571,6 +1573,8 @@ export type Database = {
           created_at?: string
           delivered_at?: string | null
           direction: string
+          edited_at?: string | null
+          edited_by_agent_id?: string | null
           error_code?: string | null
           error_message?: string | null
           id?: string
@@ -1593,6 +1597,8 @@ export type Database = {
           created_at?: string
           delivered_at?: string | null
           direction?: string
+          edited_at?: string | null
+          edited_by_agent_id?: string | null
           error_code?: string | null
           error_message?: string | null
           id?: string

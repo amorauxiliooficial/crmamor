@@ -230,3 +230,32 @@ export function useUpdateConversationStatus() {
     },
   });
 }
+
+export function useEditMessage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ messageId, newBody, conversationId }: {
+      messageId: string;
+      newBody: string;
+      conversationId: string;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      const { error } = await supabase
+        .from("wa_messages")
+        .update({
+          body: newBody,
+          edited_at: new Date().toISOString(),
+          edited_by_agent_id: user.id,
+        } as any)
+        .eq("id", messageId);
+      if (error) throw error;
+      return { conversationId };
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["wa_messages", variables.conversationId] });
+    },
+  });
+}

@@ -5,7 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { useDebouncedCallback } from "use-debounce";
-import { useWaConversations, useWaMessages, useSendWhatsApp, useRetryWhatsApp, useMarkConversationRead, useUpdateConversationStatus, type WaConversation } from "@/hooks/useWhatsApp";
+import { useQuery } from "@tanstack/react-query";
+import { useWaConversations, useWaMessages, useSendWhatsApp, useRetryWhatsApp, useMarkConversationRead, useUpdateConversationStatus, useEditMessage, type WaConversation } from "@/hooks/useWhatsApp";
 import { respostasRapidas } from "@/data/respostasRapidas";
 import { InboxSidebar } from "@/components/atendimento/InboxSidebar";
 import { ChatPanel } from "@/components/atendimento/ChatPanel";
@@ -19,12 +20,13 @@ import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import type { Conversa, Mensagem } from "@/data/atendimentoMock";
 
 // Convert WA data to existing UI types
-function waToConversa(wa: WaConversation): Conversa {
+function waToConversa(wa: WaConversation, profileMap: Map<string, string>): Conversa {
   const statusMap: Record<string, "Aberto" | "Pendente" | "Fechado"> = {
     open: "Aberto",
     pending: "Pendente",
     closed: "Fechado",
   };
+  const assignedName = wa.assigned_to ? profileMap.get(wa.assigned_to) ?? null : null;
   return {
     id: wa.id,
     nome: wa.wa_name,
@@ -32,7 +34,7 @@ function waToConversa(wa: WaConversation): Conversa {
     ultimaMensagem: wa.last_message_preview ?? "",
     horario: new Date(wa.last_message_at),
     status: statusMap[wa.status] ?? "Aberto",
-    atendente: wa.assigned_to ? "Atendente" : null,
+    atendente: assignedName ?? (wa.assigned_to ? "Atendente" : null),
     naoLidas: wa.unread_count,
     etiquetas: wa.labels ?? [],
     prioridade: "normal" as const,
@@ -60,6 +62,26 @@ export default function Atendimento() {
   const retryWhatsApp = useRetryWhatsApp();
   const markRead = useMarkConversationRead();
   const updateStatus = useUpdateConversationStatus();
+  const editMessage = useEditMessage();
+
+  // Fetch all profiles for agent name mapping
+  const { data: profiles } = useQuery({
+    queryKey: ["profiles_all"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("id, full_name");
+      if (error) throw error;
+      return data as { id: string; full_name: string | null }[];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const profileMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (profiles ?? []).forEach((p) => {
+      if (p.full_name) map.set(p.id, p.full_name);
+    });
+    return map;
+  }, [profiles]);
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -94,8 +116,8 @@ export default function Atendimento() {
 
   // Convert WA conversations to UI format
   const conversas: Conversa[] = useMemo(() => {
-    return (waConversations ?? []).map(waToConversa);
-  }, [waConversations]);
+    return (waConversations ?? []).map((wa) => waToConversa(wa, profileMap));
+  }, [waConversations, profileMap]);
 
   // Convert WA messages to UI format
   const msgs: Mensagem[] = useMemo(() => {
@@ -114,8 +136,12 @@ export default function Atendimento() {
       errorCode: (m as any).error_code ?? null,
       errorMessage: (m as any).error_message ?? null,
       metaMessageId: m.meta_message_id,
+      sentByAgentId: m.sent_by ?? null,
+      sentByAgentName: m.sent_by ? profileMap.get(m.sent_by) ?? null : null,
+      editedAt: (m as any).edited_at ?? null,
+      editedByAgentId: (m as any).edited_by_agent_id ?? null,
     }));
-  }, [waMessages]);
+  }, [waMessages, profileMap]);
 
   const conversa = selectedId ? conversas.find((c) => c.id === selectedId) ?? null : null;
   const selectedWa = selectedId ? (waConversations ?? []).find((c) => c.id === selectedId) : null;
@@ -316,6 +342,14 @@ export default function Atendimento() {
                 respostas={respostasRapidas}
                 onToggleContext={() => setMobileCrmDrawerOpen(true)}
                 isLoadingMessages={loadingMsgs}
+                currentUserId={user?.id ?? null}
+                onEditMessage={(messageId, newBody) => {
+                  if (!selectedId) return;
+                  editMessage.mutate({ messageId, newBody, conversationId: selectedId }, {
+                    onSuccess: () => toast({ title: "Mensagem editada ✅" }),
+                    onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
+                  });
+                }}
               />
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
@@ -437,6 +471,14 @@ export default function Atendimento() {
           }
         }}
         isLoadingMessages={loadingMsgs}
+        currentUserId={user?.id ?? null}
+        onEditMessage={(messageId, newBody) => {
+          if (!selectedId) return;
+          editMessage.mutate({ messageId, newBody, conversationId: selectedId }, {
+            onSuccess: () => toast({ title: "Mensagem editada ✅" }),
+            onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
+          });
+        }}
       />
 
       {!isTablet && showContext && (

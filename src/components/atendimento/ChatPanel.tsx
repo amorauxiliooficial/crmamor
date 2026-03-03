@@ -3,7 +3,7 @@ import {
   Send, ArrowLeft, User, UserCheck, Clock, CheckCircle, Tag,
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
   Loader2, Zap, Brain, Database, ArrowRight, CalendarPlus, AlertTriangle,
-  Info, Paperclip, X, Image as ImageIcon, RotateCcw,
+  Info, Paperclip, X, Image as ImageIcon, RotateCcw, MoreVertical, Pencil, Check,
 } from "lucide-react";
 import { AudioRecorder } from "@/components/atendimento/AudioRecorder";
 import { MessageStatusIcon } from "@/components/atendimento/MessageStatusIcon";
@@ -69,63 +69,163 @@ function MessageSkeleton() {
   );
 }
 
+// Edit time limit in minutes
+const EDIT_TIME_LIMIT_MIN = 5;
+
 // Memoized message bubble to prevent re-renders when typing
 const MessageBubble = memo(function MessageBubble({
   message: m,
   isGrouped,
   showTime,
   onRetry,
+  currentUserId,
+  onEditMessage,
 }: {
   message: Mensagem;
   isGrouped: boolean;
   showTime: boolean;
   onRetry?: (m: Mensagem) => void;
+  currentUserId?: string | null;
+  onEditMessage?: (messageId: string, newBody: string) => void;
 }) {
   const isMe = m.de === "atendente";
   const isMedia = m.msgType && m.msgType !== "text";
   const isFailed = isMe && m.status === "failed";
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(m.texto);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const canEdit = isMe
+    && m.sentByAgentId === currentUserId
+    && m.msgType === "text"
+    && !isFailed
+    && (Date.now() - m.horario.getTime()) < EDIT_TIME_LIMIT_MIN * 60 * 1000;
+
+  const handleSaveEdit = () => {
+    if (editText.trim() && editText.trim() !== m.texto && onEditMessage) {
+      onEditMessage(m.id, editText.trim());
+    }
+    setEditing(false);
+  };
 
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 overflow-hidden",
+        "flex w-full min-w-0 overflow-hidden group",
         isMe ? "justify-end" : "justify-start",
         isGrouped ? "mt-0.5" : "mt-2"
       )}
     >
       <div className={cn("max-w-[85%] sm:max-w-[75%] overflow-hidden min-w-0", isMe ? "items-end" : "items-start")}>
-        <div
-          className={cn(
-            "py-2.5 overflow-hidden break-words min-w-0",
-            isMedia ? "px-1" : "px-3.5",
-            isMe
-              ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
-              : "bg-card border border-border/20 rounded-2xl rounded-bl-sm",
-            isFailed && "ring-1 ring-destructive/30"
-          )}
-        >
-          {isMedia ? (
-            <MediaBubble
-              msgType={m.msgType!}
-              mediaUrl={m.mediaUrl ?? null}
-              mediaMime={m.mediaMime ?? null}
-              mediaFilename={m.mediaFilename ?? null}
-              mediaSize={m.mediaSize ?? null}
-              mediaDuration={m.mediaDuration ?? null}
-              caption={m.texto !== `[${m.msgType}]` ? m.texto : null}
-              isMe={isMe}
+        {/* Agent name for outbound */}
+        {isMe && m.sentByAgentName && !isGrouped && (
+          <p className="text-[10px] text-primary/50 font-medium mb-0.5 text-right px-1.5">
+            {m.sentByAgentName}
+          </p>
+        )}
+
+        {editing ? (
+          <div className="flex flex-col gap-1.5 w-full min-w-[200px]">
+            <textarea
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              className="text-[15px] leading-relaxed p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-foreground resize-none min-h-[44px] focus:outline-none focus:ring-1 focus:ring-primary/30"
+              rows={2}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); }
+                if (e.key === "Escape") { setEditing(false); setEditText(m.texto); }
+              }}
             />
-          ) : (
-            <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere px-0.5" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
-              {/^\[.+\]$/.test(m.texto.trim()) ? "" : m.texto}
-            </p>
-          )}
-        </div>
-        {/* Status + timestamp row */}
+            <div className="flex gap-1 justify-end">
+              <button
+                onClick={() => { setEditing(false); setEditText(m.texto); }}
+                className="text-[10px] px-2.5 py-1 rounded-lg text-muted-foreground hover:bg-muted/30 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={!editText.trim() || editText.trim() === m.texto}
+                className="text-[10px] px-2.5 py-1 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="relative">
+            {/* Edit menu trigger */}
+            {canEdit && onEditMessage && (
+              <div className={cn(
+                "absolute top-0 z-10",
+                isMe ? "-left-7" : "-right-7",
+                "opacity-0 group-hover:opacity-100 transition-opacity"
+              )}>
+                <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+                  <PopoverTrigger asChild>
+                    <button className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-muted/30 text-muted-foreground/40 hover:text-muted-foreground transition-colors">
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-32 p-1" align={isMe ? "start" : "end"} side="top">
+                    <button
+                      className="w-full flex items-center gap-2 px-2.5 py-2 text-xs hover:bg-accent/30 rounded-lg transition-colors"
+                      onClick={() => { setEditing(true); setMenuOpen(false); }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" /> Editar
+                    </button>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+
+            <div
+              className={cn(
+                "py-2.5 overflow-hidden break-words min-w-0",
+                isMedia ? "px-1" : "px-3.5",
+                isMe
+                  ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
+                  : "bg-card border border-border/20 rounded-2xl rounded-bl-sm",
+                isFailed && "ring-1 ring-destructive/30"
+              )}
+            >
+              {isMedia ? (
+                <MediaBubble
+                  msgType={m.msgType!}
+                  mediaUrl={m.mediaUrl ?? null}
+                  mediaMime={m.mediaMime ?? null}
+                  mediaFilename={m.mediaFilename ?? null}
+                  mediaSize={m.mediaSize ?? null}
+                  mediaDuration={m.mediaDuration ?? null}
+                  caption={m.texto !== `[${m.msgType}]` ? m.texto : null}
+                  isMe={isMe}
+                />
+              ) : (
+                <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere px-0.5" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                  {/^\[.+\]$/.test(m.texto.trim()) ? "" : m.texto}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+        {/* Status + timestamp + edited indicator */}
         <div className={cn(
           "flex items-center gap-1 mt-0.5 px-1.5",
           isMe ? "justify-end" : ""
         )}>
+          {m.editedAt && (
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-[9px] text-muted-foreground/40 italic">editada</span>
+                </TooltipTrigger>
+                <TooltipContent className="text-xs">
+                  Editada em {new Date(m.editedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           {showTime && (
             <span className="text-[10px] text-muted-foreground/40">
               {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
@@ -173,6 +273,8 @@ interface ChatPanelProps {
   showContext?: boolean;
   onToggleContext?: () => void;
   isLoadingMessages?: boolean;
+  currentUserId?: string | null;
+  onEditMessage?: (messageId: string, newBody: string) => void;
 }
 
 export function ChatPanel({
@@ -193,6 +295,8 @@ export function ChatPanel({
   showContext,
   onToggleContext,
   isLoadingMessages = false,
+  currentUserId,
+  onEditMessage,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -538,6 +642,8 @@ export function ChatPanel({
                       isGrouped={isGrouped}
                       showTime={showTime}
                       onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
+                      currentUserId={currentUserId}
+                      onEditMessage={onEditMessage}
                     />
                   );
                 })}
