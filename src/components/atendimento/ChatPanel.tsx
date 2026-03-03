@@ -777,18 +777,36 @@ export function ChatPanel({
                   const isGrouped = isSameAuthorGroup(m, prev);
                   const showTime = shouldShowTimestamp(m, prev);
 
+                  // Find events that occurred between prev message and current
+                  const eventsBeforeThis = conversationEvents.filter((ev) => {
+                    const evTime = new Date(ev.created_at).getTime();
+                    const prevTime = prev ? prev.horario.getTime() : 0;
+                    const currTime = m.horario.getTime();
+                    return evTime > prevTime && evTime <= currTime;
+                  });
+
                   return (
-                    <MessageBubble
-                      key={m.id}
-                      message={m}
-                      isGrouped={isGrouped}
-                      showTime={showTime}
-                      onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
-                      currentUserId={currentUserId}
-                      onEditMessage={onEditMessage}
-                    />
+                    <div key={m.id}>
+                      {eventsBeforeThis.map((ev) => (
+                        <InlineEvent key={ev.id} event={ev} profileMap={profileMap} />
+                      ))}
+                      <MessageBubble
+                        message={m}
+                        isGrouped={isGrouped}
+                        showTime={showTime}
+                        onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
+                        currentUserId={currentUserId}
+                        onEditMessage={onEditMessage}
+                      />
+                    </div>
                   );
                 })}
+                {/* Events after last message */}
+                {(() => {
+                  const lastMsgTime = group.messages[group.messages.length - 1]?.horario.getTime() ?? 0;
+                  const trailingEvents = conversationEvents.filter((ev) => new Date(ev.created_at).getTime() > lastMsgTime);
+                  return trailingEvents.map((ev) => <InlineEvent key={ev.id} event={ev} profileMap={profileMap} />);
+                })()}
               </div>
             ))
           )}
