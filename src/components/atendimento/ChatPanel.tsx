@@ -32,6 +32,13 @@ const STATUS_COLORS: Record<string, string> = {
   Fechado: "bg-muted-foreground/40",
 };
 
+const QUEUE_STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  sem_responsavel: { label: "Sem responsável", color: "text-destructive" },
+  em_atendimento: { label: "Em atendimento", color: "text-emerald-600 dark:text-emerald-400" },
+  aguardando_cliente: { label: "Aguardando cliente", color: "text-amber-600 dark:text-amber-400" },
+  resolvido: { label: "Resolvido", color: "text-muted-foreground" },
+};
+
 const ETIQUETAS_OPTIONS = ["Suporte", "Financeiro", "Reclamação", "Venda", "Urgente"];
 
 const MESSAGES_PER_PAGE = 50;
@@ -464,12 +471,27 @@ export function ChatPanel({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <p className="font-semibold text-[15px] truncate">{conversa.nome ?? conversa.telefone}</p>
-            <span className={cn("h-2 w-2 rounded-full shrink-0", STATUS_COLORS[conversa.status])} />
-            <span className="text-xs text-muted-foreground/50">{conversa.status}</span>
+            {conversa.queueStatus && (
+              <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 font-medium rounded-full border-border/30", QUEUE_STATUS_LABELS[conversa.queueStatus]?.color)}>
+                {QUEUE_STATUS_LABELS[conversa.queueStatus]?.label}
+              </Badge>
+            )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {conversa.nome && <p className="text-xs text-muted-foreground/50 font-mono">{conversa.telefone}</p>}
-            {conversa.atendente && <p className="text-xs text-muted-foreground/50">• {conversa.atendente}</p>}
+            {conversa.atendente ? (
+              <p className="text-xs text-primary/60 font-medium">• com {conversa.atendente}</p>
+            ) : (
+              <p className="text-xs text-destructive/60 font-medium">• Sem responsável</p>
+            )}
+            {conversa.slaMinutos != null && conversa.status !== "Fechado" && (
+              <span className={cn(
+                "text-[11px] font-mono tabular-nums",
+                (conversa.slaMinutos ?? 0) > 30 ? "text-destructive/70" : "text-muted-foreground/40"
+              )}>
+                SLA: {conversa.slaMinutos}m
+              </span>
+            )}
           </div>
         </div>
 
