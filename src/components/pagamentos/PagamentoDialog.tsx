@@ -280,7 +280,7 @@ export function PagamentoDialog({
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Tipo de Pagamento</Label>
                 <Select value={tipoPagamento} onValueChange={handleTipoPagamentoChange}>
@@ -319,7 +319,7 @@ export function PagamentoDialog({
                 />
                 <p className="text-[10px] text-muted-foreground">Apenas para referência — não entra em cálculos.</p>
               </div>
-
+            </div>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
