@@ -687,19 +687,18 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
                 <TableHeader>
                   <TableRow>
                     <TableHead>Mãe</TableHead>
-                    <TableHead>CPF</TableHead>
                     <TableHead>Tipo</TableHead>
-                    <TableHead>Parcelas</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Data Pagamento</TableHead>
+                    <TableHead>Progresso</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead>Próx. Vencimento</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-[100px]">Ações</TableHead>
+                    <TableHead className="w-[60px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPagamentos.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         Nenhum pagamento encontrado
                       </TableCell>
                     </TableRow>
@@ -707,77 +706,85 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
                     filteredPagamentos.map((pag) => {
                       const parcelasPagas = pag.parcelas.filter((p) => p.status === "pago").length;
                       const totalParcelas = pag.parcelas.length;
-                      const parcelasRestantes = totalParcelas - parcelasPagas;
+                      const progresso = totalParcelas > 0 ? (parcelasPagas / totalParcelas) * 100 : 0;
+                      const statusGeral = calcularStatusGeral(pag.mae_nome, pag.parcelas);
+                      const proximoVenc = getProximoVencimento(pag.parcelas);
 
                       return (
-                        <TableRow key={pag.id}>
-                          <TableCell className="font-medium">{pag.mae_nome}</TableCell>
-                          <TableCell className="font-mono text-sm">{formatCpf(pag.mae_cpf)}</TableCell>
+                        <TableRow
+                          key={pag.id}
+                          className="cursor-pointer"
+                          onClick={() => {
+                            setSelectedPagamentoForDrawer(pag);
+                            setDrawerOpen(true);
+                          }}
+                        >
                           <TableCell>
-                            <Badge variant="outline">
-                              {pag.tipo_pagamento === "a_vista" ? "Mãe Única" : `Mãe Parcelada (${pag.total_parcelas}x)`}
+                            <div>
+                              <div className="font-medium">{pag.mae_nome}</div>
+                              <div className="flex items-center gap-1">
+                                <span className="font-mono text-xs text-muted-foreground">
+                                  {pag.mae_cpf ? formatCpf(pag.mae_cpf) : "—"}
+                                </span>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {pag.tipo_pagamento === "a_vista" ? "À Vista" : "Parcelado"}
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{parcelasPagas}/{totalParcelas}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {parcelasRestantes > 0 ? `${parcelasRestantes} restante${parcelasRestantes > 1 ? "s" : ""}` : "Completo"}
-                              </span>
+                            <div className="flex items-center gap-2 min-w-[80px]">
+                              <span className="text-sm font-medium whitespace-nowrap">{parcelasPagas}/{totalParcelas}</span>
+                              <Progress value={progresso} className="h-1.5 w-16" />
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              {pag.parcelas.map((p) => (
-                                <div key={p.id} className="flex items-center gap-2 text-sm">
-                                  <span className="text-muted-foreground">{p.numero_parcela}ª:</span>
-                                  <span className="font-medium">{p.valor ? formatCurrency(p.valor) : "-"}</span>
-                                </div>
-                              ))}
-                              {pag.valor_total && (
-                                <div className="border-t pt-1 mt-1">
-                                  <span className="text-xs font-semibold">Total: {formatCurrency(pag.valor_total)}</span>
-                                </div>
-                              )}
-                            </div>
+                          <TableCell className="text-right font-medium">
+                            {pag.valor_total ? formatCurrency(pag.valor_total) : "—"}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {proximoVenc ? formatDate(proximoVenc) : "—"}
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-col gap-1">
-                              {pag.parcelas.map((p) => (
-                                <div key={p.id} className="flex items-center gap-2 text-sm">
-                                  <span className="text-muted-foreground">{p.numero_parcela}ª:</span>
-                                  <span>{formatDate(p.data_pagamento)}</span>
-                                </div>
-                              ))}
-                            </div>
+                            <StatusGeralBadge status={statusGeral} />
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-col gap-1">
-                              {pag.parcelas.map((p) => (
-                                <div key={p.id}>{getStatusBadge(p.status)}</div>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(pag)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setPagamentoToDelete(pag.id);
-                                  setDeleteDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPagamentoForDrawer(pag);
+                                  setDrawerOpen(true);
+                                }}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Ver detalhes
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(pag);
+                                }}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPagamentoToDelete(pag.id);
+                                    setDeleteDialogOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       );
@@ -806,6 +813,13 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
           existingPagamentoId={editingPagamentoId}
         />
       )}
+
+      <PagamentoDetailDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        pagamento={selectedPagamentoForDrawer}
+        onUpdated={refetch}
+      />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
