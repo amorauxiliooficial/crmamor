@@ -71,7 +71,7 @@ function MessageSkeleton() {
 }
 
 // Edit time limit in minutes
-const EDIT_TIME_LIMIT_MIN = 5;
+const EDIT_TIME_LIMIT_MIN = 15;
 
 // Memoized message bubble to prevent re-renders when typing
 const MessageBubble = memo(function MessageBubble({
