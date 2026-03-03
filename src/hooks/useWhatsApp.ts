@@ -260,3 +260,83 @@ export function useEditMessage() {
     },
   });
 }
+
+export function useAssumeConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (conversationId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      const { error } = await supabase
+        .from("wa_conversations")
+        .update({ assigned_to: user.id, status: "open" } as any)
+        .eq("id", conversationId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["wa_conversations"] });
+    },
+  });
+}
+
+export function useTransferConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ conversationId, toAgentId, reason }: {
+      conversationId: string;
+      toAgentId: string;
+      reason?: string;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      // Get current assigned_to
+      const { data: conv } = await supabase
+        .from("wa_conversations")
+        .select("assigned_to")
+        .eq("id", conversationId)
+        .single();
+
+      // Create transfer record
+      const { error: transferErr } = await supabase
+        .from("conversation_transfers")
+        .insert({
+          conversation_id: conversationId,
+          from_agent_id: conv?.assigned_to || user.id,
+          to_agent_id: toAgentId,
+          reason: reason || null,
+        } as any);
+      if (transferErr) throw transferErr;
+
+      // Update conversation
+      const { error } = await supabase
+        .from("wa_conversations")
+        .update({ assigned_to: toAgentId } as any)
+        .eq("id", conversationId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["wa_conversations"] });
+    },
+  });
+}
+
+export function useCloseConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ conversationId, reason }: { conversationId: string; reason?: string }) => {
+      const { error } = await supabase
+        .from("wa_conversations")
+        .update({ status: "closed" } as any)
+        .eq("id", conversationId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["wa_conversations"] });
+    },
+  });
+}
