@@ -275,6 +275,9 @@ interface ChatPanelProps {
   isLoadingMessages?: boolean;
   currentUserId?: string | null;
   onEditMessage?: (messageId: string, newBody: string) => void;
+  soundEnabled?: boolean;
+  autoplayBlocked?: boolean;
+  onToggleSound?: () => void;
 }
 
 export function ChatPanel({
@@ -297,6 +300,9 @@ export function ChatPanel({
   isLoadingMessages = false,
   currentUserId,
   onEditMessage,
+  soundEnabled,
+  autoplayBlocked,
+  onToggleSound,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
