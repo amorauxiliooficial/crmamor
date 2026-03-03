@@ -28,6 +28,10 @@ export interface Mensagem {
   errorCode?: string | null;
   errorMessage?: string | null;
   metaMessageId?: string | null;
+  sentByAgentId?: string | null;
+  sentByAgentName?: string | null;
+  editedAt?: string | null;
+  editedByAgentId?: string | null;
 }
 
 export const mockConversas: Conversa[] = [
