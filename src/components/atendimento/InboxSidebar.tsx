@@ -496,9 +496,9 @@ export function InboxSidebar({
               onPendente={onPendente}
             />
             <QueueSection
-              title="Pendentes"
+              title="Sem responsável"
               icon={Hourglass}
-              iconColor="text-amber-500/70"
+              iconColor="text-destructive/70"
               conversas={smartQueue.pendentes}
               selectedId={selectedId}
               onSelect={onSelect}
