@@ -178,7 +178,7 @@ async function fetchPagamentosData() {
 
   // Build pagamentos completos
   const pagamentosCompletos: PagamentoComMae[] = pagamentosData.map((pag) => {
-    const mae = maeMap.get(pag.mae_id);
+    const mae = allMaesMap.get(pag.mae_id);
     const parcelas = parcelasMap.get(pag.id) || [];
 
     return {
@@ -212,7 +212,7 @@ async function fetchPagamentosData() {
   });
 
   // Build maes aprovadas list with payment status
-  const maesComStatus: MaeAprovada[] = maesData.map((mae) => {
+  const maesComStatus: MaeAprovada[] = maesAprovadas.map((mae) => {
     const paymentInfo = maePaymentMap.get(mae.id);
     const parcelas = paymentInfo?.parcelas || [];
 
