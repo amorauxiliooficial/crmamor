@@ -342,6 +342,14 @@ export default function Atendimento() {
                 respostas={respostasRapidas}
                 onToggleContext={() => setMobileCrmDrawerOpen(true)}
                 isLoadingMessages={loadingMsgs}
+                currentUserId={user?.id ?? null}
+                onEditMessage={(messageId, newBody) => {
+                  if (!selectedId) return;
+                  editMessage.mutate({ messageId, newBody, conversationId: selectedId }, {
+                    onSuccess: () => toast({ title: "Mensagem editada ✅" }),
+                    onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
+                  });
+                }}
               />
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
@@ -463,6 +471,14 @@ export default function Atendimento() {
           }
         }}
         isLoadingMessages={loadingMsgs}
+        currentUserId={user?.id ?? null}
+        onEditMessage={(messageId, newBody) => {
+          if (!selectedId) return;
+          editMessage.mutate({ messageId, newBody, conversationId: selectedId }, {
+            onSuccess: () => toast({ title: "Mensagem editada ✅" }),
+            onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
+          });
+        }}
       />
 
       {!isTablet && showContext && (
