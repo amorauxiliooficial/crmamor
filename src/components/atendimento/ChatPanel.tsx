@@ -549,6 +549,17 @@ export function ChatPanel({
                   <TooltipContent className="text-xs">Assumir</TooltipContent>
                 </Tooltip>
 
+                {onTransfer && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60" onClick={onTransfer}>
+                        <ArrowRightLeft className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="text-xs">Transferir</TooltipContent>
+                  </Tooltip>
+                )}
+
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60" onClick={onPendente}>
@@ -560,11 +571,11 @@ export function ChatPanel({
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60 hover:text-emerald-600 dark:hover:text-emerald-400" onClick={onFinalizar}>
+                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60" onClick={onFinalizar}>
                       <CheckCircle className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent className="text-xs">Concluir</TooltipContent>
+                  <TooltipContent className="text-xs">Encerrar</TooltipContent>
                 </Tooltip>
               </>
             )}
