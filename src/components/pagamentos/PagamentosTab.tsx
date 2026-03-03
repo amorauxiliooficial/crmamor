@@ -248,6 +248,8 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
   const [editingPagamentoId, setEditingPagamentoId] = useState<string | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pagamentoToDelete, setPagamentoToDelete] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedPagamentoForDrawer, setSelectedPagamentoForDrawer] = useState<PagamentoComMae | null>(null);
 
   // Filtro de mês/ano para "Recebido"
   const currentDate = new Date();
