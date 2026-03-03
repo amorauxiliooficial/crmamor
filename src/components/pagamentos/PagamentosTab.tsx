@@ -122,6 +122,26 @@ async function fetchPagamentosData() {
   if (maesResult.error) throw maesResult.error;
   if (pagamentosResult.error) throw pagamentosResult.error;
 
+  const maesAprovadas = maesResult.data || [];
+  const pagamentosData = pagamentosResult.data || [];
+
+  // Also fetch ALL mães referenced by pagamentos (regardless of status)
+  const allMaeIds = [...new Set(pagamentosData.map((p) => p.mae_id))];
+  let allMaesMap = new Map<string, { id: string; nome_mae: string; cpf: string; user_id: string }>();
+  
+  // Add approved maes to map
+  maesAprovadas.forEach((m) => allMaesMap.set(m.id, m));
+  
+  // Fetch any missing mães (non-Aprovada)
+  const missingMaeIds = allMaeIds.filter((id) => !allMaesMap.has(id));
+  if (missingMaeIds.length > 0) {
+    const { data: extraMaes } = await supabase
+      .from("mae_processo")
+      .select("id, nome_mae, cpf, user_id")
+      .in("id", missingMaeIds);
+    extraMaes?.forEach((m) => allMaesMap.set(m.id, m));
+  }
+
   const maesData = maesResult.data || [];
   const pagamentosData = pagamentosResult.data || [];
 
