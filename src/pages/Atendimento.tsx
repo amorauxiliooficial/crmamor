@@ -424,6 +424,7 @@ export default function Atendimento() {
                 onAssume={() => handleAssume()}
                 onPendente={() => handlePendente()}
                 onFinalizar={() => handleFinalizar()}
+                onTransfer={() => setTransferDialogOpen(true)}
                 onToggleEtiqueta={toggleEtiqueta}
                 respostas={respostasRapidas}
                 onToggleContext={() => setMobileCrmDrawerOpen(true)}
