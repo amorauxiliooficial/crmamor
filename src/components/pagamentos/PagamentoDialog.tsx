@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -18,7 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, DollarSign, Calendar, FileText } from "lucide-react";
 import { TipoPagamento, StatusParcela } from "@/types/pagamento";
 
 interface PagamentoDialogProps {
@@ -46,6 +47,12 @@ const DEFAULT_PARCELA: ParcelaForm = {
   valor: "",
 };
 
+const statusConfig: Record<StatusParcela, { label: string; className: string }> = {
+  pendente: { label: "Pendente", className: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30" },
+  pago: { label: "Pago", className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30" },
+  inadimplente: { label: "Inadimplente", className: "bg-destructive/15 text-destructive border-destructive/30" },
+};
+
 export function PagamentoDialog({
   open,
   onOpenChange,
@@ -59,7 +66,6 @@ export function PagamentoDialog({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tipoPagamento, setTipoPagamento] = useState<TipoPagamento>("parcelado");
-  
   const [valorAReceber, setValorAReceber] = useState("");
   const [parcelas, setParcelas] = useState<ParcelaForm[]>([{ ...DEFAULT_PARCELA }]);
 
@@ -75,7 +81,6 @@ export function PagamentoDialog({
 
   const loadExistingPagamento = async () => {
     if (!existingPagamentoId) return;
-    
     setLoading(true);
     const { data: pagamento, error: pagError } = await supabase
       .from("pagamentos_mae")
@@ -84,11 +89,7 @@ export function PagamentoDialog({
       .single();
 
     if (pagError) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao carregar pagamento",
-        description: pagError.message,
-      });
+      toast({ variant: "destructive", title: "Erro ao carregar pagamento", description: pagError.message });
       setLoading(false);
       return;
     }
@@ -100,11 +101,7 @@ export function PagamentoDialog({
       .order("numero_parcela", { ascending: true });
 
     if (parcError) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao carregar parcelas",
-        description: parcError.message,
-      });
+      toast({ variant: "destructive", title: "Erro ao carregar parcelas", description: parcError.message });
       setLoading(false);
       return;
     }
@@ -128,13 +125,7 @@ export function PagamentoDialog({
   const addParcela = () => {
     setParcelas((prev) => [
       ...prev,
-      {
-        numero_parcela: prev.length + 1,
-        data_pagamento: "",
-        status: "pendente",
-        observacoes: "",
-        valor: "",
-      },
+      { numero_parcela: prev.length + 1, data_pagamento: "", status: "pendente", observacoes: "", valor: "" },
     ]);
   };
 
@@ -152,22 +143,15 @@ export function PagamentoDialog({
   };
 
   const calcularValorTotal = () => {
-    return parcelas.reduce((acc, p) => {
-      const valor = parseFloat(p.valor) || 0;
-      return acc + valor;
-    }, 0);
+    return parcelas.reduce((acc, p) => acc + (parseFloat(p.valor) || 0), 0);
   };
 
   const handleSave = async () => {
     if (!user) return;
-
     setSaving(true);
-
     try {
       const valorTotal = calcularValorTotal();
-
       if (existingPagamentoId) {
-        // Update existing
         const { error: updateError } = await supabase
           .from("pagamentos_mae")
           .update({
@@ -177,15 +161,9 @@ export function PagamentoDialog({
             valor_a_receber: valorAReceber ? parseFloat(valorAReceber) : null,
           } as any)
           .eq("id", existingPagamentoId);
-
         if (updateError) throw updateError;
 
-        // Delete old parcelas and insert new ones
-        await supabase
-          .from("parcelas_pagamento")
-          .delete()
-          .eq("pagamento_id", existingPagamentoId);
-
+        await supabase.from("parcelas_pagamento").delete().eq("pagamento_id", existingPagamentoId);
         for (const parcela of parcelas) {
           const { error: insertError } = await supabase.from("parcelas_pagamento").insert({
             pagamento_id: existingPagamentoId,
@@ -198,7 +176,6 @@ export function PagamentoDialog({
           if (insertError) throw insertError;
         }
       } else {
-        // Create new
         const { data: newPagamento, error: pagError } = await supabase
           .from("pagamentos_mae")
           .insert({
@@ -211,7 +188,6 @@ export function PagamentoDialog({
           } as any)
           .select()
           .single();
-
         if (pagError) throw pagError;
 
         for (const parcela of parcelas) {
@@ -229,19 +205,12 @@ export function PagamentoDialog({
 
       toast({
         title: "Sucesso",
-        description: existingPagamentoId
-          ? "Pagamento atualizado com sucesso"
-          : "Pagamento cadastrado com sucesso",
+        description: existingPagamentoId ? "Pagamento atualizado com sucesso" : "Pagamento cadastrado com sucesso",
       });
-
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao salvar pagamento",
-        description: error.message,
-      });
+      toast({ variant: "destructive", title: "Erro ao salvar pagamento", description: error.message });
     } finally {
       setSaving(false);
     }
@@ -254,19 +223,15 @@ export function PagamentoDialog({
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {existingPagamentoId ? "Editar" : "Cadastrar"} Pagamento - {maeNome}
+          <DialogTitle className="text-lg">
+            {existingPagamentoId ? "Editar" : "Cadastrar"} Pagamento — {maeNome}
           </DialogTitle>
         </DialogHeader>
 
@@ -275,23 +240,23 @@ export function PagamentoDialog({
             <Loader2 className="h-6 w-6 animate-spin" />
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Tipo de Pagamento</Label>
+          <div className="space-y-5">
+            {/* Header fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Tipo de Pagamento</Label>
                 <Select value={tipoPagamento} onValueChange={handleTipoPagamentoChange}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[100]">
                     <SelectItem value="a_vista">Mãe Única</SelectItem>
                     <SelectItem value="parcelado">Mãe Parcelada</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label>Valor que a mãe vai receber (R$)</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Valor que a mãe vai receber (R$)</Label>
                 <Input
                   type="number"
                   min="0"
@@ -300,93 +265,118 @@ export function PagamentoDialog({
                   onChange={(e) => setValorAReceber(e.target.value)}
                   placeholder="Apenas conferência"
                 />
-                <p className="text-[10px] text-muted-foreground">Apenas para referência — não entra em cálculos.</p>
+                <p className="text-[10px] text-muted-foreground leading-tight">Apenas para referência — não entra em cálculos.</p>
               </div>
             </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <Label>Parcelas ({parcelas.length})</Label>
-                  <span className="text-sm text-muted-foreground">
-                    Valor Total: <span className="font-semibold text-foreground">{formatCurrency(calcularValorTotal())}</span>
-                  </span>
-                </div>
-                {tipoPagamento === "parcelado" && (
-                  <Button type="button" variant="outline" size="sm" onClick={addParcela}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Adicionar Parcela
-                  </Button>
-                )}
-              </div>
 
+            {/* Parcelas header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold">Parcelas ({parcelas.length})</span>
+                <Badge variant="outline" className="font-mono text-xs">
+                  Total: {formatCurrency(calcularValorTotal())}
+                </Badge>
+              </div>
+              {tipoPagamento === "parcelado" && (
+                <Button type="button" variant="outline" size="sm" onClick={addParcela}>
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Adicionar
+                </Button>
+              )}
+            </div>
+
+            {/* Parcelas cards */}
+            <div className="space-y-3">
               {parcelas.map((parcela, index) => (
                 <div
                   key={index}
-                  className="grid grid-cols-12 gap-2 items-end p-3 border rounded-lg bg-muted/30"
+                  className="relative rounded-xl border bg-card p-4 space-y-3 transition-shadow hover:shadow-sm"
                 >
-                  <div className="col-span-1 text-center font-medium text-muted-foreground">
-                    {parcela.numero_parcela}ª
-                  </div>
-                  <div className="col-span-2">
-                    <Label className="text-xs">Valor (R$)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={parcela.valor}
-                      onChange={(e) => updateParcela(index, "valor", e.target.value)}
-                      placeholder="0,00"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label className="text-xs">Data Pagamento</Label>
-                    <Input
-                      type="date"
-                      value={parcela.data_pagamento}
-                      onChange={(e) => updateParcela(index, "data_pagamento", e.target.value)}
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label className="text-xs">Status</Label>
-                    <Select
-                      value={parcela.status}
-                      onValueChange={(value) => updateParcela(index, "status", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pendente">Pendente</SelectItem>
-                        <SelectItem value="pago">Pago</SelectItem>
-                        <SelectItem value="inadimplente">Inadimplente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="col-span-4">
-                    <Label className="text-xs">Observações</Label>
-                    <Input
-                      value={parcela.observacoes}
-                      onChange={(e) => updateParcela(index, "observacoes", e.target.value)}
-                      placeholder="Observações"
-                    />
-                  </div>
-                  {tipoPagamento === "parcelado" && parcelas.length > 1 && (
-                    <div className="col-span-1">
+                  {/* Parcela number badge + delete */}
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary" className="text-xs font-semibold px-2.5">
+                      {parcela.numero_parcela}ª parcela
+                    </Badge>
+                    {tipoPagamento === "parcelado" && parcelas.length > 1 && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
+                        className="h-7 w-7"
                         onClick={() => removeParcela(index)}
                       >
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
+                    )}
+                  </div>
+
+                  {/* Fields row */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <DollarSign className="h-3 w-3" /> Valor (R$)
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={parcela.valor}
+                        onChange={(e) => updateParcela(index, "valor", e.target.value)}
+                        placeholder="0,00"
+                        className="h-9"
+                      />
                     </div>
-                  )}
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Calendar className="h-3 w-3" /> Data
+                      </Label>
+                      <Input
+                        type="date"
+                        value={parcela.data_pagamento}
+                        onChange={(e) => updateParcela(index, "data_pagamento", e.target.value)}
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Status</Label>
+                      <Select
+                        value={parcela.status}
+                        onValueChange={(value) => updateParcela(index, "status", value)}
+                      >
+                        <SelectTrigger className="h-9">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`inline-block h-2 w-2 rounded-full ${
+                              parcela.status === "pago" ? "bg-emerald-500" :
+                              parcela.status === "inadimplente" ? "bg-destructive" : "bg-amber-500"
+                            }`} />
+                            <SelectValue />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent className="z-[100]">
+                          <SelectItem value="pendente">Pendente</SelectItem>
+                          <SelectItem value="pago">Pago</SelectItem>
+                          <SelectItem value="inadimplente">Inadimplente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <FileText className="h-3 w-3" /> Obs.
+                      </Label>
+                      <Input
+                        value={parcela.observacoes}
+                        onChange={(e) => updateParcela(index, "observacoes", e.target.value)}
+                        placeholder="Observações"
+                        className="h-9"
+                      />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
 
-            <div className="flex justify-end gap-2">
+            {/* Actions */}
+            <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
