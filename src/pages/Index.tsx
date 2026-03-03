@@ -216,6 +216,7 @@ const Index = () => {
     "❌ Indeferida": "Indeferida",
     "⚖️ Recurso / Judicial": "Recurso / Judicial",
     "💳 Inadimplência": "Inadimplência",
+    "📄 Rescisão de Contrato": "Rescisão de Contrato",
     "📦 Processo Encerrado": "Processo Encerrado",
   };
 

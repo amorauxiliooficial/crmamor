@@ -6,6 +6,7 @@ export type StatusProcesso =
   | "❌ Indeferida"
   | "⚖️ Recurso / Judicial"
   | "💳 Inadimplência"
+  | "📄 Rescisão de Contrato"
   | "📦 Processo Encerrado";
 
 export type TipoEvento = "Parto" | "Adoção" | "Guarda judicial";
@@ -74,6 +75,7 @@ export const STATUS_ORDER: StatusProcesso[] = [
   "❌ Indeferida",
   "⚖️ Recurso / Judicial",
   "💳 Inadimplência",
+  "📄 Rescisão de Contrato",
   "📦 Processo Encerrado",
 ];
 
@@ -85,6 +87,7 @@ export const STATUS_COLORS: Record<StatusProcesso, string> = {
   "❌ Indeferida": "bg-muted/60",
   "⚖️ Recurso / Judicial": "bg-muted/60",
   "💳 Inadimplência": "bg-muted/60",
+  "📄 Rescisão de Contrato": "bg-muted/60",
   "📦 Processo Encerrado": "bg-muted/60",
 };
 
@@ -97,6 +100,7 @@ export const STATUS_BAR_COLORS: Record<StatusProcesso, string> = {
   "❌ Indeferida": "border-t-destructive/50",
   "⚖️ Recurso / Judicial": "border-t-violet-500/50",
   "💳 Inadimplência": "border-t-orange-500/50",
+  "📄 Rescisão de Contrato": "border-t-rose-500/50",
   "📦 Processo Encerrado": "border-t-muted-foreground/30",
 };
 
@@ -109,5 +113,6 @@ export const FOLLOWUP_PRAZO_LABELS: Record<StatusProcesso, string> = {
   "❌ Indeferida": "3→15→60→90d",
   "⚖️ Recurso / Judicial": "3→15→60→90d",
   "💳 Inadimplência": "1 dia (único)",
+  "📄 Rescisão de Contrato": "3 dias",
   "📦 Processo Encerrado": "—",
 };
