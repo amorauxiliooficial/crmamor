@@ -15,6 +15,7 @@ export interface WaConversation {
   labels: string[];
   created_at: string;
   updated_at: string;
+  last_inbound_at: string | null;
 }
 
 export interface WaMessage {

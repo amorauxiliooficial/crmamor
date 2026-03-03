@@ -6,11 +6,14 @@ export interface Conversa {
   horario: Date;
   status: "Aberto" | "Pendente" | "Fechado";
   atendente: string | null;
+  assignedAgentId: string | null;
   naoLidas: number;
   etiquetas: string[];
   prioridade?: "normal" | "alta";
   slaMinutos?: number;
   maeId?: string | null;
+  lastInboundAt?: Date | null;
+  queueStatus?: "sem_responsavel" | "em_atendimento" | "aguardando_cliente" | "resolvido";
 }
 
 export interface Mensagem {
