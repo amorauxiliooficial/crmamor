@@ -496,13 +496,29 @@ export function ChatPanel({
             ) : (
               <p className="text-xs text-destructive/60 font-medium">• Sem responsável</p>
             )}
-            {conversa.slaMinutos != null && conversa.status !== "Fechado" && (
+          {conversa.slaMinutos != null && conversa.status !== "Fechado" && (
               <span className={cn(
                 "text-[11px] font-mono tabular-nums",
                 (conversa.slaMinutos ?? 0) > 30 ? "text-destructive/70" : "text-muted-foreground/40"
               )}>
                 SLA: {conversa.slaMinutos}m
               </span>
+            )}
+            {/* Connection indicator */}
+            <span className={cn(
+              "inline-flex items-center gap-1 text-[10px] font-medium",
+              connectionStatus === "connected" ? "text-emerald-500" : connectionStatus === "connecting" ? "text-amber-500" : "text-destructive"
+            )}>
+              {connectionStatus === "connected" ? (
+                <><Wifi className="h-3 w-3" /> Conectado</>
+              ) : connectionStatus === "connecting" ? (
+                <><RefreshCw className="h-3 w-3 animate-spin" /> Conectando...</>
+              ) : (
+                <button onClick={onReconnect} className="inline-flex items-center gap-1 hover:underline">
+                  <WifiOff className="h-3 w-3" /> Reconectar
+                </button>
+              )}
+            </span>
             )}
           </div>
         </div>
@@ -552,14 +568,31 @@ export function ChatPanel({
 
             {!isMobile && (
               <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60" onClick={onAssume}>
-                      <UserCheck className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-xs">Assumir</TooltipContent>
-                </Tooltip>
+                {conversa.queueStatus === "resolvido" && onReopen ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-emerald-600" onClick={onReopen}>
+                        <RotateCw className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="text-xs">Reabrir</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9 rounded-lg text-muted-foreground/60"
+                        onClick={onAssume}
+                        disabled={conversa.assignedAgentId === currentUserId}
+                      >
+                        <UserCheck className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="text-xs">Assumir</TooltipContent>
+                  </Tooltip>
+                )}
 
                 {onTransfer && (
                   <Tooltip>
