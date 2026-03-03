@@ -295,6 +295,7 @@ export function ChatPanel({
   onAssume,
   onPendente,
   onFinalizar,
+  onTransfer,
   onToggleEtiqueta,
   respostas,
   showContext,
