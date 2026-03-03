@@ -6,6 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { useDebouncedCallback } from "use-debounce";
 import { useQuery } from "@tanstack/react-query";
+import { useInboundNotification } from "@/hooks/useInboundNotification";
 import { useWaConversations, useWaMessages, useSendWhatsApp, useRetryWhatsApp, useMarkConversationRead, useUpdateConversationStatus, useEditMessage, type WaConversation } from "@/hooks/useWhatsApp";
 import { respostasRapidas } from "@/data/respostasRapidas";
 import { InboxSidebar } from "@/components/atendimento/InboxSidebar";
@@ -63,7 +64,28 @@ export default function Atendimento() {
   const markRead = useMarkConversationRead();
   const updateStatus = useUpdateConversationStatus();
   const editMessage = useEditMessage();
+  const { soundEnabled, autoplayBlocked, toggleSound, playNotification } = useInboundNotification();
 
+  // Realtime listener for inbound messages – plays notification sound
+  useEffect(() => {
+    const channel = supabase
+      .channel("inbound_notification")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "wa_messages",
+          filter: "direction=eq.in",
+        },
+        () => {
+          playNotification();
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [playNotification]);
   // Fetch all profiles for agent name mapping
   const { data: profiles } = useQuery({
     queryKey: ["profiles_all"],
@@ -350,6 +372,9 @@ export default function Atendimento() {
                     onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
                   });
                 }}
+                soundEnabled={soundEnabled}
+                autoplayBlocked={autoplayBlocked}
+                onToggleSound={toggleSound}
               />
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
@@ -479,6 +504,9 @@ export default function Atendimento() {
             onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
           });
         }}
+        soundEnabled={soundEnabled}
+        autoplayBlocked={autoplayBlocked}
+        onToggleSound={toggleSound}
       />
 
       {!isTablet && showContext && (

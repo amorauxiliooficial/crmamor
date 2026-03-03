@@ -4,6 +4,7 @@ import {
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
   Loader2, Zap, Brain, Database, ArrowRight, CalendarPlus, AlertTriangle,
   Info, Paperclip, X, Image as ImageIcon, RotateCcw, MoreVertical, Pencil, Check,
+  Bell, BellOff,
 } from "lucide-react";
 import { AudioRecorder } from "@/components/atendimento/AudioRecorder";
 import { MessageStatusIcon } from "@/components/atendimento/MessageStatusIcon";
@@ -275,6 +276,9 @@ interface ChatPanelProps {
   isLoadingMessages?: boolean;
   currentUserId?: string | null;
   onEditMessage?: (messageId: string, newBody: string) => void;
+  soundEnabled?: boolean;
+  autoplayBlocked?: boolean;
+  onToggleSound?: () => void;
 }
 
 export function ChatPanel({
@@ -297,6 +301,9 @@ export function ChatPanel({
   isLoadingMessages = false,
   currentUserId,
   onEditMessage,
+  soundEnabled,
+  autoplayBlocked,
+  onToggleSound,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -553,6 +560,32 @@ export function ChatPanel({
                 ))}
               </PopoverContent>
             </Popover>
+
+            {/* Sound toggle */}
+            {onToggleSound && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className={cn(
+                      "h-9 w-9 rounded-lg",
+                      soundEnabled ? "text-primary/70" : "text-muted-foreground/40"
+                    )}
+                    onClick={onToggleSound}
+                  >
+                    {soundEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="text-xs">
+                  {autoplayBlocked
+                    ? "Clique para ativar som"
+                    : soundEnabled
+                      ? "Desativar som"
+                      : "Ativar som"}
+                </TooltipContent>
+              </Tooltip>
+            )}
 
             {onToggleContext && (
               <Tooltip>
