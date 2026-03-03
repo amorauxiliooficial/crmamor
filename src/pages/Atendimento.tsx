@@ -472,6 +472,13 @@ export default function Atendimento() {
                   />
                 </DrawerContent>
               </Drawer>
+              <TransferDialog
+                open={transferDialogOpen}
+                onOpenChange={setTransferDialogOpen}
+                onTransfer={handleTransfer}
+                currentAgentId={conversa?.assignedAgentId}
+                isLoading={transferConversation.isPending}
+              />
             </>
           ) : mobileTab === "conversas" ? (
             <InboxSidebar
