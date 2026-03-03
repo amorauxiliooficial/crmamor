@@ -221,22 +221,22 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
         </p>
 
         {/* Compact badges */}
-        <div className="flex items-center gap-1.5 mt-1">
+        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+          {/* Queue status */}
+          {c.queueStatus === "sem_responsavel" ? (
+            <span className="text-[11px] text-destructive/70 font-semibold">⚠ Sem responsável</span>
+          ) : c.atendente ? (
+            <span className="text-[11px] text-primary/50 font-medium truncate max-w-[100px]">com {c.atendente}</span>
+          ) : null}
           <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", STATUS_DOT[c.status])} />
           {c.prioridade === "alta" && (
             <Badge variant="destructive" className="h-5 text-[10px] px-1.5 py-0 font-bold rounded-full">
               🔥
             </Badge>
           )}
-          {!c.atendente && (
-            <span className="text-[11px] text-primary/60 font-medium">Sem atendente</span>
-          )}
-          {c.slaMinutos != null && c.status !== "Fechado" && (
-            <span className={cn(
-              "text-[11px] font-mono font-medium tabular-nums",
-              c.slaMinutos <= 5 ? "text-destructive/70" : c.slaMinutos <= 15 ? "text-amber-600/60 dark:text-amber-400/60" : "text-muted-foreground/40"
-            )}>
-              {c.slaMinutos}m
+          {c.slaMinutos != null && c.status !== "Fechado" && (c.slaMinutos ?? 0) > 30 && (
+            <span className="text-[11px] font-mono font-medium tabular-nums text-destructive/70">
+              ⏱ {c.slaMinutos}m
             </span>
           )}
           {c.etiquetas.filter(e => e !== "Urgente").slice(0, 1).map((e) => (
