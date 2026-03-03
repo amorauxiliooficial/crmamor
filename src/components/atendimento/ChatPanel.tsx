@@ -161,7 +161,7 @@ const MessageBubble = memo(function MessageBubble({
               <div className={cn(
                 "absolute top-0 z-10",
                 isMe ? "-left-7" : "-right-7",
-                "opacity-0 group-hover:opacity-100 transition-opacity"
+                "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
               )}>
                 <Popover open={menuOpen} onOpenChange={setMenuOpen}>
                   <PopoverTrigger asChild>
