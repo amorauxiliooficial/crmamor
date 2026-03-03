@@ -595,6 +595,11 @@ export default function Atendimento() {
         soundEnabled={soundEnabled}
         autoplayBlocked={autoplayBlocked}
         onToggleSound={toggleSound}
+        onReopen={handleReopen}
+        connectionStatus={connectionStatus}
+        onReconnect={onReconnect}
+        conversationEvents={conversationEvents ?? []}
+        profileMap={profileMap}
       />
 
       <TransferDialog
