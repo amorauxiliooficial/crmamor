@@ -58,8 +58,9 @@ const TABS: { value: TabFilter | "all"; label: string }[] = [
 const CHIPS: { value: string; label: string }[] = [
   { value: "todos", label: "Todos" },
   { value: "meus", label: "Meus" },
-  { value: "sem_atendente", label: "Sem atendente" },
+  { value: "sem_responsavel", label: "⚠ Sem responsável" },
   { value: "urgentes", label: "🔥 Urgentes" },
+  { value: "sla_estourando", label: "⏱ SLA" },
 ];
 
 interface InboxSidebarProps {
@@ -114,9 +115,9 @@ function categorizeConversas(conversas: Conversa[]): SmartQueue {
   for (const c of conversas) {
     if (c.prioridade === "alta" || c.etiquetas.includes("Urgente")) {
       urgentes.push(c);
-    } else if (c.status === "Pendente" || (c.slaMinutos != null && c.slaMinutos > 30)) {
+    } else if (c.queueStatus === "sem_responsavel") {
       pendentes.push(c);
-    } else if (c.status === "Aberto" && c.naoLidas === 0) {
+    } else if (c.queueStatus === "aguardando_cliente") {
       aguardando.push(c);
     } else {
       outros.push(c);
