@@ -595,7 +595,54 @@ export function ChatPanel({
               </PopoverContent>
             </Popover>
 
-            {!isMobile && (
+            {isMobile ? (
+              /* Mobile: compact dropdown with all actions */
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-1.5" align="end">
+                  {conversa.queueStatus === "resolvido" && onReopen ? (
+                    <button
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors min-h-[40px] text-emerald-600"
+                      onClick={onReopen}
+                    >
+                      <RotateCw className="h-4 w-4" /> Reabrir conversa
+                    </button>
+                  ) : (
+                    <button
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors min-h-[40px] disabled:opacity-50"
+                      onClick={onAssume}
+                      disabled={conversa.assignedAgentId === currentUserId}
+                    >
+                      <UserCheck className="h-4 w-4" /> Assumir conversa
+                    </button>
+                  )}
+                  {onTransfer && (
+                    <button
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors min-h-[40px]"
+                      onClick={onTransfer}
+                    >
+                      <ArrowRightLeft className="h-4 w-4" /> Transferir
+                    </button>
+                  )}
+                  <button
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors min-h-[40px]"
+                    onClick={onPendente}
+                  >
+                    <Clock className="h-4 w-4" /> Pendente
+                  </button>
+                  <button
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors min-h-[40px] text-destructive"
+                    onClick={onFinalizar}
+                  >
+                    <CheckCircle className="h-4 w-4" /> Encerrar
+                  </button>
+                </PopoverContent>
+              </Popover>
+            ) : (
               <>
                 {conversa.queueStatus === "resolvido" && onReopen ? (
                   <Tooltip>
