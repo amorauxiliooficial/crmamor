@@ -284,11 +284,24 @@ export default function Atendimento() {
       const target = id || selectedId;
       if (!target) return;
       closeConversation.mutate({ conversationId: target }, {
-        onSuccess: () => toast({ title: "Atendimento finalizado ✅" }),
+        onSuccess: () => {
+          toast({ title: "Atendimento finalizado ✅" });
+          createEvent.mutate({ conversation_id: target, event_type: "closed" });
+        },
       });
     },
-    [selectedId, toast, closeConversation]
+    [selectedId, toast, closeConversation, createEvent]
   );
+
+  const handleReopen = useCallback(() => {
+    if (!selectedId) return;
+    reopenConversation.mutate(selectedId, {
+      onSuccess: () => {
+        toast({ title: "Conversa reaberta ✅" });
+        createEvent.mutate({ conversation_id: selectedId, event_type: "reopened" });
+      },
+    });
+  }, [selectedId, toast, reopenConversation, createEvent]);
 
   const toggleEtiqueta = useCallback(
     (etiqueta: string) => {
