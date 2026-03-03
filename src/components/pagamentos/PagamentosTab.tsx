@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -22,6 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Loader2,
   Edit,
@@ -33,11 +40,20 @@ import {
   Plus,
   Users,
   TrendingUp,
+  MoreHorizontal,
+  Eye,
+  Copy,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { format, parseISO, getMonth, getYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
+import { PagamentoDetailDrawer, StatusGeralBadge } from "@/components/pagamentos/PagamentoDetailDrawer";
+import {
+  calcularStatusGeral,
+  getProximoVencimento,
+  getStatusGeralOrder,
+} from "@/lib/pagamentoUtils";
 import {
   AlertDialog,
   AlertDialogAction,
