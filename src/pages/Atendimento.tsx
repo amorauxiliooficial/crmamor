@@ -28,6 +28,17 @@ function waToConversa(wa: WaConversation, profileMap: Map<string, string>): Conv
     closed: "Fechado",
   };
   const assignedName = wa.assigned_to ? profileMap.get(wa.assigned_to) ?? null : null;
+
+  // Derive queue status
+  let queueStatus: Conversa["queueStatus"] = "sem_responsavel";
+  if (wa.status === "closed") queueStatus = "resolvido";
+  else if (!wa.assigned_to) queueStatus = "sem_responsavel";
+  else if (wa.unread_count === 0) queueStatus = "aguardando_cliente";
+  else queueStatus = "em_atendimento";
+
+  const lastInbound = wa.last_inbound_at ? new Date(wa.last_inbound_at) : null;
+  const slaMin = lastInbound ? Math.floor((Date.now() - lastInbound.getTime()) / 60000) : Math.floor((Date.now() - new Date(wa.last_message_at).getTime()) / 60000);
+
   return {
     id: wa.id,
     nome: wa.wa_name,
@@ -36,11 +47,14 @@ function waToConversa(wa: WaConversation, profileMap: Map<string, string>): Conv
     horario: new Date(wa.last_message_at),
     status: statusMap[wa.status] ?? "Aberto",
     atendente: assignedName ?? (wa.assigned_to ? "Atendente" : null),
+    assignedAgentId: wa.assigned_to,
     naoLidas: wa.unread_count,
     etiquetas: wa.labels ?? [],
     prioridade: "normal" as const,
-    slaMinutos: Math.floor((Date.now() - new Date(wa.last_message_at).getTime()) / 60000),
+    slaMinutos: slaMin,
     maeId: wa.mae_id,
+    lastInboundAt: lastInbound,
+    queueStatus,
   };
 }
 
