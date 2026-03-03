@@ -60,6 +60,7 @@ export function PagamentoDialog({
   const [saving, setSaving] = useState(false);
   const [tipoPagamento, setTipoPagamento] = useState<TipoPagamento>("parcelado");
   const [percentualComissao, setPercentualComissao] = useState("");
+  const [valorAReceber, setValorAReceber] = useState("");
   const [parcelas, setParcelas] = useState<ParcelaForm[]>([{ ...DEFAULT_PARCELA }]);
 
   useEffect(() => {
@@ -68,6 +69,7 @@ export function PagamentoDialog({
     } else if (open && !existingPagamentoId) {
       setTipoPagamento("parcelado");
       setPercentualComissao("");
+      setValorAReceber("");
       setParcelas([{ ...DEFAULT_PARCELA }]);
     }
   }, [open, existingPagamentoId]);
@@ -110,6 +112,7 @@ export function PagamentoDialog({
 
     setTipoPagamento(pagamento.tipo_pagamento as TipoPagamento);
     setPercentualComissao(pagamento.percentual_comissao?.toString() || "");
+    setValorAReceber((pagamento as any).valor_a_receber?.toString() || "");
     if (parcelasData && parcelasData.length > 0) {
       setParcelas(
         parcelasData.map((p: any) => ({
@@ -174,7 +177,8 @@ export function PagamentoDialog({
             total_parcelas: parcelas.length,
             valor_total: valorTotal || null,
             percentual_comissao: percentualComissao ? parseFloat(percentualComissao) : null,
-          })
+            valor_a_receber: valorAReceber ? parseFloat(valorAReceber) : null,
+          } as any)
           .eq("id", existingPagamentoId);
 
         if (updateError) throw updateError;
@@ -207,7 +211,8 @@ export function PagamentoDialog({
             total_parcelas: parcelas.length,
             valor_total: valorTotal || null,
             percentual_comissao: percentualComissao ? parseFloat(percentualComissao) : null,
-          })
+            valor_a_receber: valorAReceber ? parseFloat(valorAReceber) : null,
+          } as any)
           .select()
           .single();
 
@@ -301,7 +306,19 @@ export function PagamentoDialog({
                   placeholder="Ex: 10"
                 />
               </div>
-            </div>
+
+              <div className="space-y-2">
+                <Label>Valor que a mãe vai receber (R$)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={valorAReceber}
+                  onChange={(e) => setValorAReceber(e.target.value)}
+                  placeholder="Apenas conferência"
+                />
+                <p className="text-[10px] text-muted-foreground">Apenas para referência — não entra em cálculos.</p>
+              </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
