@@ -265,6 +265,36 @@ const MessageBubble = memo(function MessageBubble({
 
 type AiAction = "suggest" | "summarize" | "extract" | "next_action";
 
+const EVENT_LABELS: Record<string, { icon: string; label: string }> = {
+  assumed: { icon: "👤", label: "assumiu a conversa" },
+  transfer: { icon: "↗️", label: "transferiu a conversa" },
+  closed: { icon: "✅", label: "encerrou a conversa" },
+  reopened: { icon: "🔄", label: "reabriu a conversa" },
+  status_change: { icon: "📋", label: "alterou o status" },
+};
+
+function InlineEvent({ event, profileMap }: { event: ConversationEvent; profileMap?: Map<string, string> }) {
+  const info = EVENT_LABELS[event.event_type] || { icon: "📌", label: event.event_type };
+  const agentName = event.created_by_agent_id && profileMap ? profileMap.get(event.created_by_agent_id) ?? "Agente" : "Sistema";
+  const toAgent = event.to_agent_id && profileMap ? profileMap.get(event.to_agent_id) : null;
+  const reason = (event.meta as any)?.reason;
+
+  return (
+    <div className="flex items-center justify-center my-2">
+      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/20 border border-border/10 text-[11px] text-muted-foreground/60 max-w-[80%]">
+        <span>{info.icon}</span>
+        <span className="font-medium">{agentName}</span>
+        <span>{info.label}</span>
+        {toAgent && <span>para <span className="font-medium">{toAgent}</span></span>}
+        {reason && <span className="italic truncate max-w-[120px]">• {reason}</span>}
+        <span className="text-muted-foreground/30 ml-1">
+          {new Date(event.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 interface ChatPanelProps {
   conversa: Conversa | null;
   mensagens: Mensagem[];
