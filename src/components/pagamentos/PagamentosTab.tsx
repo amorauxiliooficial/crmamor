@@ -111,7 +111,7 @@ async function fetchPagamentosData() {
     supabase
       .from("mae_processo")
       .select("id, nome_mae, cpf, user_id")
-      .eq("status_processo", "Aprovada")
+      .in("status_processo", ["Aprovada", "📄 Rescisão de Contrato"])
       .order("nome_mae", { ascending: true }),
     supabase
       .from("pagamentos_mae")
