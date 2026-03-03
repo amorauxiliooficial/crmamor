@@ -309,6 +309,7 @@ export function ChatPanel({
   onAssume,
   onPendente,
   onFinalizar,
+  onReopen,
   onTransfer,
   onToggleEtiqueta,
   respostas,
@@ -320,6 +321,10 @@ export function ChatPanel({
   soundEnabled,
   autoplayBlocked,
   onToggleSound,
+  connectionStatus = "connected",
+  onReconnect,
+  conversationEvents = [],
+  profileMap,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
