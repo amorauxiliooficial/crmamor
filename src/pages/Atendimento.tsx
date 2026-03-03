@@ -84,6 +84,10 @@ export default function Atendimento() {
   const assumeConversation = useAssumeConversation();
   const transferConversation = useTransferConversation();
   const closeConversation = useCloseConversation();
+  const reopenConversation = useReopenConversation();
+  const createEvent = useCreateConversationEvent();
+  const { status: connectionStatus, reconnect: onReconnect } = useRealtimeConnection();
+  const { data: conversationEvents } = useConversationEvents(selectedId);
   const { soundEnabled, autoplayBlocked, toggleSound, playNotification, requestPermission } = useInboundNotification();
 
   // Request browser notification permission on mount
