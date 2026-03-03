@@ -549,6 +549,7 @@ export default function Atendimento() {
         onAssume={() => handleAssume()}
         onPendente={() => handlePendente()}
         onFinalizar={() => handleFinalizar()}
+        onTransfer={() => setTransferDialogOpen(true)}
         onToggleEtiqueta={toggleEtiqueta}
         respostas={respostasRapidas}
         showContext={showContext}
@@ -571,6 +572,14 @@ export default function Atendimento() {
         soundEnabled={soundEnabled}
         autoplayBlocked={autoplayBlocked}
         onToggleSound={toggleSound}
+      />
+
+      <TransferDialog
+        open={transferDialogOpen}
+        onOpenChange={setTransferDialogOpen}
+        onTransfer={handleTransfer}
+        currentAgentId={conversa?.assignedAgentId}
+        isLoading={transferConversation.isPending}
       />
 
       {!isTablet && showContext && (
