@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useDebouncedCallback } from "use-debounce";
 import { useQuery } from "@tanstack/react-query";
 import { useInboundNotification } from "@/hooks/useInboundNotification";
-import { useWaConversations, useWaMessages, useSendWhatsApp, useRetryWhatsApp, useMarkConversationRead, useUpdateConversationStatus, useEditMessage, type WaConversation } from "@/hooks/useWhatsApp";
+import { useWaConversations, useWaMessages, useSendWhatsApp, useRetryWhatsApp, useMarkConversationRead, useUpdateConversationStatus, useEditMessage, useAssumeConversation, useTransferConversation, useCloseConversation, type WaConversation } from "@/hooks/useWhatsApp";
 import { respostasRapidas } from "@/data/respostasRapidas";
 import { InboxSidebar } from "@/components/atendimento/InboxSidebar";
 import { ChatPanel } from "@/components/atendimento/ChatPanel";
@@ -16,6 +16,7 @@ import { MobileBottomNav, type MobileTab } from "@/components/atendimento/Mobile
 import { useAssignmentActions } from "@/hooks/useAssignmentEvents";
 import { useTimelineActions } from "@/hooks/useTimelineEvents";
 import { CommandPalette } from "@/components/atendimento/CommandPalette";
+import { TransferDialog } from "@/components/atendimento/TransferDialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import type { Conversa, Mensagem } from "@/data/atendimentoMock";
