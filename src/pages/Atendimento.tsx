@@ -372,6 +372,9 @@ export default function Atendimento() {
                     onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
                   });
                 }}
+                soundEnabled={soundEnabled}
+                autoplayBlocked={autoplayBlocked}
+                onToggleSound={toggleSound}
               />
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
@@ -501,6 +504,9 @@ export default function Atendimento() {
             onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
           });
         }}
+        soundEnabled={soundEnabled}
+        autoplayBlocked={autoplayBlocked}
+        onToggleSound={toggleSound}
       />
 
       {!isTablet && showContext && (
