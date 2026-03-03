@@ -326,6 +326,41 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_transfers: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          from_agent_id: string
+          id: string
+          reason: string | null
+          to_agent_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          from_agent_id: string
+          id?: string
+          reason?: string | null
+          to_agent_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          from_agent_id?: string
+          id?: string
+          reason?: string | null
+          to_agent_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_transfers_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "wa_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       criativos: {
         Row: {
           arquivo_url: string | null
@@ -1495,6 +1530,7 @@ export type Database = {
           created_at: string
           id: string
           labels: string[] | null
+          last_inbound_at: string | null
           last_message_at: string | null
           last_message_preview: string | null
           mae_id: string | null
@@ -1509,6 +1545,7 @@ export type Database = {
           created_at?: string
           id?: string
           labels?: string[] | null
+          last_inbound_at?: string | null
           last_message_at?: string | null
           last_message_preview?: string | null
           mae_id?: string | null
@@ -1523,6 +1560,7 @@ export type Database = {
           created_at?: string
           id?: string
           labels?: string[] | null
+          last_inbound_at?: string | null
           last_message_at?: string | null
           last_message_preview?: string | null
           mae_id?: string | null
