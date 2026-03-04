@@ -198,8 +198,6 @@ export function PagamentoDialog({
             observacoes: parcela.observacoes || null,
             valor: parcela.valor ? parseFloat(parcela.valor) : null,
             valor_a_receber: parcela.valor_a_receber ? parseFloat(parcela.valor_a_receber) : null,
-          } as any);
-          });
           if (insertError) throw insertError;
         }
       }
