@@ -68,7 +68,6 @@ export function PagamentoDialog({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tipoPagamento, setTipoPagamento] = useState<TipoPagamento>("parcelado");
-  const [valorAReceber, setValorAReceber] = useState("");
   const [parcelas, setParcelas] = useState<ParcelaForm[]>([{ ...DEFAULT_PARCELA }]);
 
   useEffect(() => {
@@ -76,7 +75,6 @@ export function PagamentoDialog({
       loadExistingPagamento();
     } else if (open && !existingPagamentoId) {
       setTipoPagamento("parcelado");
-      setValorAReceber("");
       setParcelas([{ ...DEFAULT_PARCELA }]);
     }
   }, [open, existingPagamentoId]);
@@ -109,7 +107,6 @@ export function PagamentoDialog({
     }
 
     setTipoPagamento(pagamento.tipo_pagamento as TipoPagamento);
-    setValorAReceber((pagamento as any).valor_a_receber?.toString() || "");
     if (parcelasData && parcelasData.length > 0) {
       setParcelas(
         parcelasData.map((p: any) => ({
