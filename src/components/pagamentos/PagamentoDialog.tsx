@@ -37,6 +37,7 @@ interface ParcelaForm {
   status: StatusParcela;
   observacoes: string;
   valor: string;
+  valor_a_receber: string;
 }
 
 const DEFAULT_PARCELA: ParcelaForm = {
@@ -45,6 +46,7 @@ const DEFAULT_PARCELA: ParcelaForm = {
   status: "pendente",
   observacoes: "",
   valor: "",
+  valor_a_receber: "",
 };
 
 const statusConfig: Record<StatusParcela, { label: string; className: string }> = {
