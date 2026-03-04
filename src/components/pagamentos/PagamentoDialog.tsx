@@ -158,7 +158,6 @@ export function PagamentoDialog({
             tipo_pagamento: tipoPagamento,
             total_parcelas: parcelas.length,
             valor_total: valorTotal || null,
-            valor_a_receber: valorAReceber ? parseFloat(valorAReceber) : null,
           } as any)
           .eq("id", existingPagamentoId);
         if (updateError) throw updateError;
@@ -172,7 +171,8 @@ export function PagamentoDialog({
             status: parcela.status,
             observacoes: parcela.observacoes || null,
             valor: parcela.valor ? parseFloat(parcela.valor) : null,
-          });
+            valor_a_receber: parcela.valor_a_receber ? parseFloat(parcela.valor_a_receber) : null,
+          } as any);
           if (insertError) throw insertError;
         }
       } else {
@@ -184,7 +184,6 @@ export function PagamentoDialog({
             tipo_pagamento: tipoPagamento,
             total_parcelas: parcelas.length,
             valor_total: valorTotal || null,
-            valor_a_receber: valorAReceber ? parseFloat(valorAReceber) : null,
           } as any)
           .select()
           .single();
@@ -198,6 +197,8 @@ export function PagamentoDialog({
             status: parcela.status,
             observacoes: parcela.observacoes || null,
             valor: parcela.valor ? parseFloat(parcela.valor) : null,
+            valor_a_receber: parcela.valor_a_receber ? parseFloat(parcela.valor_a_receber) : null,
+          } as any);
           });
           if (insertError) throw insertError;
         }
@@ -254,18 +255,6 @@ export function PagamentoDialog({
                     <SelectItem value="parcelado">Mãe Parcelada</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Valor que a mãe vai receber (R$)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={valorAReceber}
-                  onChange={(e) => setValorAReceber(e.target.value)}
-                  placeholder="Apenas conferência"
-                />
-                <p className="text-[10px] text-muted-foreground leading-tight">Apenas para referência — não entra em cálculos.</p>
               </div>
             </div>
 
