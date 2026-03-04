@@ -605,7 +605,7 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
                 <TableBody>
                   {filteredMaesAprovadas.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         Nenhuma mãe encontrada
                       </TableCell>
                     </TableRow>
