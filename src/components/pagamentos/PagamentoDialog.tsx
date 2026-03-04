@@ -262,11 +262,14 @@ export function PagamentoDialog({
             </div>
 
             {/* Parcelas header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm font-semibold">Parcelas ({parcelas.length})</span>
                 <Badge variant="outline" className="font-mono text-xs">
-                  Total: {formatCurrency(calcularValorTotal())}
+                  Nosso: {formatCurrency(calcularValorTotal())}
+                </Badge>
+                <Badge variant="outline" className="font-mono text-xs border-primary/30 text-primary">
+                  Mãe recebe: {formatCurrency(calcularTotalAReceber())}
                 </Badge>
               </div>
               {tipoPagamento === "parcelado" && (
