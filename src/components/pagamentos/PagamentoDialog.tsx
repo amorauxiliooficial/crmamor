@@ -146,6 +146,10 @@ export function PagamentoDialog({
     return parcelas.reduce((acc, p) => acc + (parseFloat(p.valor) || 0), 0);
   };
 
+  const calcularTotalAReceber = () => {
+    return parcelas.reduce((acc, p) => acc + (parseFloat(p.valor_a_receber) || 0), 0);
+  };
+
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
