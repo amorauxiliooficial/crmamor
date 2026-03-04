@@ -81,6 +81,7 @@ interface PagamentoComMae {
     status: string;
     observacoes: string | null;
     valor: number | null;
+    valor_a_receber: number | null;
   }[];
 }
 
