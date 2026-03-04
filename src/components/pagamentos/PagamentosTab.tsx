@@ -596,6 +596,8 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
                     <TableHead>Tipo</TableHead>
                     <TableHead>Progresso</TableHead>
                     <TableHead className="text-right">Valor Total</TableHead>
+                    <TableHead className="text-right">Mãe Recebeu</TableHead>
+                    <TableHead className="text-right">Mãe a Receber</TableHead>
                     <TableHead>Status Pagamento</TableHead>
                     <TableHead className="w-[120px]">Ações</TableHead>
                   </TableRow>
