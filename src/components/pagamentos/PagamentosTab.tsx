@@ -81,6 +81,7 @@ interface PagamentoComMae {
     status: string;
     observacoes: string | null;
     valor: number | null;
+    valor_a_receber: number | null;
   }[];
 }
 
@@ -197,6 +198,7 @@ async function fetchPagamentosData() {
         status: p.status,
         observacoes: p.observacoes,
         valor: p.valor,
+        valor_a_receber: p.valor_a_receber,
       })),
     };
   });
@@ -594,6 +596,8 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
                     <TableHead>Tipo</TableHead>
                     <TableHead>Progresso</TableHead>
                     <TableHead className="text-right">Valor Total</TableHead>
+                    <TableHead className="text-right">Mãe Recebeu</TableHead>
+                    <TableHead className="text-right">Mãe a Receber</TableHead>
                     <TableHead>Status Pagamento</TableHead>
                     <TableHead className="w-[120px]">Ações</TableHead>
                   </TableRow>
@@ -601,7 +605,7 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
                 <TableBody>
                   {filteredMaesAprovadas.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         Nenhuma mãe encontrada
                       </TableCell>
                     </TableRow>
@@ -613,6 +617,14 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
                       const pagas = mae.statusParcelas.pagas;
                       const progresso = totalParcelas > 0 ? (pagas / totalParcelas) * 100 : 0;
                       const valorTotal = pagamento?.valor_total;
+
+                      // Calcular valores que a mãe recebeu e vai receber
+                      const maeRecebeu = pagamento?.parcelas
+                        .filter((p) => p.status === "pago")
+                        .reduce((acc, p) => acc + (p.valor_a_receber || 0), 0) || 0;
+                      const maeAReceber = pagamento?.parcelas
+                        .filter((p) => p.status !== "pago")
+                        .reduce((acc, p) => acc + (p.valor_a_receber || 0), 0) || 0;
 
                       return (
                         <TableRow key={mae.id}>
@@ -639,6 +651,16 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
                           </TableCell>
                           <TableCell className="text-right font-medium">
                             {valorTotal ? formatCurrency(valorTotal) : "—"}
+                          </TableCell>
+                          <TableCell className="text-right text-sm">
+                            {maeRecebeu > 0 ? (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-medium">{formatCurrency(maeRecebeu)}</span>
+                            ) : "—"}
+                          </TableCell>
+                          <TableCell className="text-right text-sm">
+                            {maeAReceber > 0 ? (
+                              <span className="text-amber-600 dark:text-amber-400 font-medium">{formatCurrency(maeAReceber)}</span>
+                            ) : "—"}
                           </TableCell>
                           <TableCell>
                             {!mae.temPagamento ? (
