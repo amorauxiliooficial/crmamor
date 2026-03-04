@@ -349,7 +349,7 @@ export function PagamentoDialog({
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" /> A receber (R$)
+                        <DollarSign className="h-3 w-3" /> Valor que a mãe vai receber (R$)
                       </Label>
                       <Input
                         type="number"
@@ -357,9 +357,10 @@ export function PagamentoDialog({
                         min="0"
                         value={parcela.valor_a_receber}
                         onChange={(e) => updateParcela(index, "valor_a_receber", e.target.value)}
-                        placeholder="0,00"
+                        placeholder="Apenas conferência"
                         className="h-9"
                       />
+                      <p className="text-[10px] text-muted-foreground leading-tight">Apenas para referência — não entra em cálculos.</p>
                     </div>
                     <div className="space-y-1 col-span-2">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
