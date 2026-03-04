@@ -1040,6 +1040,7 @@ export type Database = {
           status: string
           updated_at: string
           valor: number | null
+          valor_a_receber: number | null
           valor_comissao: number | null
         }
         Insert: {
@@ -1052,6 +1053,7 @@ export type Database = {
           status?: string
           updated_at?: string
           valor?: number | null
+          valor_a_receber?: number | null
           valor_comissao?: number | null
         }
         Update: {
@@ -1064,6 +1066,7 @@ export type Database = {
           status?: string
           updated_at?: string
           valor?: number | null
+          valor_a_receber?: number | null
           valor_comissao?: number | null
         }
         Relationships: [
