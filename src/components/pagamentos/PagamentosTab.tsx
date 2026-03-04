@@ -198,6 +198,7 @@ async function fetchPagamentosData() {
         status: p.status,
         observacoes: p.observacoes,
         valor: p.valor,
+        valor_a_receber: p.valor_a_receber,
       })),
     };
   });
