@@ -306,7 +306,8 @@ export function PagamentoDialog({
                   </div>
 
                   {/* Fields - 2 rows on mobile, single row on desktop */}
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {/* Valor */}
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <DollarSign className="h-3 w-3" /> Valor (R$)
@@ -321,6 +322,7 @@ export function PagamentoDialog({
                         className="h-9"
                       />
                     </div>
+                    {/* Data */}
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" /> Data
@@ -332,6 +334,7 @@ export function PagamentoDialog({
                         className="h-9"
                       />
                     </div>
+                    {/* Status */}
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground">Status</Label>
                       <Select
@@ -354,9 +357,10 @@ export function PagamentoDialog({
                         </SelectContent>
                       </Select>
                     </div>
+                    {/* Valor a receber */}
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" /> Valor que a mãe vai receber (R$)
+                        <DollarSign className="h-3 w-3" /> Mãe recebe (R$)
                       </Label>
                       <Input
                         type="number"
@@ -364,11 +368,12 @@ export function PagamentoDialog({
                         min="0"
                         value={parcela.valor_a_receber}
                         onChange={(e) => updateParcela(index, "valor_a_receber", e.target.value)}
-                        placeholder="Apenas conferência"
+                        placeholder="Conferência"
                         className="h-9"
                       />
-                      <p className="text-[10px] text-muted-foreground leading-tight">Apenas para referência — não entra em cálculos.</p>
+                      <p className="text-[10px] text-muted-foreground leading-tight">Apenas referência.</p>
                     </div>
+                    {/* Observações */}
                     <div className="space-y-1 col-span-2">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <FileText className="h-3 w-3" /> Obs.
