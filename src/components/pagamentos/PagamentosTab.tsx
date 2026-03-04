@@ -652,6 +652,16 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
                           <TableCell className="text-right font-medium">
                             {valorTotal ? formatCurrency(valorTotal) : "—"}
                           </TableCell>
+                          <TableCell className="text-right text-sm">
+                            {maeRecebeu > 0 ? (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-medium">{formatCurrency(maeRecebeu)}</span>
+                            ) : "—"}
+                          </TableCell>
+                          <TableCell className="text-right text-sm">
+                            {maeAReceber > 0 ? (
+                              <span className="text-amber-600 dark:text-amber-400 font-medium">{formatCurrency(maeAReceber)}</span>
+                            ) : "—"}
+                          </TableCell>
                           <TableCell>
                             {!mae.temPagamento ? (
                               <Badge variant="secondary">
