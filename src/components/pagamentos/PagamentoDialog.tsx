@@ -349,6 +349,20 @@ export function PagamentoDialog({
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <DollarSign className="h-3 w-3" /> A receber (R$)
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={parcela.valor_a_receber}
+                        onChange={(e) => updateParcela(index, "valor_a_receber", e.target.value)}
+                        placeholder="0,00"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1 col-span-2">
+                      <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <FileText className="h-3 w-3" /> Obs.
                       </Label>
                       <Input
