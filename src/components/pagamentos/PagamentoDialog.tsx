@@ -118,6 +118,7 @@ export function PagamentoDialog({
           status: p.status as StatusParcela,
           observacoes: p.observacoes || "",
           valor: p.valor ? String(p.valor) : "",
+          valor_a_receber: p.valor_a_receber ? String(p.valor_a_receber) : "",
         }))
       );
     }
@@ -127,7 +128,7 @@ export function PagamentoDialog({
   const addParcela = () => {
     setParcelas((prev) => [
       ...prev,
-      { numero_parcela: prev.length + 1, data_pagamento: "", status: "pendente", observacoes: "", valor: "" },
+      { numero_parcela: prev.length + 1, data_pagamento: "", status: "pendente", observacoes: "", valor: "", valor_a_receber: "" },
     ]);
   };
 
@@ -221,7 +222,7 @@ export function PagamentoDialog({
   const handleTipoPagamentoChange = (value: TipoPagamento) => {
     setTipoPagamento(value);
     if (value === "a_vista") {
-      setParcelas([{ numero_parcela: 1, data_pagamento: "", status: "pendente", observacoes: "", valor: "" }]);
+      setParcelas([{ numero_parcela: 1, data_pagamento: "", status: "pendente", observacoes: "", valor: "", valor_a_receber: "" }]);
     }
   };
 
