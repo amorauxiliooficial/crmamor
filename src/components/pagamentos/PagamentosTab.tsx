@@ -618,6 +618,14 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
                       const progresso = totalParcelas > 0 ? (pagas / totalParcelas) * 100 : 0;
                       const valorTotal = pagamento?.valor_total;
 
+                      // Calcular valores que a mãe recebeu e vai receber
+                      const maeRecebeu = pagamento?.parcelas
+                        .filter((p) => p.status === "pago")
+                        .reduce((acc, p) => acc + (p.valor_a_receber || 0), 0) || 0;
+                      const maeAReceber = pagamento?.parcelas
+                        .filter((p) => p.status !== "pago")
+                        .reduce((acc, p) => acc + (p.valor_a_receber || 0), 0) || 0;
+
                       return (
                         <TableRow key={mae.id}>
                           <TableCell className="font-medium">{mae.nome_mae}</TableCell>
