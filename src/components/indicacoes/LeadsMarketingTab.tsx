@@ -127,17 +127,27 @@ export function LeadsMarketingTab({ searchQuery = "" }: LeadsMarketingTabProps) 
 
   return (
     <div className="space-y-6">
+      {/* Period filter */}
+      <Tabs value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
+        <TabsList>
+          <TabsTrigger value="day">Hoje</TabsTrigger>
+          <TabsTrigger value="week">Semana</TabsTrigger>
+          <TabsTrigger value="month">Mês</TabsTrigger>
+          <TabsTrigger value="all">Total</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" />
-              Total de Leads
+              Leads no Período
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{leads.length}</div>
+            <div className="text-2xl font-bold">{periodFilteredLeads.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -149,7 +159,7 @@ export function LeadsMarketingTab({ searchQuery = "" }: LeadsMarketingTabProps) 
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {leads.filter((l) => l.status === "open").length}
+              {periodFilteredLeads.filter((l) => l.status === "open").length}
             </div>
           </CardContent>
         </Card>
