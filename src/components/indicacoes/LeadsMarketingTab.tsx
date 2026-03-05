@@ -20,8 +20,9 @@ import {
   Megaphone,
   ExternalLink,
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, subDays, subWeeks, subMonths, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface LeadMarketing {
   id: string;
