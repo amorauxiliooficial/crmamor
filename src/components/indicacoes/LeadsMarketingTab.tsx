@@ -46,6 +46,7 @@ export function LeadsMarketingTab({ searchQuery = "" }: LeadsMarketingTabProps) 
   const [loading, setLoading] = useState(true);
   const [localSearch, setLocalSearch] = useState("");
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
+  const [period, setPeriod] = useState<"day" | "week" | "month" | "all">("all");
 
   const fetchLeads = async () => {
     if (!user?.id) return;
@@ -55,6 +56,7 @@ export function LeadsMarketingTab({ searchQuery = "" }: LeadsMarketingTabProps) 
       .from("wa_conversations")
       .select("id, wa_name, wa_phone, created_at, last_message_at, status, unread_count")
       .is("mae_id", null)
+      .neq("status", "closed")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -72,11 +74,21 @@ export function LeadsMarketingTab({ searchQuery = "" }: LeadsMarketingTabProps) 
 
   const removeAccents = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
+  const periodFilteredLeads = useMemo(() => {
+    if (period === "all") return leads;
+    const now = new Date();
+    let cutoff: Date;
+    if (period === "day") cutoff = subDays(now, 1);
+    else if (period === "week") cutoff = subWeeks(now, 1);
+    else cutoff = subMonths(now, 1);
+    return leads.filter((l) => isAfter(parseISO(l.created_at), cutoff));
+  }, [leads, period]);
+
   const filteredLeads = useMemo(() => {
     const query = removeAccents((searchQuery || localSearch).toLowerCase().trim());
-    if (!query) return leads;
+    if (!query) return periodFilteredLeads;
 
-    return leads.filter((lead) => {
+    return periodFilteredLeads.filter((lead) => {
       const normalizedName = removeAccents(lead.wa_name?.toLowerCase() || "");
       const phoneDigits = lead.wa_phone.replace(/\D/g, "");
       const queryDigits = query.replace(/\D/g, "");
@@ -86,7 +98,7 @@ export function LeadsMarketingTab({ searchQuery = "" }: LeadsMarketingTabProps) 
         (queryDigits.length > 0 && phoneDigits.includes(queryDigits))
       );
     });
-  }, [leads, searchQuery, localSearch]);
+  }, [periodFilteredLeads, searchQuery, localSearch]);
 
   const formatPhone = (phone: string) => {
     const cleaned = phone.replace(/\D/g, "");
