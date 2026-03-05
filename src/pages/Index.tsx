@@ -11,6 +11,7 @@ import { MaeEditDialog } from "@/components/mae/MaeEditDialog";
 import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
 import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
 import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
+import { LeadsMarketingTab } from "@/components/indicacoes/LeadsMarketingTab";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { GuidedTour } from "@/components/tour/GuidedTour";
 import { MobileViewSelector } from "@/components/layout/MobileViewSelector";
@@ -470,12 +471,29 @@ const Index = () => {
           <ViewTransition viewKey={viewMode}>
             {viewMode === "indicacoes" ? (
               <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-                <IndicacoesTab 
-                  searchQuery={searchQuery} 
-                  externalSelectedIndicacao={selectedIndicacaoFromNotification}
-                  onClearExternalSelection={() => setSelectedIndicacaoFromNotification(null)}
-                  selectedUserId={selectedUserId || undefined}
-                />
+                <Tabs defaultValue="indicacoes" className="w-full">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="indicacoes" className="gap-2">
+                      <UserPlus className="h-4 w-4" />
+                      Indicações
+                    </TabsTrigger>
+                    <TabsTrigger value="leads" className="gap-2">
+                      <Megaphone className="h-4 w-4" />
+                      Leads Marketing
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="indicacoes">
+                    <IndicacoesTab 
+                      searchQuery={searchQuery} 
+                      externalSelectedIndicacao={selectedIndicacaoFromNotification}
+                      onClearExternalSelection={() => setSelectedIndicacaoFromNotification(null)}
+                      selectedUserId={selectedUserId || undefined}
+                    />
+                  </TabsContent>
+                  <TabsContent value="leads">
+                    <LeadsMarketingTab searchQuery={searchQuery} />
+                  </TabsContent>
+                </Tabs>
               </div>
             ) : viewMode === "conferencia" ? (
               <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
