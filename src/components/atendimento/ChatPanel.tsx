@@ -388,6 +388,9 @@ interface ChatPanelProps {
   profileMap?: Map<string, string>;
   aiEnabled?: boolean;
   onToggleAi?: () => void;
+  aiAgents?: { id: string; name: string; model: string }[];
+  selectedAiAgentId?: string | null;
+  onChangeAiAgent?: (agentId: string | null) => void;
 }
 
 export function ChatPanel({
@@ -421,6 +424,9 @@ export function ChatPanel({
   profileMap,
   aiEnabled,
   onToggleAi,
+  aiAgents = [],
+  selectedAiAgentId,
+  onChangeAiAgent,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
