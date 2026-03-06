@@ -1,6 +1,7 @@
 import { useMemo, useState, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Settings, User, ArrowLeft } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -139,7 +140,7 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, onSel
 
         {/* Row 2: Contact name (subtle) */}
         {contact.subtitle && (
-          <p className="text-[12px] leading-tight text-muted-foreground/50 truncate mt-[1px]">
+          <p className="text-[12px] leading-tight text-primary/70 truncate mt-[1px]">
             {contact.subtitle}
           </p>
         )}
@@ -242,9 +243,12 @@ export function InboxSidebar({
             <BackToPanel />
             <h1 className="font-semibold text-[15px] tracking-tight">Conversas</h1>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground/40" onClick={onOpenConfig}>
-            <Settings className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-0.5">
+            <ThemeToggle className="h-8 w-8" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground/40" onClick={onOpenConfig}>
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
