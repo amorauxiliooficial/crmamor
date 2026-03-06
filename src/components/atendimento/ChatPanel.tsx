@@ -458,8 +458,12 @@ export function ChatPanel({
   conversationPhone,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const isNearBottomRef = useRef(true);
+  const prevConversationIdRef = useRef<string | null>(null);
+  const prevMsgCountRef = useRef(0);
 
   const effectiveLastInboundAt = useMemo(() => {
     const dbLastInbound = lastInboundAt ?? null;
@@ -515,9 +519,54 @@ export function ChatPanel({
     [onMsgTextChange]
   );
 
+  // Scroll to bottom helper
+  const scrollToBottom = useCallback((instant = false) => {
+    const vp = scrollViewportRef.current;
+    if (vp) {
+      if (instant) {
+        vp.scrollTop = vp.scrollHeight;
+      } else {
+        vp.scrollTo({ top: vp.scrollHeight, behavior: "smooth" });
+      }
+    }
+  }, []);
+
+  // Track if user is near the bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conversa?.id, mensagens.length]);
+    const vp = scrollViewportRef.current;
+    if (!vp) return;
+    const handleScroll = () => {
+      const threshold = 150;
+      isNearBottomRef.current = vp.scrollHeight - vp.scrollTop - vp.clientHeight < threshold;
+    };
+    vp.addEventListener("scroll", handleScroll, { passive: true });
+    return () => vp.removeEventListener("scroll", handleScroll);
+  }, [conversa?.id]);
+
+  // On conversation change: instant scroll to bottom
+  useEffect(() => {
+    if (conversa?.id !== prevConversationIdRef.current) {
+      prevConversationIdRef.current = conversa?.id ?? null;
+      isNearBottomRef.current = true;
+      // Wait for messages to render
+      requestAnimationFrame(() => {
+        scrollToBottom(true);
+        // Double-ensure after images/media load
+        setTimeout(() => scrollToBottom(true), 100);
+      });
+    }
+  }, [conversa?.id, scrollToBottom]);
+
+  // On new messages: scroll to bottom only if user was near bottom
+  useEffect(() => {
+    if (mensagens.length > 0 && mensagens.length !== prevMsgCountRef.current) {
+      const isInitialLoad = prevMsgCountRef.current === 0;
+      prevMsgCountRef.current = mensagens.length;
+      if (isInitialLoad || isNearBottomRef.current) {
+        requestAnimationFrame(() => scrollToBottom(isInitialLoad));
+      }
+    }
+  }, [mensagens.length, scrollToBottom]);
 
   useEffect(() => {
     setSummary(null);
@@ -525,6 +574,7 @@ export function ChatPanel({
     setVisibleCount(MESSAGES_PER_PAGE);
     setReplyTo(null);
     setShowFavoritesOnly(false);
+    prevMsgCountRef.current = 0;
   }, [conversa?.id]);
 
   const handlePin = useCallback((m: Mensagem) => {
@@ -870,7 +920,13 @@ export function ChatPanel({
       )}
 
       {/* Messages */}
-      <ScrollArea className="flex-1 w-full overflow-x-hidden bg-chat-bg">
+      <ScrollArea className="flex-1 w-full overflow-x-hidden bg-chat-bg" ref={(node) => {
+        // Get the Radix viewport element inside ScrollArea
+        if (node) {
+          const viewport = node.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement | null;
+          if (viewport) scrollViewportRef.current = viewport;
+        }
+      }}>
         <div className="px-4 md:px-8 py-3 space-y-0.5 max-w-3xl mx-auto w-full overflow-x-hidden">
           {hasMore && (
             <div className="flex justify-center py-3">
