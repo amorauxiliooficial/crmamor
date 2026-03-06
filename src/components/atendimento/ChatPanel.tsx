@@ -293,7 +293,7 @@ const MessageBubble = memo(function MessageBubble({
                   className="text-[14.2px] leading-[19px] whitespace-pre-wrap"
                   style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
                 >
-                  {/^\[.+\]$/.test(m.texto.trim()) ? "" : renderTextWithLinks(m.texto)}
+                  {m.msgType === "reaction" ? "❤️" : m.msgType === "unsupported" ? "⚠️ Mensagem não suportada" : /^\[.+\]$/.test(m.texto.trim()) ? "" : renderTextWithLinks(m.texto)}
                 </span>
               )}
 
