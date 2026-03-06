@@ -551,6 +551,8 @@ export default function Atendimento() {
                 aiAgents={aiAgents ?? []}
                 selectedAiAgentId={selectedAiAgentId}
                 onChangeAiAgent={handleChangeAiAgent}
+                lastInboundAt={conversa?.lastInboundAt}
+                conversationPhone={selectedWa?.wa_phone}
               />
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
@@ -704,6 +706,8 @@ export default function Atendimento() {
         aiAgents={aiAgents ?? []}
         selectedAiAgentId={selectedAiAgentId}
         onChangeAiAgent={handleChangeAiAgent}
+        lastInboundAt={conversa?.lastInboundAt}
+        conversationPhone={selectedWa?.wa_phone}
       />
 
       <TransferDialog
