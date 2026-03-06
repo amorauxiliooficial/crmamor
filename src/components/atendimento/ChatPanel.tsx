@@ -312,14 +312,6 @@ const MessageBubble = memo(function MessageBubble({
                   />
                 )}
               </span>
-                {isMe && (
-                  <MessageStatusIcon
-                    status={m.status}
-                    errorMessage={m.errorMessage}
-                    className="!h-[13px] !w-[13px]"
-                  />
-                )}
-              </span>
             </div>
           </div>
         )}
