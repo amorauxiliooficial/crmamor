@@ -1023,6 +1023,22 @@ export function ChatPanel({
           </button>
         </div>
 
+        {/* Reply quote */}
+        {replyTo && (
+          <div className="mx-4 mt-2 mb-1 p-2.5 bg-primary/5 border-l-4 border-primary/40 rounded-r-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
+            <Reply className="h-4 w-4 text-primary/50 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-semibold text-primary/60">
+                {replyTo.de === "atendente" ? (replyTo.sentByAgentName || "Você") : "Contato"}
+              </p>
+              <p className="text-xs text-muted-foreground/60 truncate">{replyTo.texto || `[${replyTo.msgType}]`}</p>
+            </div>
+            <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg shrink-0" onClick={() => setReplyTo(null)}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+
         {/* Pending file preview */}
         {pendingFile && pendingPreview && (
           <div className="mx-4 mt-2 mb-1 p-2 bg-muted/20 border border-border/20 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
@@ -1058,20 +1074,8 @@ export function ChatPanel({
 
         <div className="flex gap-2 items-end px-4 pb-3 pt-1.5">
           <div className="flex gap-1 shrink-0">
+            <AttachmentMenu onFileSelected={handleFileFromMenu} />
             <TooltipProvider delayDuration={200}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-10 w-10 rounded-lg text-muted-foreground/40"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Paperclip className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="text-xs">Anexar arquivo</TooltipContent>
-              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -1086,18 +1090,7 @@ export function ChatPanel({
                 <TooltipContent className="text-xs">Templates (/)</TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setPendingFile(file);
-                if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
-                  setPendingPreview(URL.createObjectURL(file));
-                } else {
+          </div>
                   setPendingPreview("file");
                 }
                 e.target.value = "";
