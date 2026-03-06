@@ -672,7 +672,7 @@ export function ChatPanel({
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-[15px] truncate">{ci.displayName}</p>
               {ci.subtitle && (
-                <p className="text-[12px] text-muted-foreground truncate">{ci.subtitle}</p>
+                <p className="text-[12px] text-primary/70 truncate">{ci.subtitle}</p>
               )}
             </div>
           );
