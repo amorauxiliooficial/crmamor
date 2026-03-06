@@ -3,7 +3,7 @@ import {
   Send, ArrowLeft, User, Clock, CheckCircle,
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
   Loader2, Brain, Database, ArrowRight,
-  X, RotateCcw, MoreVertical, Pencil,
+  X, RotateCcw, MoreVertical, Pencil, Bot,
   ArrowRightLeft, Wifi, WifiOff, RotateCw,
   Pin, Star, Reply, UserCheck, Tag, Bell, BellOff, Info,
 } from "lucide-react";
