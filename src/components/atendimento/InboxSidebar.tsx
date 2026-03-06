@@ -131,7 +131,7 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, onSel
           </span>
           <span className={cn(
             "text-[12px] shrink-0 tabular-nums",
-            hasUnread ? "text-emerald-500 font-medium" : "text-muted-foreground/45"
+            hasUnread ? "text-emerald-500 font-medium" : "text-muted-foreground"
           )}>
             {formatHorario(c.horario)}
           </span>
