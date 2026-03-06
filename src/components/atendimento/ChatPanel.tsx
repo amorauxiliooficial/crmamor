@@ -1091,12 +1091,6 @@ export function ChatPanel({
               </Tooltip>
             </TooltipProvider>
           </div>
-                  setPendingPreview("file");
-                }
-                e.target.value = "";
-              }}
-            />
-          </div>
 
           <Textarea
             ref={textareaRef}
