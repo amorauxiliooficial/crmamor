@@ -5,9 +5,12 @@ import {
   Loader2, Zap, Brain, Database, ArrowRight, CalendarPlus, AlertTriangle,
   Info, Paperclip, X, Image as ImageIcon, RotateCcw, MoreVertical, Pencil, Check,
   Bell, BellOff, ArrowRightLeft, RefreshCw, Wifi, WifiOff, RotateCw,
+  Pin, Star, Reply,
 } from "lucide-react";
 import { AudioRecorder } from "@/components/atendimento/AudioRecorder";
 import { MessageStatusIcon } from "@/components/atendimento/MessageStatusIcon";
+import { AttachmentMenu } from "@/components/atendimento/AttachmentMenu";
+import { MessageContextMenu } from "@/components/atendimento/MessageContextMenu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
