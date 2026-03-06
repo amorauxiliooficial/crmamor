@@ -58,7 +58,34 @@ function shouldShowTimestamp(current: Mensagem, prev: Mensagem | null): boolean 
 
 function isSameAuthorGroup(current: Mensagem, prev: Mensagem | null): boolean {
   if (!prev) return false;
-  return current.de === prev.de && current.horario.getTime() - prev.horario.getTime() < 2 * 60000;
+  return current.de === prev.de 
+    && current.sentByAgentId === prev.sentByAgentId
+    && current.horario.getTime() - prev.horario.getTime() < 2 * 60000;
+}
+
+/** Position within a consecutive author block */
+type BubblePosition = "solo" | "first" | "middle" | "last";
+
+function getBubblePosition(
+  msg: Mensagem,
+  prev: Mensagem | null,
+  next: Mensagem | null,
+): BubblePosition {
+  const groupedWithPrev = isSameAuthorGroup(msg, prev);
+  const groupedWithNext = next ? isSameAuthorGroup(next, msg) : false;
+  if (!groupedWithPrev && !groupedWithNext) return "solo";
+  if (!groupedWithPrev && groupedWithNext) return "first";
+  if (groupedWithPrev && groupedWithNext) return "middle";
+  return "last";
+}
+
+function getBubbleRounding(isMe: boolean, pos: BubblePosition): string {
+  // WhatsApp-style connected corners
+  if (pos === "solo") return isMe ? "rounded-2xl rounded-br-md" : "rounded-2xl rounded-bl-md";
+  if (pos === "first") return isMe ? "rounded-2xl rounded-br-md" : "rounded-2xl rounded-bl-md";
+  if (pos === "middle") return isMe ? "rounded-r-md rounded-l-2xl" : "rounded-l-md rounded-r-2xl";
+  // last
+  return isMe ? "rounded-2xl rounded-tr-md" : "rounded-2xl rounded-tl-md";
 }
 
 function MessageSkeleton() {
