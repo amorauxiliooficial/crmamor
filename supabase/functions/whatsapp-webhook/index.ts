@@ -206,6 +206,44 @@ serve(async (req: Request): Promise<Response> => {
             .update(updatePayload)
             .eq('meta_message_id', metaMsgId);
           if (error) console.error('❌ Status update error:', error);
+
+          // Capture pricing data from webhook (sent status includes pricing)
+          if (st.pricing && newStatus === 'sent') {
+            const pricing = st.pricing;
+            console.log(`💰 Pricing data: billable=${pricing.billable}, model=${pricing.pricing_model}, category=${pricing.category}`);
+
+            // Find the message to get conversation_id
+            const { data: msgRow } = await supabase
+              .from('wa_messages')
+              .select('id, conversation_id')
+              .eq('meta_message_id', metaMsgId)
+              .maybeSingle();
+
+            if (msgRow) {
+              // Lookup rate card for cost estimation
+              let estimatedCost = 0;
+              const category = pricing.category || 'service';
+              const { data: rateCard } = await supabase
+                .from('wa_rate_cards')
+                .select('cost_per_message')
+                .eq('market', 'brazil')
+                .eq('category', category)
+                .limit(1)
+                .maybeSingle();
+              if (rateCard) estimatedCost = rateCard.cost_per_message;
+
+              await supabase.from('wa_billing_events').insert({
+                message_id: msgRow.id,
+                conversation_id: msgRow.conversation_id,
+                meta_message_id: metaMsgId,
+                billable: pricing.billable !== false,
+                pricing_model: pricing.pricing_model || null,
+                category: category,
+                estimated_cost: pricing.billable !== false ? estimatedCost : 0,
+              });
+              console.log(`✅ Billing event saved for ${metaMsgId}: ${category} $${estimatedCost}`);
+            }
+          }
         }
       }
 

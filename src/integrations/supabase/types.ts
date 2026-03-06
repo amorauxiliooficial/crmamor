@@ -1634,6 +1634,87 @@ export type Database = {
           },
         ]
       }
+      wa_billing_events: {
+        Row: {
+          billable: boolean
+          category: string | null
+          conversation_id: string
+          created_at: string
+          currency: string | null
+          estimated_cost: number | null
+          id: string
+          message_id: string | null
+          meta_message_id: string | null
+          pricing_model: string | null
+        }
+        Insert: {
+          billable?: boolean
+          category?: string | null
+          conversation_id: string
+          created_at?: string
+          currency?: string | null
+          estimated_cost?: number | null
+          id?: string
+          message_id?: string | null
+          meta_message_id?: string | null
+          pricing_model?: string | null
+        }
+        Update: {
+          billable?: boolean
+          category?: string | null
+          conversation_id?: string
+          created_at?: string
+          currency?: string | null
+          estimated_cost?: number | null
+          id?: string
+          message_id?: string | null
+          meta_message_id?: string | null
+          pricing_model?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_billing_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "wa_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wa_billing_events_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "wa_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wa_billing_settings: {
+        Row: {
+          alert_enabled: boolean | null
+          confirmation_threshold: number | null
+          daily_limit: number | null
+          id: string
+          monthly_limit: number | null
+          updated_at: string
+        }
+        Insert: {
+          alert_enabled?: boolean | null
+          confirmation_threshold?: number | null
+          daily_limit?: number | null
+          id?: string
+          monthly_limit?: number | null
+          updated_at?: string
+        }
+        Update: {
+          alert_enabled?: boolean | null
+          confirmation_threshold?: number | null
+          daily_limit?: number | null
+          id?: string
+          monthly_limit?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       wa_conversations: {
         Row: {
           ai_agent_id: string | null
@@ -1794,6 +1875,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wa_rate_cards: {
+        Row: {
+          category: string
+          cost_per_message: number
+          created_at: string
+          currency: string
+          direction: string
+          effective_from: string
+          id: string
+          market: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          cost_per_message?: number
+          created_at?: string
+          currency?: string
+          direction?: string
+          effective_from?: string
+          id?: string
+          market?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          cost_per_message?: number
+          created_at?: string
+          currency?: string
+          direction?: string
+          effective_from?: string
+          id?: string
+          market?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       wa_templates: {
         Row: {
