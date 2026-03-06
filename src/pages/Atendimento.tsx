@@ -631,6 +631,7 @@ export default function Atendimento() {
           </SheetContent>
         </Sheet>
       )}
+      <SettingsDrawer open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 }
