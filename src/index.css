@@ -148,7 +148,7 @@ All colors MUST be HSL.
     --sidebar-ring: 330 65% 60%;
 
     /* ── Chat bubbles (dark mode) ── */
-    --chat-outbound: 330 30% 22%;
+    --chat-outbound: 330 35% 28%;
     --chat-outbound-foreground: 220 5% 93%;
     --chat-inbound: 220 8% 15%;
     --chat-inbound-foreground: 220 5% 93%;
