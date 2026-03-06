@@ -670,28 +670,10 @@ export function ChatPanel({
           const ci = getContactDisplay(conversa.nome, conversa.waName, conversa.telefone);
           return (
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="font-semibold text-[15px] truncate">{ci.displayName}</p>
-                <span className={cn("h-2 w-2 rounded-full shrink-0", connectionDot)} />
-                <WindowBadge
-                  lastInboundAt={effectiveLastInboundAt}
-                  onSendTemplate={() => setTemplateDialogOpen(true)}
-                />
-                <ConsumptionBadge
-                  conversationId={conversa.id}
-                  lastInboundAt={effectiveLastInboundAt}
-                />
-              </div>
+              <p className="font-semibold text-[15px] truncate">{ci.displayName}</p>
               {ci.subtitle && (
-                <p className="text-[10px] text-muted-foreground/40 truncate">{ci.subtitle}</p>
+                <p className="text-[12px] text-muted-foreground truncate">{ci.subtitle}</p>
               )}
-              <p className={cn(
-                "text-[12px] font-medium",
-                QUEUE_STATUS_LABELS[conversa.queueStatus ?? ""]?.color ?? "text-muted-foreground/40"
-              )}>
-                {QUEUE_STATUS_LABELS[conversa.queueStatus ?? ""]?.label ?? conversa.status}
-                {conversa.atendente && <span className="text-muted-foreground/40 font-normal"> · {conversa.atendente}</span>}
-              </p>
             </div>
           );
         })()}

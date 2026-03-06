@@ -49,30 +49,12 @@ export function getContactDisplay(
   waName: string | null | undefined,
   phone: string,
 ): ContactDisplayInfo {
-  // 1. CRM name available
-  if (crmName && crmName.trim()) {
-    return {
-      displayName: crmName.trim(),
-      subtitle: null,
-      initials: crmName.trim().charAt(0).toUpperCase(),
-    };
-  }
-
-  // 2. No CRM name — show formatted phone as primary
   const formattedPhone = formatE164ToBR(phone);
+  const name = crmName?.trim() || waName?.trim() || null;
 
-  if (waName && waName.trim()) {
-    return {
-      displayName: formattedPhone,
-      subtitle: `WhatsApp: ${abbreviateName(waName.trim())}`,
-      initials: waName.trim().charAt(0).toUpperCase(),
-    };
-  }
-
-  // 3. No CRM name and no WhatsApp name
   return {
     displayName: formattedPhone,
-    subtitle: `Não salvo • final ${getLastDigits(phone)}`,
-    initials: "#",
+    subtitle: name ? abbreviateName(name) : null,
+    initials: name ? name.charAt(0).toUpperCase() : "#",
   };
 }
