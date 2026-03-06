@@ -490,7 +490,7 @@ export default function Atendimento() {
               onSearchChange={handleSearchChange}
               debouncedSearch={debouncedSearch}
               onSelect={selectConversa}
-              onOpenConfig={() => navigate("/atendimento/config")}
+              onOpenConfig={() => setSettingsOpen(true)}
               statusFilter={statusFilter}
               onStatusFilterChange={setStatusFilter}
               atendenteFilter={atendenteFilter}
@@ -558,7 +558,7 @@ export default function Atendimento() {
         onSearchChange={handleSearchChange}
         debouncedSearch={debouncedSearch}
         onSelect={selectConversa}
-        onOpenConfig={() => navigate("/atendimento/config")}
+        onOpenConfig={() => setSettingsOpen(true)}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
         atendenteFilter={atendenteFilter}
