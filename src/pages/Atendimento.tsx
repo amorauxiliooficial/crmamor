@@ -548,6 +548,9 @@ export default function Atendimento() {
                 profileMap={profileMap}
                 aiEnabled={aiEnabled}
                 onToggleAi={handleToggleAi}
+                aiAgents={aiAgents ?? []}
+                selectedAiAgentId={selectedAiAgentId}
+                onChangeAiAgent={handleChangeAiAgent}
               />
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
@@ -698,6 +701,9 @@ export default function Atendimento() {
         profileMap={profileMap}
         aiEnabled={aiEnabled}
         onToggleAi={handleToggleAi}
+        aiAgents={aiAgents ?? []}
+        selectedAiAgentId={selectedAiAgentId}
+        onChangeAiAgent={handleChangeAiAgent}
       />
 
       <TransferDialog
