@@ -637,7 +637,10 @@ export function ChatPanel({
               <div className="flex items-center gap-2">
                 <p className="font-semibold text-[15px] truncate">{ci.displayName}</p>
                 <span className={cn("h-2 w-2 rounded-full shrink-0", connectionDot)} />
-              </div>
+                <WindowBadge
+                  lastInboundAt={lastInboundAt ?? null}
+                  onSendTemplate={() => setTemplateDialogOpen(true)}
+                />
               {ci.subtitle && (
                 <p className="text-[10px] text-muted-foreground/40 truncate">{ci.subtitle}</p>
               )}
