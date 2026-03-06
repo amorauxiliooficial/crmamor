@@ -189,7 +189,7 @@ export const VoiceNote = memo(function VoiceNote({ src, duration, isMe }: VoiceN
         onClick={toggleSpeed}
         className={cn(
           "h-9 w-9 rounded-full flex items-center justify-center shrink-0 transition-colors",
-          "bg-amber-400 hover:bg-amber-500 text-white"
+          "bg-primary hover:bg-primary/90 text-primary-foreground"
         )}
         title={`Velocidade: ${speed}x`}
       >
