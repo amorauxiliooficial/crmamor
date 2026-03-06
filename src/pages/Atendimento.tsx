@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveAiAgents } from "@/hooks/useAiAgents";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -342,34 +343,57 @@ export default function Atendimento() {
     [selectedId]
   );
 
-  // AI toggle: add/remove AI_ON label
+  // AI agents list
+  const { data: aiAgents } = useActiveAiAgents();
+
+  // AI toggle: use ai_enabled column + legacy labels
   const aiEnabled = useMemo(() => {
-    return (selectedWa?.labels ?? []).includes("AI_ON");
+    if (!selectedWa) return false;
+    return (selectedWa as any).ai_enabled === true || (selectedWa?.labels ?? []).includes("AI_ON");
+  }, [selectedWa]);
+
+  const selectedAiAgentId = useMemo(() => {
+    return (selectedWa as any)?.ai_agent_id ?? null;
   }, [selectedWa]);
 
   const handleToggleAi = useCallback(async () => {
     if (!selectedId || !selectedWa) return;
+    const newEnabled = !aiEnabled;
     const currentLabels: string[] = selectedWa.labels ?? [];
-    let newLabels: string[];
-    if (currentLabels.includes("AI_ON")) {
-      newLabels = currentLabels.filter(l => l !== "AI_ON" && l !== "AI_PRIMARY");
-    } else {
+    let newLabels = currentLabels;
+    if (newEnabled) {
       newLabels = [...currentLabels.filter(l => l !== "HANDOFF_HUMAN" && l !== "AI_PAUSED"), "AI_ON"];
+    } else {
+      newLabels = currentLabels.filter(l => l !== "AI_ON" && l !== "AI_PRIMARY");
     }
     const { error } = await supabase
       .from("wa_conversations")
-      .update({ labels: newLabels } as any)
+      .update({ ai_enabled: newEnabled, labels: newLabels } as any)
       .eq("id", selectedId);
     if (error) {
       toast({ title: "Erro ao atualizar IA", variant: "destructive" });
     } else {
-      toast({ title: newLabels.includes("AI_ON") ? "IA ativada 🤖" : "IA desativada" });
+      toast({ title: newEnabled ? "IA ativada 🤖" : "IA desativada" });
       createEvent.mutate({
         conversation_id: selectedId,
-        event_type: newLabels.includes("AI_ON") ? "ai_enabled" : "ai_disabled",
+        event_type: newEnabled ? "ai_enabled" : "ai_disabled",
       });
     }
-  }, [selectedId, selectedWa, toast, createEvent]);
+  }, [selectedId, selectedWa, aiEnabled, toast, createEvent]);
+
+  const handleChangeAiAgent = useCallback(async (agentId: string | null) => {
+    if (!selectedId) return;
+    const { error } = await supabase
+      .from("wa_conversations")
+      .update({ ai_agent_id: agentId } as any)
+      .eq("id", selectedId);
+    if (error) {
+      toast({ title: "Erro ao mudar agente", variant: "destructive" });
+    } else {
+      const agentName = aiAgents?.find(a => a.id === agentId)?.name || "Padrão";
+      toast({ title: `Agente alterado para ${agentName} 🤖` });
+    }
+  }, [selectedId, aiAgents, toast]);
 
   const handleSend = useCallback(() => {
     if (!selectedId || !msgText.trim() || !selectedWa) return;
