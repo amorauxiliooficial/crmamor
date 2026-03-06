@@ -6,14 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// ── Configuration ──
-const DEFAULT_MODEL = "gpt-4o-mini"; // cost-effective default; swap to "gpt-4o" for stronger reasoning
+const DEFAULT_MODEL = "gpt-4o-mini";
 const MAX_HISTORY = 20;
 const DEBOUNCE_SECONDS = 10;
 const HUMAN_DELAY_MS = { min: 3000, max: 8000 };
 const HANDOFF_KEYWORDS = ["humano", "atendente", "pessoa real", "falar com alguém", "urgente", "emergência"];
 
-const SYSTEM_PROMPT = `Você é Emily, assistente virtual da equipe de salário-maternidade. Seu objetivo é qualificar a mãe de forma natural e empática via conversa.
+const FALLBACK_SYSTEM_PROMPT = `Você é Emily, assistente virtual da equipe de salário-maternidade. Seu objetivo é qualificar a mãe de forma natural e empática via conversa.
 
 REGRAS:
 - Conduza a conversa de forma natural, como uma pessoa real. NÃO use listas, checklists ou bullet points.
@@ -41,21 +40,23 @@ serve(async (req: Request): Promise<Response> => {
 
   if (!openaiKey) {
     console.error("❌ OPENAI_API_KEY not configured");
-    return new Response(JSON.stringify({ error: "OPENAI_API_KEY not configured" }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonError("OPENAI_API_KEY not configured", 500);
   }
 
   try {
-    const { conversation_id, trigger_message_id, model } = await req.json();
-    const selectedModel = model || DEFAULT_MODEL;
+    const body = await req.json();
 
-    console.log(`🤖 AI Reply triggered: conv=${conversation_id}, trigger=${trigger_message_id}, model=${selectedModel}`);
+    // ── Preview mode: simulate response without sending ──
+    if (body.preview_mode) {
+      return await handlePreview(body, openaiKey);
+    }
+
+    const { conversation_id, trigger_message_id } = body;
+
+    console.log(`🤖 AI Reply triggered: conv=${conversation_id}, trigger=${trigger_message_id}`);
 
     if (!conversation_id) {
-      return new Response(JSON.stringify({ error: "Missing conversation_id" }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return jsonError("Missing conversation_id", 400);
     }
 
     // ── 1. Fetch conversation ──
@@ -67,15 +68,19 @@ serve(async (req: Request): Promise<Response> => {
 
     if (convoErr || !convo) {
       console.error("❌ Conversation not found:", convoErr);
-      return new Response(JSON.stringify({ error: "Conversation not found" }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return jsonError("Conversation not found", 404);
     }
 
-    const labels: string[] = convo.labels || [];
-    console.log(`📋 Conversation labels: [${labels.join(", ")}], status=${convo.status}, assigned_to=${convo.assigned_to}`);
-
     // ── 2. Eligibility checks ──
+    const aiEnabled = convo.ai_enabled === true;
+    const labels: string[] = convo.labels || [];
+
+    // Support both new ai_enabled column and legacy AI_ON label
+    if (!aiEnabled && !labels.includes("AI_ON")) {
+      console.log("⏭️ Skipping: AI not enabled");
+      return jsonOk({ skipped: true, reason: "ai_not_enabled" });
+    }
+
     if (convo.status === "closed") {
       console.log("⏭️ Skipping: conversation is closed");
       return jsonOk({ skipped: true, reason: "closed" });
@@ -91,18 +96,85 @@ serve(async (req: Request): Promise<Response> => {
       return jsonOk({ skipped: true, reason: "ai_paused" });
     }
 
-    if (!labels.includes("AI_ON")) {
-      console.log("⏭️ Skipping: AI_ON not in labels");
-      return jsonOk({ skipped: true, reason: "ai_not_enabled" });
-    }
-
     // If assigned to a human and no AI_PRIMARY, skip
-    if (convo.assigned_to && !labels.includes("AI_PRIMARY")) {
+    if (convo.assigned_to && !labels.includes("AI_PRIMARY") && !aiEnabled) {
       console.log("⏭️ Skipping: assigned to human without AI_PRIMARY");
       return jsonOk({ skipped: true, reason: "assigned_to_human" });
     }
 
-    // ── 3. Fetch last N messages ──
+    // ── 3. Fetch agent config ──
+    let agentConfig: any = null;
+    const agentId = convo.ai_agent_id;
+
+    if (agentId) {
+      const { data: agent } = await supabase
+        .from("ai_agents")
+        .select("*")
+        .eq("id", agentId)
+        .eq("is_active", true)
+        .single();
+      if (agent) agentConfig = agent;
+    }
+
+    // Fallback: use default agent
+    if (!agentConfig) {
+      const { data: defaultAgent } = await supabase
+        .from("ai_agents")
+        .select("*")
+        .eq("is_default", true)
+        .eq("is_active", true)
+        .limit(1)
+        .single();
+      if (defaultAgent) agentConfig = defaultAgent;
+    }
+
+    // Build config from agent or fallback
+    const selectedModel = agentConfig?.model || DEFAULT_MODEL;
+    const maxTokens = agentConfig?.max_tokens || 300;
+    const agentName = agentConfig?.name || "Emily";
+
+    console.log(`📋 Agent: ${agentName}, model=${selectedModel}, max_tokens=${maxTokens}`);
+
+    // ── 4. Build system prompt from agent config ──
+    let systemPrompt = agentConfig?.system_prompt || FALLBACK_SYSTEM_PROMPT;
+
+    // Append knowledge instructions
+    if (agentConfig?.knowledge_instructions) {
+      systemPrompt += `\n\nINSTRUÇÕES ADICIONAIS DE CONHECIMENTO:\n${agentConfig.knowledge_instructions}`;
+    }
+
+    // Append FAQ
+    const faq = agentConfig?.knowledge_faq;
+    if (faq && Array.isArray(faq) && faq.length > 0) {
+      systemPrompt += "\n\nPERGUNTAS FREQUENTES (use como base para respostas):";
+      for (const item of faq) {
+        if (item.question && item.answer) {
+          systemPrompt += `\nP: ${item.question}\nR: ${item.answer}`;
+        }
+      }
+    }
+
+    // Append tools instructions
+    const tools = agentConfig?.tools_config;
+    if (tools && typeof tools === "object") {
+      const enabledTools = Object.entries(tools).filter(([_, v]) => v).map(([k]) => k);
+      if (enabledTools.length > 0) {
+        systemPrompt += `\n\nFERRAMENTAS HABILITADAS: ${enabledTools.join(", ")}`;
+        if (enabledTools.includes("handoff_human")) {
+          systemPrompt += "\n- Se a pessoa insistir em falar com humano, responda EXATAMENTE: HANDOFF_REQUEST";
+        }
+        if (enabledTools.includes("qualify_lead")) {
+          systemPrompt += "\n- Colete informações essenciais de forma natural (nome, tipo de evento, data, situação trabalhista)";
+        }
+      }
+    }
+
+    // Append tone
+    if (agentConfig?.tone) {
+      systemPrompt += `\n\nTOM DE CONVERSA: Seja ${agentConfig.tone}.`;
+    }
+
+    // ── 5. Fetch last N messages ──
     const { data: messages, error: msgErr } = await supabase
       .from("wa_messages")
       .select("*")
@@ -124,31 +196,14 @@ serve(async (req: Request): Promise<Response> => {
       return jsonOk({ skipped: true, reason: "last_msg_not_inbound" });
     }
 
-    // Dedup: check if trigger_message_id already processed
-    if (trigger_message_id) {
-      const { data: existingEvent } = await supabase
-        .from("conversation_events")
-        .select("id")
-        .eq("conversation_id", conversation_id)
-        .eq("event_type", "ai_replied")
-        .limit(5);
-
-      if (existingEvent?.some(e => {
-        // We'll check meta for trigger_message_id — need to query with containment
-        return false; // Simple approach: skip complex dedup, rely on debounce
-      })) {
-        // fallthrough
-      }
-    }
-
-    // ── 4. Debounce: check if AI replied in last N seconds ──
+    // ── 6. Debounce ──
     const debounceThreshold = new Date(Date.now() - DEBOUNCE_SECONDS * 1000).toISOString();
     const { data: recentAiMsgs } = await supabase
       .from("wa_messages")
       .select("id, created_at")
       .eq("conversation_id", conversation_id)
       .eq("direction", "out")
-      .eq("sent_by", null) // AI messages have null sent_by
+      .is("sent_by", null)
       .gte("created_at", debounceThreshold)
       .limit(1);
 
@@ -157,9 +212,9 @@ serve(async (req: Request): Promise<Response> => {
       return jsonOk({ skipped: true, reason: "debounce" });
     }
 
-    // ── 5. Build OpenAI messages ──
+    // ── 7. Build OpenAI messages ──
     const chatMessages: Array<{ role: string; content: string }> = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
     ];
 
     for (const msg of sortedMessages) {
@@ -170,12 +225,12 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    // ── 6. Simulate human delay ──
+    // ── 8. Simulate human delay ──
     const delay = HUMAN_DELAY_MS.min + Math.random() * (HUMAN_DELAY_MS.max - HUMAN_DELAY_MS.min);
     console.log(`⏳ Simulating human delay: ${Math.round(delay)}ms`);
     await new Promise(resolve => setTimeout(resolve, delay));
 
-    // ── 7. Call OpenAI ──
+    // ── 9. Call OpenAI ──
     console.log(`🧠 Calling OpenAI (${selectedModel}) with ${chatMessages.length} messages...`);
     const openaiStart = Date.now();
 
@@ -188,7 +243,7 @@ serve(async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         model: selectedModel,
         messages: chatMessages,
-        max_tokens: 300,
+        max_tokens: maxTokens,
         temperature: 0.7,
       }),
     });
@@ -199,13 +254,14 @@ serve(async (req: Request): Promise<Response> => {
     if (!openaiRes.ok) {
       console.error(`❌ OpenAI error (${openaiRes.status}):`, JSON.stringify(openaiBody).slice(0, 500));
 
-      // Log failure event
       await supabase.from("conversation_events").insert({
         conversation_id,
         event_type: "ai_error",
         meta: {
           error: openaiBody?.error?.message || "Unknown",
           model: selectedModel,
+          agent_name: agentName,
+          agent_id: agentConfig?.id,
           status: openaiRes.status,
           trigger_message_id,
         },
@@ -224,18 +280,16 @@ serve(async (req: Request): Promise<Response> => {
       return jsonError("Empty AI response", 502);
     }
 
-    // ── 8. Check for handoff request ──
+    // ── 10. Check for handoff request ──
     if (aiReply.includes("HANDOFF_REQUEST") || HANDOFF_KEYWORDS.some(kw => lastMsg.body?.toLowerCase().includes(kw))) {
       console.log("🤝 Handoff detected — transferring to human");
 
-      // Add HANDOFF_HUMAN label
       const updatedLabels = [...labels.filter(l => l !== "AI_ON"), "HANDOFF_HUMAN"];
       await supabase
         .from("wa_conversations")
-        .update({ labels: updatedLabels })
+        .update({ labels: updatedLabels, ai_enabled: false })
         .eq("id", conversation_id);
 
-      // Log handoff event
       await supabase.from("conversation_events").insert({
         conversation_id,
         event_type: "ai_handoff",
@@ -243,29 +297,23 @@ serve(async (req: Request): Promise<Response> => {
           reason: "user_requested",
           trigger_message_id,
           model: selectedModel,
+          agent_name: agentName,
+          agent_id: agentConfig?.id,
           latency_ms: openaiLatency,
           user_message: lastMsg.body?.slice(0, 200),
         },
       });
 
-      // Send handoff message
       const handoffText = "Entendi! Vou te encaminhar para um dos nossos atendentes. Alguém da equipe vai te responder em breve 😊";
-      
+
       const sendUrl = `${supabaseUrl}/functions/v1/whatsapp-send`;
       await fetch(sendUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${serviceRoleKey}`,
-        },
-        body: JSON.stringify({
-          to: convo.wa_phone,
-          text: handoffText,
-          conversation_id,
-        }),
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${serviceRoleKey}` },
+        body: JSON.stringify({ to: convo.wa_phone, text: handoffText, conversation_id }),
       });
 
-      // Mark the message as AI-sent (update sent_by to null to indicate AI)
+      // Mark as AI-sent
       const { data: latestMsg } = await supabase
         .from("wa_messages")
         .select("id")
@@ -276,32 +324,20 @@ serve(async (req: Request): Promise<Response> => {
         .single();
 
       if (latestMsg) {
-        await supabase.from("wa_messages").update({
-          sent_by: null, // null = AI agent
-        }).eq("id", latestMsg.id);
+        await supabase.from("wa_messages").update({ sent_by: null }).eq("id", latestMsg.id);
       }
 
-      const totalLatency = Date.now() - startTime;
-      console.log(`🤝 Handoff complete (${totalLatency}ms total)`);
-
-      return jsonOk({ action: "handoff", latency_ms: totalLatency });
+      return jsonOk({ action: "handoff", latency_ms: Date.now() - startTime });
     }
 
-    // ── 9. Send AI reply via whatsapp-send ──
+    // ── 11. Send AI reply ──
     const sendUrl = `${supabaseUrl}/functions/v1/whatsapp-send`;
     console.log(`📤 Sending AI reply to +${convo.wa_phone}`);
 
     const sendRes = await fetch(sendUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${serviceRoleKey}`,
-      },
-      body: JSON.stringify({
-        to: convo.wa_phone,
-        text: aiReply,
-        conversation_id,
-      }),
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${serviceRoleKey}` },
+      body: JSON.stringify({ to: convo.wa_phone, text: aiReply, conversation_id }),
     });
 
     const sendBody = await sendRes.json();
@@ -312,30 +348,25 @@ serve(async (req: Request): Promise<Response> => {
       await supabase.from("conversation_events").insert({
         conversation_id,
         event_type: "ai_error",
-        meta: {
-          error: "whatsapp-send failed",
-          send_status: sendRes.status,
-          model: selectedModel,
-          trigger_message_id,
-        },
+        meta: { error: "whatsapp-send failed", send_status: sendRes.status, model: selectedModel, agent_id: agentConfig?.id, trigger_message_id },
       });
 
       return jsonError("Failed to send message", 502);
     }
 
-    // Mark the sent message as AI-authored (sent_by = null)
+    // Mark as AI-authored
     if (sendBody.meta_message_id) {
-      await supabase.from("wa_messages").update({
-        sent_by: null, // null indicates AI agent
-      }).eq("meta_message_id", sendBody.meta_message_id);
+      await supabase.from("wa_messages").update({ sent_by: null }).eq("meta_message_id", sendBody.meta_message_id);
     }
 
-    // ── 10. Log ai_replied event ──
+    // ── 12. Log ai_replied event ──
     await supabase.from("conversation_events").insert({
       conversation_id,
       event_type: "ai_replied",
       meta: {
         model: selectedModel,
+        agent_name: agentName,
+        agent_id: agentConfig?.id,
         latency_ms: openaiLatency,
         total_latency_ms: Date.now() - startTime,
         tokens: tokensUsed || null,
@@ -347,20 +378,63 @@ serve(async (req: Request): Promise<Response> => {
     const totalLatency = Date.now() - startTime;
     console.log(`✅ AI reply sent successfully (${totalLatency}ms total, ${tokensUsed?.total_tokens || "?"} tokens)`);
 
-    return jsonOk({
-      success: true,
-      model: selectedModel,
-      latency_ms: totalLatency,
-      tokens: tokensUsed,
-    });
+    return jsonOk({ success: true, model: selectedModel, agent: agentName, latency_ms: totalLatency, tokens: tokensUsed });
 
   } catch (error) {
     console.error("❌ wa-ai-reply error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error", message: String(error) }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonError("Internal server error: " + String(error), 500);
   }
 });
+
+// ── Preview handler ──
+async function handlePreview(body: any, openaiKey: string): Promise<Response> {
+  const { preview_message, agent_config } = body;
+
+  let systemPrompt = agent_config?.system_prompt || FALLBACK_SYSTEM_PROMPT;
+
+  if (agent_config?.knowledge_instructions) {
+    systemPrompt += `\n\nINSTRUÇÕES ADICIONAIS:\n${agent_config.knowledge_instructions}`;
+  }
+
+  const faq = agent_config?.knowledge_faq;
+  if (faq && Array.isArray(faq) && faq.length > 0) {
+    systemPrompt += "\n\nFAQ:";
+    for (const item of faq) {
+      if (item.question && item.answer) {
+        systemPrompt += `\nP: ${item.question}\nR: ${item.answer}`;
+      }
+    }
+  }
+
+  if (agent_config?.tone) {
+    systemPrompt += `\n\nTOM: Seja ${agent_config.tone}.`;
+  }
+
+  const model = agent_config?.model || DEFAULT_MODEL;
+  const maxTokens = agent_config?.max_tokens || 300;
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${openaiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: preview_message },
+        ],
+        max_tokens: maxTokens,
+        temperature: 0.7,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) return jsonOk({ reply: `Erro: ${data?.error?.message}` });
+    return jsonOk({ reply: data.choices?.[0]?.message?.content?.trim() || "Sem resposta" });
+  } catch (err) {
+    return jsonOk({ reply: `Erro: ${String(err)}` });
+  }
+}
 
 function jsonOk(body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), {
