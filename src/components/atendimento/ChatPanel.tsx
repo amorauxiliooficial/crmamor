@@ -830,55 +830,70 @@ export function ChatPanel({
                   </span>
                 </div>
 
-                {group.messages.filter((m) => !showFavoritesOnly || favoritedIds.has(m.id)).map((m, idx) => {
-                  const prev = idx > 0 ? group.messages[idx - 1] : null;
-                  const isGrouped = isSameAuthorGroup(m, prev);
-                  const showTime = shouldShowTimestamp(m, prev);
-                  const isMe = m.de === "atendente";
+                {(() => {
+                  const filtered = group.messages.filter((m) => !showFavoritesOnly || favoritedIds.has(m.id));
+                  // Collect unique agent ids to decide if we need author labels
+                  const agentIds = new Set(filtered.filter(m => m.de === "atendente").map(m => m.sentByAgentId).filter(Boolean));
+                  const multiAgent = agentIds.size > 1;
 
-                  const eventsBeforeThis = conversationEvents.filter((ev) => {
-                    const evTime = new Date(ev.created_at).getTime();
-                    const prevTime = prev ? prev.horario.getTime() : 0;
-                    const currTime = m.horario.getTime();
-                    return evTime > prevTime && evTime <= currTime;
+                  return filtered.map((m, idx) => {
+                    const prev = idx > 0 ? filtered[idx - 1] : null;
+                    const next = idx < filtered.length - 1 ? filtered[idx + 1] : null;
+                    const position = getBubblePosition(m, prev, next);
+                    const showTime = shouldShowTimestamp(m, prev);
+                    const isMe = m.de === "atendente";
+                    // Show avatar on last msg of block (or solo)
+                    const showAvatar = position === "last" || position === "solo";
+                    // Show author label on first msg of block when multiple agents
+                    const showAuthorLabel = multiAgent && (position === "first" || position === "solo");
+
+                    const eventsBeforeThis = conversationEvents.filter((ev) => {
+                      const evTime = new Date(ev.created_at).getTime();
+                      const prevTime = prev ? prev.horario.getTime() : 0;
+                      const currTime = m.horario.getTime();
+                      return evTime > prevTime && evTime <= currTime;
+                    });
+
+                    return (
+                      <div key={m.id}>
+                        {eventsBeforeThis.map((ev) => (
+                          <InlineEvent key={ev.id} event={ev} profileMap={profileMap} />
+                        ))}
+                        <MessageContextMenu
+                          message={m}
+                          isMe={isMe}
+                          isMobile={isMobile}
+                          onReply={setReplyTo}
+                          onPin={handlePin}
+                          onFavorite={handleFavorite}
+                          onDelete={handleDeleteMessage}
+                          isPinned={pinnedIds.has(m.id)}
+                          isFavorited={favoritedIds.has(m.id)}
+                        >
+                          <div className="relative">
+                            {(pinnedIds.has(m.id) || favoritedIds.has(m.id)) && (
+                              <div className={cn("absolute -top-1 z-10 flex gap-0.5", isMe ? "right-10" : "left-10")}>
+                                {pinnedIds.has(m.id) && <Pin className="h-2.5 w-2.5 text-muted-foreground/30" />}
+                                {favoritedIds.has(m.id) && <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400" />}
+                              </div>
+                            )}
+                            <MessageBubble
+                              message={m}
+                              position={position}
+                              showTime={showTime}
+                              showAuthorLabel={showAuthorLabel}
+                              showAvatar={showAvatar}
+                              onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
+                              currentUserId={currentUserId}
+                              onEditMessage={onEditMessage}
+                              profileMap={profileMap}
+                            />
+                          </div>
+                        </MessageContextMenu>
+                      </div>
+                    );
                   });
-
-                  return (
-                    <div key={m.id}>
-                      {eventsBeforeThis.map((ev) => (
-                        <InlineEvent key={ev.id} event={ev} profileMap={profileMap} />
-                      ))}
-                      <MessageContextMenu
-                        message={m}
-                        isMe={isMe}
-                        isMobile={isMobile}
-                        onReply={setReplyTo}
-                        onPin={handlePin}
-                        onFavorite={handleFavorite}
-                        onDelete={handleDeleteMessage}
-                        isPinned={pinnedIds.has(m.id)}
-                        isFavorited={favoritedIds.has(m.id)}
-                      >
-                        <div className="relative">
-                          {(pinnedIds.has(m.id) || favoritedIds.has(m.id)) && (
-                            <div className={cn("absolute -top-1 flex gap-0.5", isMe ? "right-1" : "left-1")}>
-                              {pinnedIds.has(m.id) && <Pin className="h-2.5 w-2.5 text-muted-foreground/30" />}
-                              {favoritedIds.has(m.id) && <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400" />}
-                            </div>
-                          )}
-                          <MessageBubble
-                            message={m}
-                            isGrouped={isGrouped}
-                            showTime={showTime}
-                            onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
-                            currentUserId={currentUserId}
-                            onEditMessage={onEditMessage}
-                          />
-                        </div>
-                      </MessageContextMenu>
-                    </div>
-                  );
-                })}
+                })()}
                 {(() => {
                   const lastMsgTime = group.messages[group.messages.length - 1]?.horario.getTime() ?? 0;
                   const trailingEvents = conversationEvents.filter((ev) => new Date(ev.created_at).getTime() > lastMsgTime);
