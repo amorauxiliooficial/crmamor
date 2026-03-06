@@ -81,12 +81,13 @@ export function useWaMessages(conversationId: string | null) {
         .from("wa_messages")
         .select("*")
         .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true })
+        .order("created_at", { ascending: false })
         .limit(100);
       if (error) throw error;
-      return data as WaMessage[];
+      return ((data as WaMessage[]) ?? []).reverse();
     },
     enabled: !!conversationId,
+    refetchInterval: conversationId ? 5000 : false,
   });
 
   // Realtime for new messages
