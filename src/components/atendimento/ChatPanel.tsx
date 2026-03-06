@@ -84,14 +84,12 @@ function getBubblePosition(
 }
 
 function getBubbleRounding(isMe: boolean, pos: BubblePosition): string {
-  // WhatsApp-style: pointed corner on the author's side, rest fully rounded
-  const R = "rounded-[18px]";
-  const S = "rounded-[5px]"; // small radius for connected side
-  if (pos === "solo") return isMe ? `${R} !rounded-tr-[18px] !rounded-br-[5px]` : `${R} !rounded-tl-[18px] !rounded-bl-[5px]`;
-  if (pos === "first") return isMe ? `${R} !rounded-br-[5px]` : `${R} !rounded-bl-[5px]`;
-  if (pos === "middle") return isMe ? `${R} !rounded-r-[5px]` : `${R} !rounded-l-[5px]`;
+  // SaaS professional: soft-modern with subtle connected corners
+  if (pos === "solo") return isMe ? "rounded-xl rounded-br-sm" : "rounded-xl rounded-bl-sm";
+  if (pos === "first") return isMe ? "rounded-xl rounded-br-sm" : "rounded-xl rounded-bl-sm";
+  if (pos === "middle") return isMe ? "rounded-lg rounded-r-sm" : "rounded-lg rounded-l-sm";
   // last
-  return isMe ? `${R} !rounded-tr-[5px]` : `${R} !rounded-tl-[5px]`;
+  return isMe ? "rounded-xl rounded-tr-sm" : "rounded-xl rounded-tl-sm";
 }
 
 /** Detect URLs in text and render as clickable links */
@@ -189,7 +187,7 @@ const MessageBubble = memo(function MessageBubble({
       className={cn(
         "flex w-full min-w-0 overflow-hidden group",
         isMe ? "justify-end" : "justify-start",
-        isGrouped ? "mt-[2px]" : "mt-3"
+        isGrouped ? "mt-0.5" : "mt-3"
       )}
     >
       {/* Left avatar slot (contact messages) */}
@@ -205,7 +203,7 @@ const MessageBubble = memo(function MessageBubble({
         </div>
       )}
 
-      <div className={cn("max-w-[85%] sm:max-w-[70%] overflow-hidden min-w-0 flex flex-col", isMe ? "items-end" : "items-start")}>
+      <div className={cn("max-w-[85%] sm:max-w-[68%] overflow-hidden min-w-0 flex flex-col", isMe ? "items-end" : "items-start")}>
         {/* Author label — shown on first msg of block when multiple agents */}
         {showAuthorLabel && isMe && m.sentByAgentName && (
           <p className="text-[10px] text-muted-foreground/40 font-medium mb-0.5 px-2">
@@ -270,11 +268,11 @@ const MessageBubble = memo(function MessageBubble({
 
             <div
               className={cn(
-                "relative py-1.5 overflow-hidden break-words min-w-0",
-                isMedia ? "px-0.5 pb-0.5" : "px-3 pb-1",
+                "relative overflow-hidden break-words min-w-0",
+                isMedia ? "px-0.5 pb-0.5 pt-1" : "px-4 py-2.5",
                 isMe
-                  ? cn("bg-[hsl(var(--primary)/0.12)] dark:bg-[hsl(var(--primary)/0.18)] text-foreground", rounding)
-                  : cn("bg-card border border-border/10", rounding),
+                  ? cn("bg-primary/[0.07] dark:bg-primary/[0.13] text-foreground border border-primary/[0.08]", rounding)
+                  : cn("bg-card border border-border/15", rounding),
                 isFailed && "ring-1 ring-destructive/30"
               )}
             >
@@ -290,33 +288,27 @@ const MessageBubble = memo(function MessageBubble({
                   isMe={isMe}
                 />
               ) : (
-                <p className="text-[14px] leading-relaxed whitespace-pre-wrap break-words pr-16" style={{ overflowWrap: "break-word" }}>
+                <p className="text-[13.5px] leading-[1.55] whitespace-pre-wrap break-words pr-16" style={{ overflowWrap: "break-word" }}>
                   {/^\[.+\]$/.test(m.texto.trim()) ? "" : renderTextWithLinks(m.texto)}
                 </p>
               )}
 
               {/* Time + ticks INSIDE the bubble — WhatsApp style */}
               <span className={cn(
-                "flex items-center gap-1 float-right mt-0.5 ml-2",
+                "flex items-center gap-1 float-right mt-0.5 ml-3",
                 isMedia ? "px-2 pb-1" : ""
               )}>
                 {m.editedAt && (
-                  <span className={cn(
-                    "text-[9px] italic",
-                    isMe ? "text-foreground/35" : "text-muted-foreground/35"
-                  )}>editada</span>
+                  <span className="text-[9px] italic text-muted-foreground/30">editada</span>
                 )}
-                <span className={cn(
-                  "text-[10px] tabular-nums",
-                  isMe ? "text-foreground/35" : "text-muted-foreground/35"
-                )}>
+                <span className="text-[10px] tabular-nums text-muted-foreground/40">
                   {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                 </span>
                 {isMe && (
                   <MessageStatusIcon
                     status={m.status}
                     errorMessage={m.errorMessage}
-                    className="!h-[13px] !w-[13px]"
+                    className="!h-[12px] !w-[12px]"
                   />
                 )}
               </span>
