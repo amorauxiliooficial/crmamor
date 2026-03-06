@@ -1,6 +1,6 @@
 import { useMemo, useState, memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Settings, User, UserCheck, Clock, Inbox, AlertTriangle, Hourglass, MessageCircle, ArrowLeft } from "lucide-react";
+import { Search, Settings, User, UserCheck, Clock, Inbox, AlertTriangle, Hourglass, MessageCircle, ArrowLeft, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -61,6 +61,7 @@ interface InboxSidebarProps {
   onAssume?: (id: string) => void;
   onPendente?: (id: string) => void;
   isLoading?: boolean;
+  onStartAtendimento?: (id: string) => void;
 }
 
 function InboxSkeleton() {
@@ -110,7 +111,7 @@ function categorizeConversas(conversas: Conversa[]): SmartQueue {
   return { urgentes, pendentes, aguardando, outros };
 }
 
-function QueueSection({ title, icon: Icon, conversas, selectedId, onSelect, hoveredId, setHoveredId, onAssume, onPendente, iconColor }: {
+function QueueSection({ title, icon: Icon, conversas, selectedId, onSelect, hoveredId, setHoveredId, onAssume, onPendente, onStartAtendimento, iconColor }: {
   title: string;
   icon: React.ElementType;
   conversas: Conversa[];
@@ -120,6 +121,7 @@ function QueueSection({ title, icon: Icon, conversas, selectedId, onSelect, hove
   setHoveredId: (id: string | null) => void;
   onAssume?: (id: string) => void;
   onPendente?: (id: string) => void;
+  onStartAtendimento?: (id: string) => void;
   iconColor: string;
 }) {
   if (conversas.length === 0) return null;
@@ -141,13 +143,14 @@ function QueueSection({ title, icon: Icon, conversas, selectedId, onSelect, hove
           onHover={setHoveredId}
           onAssume={onAssume}
           onPendente={onPendente}
+          onStartAtendimento={onStartAtendimento}
         />
       ))}
     </div>
   );
 }
 
-const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, onAssume, onPendente }: {
+const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, onAssume, onPendente, onStartAtendimento }: {
   conversa: Conversa;
   isSelected: boolean;
   isHovered: boolean;
@@ -155,6 +158,7 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
   onHover: (id: string | null) => void;
   onAssume?: (id: string) => void;
   onPendente?: (id: string) => void;
+  onStartAtendimento?: (id: string) => void;
 }) {
   return (
     <div
