@@ -107,18 +107,24 @@ const EDIT_TIME_LIMIT_MIN = 15;
 
 const MessageBubble = memo(function MessageBubble({
   message: m,
-  isGrouped,
+  position,
   showTime,
+  showAuthorLabel,
+  showAvatar,
   onRetry,
   currentUserId,
   onEditMessage,
+  profileMap,
 }: {
   message: Mensagem;
-  isGrouped: boolean;
+  position: BubblePosition;
   showTime: boolean;
+  showAuthorLabel: boolean;
+  showAvatar: boolean;
   onRetry?: (m: Mensagem) => void;
   currentUserId?: string | null;
   onEditMessage?: (messageId: string, newBody: string) => void;
+  profileMap?: Map<string, string>;
 }) {
   const isMe = m.de === "atendente";
   const isMedia = m.msgType && m.msgType !== "text";
@@ -140,18 +146,40 @@ const MessageBubble = memo(function MessageBubble({
     setEditing(false);
   };
 
+  const isGrouped = position === "middle" || position === "last";
+  const rounding = getBubbleRounding(isMe, position);
+
+  // Avatar: silhouette fallback
+  const avatarInitial = isMe
+    ? (m.sentByAgentName ? m.sentByAgentName.charAt(0).toUpperCase() : null)
+    : null;
+
   return (
     <div
       className={cn(
         "flex w-full min-w-0 overflow-hidden group",
         isMe ? "justify-end" : "justify-start",
-        isGrouped ? "mt-0.5" : "mt-3"
+        isGrouped ? "mt-[2px]" : "mt-3"
       )}
     >
-      <div className={cn("max-w-[85%] sm:max-w-[70%] overflow-hidden min-w-0", isMe ? "items-end" : "items-start")}>
-        {isMe && m.sentByAgentName && !isGrouped && (
-          <p className="text-[10px] text-muted-foreground/40 font-medium mb-0.5 text-right px-1.5">
-            {m.sentByAgentName}
+      {/* Left avatar slot (contact messages) */}
+      {!isMe && (
+        <div className="w-8 shrink-0 flex flex-col justify-end mr-1.5">
+          {showAvatar && (
+            <Avatar className="h-7 w-7">
+              <AvatarFallback className="text-[11px] font-semibold bg-muted/30 text-foreground/50">
+                <User className="h-3.5 w-3.5" />
+              </AvatarFallback>
+            </Avatar>
+          )}
+        </div>
+      )}
+
+      <div className={cn("max-w-[80%] sm:max-w-[65%] overflow-hidden min-w-0 flex flex-col", isMe ? "items-end" : "items-start")}>
+        {/* Author label — shown on first msg of block when multiple agents */}
+        {showAuthorLabel && isMe && m.sentByAgentName && (
+          <p className="text-[10px] text-muted-foreground/40 font-medium mb-0.5 px-2">
+            {m.sentByAgentName} • atendente
           </p>
         )}
 
@@ -215,8 +243,8 @@ const MessageBubble = memo(function MessageBubble({
                 "py-2 overflow-hidden break-words min-w-0",
                 isMedia ? "px-1" : "px-3",
                 isMe
-                  ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
-                  : "bg-card border border-border/10 rounded-2xl rounded-bl-sm",
+                  ? cn("bg-primary text-primary-foreground", rounding)
+                  : cn("bg-card border border-border/10", rounding),
                 isFailed && "ring-1 ring-destructive/30"
               )}
             >
@@ -277,6 +305,19 @@ const MessageBubble = memo(function MessageBubble({
           </button>
         )}
       </div>
+
+      {/* Right avatar slot (agent messages) */}
+      {isMe && (
+        <div className="w-8 shrink-0 flex flex-col justify-end ml-1.5">
+          {showAvatar && (
+            <Avatar className="h-7 w-7">
+              <AvatarFallback className="text-[11px] font-semibold bg-primary/10 text-primary/70">
+                {avatarInitial || <User className="h-3.5 w-3.5" />}
+              </AvatarFallback>
+            </Avatar>
+          )}
+        </div>
+      )}
     </div>
   );
 });
