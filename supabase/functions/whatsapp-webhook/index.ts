@@ -83,7 +83,7 @@ serve(async (req: Request): Promise<Response> => {
               last_message_preview: textBody.slice(0, 200),
               status: 'open',
             }, { onConflict: 'wa_phone' })
-            .select('id, unread_count')
+            .select('id, unread_count, labels, status')
             .single();
 
           if (convoErr) {
@@ -134,6 +134,29 @@ serve(async (req: Request): Promise<Response> => {
             .eq('id', convo.id);
 
           console.log(`✅ Saved message ${metaMsgId} in conversation ${convo.id}`);
+
+          // Trigger AI auto-reply if eligible
+          const convoLabels: string[] = convo.labels || [];
+          if (
+            convoLabels.includes('AI_ON') &&
+            !convoLabels.includes('HANDOFF_HUMAN') &&
+            !convoLabels.includes('AI_PAUSED') &&
+            convo.status !== 'closed'
+          ) {
+            const aiUrl = `${supabaseUrl}/functions/v1/wa-ai-reply`;
+            console.log(`🤖 Triggering AI reply for conversation ${convo.id}`);
+            fetch(aiUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${serviceRoleKey}`,
+              },
+              body: JSON.stringify({
+                conversation_id: convo.id,
+                trigger_message_id: insertedMsg?.id || metaMsgId,
+              }),
+            }).catch(err => console.error('❌ AI reply trigger error:', err));
+          }
 
           // Trigger async media download if it's a media message
           if (metaMediaId && insertedMsg?.id) {

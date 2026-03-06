@@ -3,7 +3,7 @@ import {
   Send, ArrowLeft, User, Clock, CheckCircle,
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
   Loader2, Brain, Database, ArrowRight,
-  X, RotateCcw, MoreVertical, Pencil,
+  X, RotateCcw, MoreVertical, Pencil, Bot,
   ArrowRightLeft, Wifi, WifiOff, RotateCw,
   Pin, Star, Reply, UserCheck, Tag, Bell, BellOff, Info,
 } from "lucide-react";
@@ -330,6 +330,9 @@ const EVENT_LABELS: Record<string, { icon: string; label: string }> = {
   closed: { icon: "✅", label: "encerrou a conversa" },
   reopened: { icon: "🔄", label: "reabriu a conversa" },
   status_change: { icon: "📋", label: "alterou o status" },
+  ai_replied: { icon: "🤖", label: "IA respondeu" },
+  ai_handoff: { icon: "🤝", label: "IA transferiu para humano" },
+  ai_error: { icon: "⚠️", label: "erro na IA" },
 };
 
 function InlineEvent({ event, profileMap }: { event: ConversationEvent; profileMap?: Map<string, string> }) {
@@ -383,6 +386,8 @@ interface ChatPanelProps {
   onReconnect?: () => void;
   conversationEvents?: ConversationEvent[];
   profileMap?: Map<string, string>;
+  aiEnabled?: boolean;
+  onToggleAi?: () => void;
 }
 
 export function ChatPanel({
@@ -414,6 +419,8 @@ export function ChatPanel({
   onReconnect,
   conversationEvents = [],
   profileMap,
+  aiEnabled,
+  onToggleAi,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -681,6 +688,20 @@ export function ChatPanel({
               <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors" onClick={onPendente}>
                 <Clock className="h-3.5 w-3.5" /> Marcar pendente
               </button>
+
+              {/* AI toggle */}
+              {onToggleAi && (
+                <button
+                  className={cn(
+                    "w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors",
+                    aiEnabled ? "text-primary" : "text-muted-foreground/70"
+                  )}
+                  onClick={onToggleAi}
+                >
+                  <Bot className="h-3.5 w-3.5" />
+                  {aiEnabled ? "Desativar IA automática" : "Ativar IA automática"}
+                </button>
+              )}
 
               <div className="h-px bg-border/10 my-1" />
 
