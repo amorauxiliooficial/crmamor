@@ -532,6 +532,7 @@ export default function Atendimento() {
         {!(selectedId && mobileTab === "conversas") && (
           <div className="h-[56px] shrink-0" />
         )}
+        <SettingsDrawer open={settingsOpen} onOpenChange={setSettingsOpen} />
       </div>
     );
   }
