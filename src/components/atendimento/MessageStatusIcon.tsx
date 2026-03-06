@@ -19,22 +19,22 @@ export const MessageStatusIcon = memo(function MessageStatusIcon({
   switch (status) {
     case "pending":
       return (
-        <Clock className={cn("h-3 w-3 text-muted-foreground/40", className)} />
+        <Clock className={cn("h-3 w-3 text-white/60", className)} />
       );
 
     case "sent":
       return (
-        <Check className={cn("h-3 w-3 text-muted-foreground/50", className)} />
+        <Check className={cn("h-3 w-3 text-white/70", className)} />
       );
 
     case "delivered":
       return (
-        <CheckCheck className={cn("h-3 w-3 text-muted-foreground/50", className)} />
+        <CheckCheck className={cn("h-3 w-3 text-white/70", className)} />
       );
 
     case "read":
       return (
-        <CheckCheck className={cn("h-3 w-3 text-primary", className)} />
+        <CheckCheck className={cn("h-3 w-3 text-white", className)} />
       );
 
     case "failed":
