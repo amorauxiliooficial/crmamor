@@ -60,7 +60,7 @@ export function ConsumptionBadge({ conversationId, lastInboundAt, className }: C
           <TooltipContent className="text-xs space-y-1">
             <p className="font-medium">Consumo WhatsApp</p>
             <p>Próxima msg: {estimate.label}</p>
-            <p>Mês: {toBRL(monthTotal)} / {toBRL(monthLimit, 0)} ({pct.toFixed(0)}%)</p>
+            <p>Mês: {toBRL(monthTotal)} / {toBRL(monthLimit)} ({pct.toFixed(0)}%)</p>
             <p className="text-muted-foreground/60">Clique para detalhes</p>
           </TooltipContent>
         </Tooltip>
