@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useAiAgents, useCreateAiAgent, useUpdateAiAgent, useDeleteAiAgent, useSetDefaultAgent, type AiAgent } from "@/hooks/useAiAgents";
-import { ArrowLeft, Plus, Bot, Star, Copy, Power, Trash2, Pencil } from "lucide-react";
+import { useAiAgents, useCreateAiAgent, useUpdateAiAgent, useDeleteAiAgent, useSetDefaultAgent, usePublishAiAgent, type AiAgent } from "@/hooks/useAiAgents";
+import { ArrowLeft, Plus, Bot, Star, Copy, Power, Trash2, Pencil, CheckCircle2, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,8 +22,10 @@ export default function AgentesIA() {
   const updateAgent = useUpdateAiAgent();
   const deleteAgent = useDeleteAiAgent();
   const setDefault = useSetDefaultAgent();
+  const publishAgent = usePublishAiAgent();
 
   const [view, setView] = useState<View>({ mode: "list" });
+  const [pendingPublish, setPendingPublish] = useState(false);
 
   if (authLoading) return null;
   if (!user) { navigate("/auth"); return null; }
@@ -31,19 +33,43 @@ export default function AgentesIA() {
   const handleSave = (data: any) => {
     if (view.mode === "form" && view.agent?.id) {
       updateAgent.mutate({ id: view.agent.id, ...data }, {
-        onSuccess: () => { toast({ title: "Agente atualizado ✅" }); setView({ mode: "list" }); },
-        onError: () => toast({ title: "Erro ao salvar", variant: "destructive" }),
+        onSuccess: (updated) => {
+          toast({ title: "Agente salvo ✅" });
+          if (pendingPublish && view.mode === "form" && view.agent?.id) {
+            publishAgent.mutate(view.agent.id, {
+              onSuccess: () => {
+                toast({ title: "Agente publicado 🚀" });
+                setPendingPublish(false);
+                setView({ mode: "list" });
+              },
+              onError: () => { toast({ title: "Erro ao publicar", variant: "destructive" }); setPendingPublish(false); },
+            });
+          } else {
+            // Update the view with latest data
+            setView({ mode: "form", agent: updated as any });
+          }
+        },
+        onError: () => { toast({ title: "Erro ao salvar", variant: "destructive" }); setPendingPublish(false); },
       });
     } else {
       createAgent.mutate(data, {
-        onSuccess: () => { toast({ title: "Agente criado ✅" }); setView({ mode: "list" }); },
+        onSuccess: (created) => {
+          toast({ title: "Agente criado ✅" });
+          // Switch to edit mode so user can publish
+          setView({ mode: "form", agent: created as any });
+        },
         onError: () => toast({ title: "Erro ao criar", variant: "destructive" }),
       });
     }
   };
 
+  const handlePublish = (agentId: string) => {
+    setPendingPublish(true);
+    // The save will trigger publish after success
+  };
+
   const handleDuplicate = (agent: AiAgent) => {
-    setView({ mode: "form", agent: { ...agent, id: "", name: `${agent.name} (cópia)` } as any });
+    setView({ mode: "form", agent: { ...agent, id: "", name: `${agent.name} (cópia)`, published_config: null, published_at: null, version: 1 } as any });
   };
 
   const handleToggleActive = (agent: AiAgent) => {
@@ -73,8 +99,10 @@ export default function AgentesIA() {
         <AgentFormPanel
           agent={view.agent}
           onSave={handleSave}
-          onCancel={() => setView({ mode: "list" })}
+          onPublish={handlePublish}
+          onCancel={() => { setView({ mode: "list" }); setPendingPublish(false); }}
           isSaving={createAgent.isPending || updateAgent.isPending}
+          isPublishing={publishAgent.isPending || pendingPublish}
         />
       </div>
     );
@@ -123,6 +151,13 @@ export default function AgentesIA() {
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                         <Star className="h-2.5 w-2.5 mr-0.5 fill-current" /> Padrão
                       </Badge>
+                    )}
+                    {agent.published_at ? (
+                      <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5">
+                        <CheckCircle2 className="h-2.5 w-2.5" /> v{agent.version}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">Rascunho</Badge>
                     )}
                     {!agent.is_active && <Badge variant="outline" className="text-[10px]">Inativo</Badge>}
                   </div>

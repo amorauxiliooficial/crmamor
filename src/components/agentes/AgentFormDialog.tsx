@@ -14,6 +14,7 @@ import {
   Plus, Trash2, Loader2, Send, Bot, Sparkles, BookOpen, Wrench, FlaskConical,
   Check, FileText, LinkIcon, MessageSquare, X, Clock,
   Search, RotateCcw, Zap, Tag, ArrowRightLeft, CalendarClock, Users, ArrowLeft,
+  Upload, AlertCircle, CheckCircle2, Rocket,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,6 +72,28 @@ Agente: "Claro! Posso te ajudar com isso. Qual é a sua principal dúvida?"`;
 
 type TabId = "personality" | "knowledge" | "tools" | "preview";
 
+/* ── Validation ── */
+interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+function validateAgent(data: {
+  name: string; systemPrompt: string; knowledgeFaq: { question: string; answer: string }[];
+  knowledgeLinks: string[];
+}): ValidationResult {
+  const errors: string[] = [];
+  if (!data.name.trim()) errors.push("Nome do agente é obrigatório");
+  if (!data.systemPrompt.trim()) errors.push("Prompt do sistema é obrigatório");
+  if (data.knowledgeFaq.some(f => (f.question && !f.answer) || (!f.question && f.answer))) {
+    errors.push("FAQ incompleto: preencha pergunta e resposta");
+  }
+  if (data.knowledgeLinks.filter(Boolean).length > 5) {
+    errors.push("Máximo de 5 links de referência");
+  }
+  return { valid: errors.length === 0, errors };
+}
+
 /* ═══════════════════════════════════════════════════════
    AgentFormPanel — the actual form, usable inline or in dialog
    ═══════════════════════════════════════════════════════ */
@@ -78,11 +101,13 @@ type TabId = "personality" | "knowledge" | "tools" | "preview";
 interface PanelProps {
   agent?: AiAgent | null;
   onSave: (data: Partial<AiAgentInsert>) => void;
+  onPublish?: (agentId: string) => void;
   onCancel: () => void;
   isSaving: boolean;
+  isPublishing?: boolean;
 }
 
-export function AgentFormPanel({ agent, onSave, onCancel, isSaving }: PanelProps) {
+export function AgentFormPanel({ agent, onSave, onPublish, onCancel, isSaving, isPublishing }: PanelProps) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -102,8 +127,9 @@ export function AgentFormPanel({ agent, onSave, onCancel, isSaving }: PanelProps
   const [deptSearch, setDeptSearch] = useState("");
 
   const [previewInput, setPreviewInput] = useState("");
-  const [previewMessages, setPreviewMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
+  const [previewMessages, setPreviewMessages] = useState<{ role: "user" | "assistant"; text: string; meta?: any }[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   useEffect(() => {
     if (agent) {
@@ -120,7 +146,7 @@ export function AgentFormPanel({ agent, onSave, onCancel, isSaving }: PanelProps
       setKnowledgeInstructions(""); setKnowledgeFaq([]); setKnowledgeLinks([]);
       setToolsConfig({}); setIsActive(true);
     }
-    setTab("personality"); setPreviewInput(""); setPreviewMessages([]); setDeptSearch("");
+    setTab("personality"); setPreviewInput(""); setPreviewMessages([]); setDeptSearch(""); setValidationErrors([]);
   }, [agent]);
 
   useEffect(() => {
@@ -131,16 +157,42 @@ export function AgentFormPanel({ agent, onSave, onCancel, isSaving }: PanelProps
   const knowledgeComplete = !!knowledgeInstructions.trim() || knowledgeFaq.length > 0;
   const toolsComplete = Object.values(toolsConfig).some(Boolean);
 
+  const isPublished = !!agent?.published_at;
+  const hasDraftChanges = agent?.id && agent?.published_config ? true : false; // simplified — always show save
+
   const handleSave = () => {
     if (!name.trim()) {
       toast({ title: "Nome é obrigatório", variant: "destructive" }); setTab("personality"); return;
     }
+    setValidationErrors([]);
     onSave({
       name: name.trim(), model, tone, max_tokens: maxTokens, departments,
       system_prompt: systemPrompt, knowledge_instructions: knowledgeInstructions,
       knowledge_faq: knowledgeFaq, knowledge_links: knowledgeLinks.filter(Boolean),
       tools_config: toolsConfig, is_active: isActive,
     });
+  };
+
+  const handlePublish = () => {
+    const result = validateAgent({ name, systemPrompt, knowledgeFaq, knowledgeLinks: knowledgeLinks.filter(Boolean) });
+    if (!result.valid) {
+      setValidationErrors(result.errors);
+      toast({ title: "Corrija os erros antes de publicar", description: result.errors.join(", "), variant: "destructive" });
+      return;
+    }
+    setValidationErrors([]);
+    if (agent?.id && onPublish) {
+      // Save draft first, then publish
+      onSave({
+        name: name.trim(), model, tone, max_tokens: maxTokens, departments,
+        system_prompt: systemPrompt, knowledge_instructions: knowledgeInstructions,
+        knowledge_faq: knowledgeFaq, knowledge_links: knowledgeLinks.filter(Boolean),
+        tools_config: toolsConfig, is_active: isActive,
+      });
+      // onPublish will be called after save succeeds (handled in parent)
+    } else {
+      toast({ title: "Salve o agente primeiro", variant: "destructive" });
+    }
   };
 
   const toggleDepartment = (d: string) => {
@@ -164,11 +216,15 @@ export function AgentFormPanel({ agent, onSave, onCancel, isSaving }: PanelProps
       const { data, error } = await supabase.functions.invoke("wa-ai-reply", {
         body: {
           preview_mode: true, preview_message: userMsg,
-          agent_config: { name, model, tone, max_tokens: maxTokens, system_prompt: systemPrompt, knowledge_instructions: knowledgeInstructions, knowledge_faq: knowledgeFaq },
+          agent_config: { name, model, tone, max_tokens: maxTokens, system_prompt: systemPrompt, knowledge_instructions: knowledgeInstructions, knowledge_faq: knowledgeFaq, tools_config: toolsConfig },
         },
       });
       if (error) throw error;
-      setPreviewMessages(prev => [...prev, { role: "assistant", text: data?.reply || data?.error || "Sem resposta" }]);
+      setPreviewMessages(prev => [...prev, {
+        role: "assistant",
+        text: data?.reply || data?.error || "Sem resposta",
+        meta: { model: data?.model, tokens: data?.tokens, latency_ms: data?.latency_ms, tool_actions: data?.tool_actions },
+      }]);
     } catch (err: any) {
       setPreviewMessages(prev => [...prev, { role: "assistant", text: `Erro: ${err.message}` }]);
     } finally { setPreviewLoading(false); }
@@ -202,9 +258,14 @@ export function AgentFormPanel({ agent, onSave, onCancel, isSaving }: PanelProps
               className="bg-transparent text-base font-semibold w-full outline-none placeholder:text-muted-foreground/40 truncate"
             />
             <div className="flex items-center gap-2 mt-0.5">
-              <Badge variant={isActive ? "default" : "outline"} className="text-[10px] px-1.5 py-0 h-4">
-                {isActive ? "Ativo" : "Rascunho"}
-              </Badge>
+              {isPublished ? (
+                <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 gap-1">
+                  <CheckCircle2 className="h-2.5 w-2.5" /> Publicado v{agent?.version || 1}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">Rascunho</Badge>
+              )}
+              {!isActive && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 text-muted-foreground">Inativo</Badge>}
               {agent?.updated_at && (
                 <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
                   <Clock className="h-2.5 w-2.5" />
@@ -215,12 +276,28 @@ export function AgentFormPanel({ agent, onSave, onCancel, isSaving }: PanelProps
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <Switch checked={isActive} onCheckedChange={setIsActive} />
-            <Button size="sm" onClick={handleSave} disabled={isSaving}>
+            <Button size="sm" variant="outline" onClick={handleSave} disabled={isSaving}>
               {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
-              {agent?.id ? "Salvar" : "Publicar"}
+              Salvar
             </Button>
+            {agent?.id && onPublish && (
+              <Button size="sm" onClick={handlePublish} disabled={isPublishing || isSaving}>
+                {isPublishing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Rocket className="h-3.5 w-3.5 mr-1.5" />}
+                Publicar
+              </Button>
+            )}
           </div>
         </div>
+
+        {/* Validation errors banner */}
+        {validationErrors.length > 0 && (
+          <div className="mx-4 sm:mx-6 mb-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            <div className="text-xs text-destructive space-y-0.5">
+              {validationErrors.map((e, i) => <p key={i}>{e}</p>)}
+            </div>
+          </div>
+        )}
 
         {/* Tab nav */}
         <div className="flex items-center gap-0.5 px-4 sm:px-6 overflow-x-auto">
@@ -353,7 +430,7 @@ export function AgentFormPanel({ agent, onSave, onCancel, isSaving }: PanelProps
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="text-sm flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /> Prompt do sistema</CardTitle>
+                        <CardTitle className="text-sm flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /> Prompt do sistema <span className="text-destructive text-xs">*</span></CardTitle>
                         <CardDescription className="text-xs mt-0.5">Personalidade, regras e comportamento</CardDescription>
                       </div>
                       <Button variant="outline" size="sm" onClick={insertPromptTemplate} className="text-xs shrink-0">
@@ -459,7 +536,7 @@ export function AgentFormPanel({ agent, onSave, onCancel, isSaving }: PanelProps
             <div className="max-w-2xl mx-auto space-y-5">
               <div className="mb-1">
                 <h3 className="text-sm font-semibold">Ferramentas do agente</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Ações executadas automaticamente</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Ações executadas automaticamente durante a conversa</p>
               </div>
               <div className="space-y-2.5">
                 {TOOLS_OPTIONS.map(tool => (
@@ -526,7 +603,7 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSave, isSaving }:
 
 function SimulatorPanel({ name, model, maxTokens, tone, messages, loading, input, setInput, onSend, onClear, chatEndRef, fullWidth }: {
   name: string; model: string; maxTokens: number; tone: string;
-  messages: { role: "user" | "assistant"; text: string }[];
+  messages: { role: "user" | "assistant"; text: string; meta?: any }[];
   loading: boolean; input: string; setInput: (v: string) => void;
   onSend: () => void; onClear: () => void;
   chatEndRef: React.RefObject<HTMLDivElement>;
@@ -555,14 +632,35 @@ function SimulatorPanel({ name, model, maxTokens, tone, messages, loading, input
           </div>
         )}
         {messages.map((msg, i) => (
-          <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
-            {msg.role === "assistant" && (
-              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center mr-2 mt-1 shrink-0"><Bot className="h-3 w-3 text-primary" /></div>
+          <div key={i}>
+            <div className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
+              {msg.role === "assistant" && (
+                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center mr-2 mt-1 shrink-0"><Bot className="h-3 w-3 text-primary" /></div>
+              )}
+              <div className={cn(
+                "max-w-[85%] px-3.5 py-2.5 text-sm leading-relaxed",
+                msg.role === "user" ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md" : "bg-muted/30 rounded-2xl rounded-bl-md"
+              )}>{msg.text}</div>
+            </div>
+            {/* Meta info for assistant messages */}
+            {msg.role === "assistant" && msg.meta && (
+              <div className="ml-8 mt-1 flex flex-wrap gap-1.5">
+                {msg.meta.model && (
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono">{msg.meta.model}</Badge>
+                )}
+                {msg.meta.tokens && (
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono">{msg.meta.tokens.total_tokens} tok</Badge>
+                )}
+                {msg.meta.latency_ms && (
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono">{msg.meta.latency_ms}ms</Badge>
+                )}
+                {msg.meta.tool_actions?.length > 0 && msg.meta.tool_actions.map((a: string, j: number) => (
+                  <Badge key={j} variant="secondary" className="text-[9px] px-1.5 py-0 gap-0.5">
+                    <Zap className="h-2 w-2" />{a}
+                  </Badge>
+                ))}
+              </div>
             )}
-            <div className={cn(
-              "max-w-[85%] px-3.5 py-2.5 text-sm leading-relaxed",
-              msg.role === "user" ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md" : "bg-muted/30 rounded-2xl rounded-bl-md"
-            )}>{msg.text}</div>
           </div>
         ))}
         {loading && (
