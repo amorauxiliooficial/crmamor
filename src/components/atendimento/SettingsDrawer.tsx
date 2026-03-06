@@ -95,9 +95,24 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
                       </div>
                       <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors" />
                     </button>
-                  ))}
-                </div>
-              </ScrollArea>
+                    ))}
+
+                    <Separator className="bg-border/10 my-2" />
+
+                    <button
+                      onClick={() => { onOpenChange(false); navigate("/atendimento/agentes-ia"); }}
+                      className="w-full flex items-center gap-3 px-3 py-3.5 rounded-xl hover:bg-muted/30 transition-colors group"
+                    >
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <Bot className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className="text-sm font-medium">Agentes IA</p>
+                        <p className="text-xs text-muted-foreground/60 truncate">Configurar agentes de resposta automática</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors" />
+                    </button>
+                  </div>
             </>
           ) : (
             <>
