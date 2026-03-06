@@ -308,6 +308,7 @@ export function InboxSidebar({
   onAssume,
   onPendente,
   isLoading = false,
+  onStartAtendimento,
 }: InboxSidebarProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [queueMode, setQueueMode] = useState<QueueMode>("smart");
@@ -428,15 +429,15 @@ export function InboxSidebar({
           </div>
         ) : queueMode === "smart" ? (
           <div className="py-0.5">
-            <QueueSection title="Urgentes" icon={AlertTriangle} iconColor="text-destructive/50" conversas={smartQueue.urgentes} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} />
-            <QueueSection title="Sem responsável" icon={Hourglass} iconColor="text-destructive/50" conversas={smartQueue.pendentes} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} />
-            <QueueSection title="Aguardando cliente" icon={MessageCircle} iconColor="text-muted-foreground/35" conversas={smartQueue.aguardando} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} />
-            <QueueSection title="Outros" icon={Inbox} iconColor="text-muted-foreground/35" conversas={smartQueue.outros} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} />
+            <QueueSection title="Urgentes" icon={AlertTriangle} iconColor="text-destructive/50" conversas={smartQueue.urgentes} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} onStartAtendimento={onStartAtendimento} />
+            <QueueSection title="Novos na fila" icon={Inbox} iconColor="text-primary" conversas={smartQueue.pendentes} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} onStartAtendimento={onStartAtendimento} />
+            <QueueSection title="Aguardando cliente" icon={MessageCircle} iconColor="text-muted-foreground/35" conversas={smartQueue.aguardando} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} onStartAtendimento={onStartAtendimento} />
+            <QueueSection title="Em atendimento" icon={UserCheck} iconColor="text-muted-foreground/35" conversas={smartQueue.outros} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} onStartAtendimento={onStartAtendimento} />
           </div>
         ) : (
           <div className="px-1 py-0.5">
             {filtered.map((c) => (
-              <ConversaItem key={c.id} conversa={c} isSelected={selectedId === c.id} isHovered={hoveredId === c.id} onSelect={onSelect} onHover={setHoveredId} onAssume={onAssume} onPendente={onPendente} />
+              <ConversaItem key={c.id} conversa={c} isSelected={selectedId === c.id} isHovered={hoveredId === c.id} onSelect={onSelect} onHover={setHoveredId} onAssume={onAssume} onPendente={onPendente} onStartAtendimento={onStartAtendimento} />
             ))}
           </div>
         )}
