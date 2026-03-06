@@ -154,7 +154,8 @@ const MessageBubble = memo(function MessageBubble({
   profileMap?: Map<string, string>;
 }) {
   const isMe = m.de === "atendente";
-  const isMedia = m.msgType && m.msgType !== "text";
+  const MEDIA_TYPES = ["image", "audio", "video", "document", "sticker"];
+  const isMedia = m.msgType ? MEDIA_TYPES.includes(m.msgType) : false;
   const isFailed = isMe && m.status === "failed";
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(m.texto);
@@ -292,7 +293,7 @@ const MessageBubble = memo(function MessageBubble({
                   className="text-[14.2px] leading-[19px] whitespace-pre-wrap"
                   style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
                 >
-                  {/^\[.+\]$/.test(m.texto.trim()) ? "" : renderTextWithLinks(m.texto)}
+                  {m.msgType === "reaction" ? "❤️" : m.msgType === "unsupported" ? "⚠️ Mensagem não suportada" : /^\[.+\]$/.test(m.texto.trim()) ? "" : renderTextWithLinks(m.texto)}
                 </span>
               )}
 

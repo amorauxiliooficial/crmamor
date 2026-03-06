@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { Download, ExternalLink, FileText, Loader2 } from "lucide-react";
+import { Download, ExternalLink, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -51,13 +51,15 @@ export const MediaBubble = memo(function MediaBubble({
 
   // Loading state - media not yet downloaded
   if (!mediaUrl && msgType !== "text") {
+    // Check if message is old (>5 min) — media download likely failed
+    const isStale = false; // Caller doesn't pass timestamp, show generic state
     return (
       <div className={cn(
         "flex items-center gap-2 px-3 py-2.5 rounded-xl min-w-0 w-full",
-        isMe ? "bg-primary/80 text-primary-foreground" : "bg-muted/30 border border-border/20"
+        isMe ? "opacity-80" : "opacity-80"
       )}>
-        <Loader2 className="h-4 w-4 animate-spin shrink-0 opacity-60" />
-        <span className="text-xs opacity-70">Baixando mídia…</span>
+        <FileText className="h-4 w-4 shrink-0 opacity-50" />
+        <span className="text-xs opacity-60">Mídia indisponível</span>
       </div>
     );
   }
