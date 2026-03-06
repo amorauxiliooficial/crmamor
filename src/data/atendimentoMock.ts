@@ -1,6 +1,7 @@
 export interface Conversa {
   id: string;
   nome: string | null;
+  waName: string | null;
   telefone: string;
   ultimaMensagem: string;
   horario: Date;
