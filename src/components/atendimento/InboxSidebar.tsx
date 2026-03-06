@@ -163,6 +163,20 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
 }) {
   const contact = getContactDisplay(c.nome, c.waName, c.telefone);
 
+  // Deterministic color based on phone/name for avatar bg
+  const AVATAR_COLORS = [
+    "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+    "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
+    "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+    "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+    "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+    "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",
+    "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
+    "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300",
+  ];
+  const colorIdx = Math.abs([...c.telefone].reduce((acc, ch) => acc + ch.charCodeAt(0), 0)) % AVATAR_COLORS.length;
+  const avatarColor = AVATAR_COLORS[colorIdx];
+
   return (
     <div
       className={cn(
@@ -175,18 +189,19 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
       onMouseEnter={() => onHover(c.id)}
       onMouseLeave={() => onHover(null)}
     >
-      {/* Avatar */}
+      {/* Avatar — WhatsApp-style with colored bg and silhouette fallback */}
       <div className="relative shrink-0">
-        <Avatar className="h-10 w-10">
+        <Avatar className="h-[46px] w-[46px]">
           <AvatarFallback className={cn(
-            "text-sm font-medium",
-            isSelected ? "bg-primary/10 text-primary" : "bg-muted/25 text-muted-foreground/70"
+            "text-[15px] font-semibold",
+            contact.initials === "#" ? "bg-muted/30 text-muted-foreground/50" : avatarColor
           )}>
-            {contact.initials === "#" ? <User className="h-4 w-4" /> : contact.initials}
+            {contact.initials === "#" ? <User className="h-5 w-5" /> : contact.initials}
           </AvatarFallback>
         </Avatar>
-        {c.status === "Aberto" && (
+        {c.status === "Aberto" && c.queueStatus !== "novo" && (
           <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-background" />
+        )}
         )}
       </div>
 
