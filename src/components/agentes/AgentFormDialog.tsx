@@ -239,11 +239,6 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
   };
 
   const toggleDepartment = (d: string) => { setDepartments(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]); markDirty(); };
-  const addFaq = () => { setKnowledgeFaq(prev => [...prev, { question: "", answer: "" }]); markDirty(); };
-  const removeFaq = (i: number) => { setKnowledgeFaq(prev => prev.filter((_, idx) => idx !== i)); markDirty(); };
-  const updateFaq = (i: number, field: "question" | "answer", val: string) => {
-    setKnowledgeFaq(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: val } : item)); markDirty();
-  };
   const insertPromptTemplate = () => {
     setSystemPrompt(PROMPT_TEMPLATE.replace("{nome_agente}", name || "Agente").replace("{tom}", tone)); markDirty();
   };
