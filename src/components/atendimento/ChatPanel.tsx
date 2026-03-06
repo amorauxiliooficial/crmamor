@@ -394,6 +394,8 @@ interface ChatPanelProps {
   aiAgents?: { id: string; name: string; model: string }[];
   selectedAiAgentId?: string | null;
   onChangeAiAgent?: (agentId: string | null) => void;
+  lastInboundAt?: Date | null;
+  conversationPhone?: string;
 }
 
 export function ChatPanel({
@@ -430,9 +432,13 @@ export function ChatPanel({
   aiAgents = [],
   selectedAiAgentId,
   onChangeAiAgent,
+  lastInboundAt,
+  conversationPhone,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const windowStatus = useWindowStatus(lastInboundAt ?? null);
   
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [quickReplyIndex, setQuickReplyIndex] = useState(0);
