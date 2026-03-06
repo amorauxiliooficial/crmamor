@@ -2,15 +2,16 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAiAgents, useCreateAiAgent, useUpdateAiAgent, useDeleteAiAgent, useSetDefaultAgent, type AiAgent } from "@/hooks/useAiAgents";
-import { ArrowLeft, Plus, Bot, Star, Copy, Power, Trash2, Pencil, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Bot, Star, Copy, Power, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { AgentFormDialog } from "@/components/agentes/AgentFormDialog";
+import { AgentFormPanel } from "@/components/agentes/AgentFormDialog";
+
+type View = { mode: "list" } | { mode: "form"; agent: AiAgent | null };
 
 export default function AgentesIA() {
   const { user, loading: authLoading } = useAuth();
@@ -22,40 +23,27 @@ export default function AgentesIA() {
   const deleteAgent = useDeleteAiAgent();
   const setDefault = useSetDefaultAgent();
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingAgent, setEditingAgent] = useState<AiAgent | null>(null);
+  const [view, setView] = useState<View>({ mode: "list" });
 
   if (authLoading) return null;
   if (!user) { navigate("/auth"); return null; }
 
-  const handleCreate = () => {
-    setEditingAgent(null);
-    setDialogOpen(true);
-  };
-
-  const handleEdit = (agent: AiAgent) => {
-    setEditingAgent(agent);
-    setDialogOpen(true);
-  };
-
-  const handleDuplicate = (agent: AiAgent) => {
-    const { id, created_at, updated_at, is_default, ...rest } = agent;
-    setEditingAgent({ ...agent, id: "", name: `${agent.name} (cópia)` } as any);
-    setDialogOpen(true);
-  };
-
   const handleSave = (data: any) => {
-    if (editingAgent?.id) {
-      updateAgent.mutate({ id: editingAgent.id, ...data }, {
-        onSuccess: () => { toast({ title: "Agente atualizado ✅" }); setDialogOpen(false); },
+    if (view.mode === "form" && view.agent?.id) {
+      updateAgent.mutate({ id: view.agent.id, ...data }, {
+        onSuccess: () => { toast({ title: "Agente atualizado ✅" }); setView({ mode: "list" }); },
         onError: () => toast({ title: "Erro ao salvar", variant: "destructive" }),
       });
     } else {
       createAgent.mutate(data, {
-        onSuccess: () => { toast({ title: "Agente criado ✅" }); setDialogOpen(false); },
+        onSuccess: () => { toast({ title: "Agente criado ✅" }); setView({ mode: "list" }); },
         onError: () => toast({ title: "Erro ao criar", variant: "destructive" }),
       });
     }
+  };
+
+  const handleDuplicate = (agent: AiAgent) => {
+    setView({ mode: "form", agent: { ...agent, id: "", name: `${agent.name} (cópia)` } as any });
   };
 
   const handleToggleActive = (agent: AiAgent) => {
@@ -78,6 +66,21 @@ export default function AgentesIA() {
     });
   };
 
+  /* ── FORM VIEW (inline) ── */
+  if (view.mode === "form") {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <AgentFormPanel
+          agent={view.agent}
+          onSave={handleSave}
+          onCancel={() => setView({ mode: "list" })}
+          isSaving={createAgent.isPending || updateAgent.isPending}
+        />
+      </div>
+    );
+  }
+
+  /* ── LIST VIEW ── */
   return (
     <div className="min-h-screen bg-background">
       <header className="h-14 border-b border-border bg-card flex items-center gap-3 px-4">
@@ -87,7 +90,7 @@ export default function AgentesIA() {
         <Bot className="h-5 w-5 text-primary" />
         <h1 className="font-semibold text-base">Agentes IA</h1>
         <div className="flex-1" />
-        <Button size="sm" onClick={handleCreate}>
+        <Button size="sm" onClick={() => setView({ mode: "form", agent: null })}>
           <Plus className="h-4 w-4 mr-1.5" /> Novo Agente
         </Button>
       </header>
@@ -99,7 +102,9 @@ export default function AgentesIA() {
           <div className="text-center py-16 space-y-3">
             <Bot className="h-12 w-12 mx-auto text-muted-foreground/20" />
             <p className="text-sm text-muted-foreground">Nenhum agente IA configurado</p>
-            <Button onClick={handleCreate}><Plus className="h-4 w-4 mr-1.5" /> Criar primeiro agente</Button>
+            <Button onClick={() => setView({ mode: "form", agent: null })}>
+              <Plus className="h-4 w-4 mr-1.5" /> Criar primeiro agente
+            </Button>
           </div>
         ) : (
           agents.map(agent => (
@@ -142,7 +147,7 @@ export default function AgentesIA() {
                       <Star className="h-3.5 w-3.5" />
                     </Button>
                   )}
-                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEdit(agent)} title="Editar">
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setView({ mode: "form", agent })} title="Editar">
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
                   <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDuplicate(agent)} title="Duplicar">
@@ -160,14 +165,6 @@ export default function AgentesIA() {
           ))
         )}
       </div>
-
-      <AgentFormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        agent={editingAgent}
-        onSave={handleSave}
-        isSaving={createAgent.isPending || updateAgent.isPending}
-      />
     </div>
   );
 }
