@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Lock, MessageSquareText } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,12 +11,20 @@ interface WindowBadgeProps {
 }
 
 export function useWindowStatus(lastInboundAt: Date | null) {
+  const [now, setNow] = useState(Date.now());
+
+  // Re-evaluate every 30s so the badge updates in real-time
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
   return useMemo(() => {
     if (!lastInboundAt) return { isOpen: false, expiresAt: null, remainingMs: 0 };
     const expiresAt = new Date(lastInboundAt.getTime() + 24 * 60 * 60 * 1000);
-    const remainingMs = expiresAt.getTime() - Date.now();
+    const remainingMs = expiresAt.getTime() - now;
     return { isOpen: remainingMs > 0, expiresAt, remainingMs };
-  }, [lastInboundAt]);
+  }, [lastInboundAt, now]);
 }
 
 function formatRemaining(ms: number): string {

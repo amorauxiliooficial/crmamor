@@ -74,12 +74,14 @@ serve(async (req: Request): Promise<Response> => {
           console.log(`📨 Message from +${phone} (${contactName}): type=${msgType}, media_id=${metaMediaId?.slice(0, 20)}`);
 
           // Upsert conversation
+          const now = new Date().toISOString();
           const { data: convo, error: convoErr } = await supabase
             .from('wa_conversations')
             .upsert({
               wa_phone: phone,
               wa_name: contactName,
-              last_message_at: new Date().toISOString(),
+              last_message_at: now,
+              last_inbound_at: now,
               last_message_preview: textBody.slice(0, 200),
               status: 'open',
             }, { onConflict: 'wa_phone' })
