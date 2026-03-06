@@ -46,7 +46,8 @@ function waToConversa(wa: WaConversation, profileMap: Map<string, string>): Conv
   return {
     id: wa.id,
     nome: wa.wa_name,
-    telefone: `+${wa.wa_phone}`,
+    waName: wa.wa_name,
+    telefone: wa.wa_phone.startsWith("+") ? wa.wa_phone : `+${wa.wa_phone}`,
     ultimaMensagem: wa.last_message_preview ?? "",
     horario: new Date(wa.last_message_at),
     status: statusMap[wa.status] ?? "Aberto",
@@ -89,10 +90,15 @@ export default function Atendimento() {
   const createEvent = useCreateConversationEvent();
   const { status: connectionStatus, reconnect: onReconnect } = useRealtimeConnection();
   const { data: conversationEvents } = useConversationEvents(selectedId);
-  const { soundEnabled, autoplayBlocked, toggleSound, playNotification, requestPermission } = useInboundNotification();
+  const { soundEnabled, autoplayBlocked, intensity, toggleSound, changeIntensity, playNotification, requestPermission, setActiveConversation } = useInboundNotification();
 
   // Request browser notification permission on mount
   useEffect(() => { requestPermission(); }, [requestPermission]);
+
+  // Track active conversation for focus-aware notifications
+  useEffect(() => {
+    setActiveConversation(selectedId);
+  }, [selectedId, setActiveConversation]);
 
   // Realtime listener for inbound messages – plays notification sound + visual alerts
   useEffect(() => {
@@ -113,7 +119,7 @@ export default function Atendimento() {
           const conv = (waConversations ?? []).find((c) => c.id === convId);
           const contactName = conv?.wa_name || undefined;
           const preview = body?.slice(0, 80) || undefined;
-          playNotification(contactName, preview);
+          playNotification(contactName, preview, convId);
 
           // Show in-app toast for better visibility
           toast({

@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
+import { getContactDisplay } from "@/lib/contactDisplay";
 import type { Conversa } from "@/data/atendimentoMock";
 
 function formatInboxPreview(text: string): string {
@@ -160,6 +161,8 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
   onPendente?: (id: string) => void;
   onStartAtendimento?: (id: string) => void;
 }) {
+  const contact = getContactDisplay(c.nome, c.waName, c.telefone);
+
   return (
     <div
       className={cn(
@@ -179,7 +182,7 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
             "text-sm font-medium",
             isSelected ? "bg-primary/10 text-primary" : "bg-muted/25 text-muted-foreground/70"
           )}>
-            {c.nome ? c.nome.charAt(0).toUpperCase() : <User className="h-4 w-4" />}
+            {contact.initials === "#" ? <User className="h-4 w-4" /> : contact.initials}
           </AvatarFallback>
         </Avatar>
         {c.status === "Aberto" && (
@@ -194,12 +197,16 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
             "text-[13px] truncate",
             c.naoLidas > 0 ? "font-semibold text-foreground" : "font-medium text-foreground/70"
           )}>
-            {c.nome ?? c.telefone}
+            {contact.displayName}
           </span>
           <span className="text-[10px] text-muted-foreground/35 shrink-0 tabular-nums font-mono">
             {formatHorario(c.horario)}
           </span>
         </div>
+
+        {contact.subtitle && (
+          <p className="text-[10px] text-muted-foreground/40 truncate">{contact.subtitle}</p>
+        )}
 
         <p className={cn(
           "text-[12px] truncate mt-0.5",

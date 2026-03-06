@@ -229,6 +229,31 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
                         checked={msgSound}
                         onChange={(v) => toggleSetting("msg_sound", v, setMsgSound)}
                       />
+                      <div>
+                        <Label className="text-sm font-medium">Intensidade do som</Label>
+                        <p className="text-xs text-muted-foreground/60 mb-3">Volume e comportamento do alerta sonoro</p>
+                        <div className="flex gap-2">
+                          {(["normal", "discreto"] as const).map((level) => (
+                            <button
+                              key={level}
+                              onClick={() => {
+                                const val = level;
+                                localStorage.setItem("atendimento_sound_intensity", val);
+                                // Force re-render won't affect the hook, but localStorage persists
+                              }}
+                              className={cn(
+                                "flex-1 py-2.5 rounded-xl text-xs font-medium border transition-all",
+                                (localStorage.getItem("atendimento_sound_intensity") || "normal") === level
+                                  ? "bg-primary/10 border-primary/30 text-primary"
+                                  : "border-border/20 text-muted-foreground hover:bg-muted/20"
+                              )}
+                            >
+                              {level === "normal" ? "Normal" : "Discreto"}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <Separator className="bg-border/10" />
                       <SettingRow
                         label="Notificações desktop"
                         desc="Exibir notificações do navegador"

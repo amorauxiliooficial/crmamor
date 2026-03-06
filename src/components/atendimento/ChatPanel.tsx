@@ -22,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Skeleton } from "@/components/ui/skeleton";
 import { MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getContactDisplay } from "@/lib/contactDisplay";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MediaBubble } from "@/components/atendimento/MediaBubble";
@@ -532,23 +533,34 @@ export function ChatPanel({
 
         <Avatar className="h-9 w-9 shrink-0">
           <AvatarFallback className="text-sm font-semibold bg-muted/30 text-foreground/70">
-            {conversa.nome ? conversa.nome.charAt(0) : <User className="h-4 w-4" />}
+            {(() => {
+              const ci = getContactDisplay(conversa.nome, conversa.waName, conversa.telefone);
+              return ci.initials === "#" ? <User className="h-4 w-4" /> : ci.initials;
+            })()}
           </AvatarFallback>
         </Avatar>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-[15px] truncate">{conversa.nome ?? conversa.telefone}</p>
-            <span className={cn("h-2 w-2 rounded-full shrink-0", connectionDot)} />
-          </div>
-          <p className={cn(
-            "text-[12px] font-medium",
-            QUEUE_STATUS_LABELS[conversa.queueStatus ?? ""]?.color ?? "text-muted-foreground/40"
-          )}>
-            {QUEUE_STATUS_LABELS[conversa.queueStatus ?? ""]?.label ?? conversa.status}
-            {conversa.atendente && <span className="text-muted-foreground/40 font-normal"> · {conversa.atendente}</span>}
-          </p>
-        </div>
+        {(() => {
+          const ci = getContactDisplay(conversa.nome, conversa.waName, conversa.telefone);
+          return (
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-[15px] truncate">{ci.displayName}</p>
+                <span className={cn("h-2 w-2 rounded-full shrink-0", connectionDot)} />
+              </div>
+              {ci.subtitle && (
+                <p className="text-[10px] text-muted-foreground/40 truncate">{ci.subtitle}</p>
+              )}
+              <p className={cn(
+                "text-[12px] font-medium",
+                QUEUE_STATUS_LABELS[conversa.queueStatus ?? ""]?.color ?? "text-muted-foreground/40"
+              )}>
+                {QUEUE_STATUS_LABELS[conversa.queueStatus ?? ""]?.label ?? conversa.status}
+                {conversa.atendente && <span className="text-muted-foreground/40 font-normal"> · {conversa.atendente}</span>}
+              </p>
+            </div>
+          );
+        })()}
 
         {/* Right: IA + ⋯ menu + CRM toggle */}
         <div className="flex items-center gap-0.5">
