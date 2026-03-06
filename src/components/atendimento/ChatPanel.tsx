@@ -388,6 +388,9 @@ interface ChatPanelProps {
   profileMap?: Map<string, string>;
   aiEnabled?: boolean;
   onToggleAi?: () => void;
+  aiAgents?: { id: string; name: string; model: string }[];
+  selectedAiAgentId?: string | null;
+  onChangeAiAgent?: (agentId: string | null) => void;
 }
 
 export function ChatPanel({
@@ -421,6 +424,9 @@ export function ChatPanel({
   profileMap,
   aiEnabled,
   onToggleAi,
+  aiAgents = [],
+  selectedAiAgentId,
+  onChangeAiAgent,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -701,6 +707,28 @@ export function ChatPanel({
                   <Bot className="h-3.5 w-3.5" />
                   {aiEnabled ? "Desativar IA automática" : "Ativar IA automática"}
                 </button>
+              )}
+
+              {/* AI Agent selector */}
+              {aiEnabled && onChangeAiAgent && aiAgents.length > 0 && (
+                <div className="px-2.5 py-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/35 mb-1">Agente IA</p>
+                  <button
+                    className={cn("w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg transition-colors", !selectedAiAgentId ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/30 text-muted-foreground/70")}
+                    onClick={() => onChangeAiAgent(null)}
+                  >
+                    Padrão
+                  </button>
+                  {aiAgents.map(a => (
+                    <button
+                      key={a.id}
+                      className={cn("w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg transition-colors", selectedAiAgentId === a.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/30 text-muted-foreground/70")}
+                      onClick={() => onChangeAiAgent(a.id)}
+                    >
+                      {a.name} <span className="text-[9px] text-muted-foreground/40">{a.model}</span>
+                    </button>
+                  ))}
+                </div>
               )}
 
               <div className="h-px bg-border/10 my-1" />

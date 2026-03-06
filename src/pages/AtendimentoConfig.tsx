@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Bot, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -143,6 +143,20 @@ export default function AtendimentoConfig() {
                 {i < atendentes.length - 1 && <Separator />}
               </div>
             ))}
+          </CardContent>
+        </Card>
+
+        {/* Agentes IA */}
+        <Card className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => navigate("/atendimento/agentes-ia")}>
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Bot className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-sm">Agentes IA</p>
+              <p className="text-xs text-muted-foreground">Configure agentes de resposta automática por IA</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </CardContent>
         </Card>
 

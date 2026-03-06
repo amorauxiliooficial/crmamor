@@ -49,6 +49,60 @@ export type Database = {
           },
         ]
       }
+      ai_agents: {
+        Row: {
+          created_at: string
+          departments: string[] | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          knowledge_faq: Json | null
+          knowledge_instructions: string | null
+          knowledge_links: string[] | null
+          max_tokens: number
+          model: string
+          name: string
+          system_prompt: string | null
+          tone: string
+          tools_config: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          departments?: string[] | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          knowledge_faq?: Json | null
+          knowledge_instructions?: string | null
+          knowledge_links?: string[] | null
+          max_tokens?: number
+          model?: string
+          name: string
+          system_prompt?: string | null
+          tone?: string
+          tools_config?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          departments?: string[] | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          knowledge_faq?: Json | null
+          knowledge_instructions?: string | null
+          knowledge_links?: string[] | null
+          max_tokens?: number
+          model?: string
+          name?: string
+          system_prompt?: string | null
+          tone?: string
+          tools_config?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       alertas_mae: {
         Row: {
           created_at: string
@@ -1573,6 +1627,8 @@ export type Database = {
       }
       wa_conversations: {
         Row: {
+          ai_agent_id: string | null
+          ai_enabled: boolean
           assigned_to: string | null
           created_at: string
           id: string
@@ -1588,6 +1644,8 @@ export type Database = {
           wa_phone: string
         }
         Insert: {
+          ai_agent_id?: string | null
+          ai_enabled?: boolean
           assigned_to?: string | null
           created_at?: string
           id?: string
@@ -1603,6 +1661,8 @@ export type Database = {
           wa_phone: string
         }
         Update: {
+          ai_agent_id?: string | null
+          ai_enabled?: boolean
           assigned_to?: string | null
           created_at?: string
           id?: string
@@ -1618,6 +1678,13 @@ export type Database = {
           wa_phone?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "wa_conversations_ai_agent_id_fkey"
+            columns: ["ai_agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wa_conversations_mae_id_fkey"
             columns: ["mae_id"]

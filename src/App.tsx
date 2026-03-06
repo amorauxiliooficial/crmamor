@@ -17,7 +17,7 @@ import Indicar from "./pages/Indicar";
 import Roadmap from "./pages/Roadmap";
 import Atendimento from "./pages/Atendimento";
 import AtendimentoConfig from "./pages/AtendimentoConfig";
-
+import AgentesIA from "./pages/AgentesIA";
 import PreAnalises from "./pages/PreAnalises";
 import NotFound from "./pages/NotFound";
 
@@ -52,6 +52,7 @@ const App = () => (
               <Route path="/atendimento" element={<Atendimento />} />
               <Route path="/atendimento/chat/:id" element={<Atendimento />} />
               <Route path="/atendimento/config" element={<AtendimentoConfig />} />
+              <Route path="/atendimento/agentes-ia" element={<AgentesIA />} />
               <Route path="/pre-analises" element={<PreAnalises />} />
               <Route path="/roadmap" element={<Roadmap />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

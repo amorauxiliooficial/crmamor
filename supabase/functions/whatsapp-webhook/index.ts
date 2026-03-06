@@ -83,7 +83,7 @@ serve(async (req: Request): Promise<Response> => {
               last_message_preview: textBody.slice(0, 200),
               status: 'open',
             }, { onConflict: 'wa_phone' })
-            .select('id, unread_count, labels, status')
+            .select('id, unread_count, labels, status, ai_enabled, ai_agent_id')
             .single();
 
           if (convoErr) {
@@ -135,10 +135,11 @@ serve(async (req: Request): Promise<Response> => {
 
           console.log(`✅ Saved message ${metaMsgId} in conversation ${convo.id}`);
 
-          // Trigger AI auto-reply if eligible
+          // Trigger AI auto-reply if eligible (check both ai_enabled column and legacy AI_ON label)
           const convoLabels: string[] = convo.labels || [];
+          const aiActive = convo.ai_enabled === true || convoLabels.includes('AI_ON');
           if (
-            convoLabels.includes('AI_ON') &&
+            aiActive &&
             !convoLabels.includes('HANDOFF_HUMAN') &&
             !convoLabels.includes('AI_PAUSED') &&
             convo.status !== 'closed'
