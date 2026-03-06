@@ -83,7 +83,7 @@ serve(async (req: Request): Promise<Response> => {
               last_message_preview: textBody.slice(0, 200),
               status: 'open',
             }, { onConflict: 'wa_phone' })
-            .select('id, unread_count')
+            .select('id, unread_count, labels, status')
             .single();
 
           if (convoErr) {
