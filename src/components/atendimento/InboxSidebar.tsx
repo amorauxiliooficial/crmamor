@@ -131,7 +131,7 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, onSel
           </span>
           <span className={cn(
             "text-[12px] shrink-0 tabular-nums",
-            hasUnread ? "text-emerald-500 font-medium" : "text-muted-foreground/45"
+            hasUnread ? "text-emerald-500 font-medium" : "text-muted-foreground"
           )}>
             {formatHorario(c.horario)}
           </span>
@@ -141,7 +141,7 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, onSel
         <div className="flex items-center justify-between gap-2 mt-[2px]">
           <p className={cn(
             "text-[13px] truncate leading-tight",
-            hasUnread ? "text-foreground/60" : "text-muted-foreground/45"
+            hasUnread ? "text-foreground/70" : "text-muted-foreground"
           )}>
             {formatInboxPreview(c.ultimaMensagem)}
           </p>
@@ -280,7 +280,7 @@ export function InboxSidebar({
       </div>
 
       {/* Conversation list — flat, WhatsApp style */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <InboxSkeleton />
         ) : filtered.length === 0 ? (
@@ -303,7 +303,7 @@ export function InboxSidebar({
             ))}
           </div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 }
