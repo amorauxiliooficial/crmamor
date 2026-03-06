@@ -264,7 +264,7 @@ const MessageBubble = memo(function MessageBubble({
                   isMe={isMe}
                 />
               ) : (
-                <p className="text-[14px] leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                <p className="text-[14px] leading-relaxed whitespace-pre-wrap break-words" style={{ overflowWrap: "break-word" }}>
                   {/^\[.+\]$/.test(m.texto.trim()) ? "" : m.texto}
                 </p>
               )}

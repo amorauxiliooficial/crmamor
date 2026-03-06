@@ -87,10 +87,10 @@ export function useWaMessages(conversationId: string | null) {
       return ((data as WaMessage[]) ?? []).reverse();
     },
     enabled: !!conversationId,
-    refetchInterval: conversationId ? 5000 : false,
+    refetchInterval: conversationId ? 3000 : false,
   });
 
-  // Realtime for new messages
+  // Realtime for new messages + conversation updates (keeps chat in sync with inbox)
   useEffect(() => {
     if (!conversationId) return;
 
@@ -115,6 +115,18 @@ export function useWaMessages(conversationId: string | null) {
           schema: "public",
           table: "wa_messages",
           filter: `conversation_id=eq.${conversationId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["wa_messages", conversationId] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "wa_conversations",
+          filter: `id=eq.${conversationId}`,
         },
         () => {
           queryClient.invalidateQueries({ queryKey: ["wa_messages", conversationId] });
