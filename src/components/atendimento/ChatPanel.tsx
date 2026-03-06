@@ -1,11 +1,11 @@
 import { useRef, useEffect, useState, useMemo, useCallback, memo } from "react";
 import {
-  Send, ArrowLeft, User, UserCheck, Clock, CheckCircle, Tag,
+  Send, ArrowLeft, User, Clock, CheckCircle,
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
-  Loader2, Zap, Brain, Database, ArrowRight, CalendarPlus, AlertTriangle,
-  Info, X, Image as ImageIcon, RotateCcw, MoreVertical, Pencil, Check,
-  Bell, BellOff, ArrowRightLeft, RefreshCw, Wifi, WifiOff, RotateCw,
-  Pin, Star, Reply,
+  Loader2, Brain, Database, ArrowRight,
+  X, RotateCcw, MoreVertical, Pencil,
+  ArrowRightLeft, Wifi, WifiOff, RotateCw,
+  Pin, Star, Reply, UserCheck, Tag, Bell, BellOff, Info,
 } from "lucide-react";
 import { AudioRecorder } from "@/components/atendimento/AudioRecorder";
 import { MessageStatusIcon } from "@/components/atendimento/MessageStatusIcon";
@@ -24,21 +24,14 @@ import { MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { smartTemplates, type SmartTemplate } from "@/data/smartTemplates";
 import { MediaBubble } from "@/components/atendimento/MediaBubble";
 import type { Conversa, Mensagem } from "@/data/atendimentoMock";
 import type { RespostaRapida } from "@/data/respostasRapidas";
 import type { ConversationEvent } from "@/hooks/useConversationEvents";
 import type { ConnectionStatus } from "@/hooks/useRealtimeConnection";
 
-const STATUS_COLORS: Record<string, string> = {
-  Aberto: "bg-emerald-500",
-  Pendente: "bg-amber-500",
-  Fechado: "bg-muted-foreground/40",
-};
-
 const QUEUE_STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  sem_responsavel: { label: "Sem responsável", color: "text-destructive" },
+  sem_responsavel: { label: "Sem responsável", color: "text-destructive/70" },
   em_atendimento: { label: "Em atendimento", color: "text-emerald-600 dark:text-emerald-400" },
   aguardando_cliente: { label: "Aguardando cliente", color: "text-amber-600 dark:text-amber-400" },
   resolvido: { label: "Resolvido", color: "text-muted-foreground" },
@@ -82,10 +75,8 @@ function MessageSkeleton() {
   );
 }
 
-// Edit time limit in minutes
 const EDIT_TIME_LIMIT_MIN = 15;
 
-// Memoized message bubble to prevent re-renders when typing
 const MessageBubble = memo(function MessageBubble({
   message: m,
   isGrouped,
@@ -126,13 +117,12 @@ const MessageBubble = memo(function MessageBubble({
       className={cn(
         "flex w-full min-w-0 overflow-hidden group",
         isMe ? "justify-end" : "justify-start",
-        isGrouped ? "mt-0.5" : "mt-2"
+        isGrouped ? "mt-0.5" : "mt-3"
       )}
     >
-      <div className={cn("max-w-[85%] sm:max-w-[75%] overflow-hidden min-w-0", isMe ? "items-end" : "items-start")}>
-        {/* Agent name for outbound */}
+      <div className={cn("max-w-[85%] sm:max-w-[70%] overflow-hidden min-w-0", isMe ? "items-end" : "items-start")}>
         {isMe && m.sentByAgentName && !isGrouped && (
-          <p className="text-[10px] text-primary/50 font-medium mb-0.5 text-right px-1.5">
+          <p className="text-[10px] text-muted-foreground/40 font-medium mb-0.5 text-right px-1.5">
             {m.sentByAgentName}
           </p>
         )}
@@ -142,7 +132,7 @@ const MessageBubble = memo(function MessageBubble({
             <textarea
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
-              className="text-[15px] leading-relaxed p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-foreground resize-none min-h-[44px] focus:outline-none focus:ring-1 focus:ring-primary/30"
+              className="text-[14px] leading-relaxed p-2.5 rounded-xl bg-muted/30 border border-border/30 text-foreground resize-none min-h-[44px] focus:outline-none focus:ring-1 focus:ring-primary/30"
               rows={2}
               autoFocus
               onKeyDown={(e) => {
@@ -168,16 +158,15 @@ const MessageBubble = memo(function MessageBubble({
           </div>
         ) : (
           <div className="relative">
-            {/* Edit menu trigger */}
             {canEdit && onEditMessage && (
               <div className={cn(
                 "absolute z-10",
                 isMe ? "right-1 top-1" : "left-1 top-1",
-                "opacity-100 transition-opacity"
+                "opacity-0 group-hover:opacity-100 transition-opacity"
               )}>
                 <Popover open={menuOpen} onOpenChange={setMenuOpen}>
                   <PopoverTrigger asChild>
-                    <button className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-muted/30 text-muted-foreground/40 hover:text-muted-foreground transition-colors">
+                    <button className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-muted/40 text-muted-foreground/30 hover:text-muted-foreground transition-colors">
                       <MoreVertical className="h-3.5 w-3.5" />
                     </button>
                   </PopoverTrigger>
@@ -195,11 +184,11 @@ const MessageBubble = memo(function MessageBubble({
 
             <div
               className={cn(
-                "py-2.5 overflow-hidden break-words min-w-0",
-                isMedia ? "px-1" : "px-3.5",
+                "py-2 overflow-hidden break-words min-w-0",
+                isMedia ? "px-1" : "px-3",
                 isMe
                   ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
-                  : "bg-card border border-border/20 rounded-2xl rounded-bl-sm",
+                  : "bg-card border border-border/10 rounded-2xl rounded-bl-sm",
                 isFailed && "ring-1 ring-destructive/30"
               )}
             >
@@ -215,14 +204,13 @@ const MessageBubble = memo(function MessageBubble({
                   isMe={isMe}
                 />
               ) : (
-                <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere px-0.5" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                <p className="text-[14px] leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                   {/^\[.+\]$/.test(m.texto.trim()) ? "" : m.texto}
                 </p>
               )}
             </div>
           </div>
         )}
-        {/* Status + timestamp + edited indicator */}
         <div className={cn(
           "flex items-center gap-1 mt-0.5 px-1.5",
           isMe ? "justify-end" : ""
@@ -231,7 +219,7 @@ const MessageBubble = memo(function MessageBubble({
             <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="text-[9px] text-muted-foreground/40 italic">editada</span>
+                  <span className="text-[9px] text-muted-foreground/30 italic">editada</span>
                 </TooltipTrigger>
                 <TooltipContent className="text-xs">
                   Editada em {new Date(m.editedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
@@ -240,7 +228,7 @@ const MessageBubble = memo(function MessageBubble({
             </TooltipProvider>
           )}
           {showTime && (
-            <span className="text-[10px] text-muted-foreground/40">
+            <span className="text-[10px] text-muted-foreground/30">
               {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
             </span>
           )}
@@ -251,7 +239,6 @@ const MessageBubble = memo(function MessageBubble({
             />
           )}
         </div>
-        {/* Retry button for failed messages */}
         {isFailed && onRetry && (
           <button
             onClick={() => onRetry(m)}
@@ -283,14 +270,14 @@ function InlineEvent({ event, profileMap }: { event: ConversationEvent; profileM
   const reason = (event.meta as any)?.reason;
 
   return (
-    <div className="flex items-center justify-center my-2">
-      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/20 border border-border/10 text-[11px] text-muted-foreground/60 max-w-[80%]">
+    <div className="flex items-center justify-center my-3">
+      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/15 text-[11px] text-muted-foreground/50 max-w-[80%]">
         <span>{info.icon}</span>
         <span className="font-medium">{agentName}</span>
         <span>{info.label}</span>
         {toAgent && <span>para <span className="font-medium">{toAgent}</span></span>}
         {reason && <span className="italic truncate max-w-[120px]">• {reason}</span>}
-        <span className="text-muted-foreground/30 ml-1">
+        <span className="text-muted-foreground/25 ml-1">
           {new Date(event.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
         </span>
       </div>
@@ -489,20 +476,6 @@ export function ChatPanel({
     }
   }, [conversa, mensagens, toast, onMsgTextChange]);
 
-  const handleSmartTemplate = useCallback((template: SmartTemplate) => {
-    onMsgTextChange(template.texto);
-    textareaRef.current?.focus();
-    if (template.actions) {
-      const actionLabels: string[] = [];
-      if (template.actions.createFollowUp) actionLabels.push("📅 Follow-up");
-      if (template.actions.timelineEvent) actionLabels.push("📝 Timeline");
-      if (template.actions.updateChecklist) actionLabels.push("✅ Checklist");
-      if (actionLabels.length > 0) {
-        toast({ title: "Ações vinculadas", description: actionLabels.join(" • ") });
-      }
-    }
-  }, [onMsgTextChange, toast]);
-
   // Pagination
   const paginatedMessages = useMemo(() => {
     if (mensagens.length <= visibleCount) return mensagens;
@@ -529,29 +502,36 @@ export function ChatPanel({
   if (!conversa) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 h-full bg-background">
-        <div className="h-14 w-14 rounded-2xl bg-muted/20 flex items-center justify-center">
-          <MessageSquare className="h-6 w-6 text-muted-foreground/25" />
+        <div className="h-14 w-14 rounded-2xl bg-muted/15 flex items-center justify-center">
+          <MessageSquare className="h-6 w-6 text-muted-foreground/20" />
         </div>
         <div className="text-center space-y-1">
-          <p className="text-sm font-medium text-muted-foreground/60">Selecione uma conversa</p>
-          <p className="text-xs text-muted-foreground/35">⌘K para buscar</p>
+          <p className="text-sm font-medium text-muted-foreground/50">Selecione uma conversa</p>
+          <p className="text-xs text-muted-foreground/30">⌘K para buscar</p>
         </div>
       </div>
     );
   }
 
+  // Connection indicator dot
+  const connectionDot = connectionStatus === "connected"
+    ? "bg-emerald-500"
+    : connectionStatus === "connecting"
+      ? "bg-amber-500 animate-pulse"
+      : "bg-destructive";
+
   return (
     <div className="flex-1 flex flex-col h-full min-w-0 w-full overflow-x-hidden bg-background">
-      {/* Header */}
-      <div className="border-b border-border/20 px-4 py-3 flex items-center gap-3 shrink-0 bg-card/30 backdrop-blur-sm">
+      {/* ── Header ── Clean & minimal */}
+      <div className="border-b border-border/15 px-4 py-2.5 flex items-center gap-3 shrink-0">
         {isMobile && (
-          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg" onClick={onBack}>
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={onBack}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
         )}
 
-        <Avatar className="h-10 w-10 shrink-0">
-          <AvatarFallback className="text-sm font-semibold bg-primary/10 text-primary">
+        <Avatar className="h-9 w-9 shrink-0">
+          <AvatarFallback className="text-sm font-semibold bg-muted/30 text-foreground/70">
             {conversa.nome ? conversa.nome.charAt(0) : <User className="h-4 w-4" />}
           </AvatarFallback>
         </Avatar>
@@ -559,238 +539,113 @@ export function ChatPanel({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <p className="font-semibold text-[15px] truncate">{conversa.nome ?? conversa.telefone}</p>
-            {conversa.queueStatus && (
-              <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 font-medium rounded-full border-border/30 shrink-0", QUEUE_STATUS_LABELS[conversa.queueStatus]?.color)}>
-                {QUEUE_STATUS_LABELS[conversa.queueStatus]?.label}
-              </Badge>
-            )}
+            <span className={cn("h-2 w-2 rounded-full shrink-0", connectionDot)} />
           </div>
-          <div className="flex items-center gap-1.5 flex-wrap text-xs">
-            {conversa.nome && <span className="text-muted-foreground/50 font-mono">{conversa.telefone}</span>}
-            {conversa.atendente && (
-              <span className="text-primary/60 font-medium">• {conversa.atendente}</span>
-            )}
-            {conversa.slaMinutos != null && conversa.status !== "Fechado" && (
-              <span className={cn(
-                "text-[11px] font-mono tabular-nums",
-                (conversa.slaMinutos ?? 0) > 30 ? "text-destructive/70" : "text-muted-foreground/40"
-              )}>
-                SLA: {conversa.slaMinutos}m
-              </span>
-            )}
-            {/* Connection indicator */}
-            <span className={cn(
-              "inline-flex items-center gap-1 text-[10px] font-medium",
-              connectionStatus === "connected" ? "text-emerald-500" : connectionStatus === "connecting" ? "text-amber-500" : "text-destructive"
-            )}>
-              {connectionStatus === "connected" ? (
-                <><Wifi className="h-3 w-3" /> Conectado</>
-              ) : connectionStatus === "connecting" ? (
-                <><RefreshCw className="h-3 w-3 animate-spin" /> Conectando...</>
-              ) : (
-                <button onClick={onReconnect} className="inline-flex items-center gap-1 hover:underline">
-                  <WifiOff className="h-3 w-3" /> Reconectar
-                </button>
-              )}
-            </span>
-          </div>
+          <p className={cn(
+            "text-[12px] font-medium",
+            QUEUE_STATUS_LABELS[conversa.queueStatus ?? ""]?.color ?? "text-muted-foreground/40"
+          )}>
+            {QUEUE_STATUS_LABELS[conversa.queueStatus ?? ""]?.label ?? conversa.status}
+            {conversa.atendente && <span className="text-muted-foreground/40 font-normal"> · {conversa.atendente}</span>}
+          </p>
         </div>
 
-        {/* Actions */}
-        <TooltipProvider delayDuration={200}>
-          <div className="flex items-center gap-1">
-            {/* AI Actions dropdown */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-9 gap-1.5 rounded-lg text-xs text-primary/70 hover:text-primary">
-                  {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  <span className="hidden lg:inline">IA</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-48 p-1.5" align="end">
-                <button
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50 min-h-[40px]"
-                  onClick={() => handleAiAction("suggest")}
-                  disabled={!!aiLoading}
-                >
-                  <Brain className="h-4 w-4 text-primary/70" /> Sugerir resposta
+        {/* Right: IA + ⋯ menu + CRM toggle */}
+        <div className="flex items-center gap-0.5">
+          {/* IA button */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8 gap-1.5 rounded-lg text-xs text-muted-foreground/60 hover:text-primary">
+                {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                <span className="hidden lg:inline text-[12px]">IA</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-44 p-1" align="end">
+              <button className="w-full flex items-center gap-2 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors disabled:opacity-50" onClick={() => handleAiAction("suggest")} disabled={!!aiLoading}>
+                <Brain className="h-3.5 w-3.5 text-muted-foreground/50" /> Sugerir resposta
+              </button>
+              <button className="w-full flex items-center gap-2 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors disabled:opacity-50" onClick={() => handleAiAction("summarize")} disabled={!!aiLoading}>
+                <Sparkles className="h-3.5 w-3.5 text-muted-foreground/50" /> Resumir caso
+              </button>
+              <button className="w-full flex items-center gap-2 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors disabled:opacity-50" onClick={() => handleAiAction("extract")} disabled={!!aiLoading}>
+                <Database className="h-3.5 w-3.5 text-muted-foreground/50" /> Extrair dados
+              </button>
+              <button className="w-full flex items-center gap-2 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors disabled:opacity-50" onClick={() => handleAiAction("next_action")} disabled={!!aiLoading}>
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/50" /> Próxima ação
+              </button>
+            </PopoverContent>
+          </Popover>
+
+          {/* ⋯ Actions menu — all secondary actions consolidated here */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground/50">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-1" align="end">
+              {conversa.queueStatus === "resolvido" && onReopen ? (
+                <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors text-emerald-600 dark:text-emerald-400" onClick={onReopen}>
+                  <RotateCw className="h-3.5 w-3.5" /> Reabrir conversa
                 </button>
-                <button
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50 min-h-[40px]"
-                  onClick={() => handleAiAction("summarize")}
-                  disabled={!!aiLoading}
-                >
-                  <Sparkles className="h-4 w-4 text-primary/70" /> Resumir caso
+              ) : (
+                <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors disabled:opacity-40" onClick={onAssume} disabled={conversa.assignedAgentId === currentUserId}>
+                  <UserCheck className="h-3.5 w-3.5" /> Assumir conversa
                 </button>
-                <button
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50 min-h-[40px]"
-                  onClick={() => handleAiAction("extract")}
-                  disabled={!!aiLoading}
-                >
-                  <Database className="h-4 w-4 text-primary/70" /> Extrair dados
+              )}
+              {onTransfer && (
+                <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors" onClick={onTransfer}>
+                  <ArrowRightLeft className="h-3.5 w-3.5" /> Transferir
                 </button>
-                <button
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50 min-h-[40px]"
-                  onClick={() => handleAiAction("next_action")}
-                  disabled={!!aiLoading}
-                >
-                  <ArrowRight className="h-4 w-4 text-primary/70" /> Próxima ação
-                </button>
-              </PopoverContent>
-            </Popover>
+              )}
+              <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors" onClick={onPendente}>
+                <Clock className="h-3.5 w-3.5" /> Marcar pendente
+              </button>
 
-            {isMobile ? (
-              /* Mobile: compact dropdown with all actions */
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-48 p-1.5" align="end">
-                  {conversa.queueStatus === "resolvido" && onReopen ? (
-                    <button
-                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors min-h-[40px] text-emerald-600"
-                      onClick={onReopen}
-                    >
-                      <RotateCw className="h-4 w-4" /> Reabrir conversa
-                    </button>
-                  ) : (
-                    <button
-                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors min-h-[40px] disabled:opacity-50"
-                      onClick={onAssume}
-                      disabled={conversa.assignedAgentId === currentUserId}
-                    >
-                      <UserCheck className="h-4 w-4" /> Assumir conversa
-                    </button>
-                  )}
-                  {onTransfer && (
-                    <button
-                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors min-h-[40px]"
-                      onClick={onTransfer}
-                    >
-                      <ArrowRightLeft className="h-4 w-4" /> Transferir
-                    </button>
-                  )}
-                  <button
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors min-h-[40px]"
-                    onClick={onPendente}
-                  >
-                    <Clock className="h-4 w-4" /> Pendente
-                  </button>
-                  <button
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-accent/30 rounded-lg transition-colors min-h-[40px] text-destructive"
-                    onClick={onFinalizar}
-                  >
-                    <CheckCircle className="h-4 w-4" /> Encerrar
-                  </button>
-                </PopoverContent>
-              </Popover>
-            ) : (
-              <>
-                {conversa.queueStatus === "resolvido" && onReopen ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-emerald-600" onClick={onReopen}>
-                        <RotateCw className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="text-xs">Reabrir</TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-9 w-9 rounded-lg text-muted-foreground/60"
-                        onClick={onAssume}
-                        disabled={conversa.assignedAgentId === currentUserId}
-                      >
-                        <UserCheck className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="text-xs">Assumir</TooltipContent>
-                  </Tooltip>
-                )}
+              <div className="h-px bg-border/10 my-1" />
 
-                {onTransfer && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60" onClick={onTransfer}>
-                        <ArrowRightLeft className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="text-xs">Transferir</TooltipContent>
-                  </Tooltip>
-                )}
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60" onClick={onPendente}>
-                      <Clock className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-xs">Pendente</TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60" onClick={onFinalizar}>
-                      <CheckCircle className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-xs">Encerrar</TooltipContent>
-                </Tooltip>
-              </>
-            )}
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60">
-                  <Tag className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-44 p-1.5" align="end">
+              {/* Etiquetas sub-section */}
+              <div className="px-2.5 py-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/35 mb-1">Etiquetas</p>
                 {ETIQUETAS_OPTIONS.map((e) => (
-                  <label key={e} className="flex items-center gap-2.5 py-2 px-2.5 hover:bg-accent/30 rounded-lg cursor-pointer text-xs min-h-[40px]">
-                    <Checkbox checked={conversa.etiquetas.includes(e)} onCheckedChange={() => onToggleEtiqueta(e)} className="h-4 w-4" />
+                  <label key={e} className="flex items-center gap-2 py-1.5 cursor-pointer text-xs hover:text-foreground text-muted-foreground/70">
+                    <Checkbox checked={conversa.etiquetas.includes(e)} onCheckedChange={() => onToggleEtiqueta(e)} className="h-3.5 w-3.5" />
                     {e}
                   </label>
                 ))}
-              </PopoverContent>
-            </Popover>
+              </div>
 
-            {/* Sound toggle */}
-            {onToggleSound && (
+              <div className="h-px bg-border/10 my-1" />
+
+              {/* Sound */}
+              {onToggleSound && (
+                <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors" onClick={onToggleSound}>
+                  {soundEnabled ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
+                  {soundEnabled ? "Desativar som" : "Ativar som"}
+                </button>
+              )}
+
+              {/* Connection */}
+              {connectionStatus !== "connected" && onReconnect && (
+                <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors text-destructive/70" onClick={onReconnect}>
+                  <WifiOff className="h-3.5 w-3.5" /> Reconectar
+                </button>
+              )}
+
+              <div className="h-px bg-border/10 my-1" />
+
+              <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors text-destructive/70" onClick={onFinalizar}>
+                <CheckCircle className="h-3.5 w-3.5" /> Encerrar atendimento
+              </button>
+            </PopoverContent>
+          </Popover>
+
+          {/* CRM panel toggle */}
+          {onToggleContext && (
+            <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className={cn(
-                      "h-9 w-9 rounded-lg",
-                      soundEnabled ? "text-primary/70" : "text-muted-foreground/40"
-                    )}
-                    onClick={onToggleSound}
-                  >
-                    {soundEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="text-xs">
-                  {autoplayBlocked
-                    ? "Clique para ativar som"
-                    : soundEnabled
-                      ? "Desativar som"
-                      : "Ativar som"}
-                </TooltipContent>
-              </Tooltip>
-            )}
-
-            {onToggleContext && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-muted-foreground/60" onClick={onToggleContext}>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground/40" onClick={onToggleContext}>
                     {isMobile ? (
                       <Info className="h-4 w-4" />
                     ) : showContext ? (
@@ -804,9 +659,9 @@ export function ChatPanel({
                   {isMobile ? "Contexto CRM" : showContext ? "Modo foco" : "Contexto CRM"}
                 </TooltipContent>
               </Tooltip>
-            )}
-          </div>
-        </TooltipProvider>
+            </TooltipProvider>
+          )}
+        </div>
       </div>
 
       {/* AI Result banner */}
@@ -828,7 +683,7 @@ export function ChatPanel({
             {summary || aiResult?.text}
           </p>
           {aiResult?.type === "next_action" && (
-            <Button size="sm" variant="outline" className="mt-2 h-8 text-xs rounded-lg" onClick={() => { toast({ title: "Ação aplicada ✅" }); setAiResult(null); }}>
+            <Button size="sm" variant="outline" className="mt-2 h-7 text-xs rounded-lg" onClick={() => { toast({ title: "Ação aplicada ✅" }); setAiResult(null); }}>
               Aplicar
             </Button>
           )}
@@ -837,17 +692,16 @@ export function ChatPanel({
 
       {/* Messages */}
       <ScrollArea className="flex-1 w-full overflow-x-hidden">
-        <div className="px-4 md:px-6 py-3 space-y-1 max-w-3xl mx-auto w-full overflow-x-hidden">
-          {/* Load more */}
+        <div className="px-4 md:px-6 py-3 space-y-0.5 max-w-3xl mx-auto w-full overflow-x-hidden">
           {hasMore && (
             <div className="flex justify-center py-3">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-9 text-xs text-muted-foreground/50 hover:text-foreground"
+                className="h-8 text-xs text-muted-foreground/40 hover:text-foreground"
                 onClick={() => setVisibleCount((v) => v + MESSAGES_PER_PAGE)}
               >
-                Carregar mais mensagens ({mensagens.length - visibleCount} anteriores)
+                Carregar mais ({mensagens.length - visibleCount} anteriores)
               </Button>
             </div>
           )}
@@ -858,12 +712,10 @@ export function ChatPanel({
             if (pinnedMsgs.length === 0) return null;
             return (
               <div className="mx-auto w-full max-w-3xl mb-2">
-                <div className="bg-primary/5 border border-primary/10 rounded-xl p-2.5 flex items-center gap-2">
-                  <Pin className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[11px] font-medium text-primary/70">{pinnedMsgs.length} fixada{pinnedMsgs.length > 1 ? "s" : ""}</span>
-                    <p className="text-[11px] text-muted-foreground/50 truncate">{pinnedMsgs[pinnedMsgs.length - 1]?.texto}</p>
-                  </div>
+                <div className="bg-muted/10 rounded-lg p-2 flex items-center gap-2">
+                  <Pin className="h-3 w-3 text-muted-foreground/40 shrink-0" />
+                  <span className="text-[11px] text-muted-foreground/50">{pinnedMsgs.length} fixada{pinnedMsgs.length > 1 ? "s" : ""}</span>
+                  <p className="text-[11px] text-muted-foreground/35 truncate flex-1">{pinnedMsgs[pinnedMsgs.length - 1]?.texto}</p>
                 </div>
               </div>
             );
@@ -875,10 +727,10 @@ export function ChatPanel({
               <button
                 onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
                 className={cn(
-                  "flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-full border transition-all",
+                  "flex items-center gap-1.5 text-[11px] px-3 py-1 rounded-full transition-all",
                   showFavoritesOnly
-                    ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400"
-                    : "border-border/20 text-muted-foreground/50 hover:text-foreground"
+                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                    : "text-muted-foreground/40 hover:text-foreground"
                 )}
               >
                 <Star className="h-3 w-3" />
@@ -892,8 +744,8 @@ export function ChatPanel({
           ) : (
             messageGroups.map((group) => (
               <div key={group.label}>
-                <div className="flex items-center justify-center my-3">
-                  <span className="text-[10px] font-medium text-muted-foreground/40 bg-muted/15 px-3 py-1 rounded-full">
+                <div className="flex items-center justify-center my-4">
+                  <span className="text-[10px] font-medium text-muted-foreground/30 bg-muted/10 px-3 py-1 rounded-full">
                     {group.label}
                   </span>
                 </div>
@@ -904,7 +756,6 @@ export function ChatPanel({
                   const showTime = shouldShowTimestamp(m, prev);
                   const isMe = m.de === "atendente";
 
-                  // Find events that occurred between prev message and current
                   const eventsBeforeThis = conversationEvents.filter((ev) => {
                     const evTime = new Date(ev.created_at).getTime();
                     const prevTime = prev ? prev.horario.getTime() : 0;
@@ -929,10 +780,9 @@ export function ChatPanel({
                         isFavorited={favoritedIds.has(m.id)}
                       >
                         <div className="relative">
-                          {/* Pin/star indicators */}
                           {(pinnedIds.has(m.id) || favoritedIds.has(m.id)) && (
                             <div className={cn("absolute -top-1 flex gap-0.5", isMe ? "right-1" : "left-1")}>
-                              {pinnedIds.has(m.id) && <Pin className="h-2.5 w-2.5 text-primary/40" />}
+                              {pinnedIds.has(m.id) && <Pin className="h-2.5 w-2.5 text-muted-foreground/30" />}
                               {favoritedIds.has(m.id) && <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400" />}
                             </div>
                           )}
@@ -949,7 +799,6 @@ export function ChatPanel({
                     </div>
                   );
                 })}
-                {/* Events after last message */}
                 {(() => {
                   const lastMsgTime = group.messages[group.messages.length - 1]?.horario.getTime() ?? 0;
                   const trailingEvents = conversationEvents.filter((ev) => new Date(ev.created_at).getTime() > lastMsgTime);
@@ -962,118 +811,78 @@ export function ChatPanel({
         </div>
       </ScrollArea>
 
-      {/* Composer */}
-      <div className="relative border-t border-border/20 bg-card/20 backdrop-blur-sm w-full overflow-x-hidden">
+      {/* ── Composer ── Clean, no chips */}
+      <div className="relative border-t border-border/10 w-full overflow-x-hidden">
         {/* Quick replies */}
         {showQuickReplies && (
-          <div className="absolute bottom-full left-0 right-0 mx-4 mb-1.5 bg-popover border border-border/30 rounded-xl shadow-lg max-h-[200px] overflow-y-auto z-50">
+          <div className="absolute bottom-full left-0 right-0 mx-4 mb-1.5 bg-popover border border-border/20 rounded-xl shadow-lg max-h-[200px] overflow-y-auto z-50">
             {filteredReplies.map((r, i) => (
               <button
                 key={r.id}
                 className={cn(
-                  "w-full text-left px-3 py-2.5 text-xs hover:bg-accent/30 transition-colors first:rounded-t-xl last:rounded-b-xl min-h-[40px]",
-                  i === quickReplyIndex && "bg-accent/30"
+                  "w-full text-left px-3 py-2.5 text-xs hover:bg-muted/20 transition-colors first:rounded-t-xl last:rounded-b-xl",
+                  i === quickReplyIndex && "bg-muted/20"
                 )}
                 onMouseDown={(e) => { e.preventDefault(); selectQuickReply(r.texto); }}
               >
                 <span className="font-medium text-primary text-[11px]">/{r.atalho}</span>
-                <span className="ml-2 text-muted-foreground/50 text-[11px]">{r.titulo}</span>
+                <span className="ml-2 text-muted-foreground/40 text-[11px]">{r.titulo}</span>
               </button>
             ))}
           </div>
         )}
 
-        {/* Template + Action chips - scrollable on mobile */}
-        <div className="flex gap-1.5 px-4 pt-2 pb-1 overflow-x-auto scrollbar-none">
-          {smartTemplates.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => handleSmartTemplate(t)}
-              className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-full border border-border/15 text-muted-foreground/50 hover:text-foreground hover:border-primary/20 hover:bg-primary/5 transition-all min-h-[32px]"
-            >
-              <span>{t.emoji}</span>
-              <span>{t.label}</span>
-              {t.actions && <Zap className="h-2.5 w-2.5 text-primary/40" />}
-            </button>
-          ))}
-          <div className="w-px bg-border/20 mx-1 shrink-0" />
-          <button
-            onClick={() => { toast({ title: "Follow-up 24h criado 📅" }); }}
-            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-full border border-primary/15 text-primary/50 hover:text-primary hover:bg-primary/5 transition-all min-h-[32px]"
-          >
-            <CalendarPlus className="h-3 w-3" /> 24h
-          </button>
-          <button
-            onClick={() => { toast({ title: "Follow-up 48h criado 📅" }); }}
-            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-full border border-primary/15 text-primary/50 hover:text-primary hover:bg-primary/5 transition-all min-h-[32px]"
-          >
-            <CalendarPlus className="h-3 w-3" /> 48h
-          </button>
-          <button
-            onClick={onPendente}
-            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-full border border-amber-500/15 text-amber-600/50 dark:text-amber-400/50 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/5 transition-all min-h-[32px]"
-          >
-            <Clock className="h-3 w-3" /> Pendente
-          </button>
-          <button
-            onClick={() => onToggleEtiqueta("Urgente")}
-            className="shrink-0 flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-full border border-destructive/15 text-destructive/50 hover:text-destructive hover:bg-destructive/5 transition-all min-h-[32px]"
-          >
-            <AlertTriangle className="h-3 w-3" /> Urgente
-          </button>
-        </div>
-
         {/* Reply quote */}
         {replyTo && (
-          <div className="mx-4 mt-2 mb-1 p-2.5 bg-primary/5 border-l-4 border-primary/40 rounded-r-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
-            <Reply className="h-4 w-4 text-primary/50 shrink-0" />
+          <div className="mx-4 mt-2 mb-1 p-2 bg-muted/10 border-l-2 border-primary/30 rounded-r-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
+            <Reply className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-semibold text-primary/60">
+              <p className="text-[11px] font-medium text-muted-foreground/50">
                 {replyTo.de === "atendente" ? (replyTo.sentByAgentName || "Você") : "Contato"}
               </p>
-              <p className="text-xs text-muted-foreground/60 truncate">{replyTo.texto || `[${replyTo.msgType}]`}</p>
+              <p className="text-[11px] text-muted-foreground/40 truncate">{replyTo.texto || `[${replyTo.msgType}]`}</p>
             </div>
-            <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg shrink-0" onClick={() => setReplyTo(null)}>
-              <X className="h-3.5 w-3.5" />
+            <Button size="icon" variant="ghost" className="h-6 w-6 rounded-lg shrink-0" onClick={() => setReplyTo(null)}>
+              <X className="h-3 w-3" />
             </Button>
           </div>
         )}
 
         {/* Pending file preview */}
         {pendingFile && pendingPreview && (
-          <div className="mx-4 mt-2 mb-1 p-2 bg-muted/20 border border-border/20 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
+          <div className="mx-4 mt-2 mb-1 p-2 bg-muted/10 border border-border/10 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
             {pendingFile.type.startsWith("image/") ? (
-              <img src={pendingPreview} alt="Preview" className="h-16 w-16 rounded-lg object-cover" />
+              <img src={pendingPreview} alt="Preview" className="h-14 w-14 rounded-lg object-cover" />
             ) : pendingFile.type.startsWith("video/") ? (
-              <video src={pendingPreview} className="h-16 w-16 rounded-lg object-cover" muted />
+              <video src={pendingPreview} className="h-14 w-14 rounded-lg object-cover" muted />
             ) : pendingFile.type.startsWith("audio/") ? (
-              <div className="h-16 w-16 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Mic className="h-6 w-6 text-primary" />
+              <div className="h-14 w-14 rounded-lg bg-muted/20 flex items-center justify-center">
+                <Mic className="h-5 w-5 text-muted-foreground/50" />
               </div>
             ) : (
-              <div className="h-16 w-16 rounded-lg bg-primary/10 flex items-center justify-center">
-                <FileText className="h-6 w-6 text-primary" />
+              <div className="h-14 w-14 rounded-lg bg-muted/20 flex items-center justify-center">
+                <FileText className="h-5 w-5 text-muted-foreground/50" />
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{pendingFile.name}</p>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-[13px] font-medium truncate">{pendingFile.name}</p>
+              <p className="text-[10px] text-muted-foreground/40">
                 {(pendingFile.size / 1024).toFixed(0)} KB
               </p>
             </div>
             <Button
               size="icon"
               variant="ghost"
-              className="h-8 w-8 rounded-lg shrink-0"
+              className="h-7 w-7 rounded-lg shrink-0"
               onClick={() => { setPendingFile(null); setPendingPreview(null); }}
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </Button>
           </div>
         )}
 
-        <div className="flex gap-2 items-end px-4 pb-3 pt-1.5">
-          <div className="flex gap-1 shrink-0">
+        <div className="flex gap-2 items-end px-4 pb-3 pt-2">
+          <div className="flex gap-0.5 shrink-0">
             <AttachmentMenu onFileSelected={handleFileFromMenu} />
             <TooltipProvider delayDuration={200}>
               <Tooltip>
@@ -1081,7 +890,7 @@ export function ChatPanel({
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-10 w-10 rounded-lg text-muted-foreground/40"
+                    className="h-9 w-9 rounded-lg text-muted-foreground/30 hover:text-muted-foreground/60"
                     onClick={() => onMsgTextChange(msgText.startsWith("/") ? msgText : "/")}
                   >
                     <FileText className="h-4 w-4" />
@@ -1102,11 +911,10 @@ export function ChatPanel({
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
             }}
             onKeyDown={handleKeyDown}
-            className="min-h-[44px] max-h-[120px] resize-none text-[15px] flex-1 rounded-xl bg-muted/15 border-border/15 focus-visible:border-primary/25 focus-visible:bg-background transition-all"
+            className="min-h-[42px] max-h-[120px] resize-none text-[14px] flex-1 rounded-xl bg-muted/10 border-border/10 focus-visible:border-primary/20 focus-visible:bg-background transition-all"
             rows={1}
           />
 
-          {/* Show mic button when no text, send button when there is text/file */}
           {!msgText.trim() && !pendingFile ? (
             <AudioRecorder
               onSendAudio={(file) => {
@@ -1126,7 +934,7 @@ export function ChatPanel({
                 }
               }}
               disabled={!msgText.trim() && !pendingFile}
-              className="shrink-0 rounded-xl h-11 w-11"
+              className="shrink-0 rounded-xl h-10 w-10"
             >
               <Send className="h-4 w-4" />
             </Button>
@@ -1135,7 +943,7 @@ export function ChatPanel({
 
         {!isMobile && (
           <div className="text-center pb-1">
-            <span className="text-[9px] text-muted-foreground/30">Enter envia • Shift+Enter nova linha • / templates • ⌘K buscar</span>
+            <span className="text-[9px] text-muted-foreground/20">Enter envia · Shift+Enter nova linha · / templates · ⌘K buscar</span>
           </div>
         )}
       </div>
