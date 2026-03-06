@@ -872,8 +872,8 @@ export function ChatPanel({
       )}
 
       {/* Messages */}
-      <ScrollArea className="flex-1 w-full overflow-x-hidden">
-        <div className="px-4 md:px-6 py-3 space-y-0.5 max-w-3xl mx-auto w-full overflow-x-hidden">
+      <ScrollArea className="flex-1 w-full overflow-x-hidden bg-chat-bg">
+        <div className="px-4 md:px-8 py-3 space-y-0.5 max-w-3xl mx-auto w-full overflow-x-hidden">
           {hasMore && (
             <div className="flex justify-center py-3">
               <Button
