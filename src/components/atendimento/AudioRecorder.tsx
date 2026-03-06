@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Mic, Square, Send, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,69 @@ function formatRecordTime(s: number): string {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
+const WAVE_BARS = 24;
+
+/** Live waveform visualiser – renders bars based on analyser frequency data */
+function LiveWaveform({ analyserRef }: { analyserRef: React.RefObject<AnalyserNode | null> }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>();
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const analyser = analyserRef.current;
+    if (!canvas || !analyser) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    const draw = () => {
+      rafRef.current = requestAnimationFrame(draw);
+      analyser.getByteFrequencyData(dataArray);
+
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const barW = Math.max(2, (w - (WAVE_BARS - 1) * 2) / WAVE_BARS);
+      const step = Math.floor(dataArray.length / WAVE_BARS);
+
+      for (let i = 0; i < WAVE_BARS; i++) {
+        // Average a few bins for smoother look
+        let sum = 0;
+        for (let j = 0; j < step; j++) {
+          sum += dataArray[i * step + j];
+        }
+        const avg = sum / step / 255;
+        const barH = Math.max(3, avg * h);
+
+        const x = i * (barW + 2);
+        const y = (h - barH) / 2;
+
+        ctx.fillStyle = `hsl(0, 72%, ${55 + avg * 20}%)`;
+        ctx.beginPath();
+        ctx.roundRect(x, y, barW, barH, barW / 2);
+        ctx.fill();
+      }
+    };
+
+    draw();
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [analyserRef]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={180}
+      height={32}
+      className="flex-1 max-w-[180px] h-8"
+    />
+  );
+}
+
 export const AudioRecorder = memo(function AudioRecorder({ onSendAudio, disabled }: AudioRecorderProps) {
   const [state, setState] = useState<"idle" | "recording" | "preview" | "sending">("idle");
   const [duration, setDuration] = useState(0);
@@ -25,6 +88,8 @@ export const AudioRecorder = memo(function AudioRecorder({ onSendAudio, disabled
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
   const streamRef = useRef<MediaStream | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
   const { toast } = useToast();
 
   const startRecording = useCallback(async () => {
@@ -32,8 +97,17 @@ export const AudioRecorder = memo(function AudioRecorder({ onSendAudio, disabled
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
+      // Set up Web Audio analyser for live waveform
+      const audioCtx = new AudioContext();
+      audioCtxRef.current = audioCtx;
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 128;
+      analyser.smoothingTimeConstant = 0.7;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
       // Prioritize OGG/Opus — Meta WhatsApp API accepts it natively.
-      // Chrome 120+ supports ogg/opus recording. Fallback to webm only if needed.
       const mimeType = MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
         ? "audio/ogg;codecs=opus"
         : MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
@@ -51,16 +125,11 @@ export const AudioRecorder = memo(function AudioRecorder({ onSendAudio, disabled
       recorder.onstop = async () => {
         let blob = new Blob(chunksRef.current, { type: mimeType });
 
-        // If browser recorded as WebM, convert to real OGG/Opus
-        // Meta rejects WebM even when re-labeled as OGG
         if (mimeType.includes("webm")) {
           try {
-            console.log("🔄 Converting WebM→OGG/Opus client-side…");
             blob = await remuxWebmToOgg(blob);
-            console.log("✅ Conversion done:", blob.size, "bytes");
           } catch (err) {
             console.error("❌ WebM→OGG conversion failed:", err);
-            // Fall through with original blob — edge function will try re-label
           }
         }
 
@@ -68,6 +137,7 @@ export const AudioRecorder = memo(function AudioRecorder({ onSendAudio, disabled
         setAudioUrl(URL.createObjectURL(blob));
         setState("preview");
         stream.getTracks().forEach((t) => t.stop());
+        audioCtx.close().catch(() => {});
       };
 
       recorder.start(100);
@@ -94,6 +164,7 @@ export const AudioRecorder = memo(function AudioRecorder({ onSendAudio, disabled
       if (timerRef.current) clearInterval(timerRef.current);
       mediaRecorderRef.current?.stop();
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      audioCtxRef.current?.close().catch(() => {});
     }
     if (audioUrl) URL.revokeObjectURL(audioUrl);
     setAudioBlob(null);
@@ -134,9 +205,12 @@ export const AudioRecorder = memo(function AudioRecorder({ onSendAudio, disabled
     return (
       <div className="flex items-center gap-2 px-3 py-1.5 bg-destructive/5 border border-destructive/20 rounded-xl animate-in fade-in slide-in-from-bottom-1 duration-200">
         <span className="h-2.5 w-2.5 rounded-full bg-destructive animate-pulse shrink-0" />
-        <span className="text-xs font-mono text-destructive tabular-nums">{formatRecordTime(duration)}</span>
-        <span className="text-[10px] text-muted-foreground/50">Gravando...</span>
-        <div className="flex items-center gap-1 ml-auto">
+        <span className="text-xs font-mono text-destructive tabular-nums min-w-[32px]">{formatRecordTime(duration)}</span>
+        
+        {/* Live waveform visualiser */}
+        <LiveWaveform analyserRef={analyserRef} />
+
+        <div className="flex items-center gap-1 ml-auto shrink-0">
           <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground/50" onClick={cancelRecording}>
             <X className="h-3.5 w-3.5" />
           </Button>
