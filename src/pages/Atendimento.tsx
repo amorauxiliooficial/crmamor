@@ -34,9 +34,9 @@ function waToConversa(wa: WaConversation, profileMap: Map<string, string>): Conv
   const assignedName = wa.assigned_to ? profileMap.get(wa.assigned_to) ?? null : null;
 
   // Derive queue status
-  let queueStatus: Conversa["queueStatus"] = "sem_responsavel";
-  if (wa.status === "closed") queueStatus = "resolvido";
-  else if (!wa.assigned_to) queueStatus = "sem_responsavel";
+  let queueStatus: Conversa["queueStatus"] = "novo";
+  if (wa.status === "closed") queueStatus = "encerrado";
+  else if (!wa.assigned_to) queueStatus = "novo";
   else if (wa.unread_count === 0) queueStatus = "aguardando_cliente";
   else queueStatus = "em_atendimento";
 
@@ -244,6 +244,29 @@ export default function Atendimento() {
       });
     },
     [selectedId, toast, recordAssignment, user, assumeConversation, createEvent]
+  );
+
+  const DEFAULT_GREETING = "Olá! Tudo bem? Sou atendente da equipe. Como posso te ajudar hoje? 😊";
+
+  const handleStartAtendimento = useCallback(
+    (id: string) => {
+      assumeConversation.mutate(id, {
+        onSuccess: () => {
+          toast({ title: "Atendimento iniciado ✅" });
+          createEvent.mutate({ conversation_id: id, event_type: "assumed", to_agent_id: user?.id });
+          recordAssignment.mutate({
+            conversation_id: id,
+            from_user_id: null,
+            to_user_id: user?.id,
+            reason: "Atendimento iniciado via fila",
+          });
+          setSelectedId(id);
+          navigate(`/atendimento/chat/${id}`, { replace: true });
+          setMsgText(DEFAULT_GREETING);
+        },
+      });
+    },
+    [toast, recordAssignment, user, assumeConversation, createEvent, navigate]
   );
 
   const handleTransfer = useCallback(
@@ -497,6 +520,7 @@ export default function Atendimento() {
               onAtendenteFilterChange={setAtendenteFilter}
               onAssume={handleAssume}
               onPendente={handlePendente}
+              onStartAtendimento={handleStartAtendimento}
               isLoading={loadingConvos}
             />
           ) : mobileTab === "kanban" ? (
@@ -566,6 +590,7 @@ export default function Atendimento() {
         onAtendenteFilterChange={setAtendenteFilter}
         onAssume={handleAssume}
         onPendente={handlePendente}
+        onStartAtendimento={handleStartAtendimento}
         isLoading={loadingConvos}
       />
 

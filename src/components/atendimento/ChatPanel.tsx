@@ -31,10 +31,10 @@ import type { ConversationEvent } from "@/hooks/useConversationEvents";
 import type { ConnectionStatus } from "@/hooks/useRealtimeConnection";
 
 const QUEUE_STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  sem_responsavel: { label: "Sem responsável", color: "text-destructive/70" },
+  novo: { label: "Novo atendimento", color: "text-primary" },
   em_atendimento: { label: "Em atendimento", color: "text-emerald-600 dark:text-emerald-400" },
   aguardando_cliente: { label: "Aguardando cliente", color: "text-amber-600 dark:text-amber-400" },
-  resolvido: { label: "Resolvido", color: "text-muted-foreground" },
+  encerrado: { label: "Encerrado", color: "text-muted-foreground" },
 };
 
 const ETIQUETAS_OPTIONS = ["Suporte", "Financeiro", "Reclamação", "Venda", "Urgente"];
@@ -584,7 +584,7 @@ export function ChatPanel({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-1" align="end">
-              {conversa.queueStatus === "resolvido" && onReopen ? (
+              {conversa.queueStatus === "encerrado" && onReopen ? (
                 <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors text-emerald-600 dark:text-emerald-400" onClick={onReopen}>
                   <RotateCw className="h-3.5 w-3.5" /> Reabrir conversa
                 </button>

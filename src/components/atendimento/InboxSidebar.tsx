@@ -1,6 +1,6 @@
 import { useMemo, useState, memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Settings, User, UserCheck, Clock, Inbox, AlertTriangle, Hourglass, MessageCircle, ArrowLeft } from "lucide-react";
+import { Search, Settings, User, UserCheck, Clock, Inbox, AlertTriangle, MessageCircle, ArrowLeft, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -61,6 +61,7 @@ interface InboxSidebarProps {
   onAssume?: (id: string) => void;
   onPendente?: (id: string) => void;
   isLoading?: boolean;
+  onStartAtendimento?: (id: string) => void;
 }
 
 function InboxSkeleton() {
@@ -98,7 +99,7 @@ function categorizeConversas(conversas: Conversa[]): SmartQueue {
   for (const c of conversas) {
     if (c.prioridade === "alta" || c.etiquetas.includes("Urgente")) {
       urgentes.push(c);
-    } else if (c.queueStatus === "sem_responsavel") {
+    } else if (c.queueStatus === "novo") {
       pendentes.push(c);
     } else if (c.queueStatus === "aguardando_cliente") {
       aguardando.push(c);
@@ -110,7 +111,7 @@ function categorizeConversas(conversas: Conversa[]): SmartQueue {
   return { urgentes, pendentes, aguardando, outros };
 }
 
-function QueueSection({ title, icon: Icon, conversas, selectedId, onSelect, hoveredId, setHoveredId, onAssume, onPendente, iconColor }: {
+function QueueSection({ title, icon: Icon, conversas, selectedId, onSelect, hoveredId, setHoveredId, onAssume, onPendente, onStartAtendimento, iconColor }: {
   title: string;
   icon: React.ElementType;
   conversas: Conversa[];
@@ -120,6 +121,7 @@ function QueueSection({ title, icon: Icon, conversas, selectedId, onSelect, hove
   setHoveredId: (id: string | null) => void;
   onAssume?: (id: string) => void;
   onPendente?: (id: string) => void;
+  onStartAtendimento?: (id: string) => void;
   iconColor: string;
 }) {
   if (conversas.length === 0) return null;
@@ -141,13 +143,14 @@ function QueueSection({ title, icon: Icon, conversas, selectedId, onSelect, hove
           onHover={setHoveredId}
           onAssume={onAssume}
           onPendente={onPendente}
+          onStartAtendimento={onStartAtendimento}
         />
       ))}
     </div>
   );
 }
 
-const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, onAssume, onPendente }: {
+const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHovered, onSelect, onHover, onAssume, onPendente, onStartAtendimento }: {
   conversa: Conversa;
   isSelected: boolean;
   isHovered: boolean;
@@ -155,6 +158,7 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
   onHover: (id: string | null) => void;
   onAssume?: (id: string) => void;
   onPendente?: (id: string) => void;
+  onStartAtendimento?: (id: string) => void;
 }) {
   return (
     <div
@@ -204,9 +208,9 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
           {formatInboxPreview(c.ultimaMensagem)}
         </p>
 
-        {/* Minimal metadata — only show critical info */}
-        {c.queueStatus === "sem_responsavel" && (
-          <span className="text-[10px] text-destructive/50 font-medium mt-0.5 block">Sem responsável</span>
+        {/* Minimal metadata — show "Novo" for unassigned */}
+        {c.queueStatus === "novo" && (
+          <span className="text-[10px] text-primary font-medium mt-0.5 block">Disponível na fila</span>
         )}
       </div>
 
@@ -217,8 +221,22 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
         </span>
       )}
 
-      {/* Hover actions */}
-      {isHovered && !isSelected && (onAssume || onPendente) && (
+      {/* CTA for new conversations or hover actions */}
+      {c.queueStatus === "novo" && onStartAtendimento ? (
+        <div
+          className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Button
+            size="sm"
+            className="h-7 rounded-lg text-[11px] gap-1.5 px-3"
+            onClick={(e) => { e.stopPropagation(); onStartAtendimento(c.id); }}
+          >
+            <Play className="h-3 w-3" />
+            Iniciar
+          </Button>
+        </div>
+      ) : isHovered && !isSelected && (onAssume || onPendente) ? (
         <div
           className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={(e) => e.stopPropagation()}
@@ -248,7 +266,7 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
             )}
           </TooltipProvider>
         </div>
-      )}
+      ) : null}
     </div>
   );
 });
@@ -290,6 +308,7 @@ export function InboxSidebar({
   onAssume,
   onPendente,
   isLoading = false,
+  onStartAtendimento,
 }: InboxSidebarProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [queueMode, setQueueMode] = useState<QueueMode>("smart");
@@ -410,15 +429,15 @@ export function InboxSidebar({
           </div>
         ) : queueMode === "smart" ? (
           <div className="py-0.5">
-            <QueueSection title="Urgentes" icon={AlertTriangle} iconColor="text-destructive/50" conversas={smartQueue.urgentes} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} />
-            <QueueSection title="Sem responsável" icon={Hourglass} iconColor="text-destructive/50" conversas={smartQueue.pendentes} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} />
-            <QueueSection title="Aguardando cliente" icon={MessageCircle} iconColor="text-muted-foreground/35" conversas={smartQueue.aguardando} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} />
-            <QueueSection title="Outros" icon={Inbox} iconColor="text-muted-foreground/35" conversas={smartQueue.outros} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} />
+            <QueueSection title="Urgentes" icon={AlertTriangle} iconColor="text-destructive/50" conversas={smartQueue.urgentes} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} onStartAtendimento={onStartAtendimento} />
+            <QueueSection title="Novos na fila" icon={Inbox} iconColor="text-primary" conversas={smartQueue.pendentes} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} onStartAtendimento={onStartAtendimento} />
+            <QueueSection title="Aguardando cliente" icon={MessageCircle} iconColor="text-muted-foreground/35" conversas={smartQueue.aguardando} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} onStartAtendimento={onStartAtendimento} />
+            <QueueSection title="Em atendimento" icon={UserCheck} iconColor="text-muted-foreground/35" conversas={smartQueue.outros} selectedId={selectedId} onSelect={onSelect} hoveredId={hoveredId} setHoveredId={setHoveredId} onAssume={onAssume} onPendente={onPendente} onStartAtendimento={onStartAtendimento} />
           </div>
         ) : (
           <div className="px-1 py-0.5">
             {filtered.map((c) => (
-              <ConversaItem key={c.id} conversa={c} isSelected={selectedId === c.id} isHovered={hoveredId === c.id} onSelect={onSelect} onHover={setHoveredId} onAssume={onAssume} onPendente={onPendente} />
+              <ConversaItem key={c.id} conversa={c} isSelected={selectedId === c.id} isHovered={hoveredId === c.id} onSelect={onSelect} onHover={setHoveredId} onAssume={onAssume} onPendente={onPendente} onStartAtendimento={onStartAtendimento} />
             ))}
           </div>
         )}
