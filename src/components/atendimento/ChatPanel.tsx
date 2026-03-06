@@ -84,11 +84,11 @@ function getBubblePosition(
 }
 
 function getBubbleRounding(isMe: boolean, pos: BubblePosition): string {
-  // WhatsApp-style: consistent rounding with small tail corner
-  if (pos === "solo") return isMe ? "rounded-lg rounded-br-[3px]" : "rounded-lg rounded-bl-[3px]";
-  if (pos === "first") return isMe ? "rounded-lg rounded-br-[3px]" : "rounded-lg rounded-bl-[3px]";
-  if (pos === "middle") return isMe ? "rounded-lg rounded-r-[3px]" : "rounded-lg rounded-l-[3px]";
-  return isMe ? "rounded-lg rounded-tr-[3px]" : "rounded-lg rounded-tl-[3px]";
+  // WhatsApp Desktop: 8px radius, small tail on first/solo
+  if (pos === "solo") return isMe ? "rounded-[8px] rounded-br-[3px]" : "rounded-[8px] rounded-bl-[3px]";
+  if (pos === "first") return isMe ? "rounded-[8px] rounded-br-[3px]" : "rounded-[8px] rounded-bl-[3px]";
+  if (pos === "middle") return isMe ? "rounded-[8px] rounded-r-[3px]" : "rounded-[8px] rounded-l-[3px]";
+  return isMe ? "rounded-[8px] rounded-tr-[3px]" : "rounded-[8px] rounded-tl-[3px]";
 }
 
 /** Detect URLs in text and render as clickable links */
