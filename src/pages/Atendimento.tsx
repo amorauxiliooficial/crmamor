@@ -522,6 +522,8 @@ export default function Atendimento() {
                 onReconnect={onReconnect}
                 conversationEvents={conversationEvents ?? []}
                 profileMap={profileMap}
+                aiEnabled={aiEnabled}
+                onToggleAi={handleToggleAi}
               />
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
@@ -670,6 +672,8 @@ export default function Atendimento() {
         onReconnect={onReconnect}
         conversationEvents={conversationEvents ?? []}
         profileMap={profileMap}
+        aiEnabled={aiEnabled}
+        onToggleAi={handleToggleAi}
       />
 
       <TransferDialog
