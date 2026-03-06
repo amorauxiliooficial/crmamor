@@ -58,7 +58,34 @@ function shouldShowTimestamp(current: Mensagem, prev: Mensagem | null): boolean 
 
 function isSameAuthorGroup(current: Mensagem, prev: Mensagem | null): boolean {
   if (!prev) return false;
-  return current.de === prev.de && current.horario.getTime() - prev.horario.getTime() < 2 * 60000;
+  return current.de === prev.de 
+    && current.sentByAgentId === prev.sentByAgentId
+    && current.horario.getTime() - prev.horario.getTime() < 2 * 60000;
+}
+
+/** Position within a consecutive author block */
+type BubblePosition = "solo" | "first" | "middle" | "last";
+
+function getBubblePosition(
+  msg: Mensagem,
+  prev: Mensagem | null,
+  next: Mensagem | null,
+): BubblePosition {
+  const groupedWithPrev = isSameAuthorGroup(msg, prev);
+  const groupedWithNext = next ? isSameAuthorGroup(next, msg) : false;
+  if (!groupedWithPrev && !groupedWithNext) return "solo";
+  if (!groupedWithPrev && groupedWithNext) return "first";
+  if (groupedWithPrev && groupedWithNext) return "middle";
+  return "last";
+}
+
+function getBubbleRounding(isMe: boolean, pos: BubblePosition): string {
+  // WhatsApp-style connected corners
+  if (pos === "solo") return isMe ? "rounded-2xl rounded-br-md" : "rounded-2xl rounded-bl-md";
+  if (pos === "first") return isMe ? "rounded-2xl rounded-br-md" : "rounded-2xl rounded-bl-md";
+  if (pos === "middle") return isMe ? "rounded-r-md rounded-l-2xl" : "rounded-l-md rounded-r-2xl";
+  // last
+  return isMe ? "rounded-2xl rounded-tr-md" : "rounded-2xl rounded-tl-md";
 }
 
 function MessageSkeleton() {
@@ -80,18 +107,24 @@ const EDIT_TIME_LIMIT_MIN = 15;
 
 const MessageBubble = memo(function MessageBubble({
   message: m,
-  isGrouped,
+  position,
   showTime,
+  showAuthorLabel,
+  showAvatar,
   onRetry,
   currentUserId,
   onEditMessage,
+  profileMap,
 }: {
   message: Mensagem;
-  isGrouped: boolean;
+  position: BubblePosition;
   showTime: boolean;
+  showAuthorLabel: boolean;
+  showAvatar: boolean;
   onRetry?: (m: Mensagem) => void;
   currentUserId?: string | null;
   onEditMessage?: (messageId: string, newBody: string) => void;
+  profileMap?: Map<string, string>;
 }) {
   const isMe = m.de === "atendente";
   const isMedia = m.msgType && m.msgType !== "text";
@@ -113,18 +146,40 @@ const MessageBubble = memo(function MessageBubble({
     setEditing(false);
   };
 
+  const isGrouped = position === "middle" || position === "last";
+  const rounding = getBubbleRounding(isMe, position);
+
+  // Avatar: silhouette fallback
+  const avatarInitial = isMe
+    ? (m.sentByAgentName ? m.sentByAgentName.charAt(0).toUpperCase() : null)
+    : null;
+
   return (
     <div
       className={cn(
         "flex w-full min-w-0 overflow-hidden group",
         isMe ? "justify-end" : "justify-start",
-        isGrouped ? "mt-0.5" : "mt-3"
+        isGrouped ? "mt-[2px]" : "mt-3"
       )}
     >
-      <div className={cn("max-w-[85%] sm:max-w-[70%] overflow-hidden min-w-0", isMe ? "items-end" : "items-start")}>
-        {isMe && m.sentByAgentName && !isGrouped && (
-          <p className="text-[10px] text-muted-foreground/40 font-medium mb-0.5 text-right px-1.5">
-            {m.sentByAgentName}
+      {/* Left avatar slot (contact messages) */}
+      {!isMe && (
+        <div className="w-8 shrink-0 flex flex-col justify-end mr-1.5">
+          {showAvatar && (
+            <Avatar className="h-7 w-7">
+              <AvatarFallback className="text-[11px] font-semibold bg-muted/30 text-foreground/50">
+                <User className="h-3.5 w-3.5" />
+              </AvatarFallback>
+            </Avatar>
+          )}
+        </div>
+      )}
+
+      <div className={cn("max-w-[80%] sm:max-w-[65%] overflow-hidden min-w-0 flex flex-col", isMe ? "items-end" : "items-start")}>
+        {/* Author label — shown on first msg of block when multiple agents */}
+        {showAuthorLabel && isMe && m.sentByAgentName && (
+          <p className="text-[10px] text-muted-foreground/40 font-medium mb-0.5 px-2">
+            {m.sentByAgentName} • atendente
           </p>
         )}
 
@@ -188,8 +243,8 @@ const MessageBubble = memo(function MessageBubble({
                 "py-2 overflow-hidden break-words min-w-0",
                 isMedia ? "px-1" : "px-3",
                 isMe
-                  ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
-                  : "bg-card border border-border/10 rounded-2xl rounded-bl-sm",
+                  ? cn("bg-primary text-primary-foreground", rounding)
+                  : cn("bg-card border border-border/10", rounding),
                 isFailed && "ring-1 ring-destructive/30"
               )}
             >
@@ -250,6 +305,19 @@ const MessageBubble = memo(function MessageBubble({
           </button>
         )}
       </div>
+
+      {/* Right avatar slot (agent messages) */}
+      {isMe && (
+        <div className="w-8 shrink-0 flex flex-col justify-end ml-1.5">
+          {showAvatar && (
+            <Avatar className="h-7 w-7">
+              <AvatarFallback className="text-[11px] font-semibold bg-primary/10 text-primary/70">
+                {avatarInitial || <User className="h-3.5 w-3.5" />}
+              </AvatarFallback>
+            </Avatar>
+          )}
+        </div>
+      )}
     </div>
   );
 });
@@ -762,55 +830,70 @@ export function ChatPanel({
                   </span>
                 </div>
 
-                {group.messages.filter((m) => !showFavoritesOnly || favoritedIds.has(m.id)).map((m, idx) => {
-                  const prev = idx > 0 ? group.messages[idx - 1] : null;
-                  const isGrouped = isSameAuthorGroup(m, prev);
-                  const showTime = shouldShowTimestamp(m, prev);
-                  const isMe = m.de === "atendente";
+                {(() => {
+                  const filtered = group.messages.filter((m) => !showFavoritesOnly || favoritedIds.has(m.id));
+                  // Collect unique agent ids to decide if we need author labels
+                  const agentIds = new Set(filtered.filter(m => m.de === "atendente").map(m => m.sentByAgentId).filter(Boolean));
+                  const multiAgent = agentIds.size > 1;
 
-                  const eventsBeforeThis = conversationEvents.filter((ev) => {
-                    const evTime = new Date(ev.created_at).getTime();
-                    const prevTime = prev ? prev.horario.getTime() : 0;
-                    const currTime = m.horario.getTime();
-                    return evTime > prevTime && evTime <= currTime;
+                  return filtered.map((m, idx) => {
+                    const prev = idx > 0 ? filtered[idx - 1] : null;
+                    const next = idx < filtered.length - 1 ? filtered[idx + 1] : null;
+                    const position = getBubblePosition(m, prev, next);
+                    const showTime = shouldShowTimestamp(m, prev);
+                    const isMe = m.de === "atendente";
+                    // Show avatar on last msg of block (or solo)
+                    const showAvatar = position === "last" || position === "solo";
+                    // Show author label on first msg of block when multiple agents
+                    const showAuthorLabel = multiAgent && (position === "first" || position === "solo");
+
+                    const eventsBeforeThis = conversationEvents.filter((ev) => {
+                      const evTime = new Date(ev.created_at).getTime();
+                      const prevTime = prev ? prev.horario.getTime() : 0;
+                      const currTime = m.horario.getTime();
+                      return evTime > prevTime && evTime <= currTime;
+                    });
+
+                    return (
+                      <div key={m.id}>
+                        {eventsBeforeThis.map((ev) => (
+                          <InlineEvent key={ev.id} event={ev} profileMap={profileMap} />
+                        ))}
+                        <MessageContextMenu
+                          message={m}
+                          isMe={isMe}
+                          isMobile={isMobile}
+                          onReply={setReplyTo}
+                          onPin={handlePin}
+                          onFavorite={handleFavorite}
+                          onDelete={handleDeleteMessage}
+                          isPinned={pinnedIds.has(m.id)}
+                          isFavorited={favoritedIds.has(m.id)}
+                        >
+                          <div className="relative">
+                            {(pinnedIds.has(m.id) || favoritedIds.has(m.id)) && (
+                              <div className={cn("absolute -top-1 z-10 flex gap-0.5", isMe ? "right-10" : "left-10")}>
+                                {pinnedIds.has(m.id) && <Pin className="h-2.5 w-2.5 text-muted-foreground/30" />}
+                                {favoritedIds.has(m.id) && <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400" />}
+                              </div>
+                            )}
+                            <MessageBubble
+                              message={m}
+                              position={position}
+                              showTime={showTime}
+                              showAuthorLabel={showAuthorLabel}
+                              showAvatar={showAvatar}
+                              onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
+                              currentUserId={currentUserId}
+                              onEditMessage={onEditMessage}
+                              profileMap={profileMap}
+                            />
+                          </div>
+                        </MessageContextMenu>
+                      </div>
+                    );
                   });
-
-                  return (
-                    <div key={m.id}>
-                      {eventsBeforeThis.map((ev) => (
-                        <InlineEvent key={ev.id} event={ev} profileMap={profileMap} />
-                      ))}
-                      <MessageContextMenu
-                        message={m}
-                        isMe={isMe}
-                        isMobile={isMobile}
-                        onReply={setReplyTo}
-                        onPin={handlePin}
-                        onFavorite={handleFavorite}
-                        onDelete={handleDeleteMessage}
-                        isPinned={pinnedIds.has(m.id)}
-                        isFavorited={favoritedIds.has(m.id)}
-                      >
-                        <div className="relative">
-                          {(pinnedIds.has(m.id) || favoritedIds.has(m.id)) && (
-                            <div className={cn("absolute -top-1 flex gap-0.5", isMe ? "right-1" : "left-1")}>
-                              {pinnedIds.has(m.id) && <Pin className="h-2.5 w-2.5 text-muted-foreground/30" />}
-                              {favoritedIds.has(m.id) && <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400" />}
-                            </div>
-                          )}
-                          <MessageBubble
-                            message={m}
-                            isGrouped={isGrouped}
-                            showTime={showTime}
-                            onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
-                            currentUserId={currentUserId}
-                            onEditMessage={onEditMessage}
-                          />
-                        </div>
-                      </MessageContextMenu>
-                    </div>
-                  );
-                })}
+                })()}
                 {(() => {
                   const lastMsgTime = group.messages[group.messages.length - 1]?.horario.getTime() ?? 0;
                   const trailingEvents = conversationEvents.filter((ev) => new Date(ev.created_at).getTime() > lastMsgTime);
