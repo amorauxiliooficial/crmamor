@@ -19,6 +19,7 @@ import { useAssignmentActions } from "@/hooks/useAssignmentEvents";
 import { useTimelineActions } from "@/hooks/useTimelineEvents";
 import { CommandPalette } from "@/components/atendimento/CommandPalette";
 import { TransferDialog } from "@/components/atendimento/TransferDialog";
+import { SettingsDrawer } from "@/components/atendimento/SettingsDrawer";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import type { Conversa, Mensagem } from "@/data/atendimentoMock";
@@ -155,6 +156,7 @@ export default function Atendimento() {
   const [mobileCrmDrawerOpen, setMobileCrmDrawerOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("conversas");
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const debouncedSetSearch = useDebouncedCallback((value: string) => {
     setDebouncedSearch(value);
@@ -488,7 +490,7 @@ export default function Atendimento() {
               onSearchChange={handleSearchChange}
               debouncedSearch={debouncedSearch}
               onSelect={selectConversa}
-              onOpenConfig={() => navigate("/atendimento/config")}
+              onOpenConfig={() => setSettingsOpen(true)}
               statusFilter={statusFilter}
               onStatusFilterChange={setStatusFilter}
               atendenteFilter={atendenteFilter}
@@ -530,6 +532,7 @@ export default function Atendimento() {
         {!(selectedId && mobileTab === "conversas") && (
           <div className="h-[56px] shrink-0" />
         )}
+        <SettingsDrawer open={settingsOpen} onOpenChange={setSettingsOpen} />
       </div>
     );
   }
@@ -556,7 +559,7 @@ export default function Atendimento() {
         onSearchChange={handleSearchChange}
         debouncedSearch={debouncedSearch}
         onSelect={selectConversa}
-        onOpenConfig={() => navigate("/atendimento/config")}
+        onOpenConfig={() => setSettingsOpen(true)}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
         atendenteFilter={atendenteFilter}
@@ -628,6 +631,7 @@ export default function Atendimento() {
           </SheetContent>
         </Sheet>
       )}
+      <SettingsDrawer open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 }

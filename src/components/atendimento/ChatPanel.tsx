@@ -3,11 +3,14 @@ import {
   Send, ArrowLeft, User, UserCheck, Clock, CheckCircle, Tag,
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
   Loader2, Zap, Brain, Database, ArrowRight, CalendarPlus, AlertTriangle,
-  Info, Paperclip, X, Image as ImageIcon, RotateCcw, MoreVertical, Pencil, Check,
+  Info, X, Image as ImageIcon, RotateCcw, MoreVertical, Pencil, Check,
   Bell, BellOff, ArrowRightLeft, RefreshCw, Wifi, WifiOff, RotateCw,
+  Pin, Star, Reply,
 } from "lucide-react";
 import { AudioRecorder } from "@/components/atendimento/AudioRecorder";
 import { MessageStatusIcon } from "@/components/atendimento/MessageStatusIcon";
+import { AttachmentMenu } from "@/components/atendimento/AttachmentMenu";
+import { MessageContextMenu } from "@/components/atendimento/MessageContextMenu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -358,7 +361,7 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [quickReplyIndex, setQuickReplyIndex] = useState(0);
   const [aiLoading, setAiLoading] = useState<AiAction | null>(null);
@@ -367,6 +370,14 @@ export function ChatPanel({
   const [visibleCount, setVisibleCount] = useState(MESSAGES_PER_PAGE);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingPreview, setPendingPreview] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<Mensagem | null>(null);
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => {
+    try { const v = localStorage.getItem("atd_pinned"); return v ? new Set(JSON.parse(v)) : new Set(); } catch { return new Set(); }
+  });
+  const [favoritedIds, setFavoritedIds] = useState<Set<string>>(() => {
+    try { const v = localStorage.getItem("atd_favorited"); return v ? new Set(JSON.parse(v)) : new Set(); } catch { return new Set(); }
+  });
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const { toast } = useToast();
 
   const filteredReplies = useMemo(() => {
@@ -398,7 +409,42 @@ export function ChatPanel({
     setSummary(null);
     setAiResult(null);
     setVisibleCount(MESSAGES_PER_PAGE);
+    setReplyTo(null);
+    setShowFavoritesOnly(false);
   }, [conversa?.id]);
+
+  const handlePin = useCallback((m: Mensagem) => {
+    setPinnedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(m.id)) { next.delete(m.id); toast({ title: "Mensagem desafixada" }); }
+      else { next.add(m.id); toast({ title: "Mensagem fixada 📌" }); }
+      localStorage.setItem("atd_pinned", JSON.stringify([...next]));
+      return next;
+    });
+  }, [toast]);
+
+  const handleFavorite = useCallback((m: Mensagem) => {
+    setFavoritedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(m.id)) { next.delete(m.id); toast({ title: "Removido dos favoritos" }); }
+      else { next.add(m.id); toast({ title: "Mensagem favoritada ⭐" }); }
+      localStorage.setItem("atd_favorited", JSON.stringify([...next]));
+      return next;
+    });
+  }, [toast]);
+
+  const handleDeleteMessage = useCallback((m: Mensagem) => {
+    toast({ title: "Mensagem apagada 🗑️", description: "Apenas local" });
+  }, [toast]);
+
+  const handleFileFromMenu = useCallback((file: File) => {
+    setPendingFile(file);
+    if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
+      setPendingPreview(URL.createObjectURL(file));
+    } else {
+      setPendingPreview("file");
+    }
+  }, []);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (showQuickReplies) {
@@ -806,6 +852,41 @@ export function ChatPanel({
             </div>
           )}
 
+          {/* Pinned messages bar */}
+          {(() => {
+            const pinnedMsgs = mensagens.filter((m) => pinnedIds.has(m.id));
+            if (pinnedMsgs.length === 0) return null;
+            return (
+              <div className="mx-auto w-full max-w-3xl mb-2">
+                <div className="bg-primary/5 border border-primary/10 rounded-xl p-2.5 flex items-center gap-2">
+                  <Pin className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[11px] font-medium text-primary/70">{pinnedMsgs.length} fixada{pinnedMsgs.length > 1 ? "s" : ""}</span>
+                    <p className="text-[11px] text-muted-foreground/50 truncate">{pinnedMsgs[pinnedMsgs.length - 1]?.texto}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Favorites filter */}
+          {favoritedIds.size > 0 && (
+            <div className="flex justify-center mb-2">
+              <button
+                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                className={cn(
+                  "flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-full border transition-all",
+                  showFavoritesOnly
+                    ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400"
+                    : "border-border/20 text-muted-foreground/50 hover:text-foreground"
+                )}
+              >
+                <Star className="h-3 w-3" />
+                {showFavoritesOnly ? "Mostrando favoritas" : `${favoritedIds.size} favorita${favoritedIds.size > 1 ? "s" : ""}`}
+              </button>
+            </div>
+          )}
+
           {isLoadingMessages ? (
             <MessageSkeleton />
           ) : (
@@ -817,10 +898,11 @@ export function ChatPanel({
                   </span>
                 </div>
 
-                {group.messages.map((m, idx) => {
+                {group.messages.filter((m) => !showFavoritesOnly || favoritedIds.has(m.id)).map((m, idx) => {
                   const prev = idx > 0 ? group.messages[idx - 1] : null;
                   const isGrouped = isSameAuthorGroup(m, prev);
                   const showTime = shouldShowTimestamp(m, prev);
+                  const isMe = m.de === "atendente";
 
                   // Find events that occurred between prev message and current
                   const eventsBeforeThis = conversationEvents.filter((ev) => {
@@ -835,14 +917,35 @@ export function ChatPanel({
                       {eventsBeforeThis.map((ev) => (
                         <InlineEvent key={ev.id} event={ev} profileMap={profileMap} />
                       ))}
-                      <MessageBubble
+                      <MessageContextMenu
                         message={m}
-                        isGrouped={isGrouped}
-                        showTime={showTime}
-                        onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
-                        currentUserId={currentUserId}
-                        onEditMessage={onEditMessage}
-                      />
+                        isMe={isMe}
+                        isMobile={isMobile}
+                        onReply={setReplyTo}
+                        onPin={handlePin}
+                        onFavorite={handleFavorite}
+                        onDelete={handleDeleteMessage}
+                        isPinned={pinnedIds.has(m.id)}
+                        isFavorited={favoritedIds.has(m.id)}
+                      >
+                        <div className="relative">
+                          {/* Pin/star indicators */}
+                          {(pinnedIds.has(m.id) || favoritedIds.has(m.id)) && (
+                            <div className={cn("absolute -top-1 flex gap-0.5", isMe ? "right-1" : "left-1")}>
+                              {pinnedIds.has(m.id) && <Pin className="h-2.5 w-2.5 text-primary/40" />}
+                              {favoritedIds.has(m.id) && <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400" />}
+                            </div>
+                          )}
+                          <MessageBubble
+                            message={m}
+                            isGrouped={isGrouped}
+                            showTime={showTime}
+                            onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
+                            currentUserId={currentUserId}
+                            onEditMessage={onEditMessage}
+                          />
+                        </div>
+                      </MessageContextMenu>
                     </div>
                   );
                 })}
@@ -920,6 +1023,22 @@ export function ChatPanel({
           </button>
         </div>
 
+        {/* Reply quote */}
+        {replyTo && (
+          <div className="mx-4 mt-2 mb-1 p-2.5 bg-primary/5 border-l-4 border-primary/40 rounded-r-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
+            <Reply className="h-4 w-4 text-primary/50 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-semibold text-primary/60">
+                {replyTo.de === "atendente" ? (replyTo.sentByAgentName || "Você") : "Contato"}
+              </p>
+              <p className="text-xs text-muted-foreground/60 truncate">{replyTo.texto || `[${replyTo.msgType}]`}</p>
+            </div>
+            <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg shrink-0" onClick={() => setReplyTo(null)}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+
         {/* Pending file preview */}
         {pendingFile && pendingPreview && (
           <div className="mx-4 mt-2 mb-1 p-2 bg-muted/20 border border-border/20 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
@@ -955,20 +1074,8 @@ export function ChatPanel({
 
         <div className="flex gap-2 items-end px-4 pb-3 pt-1.5">
           <div className="flex gap-1 shrink-0">
+            <AttachmentMenu onFileSelected={handleFileFromMenu} />
             <TooltipProvider delayDuration={200}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-10 w-10 rounded-lg text-muted-foreground/40"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Paperclip className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="text-xs">Anexar arquivo</TooltipContent>
-              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -983,23 +1090,6 @@ export function ChatPanel({
                 <TooltipContent className="text-xs">Templates (/)</TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setPendingFile(file);
-                if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
-                  setPendingPreview(URL.createObjectURL(file));
-                } else {
-                  setPendingPreview("file");
-                }
-                e.target.value = "";
-              }}
-            />
           </div>
 
           <Textarea
