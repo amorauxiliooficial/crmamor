@@ -149,7 +149,7 @@ export default function AgentesIA() {
                     <Copy className="h-3.5 w-3.5" />
                   </Button>
                   <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleToggleActive(agent)} title={agent.is_active ? "Desativar" : "Ativar"}>
-                    <Power className={`h-3.5 w-3.5 ${agent.is_active ? "text-emerald-500" : "text-muted-foreground"}`} />
+                    <Power className={`h-3.5 w-3.5 ${agent.is_active ? "text-primary" : "text-muted-foreground"}`} />
                   </Button>
                   <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleDelete(agent)} title="Excluir">
                     <Trash2 className="h-3.5 w-3.5" />
