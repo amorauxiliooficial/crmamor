@@ -84,12 +84,38 @@ function getBubblePosition(
 }
 
 function getBubbleRounding(isMe: boolean, pos: BubblePosition): string {
-  // WhatsApp-style connected corners
-  if (pos === "solo") return isMe ? "rounded-2xl rounded-br-md" : "rounded-2xl rounded-bl-md";
-  if (pos === "first") return isMe ? "rounded-2xl rounded-br-md" : "rounded-2xl rounded-bl-md";
-  if (pos === "middle") return isMe ? "rounded-r-md rounded-l-2xl" : "rounded-l-md rounded-r-2xl";
+  // WhatsApp-style: pointed corner on the author's side, rest fully rounded
+  const R = "rounded-[18px]";
+  const S = "rounded-[5px]"; // small radius for connected side
+  if (pos === "solo") return isMe ? `${R} !rounded-tr-[18px] !rounded-br-[5px]` : `${R} !rounded-tl-[18px] !rounded-bl-[5px]`;
+  if (pos === "first") return isMe ? `${R} !rounded-br-[5px]` : `${R} !rounded-bl-[5px]`;
+  if (pos === "middle") return isMe ? `${R} !rounded-r-[5px]` : `${R} !rounded-l-[5px]`;
   // last
-  return isMe ? "rounded-2xl rounded-tr-md" : "rounded-2xl rounded-tl-md";
+  return isMe ? `${R} !rounded-tr-[5px]` : `${R} !rounded-tl-[5px]`;
+}
+
+/** Detect URLs in text and render as clickable links */
+function renderTextWithLinks(text: string) {
+  const urlRegex = /(https?:\/\/[^\s<]+)/g;
+  const parts = text.split(urlRegex);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => {
+    if (urlRegex.test(part)) {
+      urlRegex.lastIndex = 0; // reset
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2 hover:opacity-80 break-all"
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
 }
 
 function MessageSkeleton() {
