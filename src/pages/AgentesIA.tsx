@@ -53,31 +53,6 @@ export default function AgentesIA() {
   if (authLoading) return null;
   if (!user) { navigate("/auth"); return null; }
 
-  const filteredAgents = useMemo(() => {
-    if (!agents) return [];
-    let result = [...agents];
-
-    // Filter
-    if (filter === "active") result = result.filter(a => a.is_active);
-    else if (filter === "inactive") result = result.filter(a => !a.is_active);
-    else if (filter === "default") result = result.filter(a => a.is_default);
-
-    // Search
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(a =>
-        a.name.toLowerCase().includes(q) ||
-        a.model.toLowerCase().includes(q) ||
-        a.departments?.some(d => d.toLowerCase().includes(q))
-      );
-    }
-
-    // Sort by updated_at desc
-    result.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
-
-    return result;
-  }, [agents, filter, searchQuery]);
-
   const handleSave = (data: any) => {
     if (view.mode === "form" && view.agent?.id) {
       updateAgent.mutate({ id: view.agent.id, ...data }, {
