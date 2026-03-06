@@ -3,7 +3,7 @@ import {
   Send, ArrowLeft, User, UserCheck, Clock, CheckCircle, Tag,
   FileText, Sparkles, Mic, PanelRightOpen, PanelRightClose,
   Loader2, Zap, Brain, Database, ArrowRight, CalendarPlus, AlertTriangle,
-  Info, Paperclip, X, Image as ImageIcon, RotateCcw, MoreVertical, Pencil, Check,
+  Info, X, Image as ImageIcon, RotateCcw, MoreVertical, Pencil, Check,
   Bell, BellOff, ArrowRightLeft, RefreshCw, Wifi, WifiOff, RotateCw,
   Pin, Star, Reply,
 } from "lucide-react";
@@ -361,7 +361,7 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [quickReplyIndex, setQuickReplyIndex] = useState(0);
   const [aiLoading, setAiLoading] = useState<AiAction | null>(null);
