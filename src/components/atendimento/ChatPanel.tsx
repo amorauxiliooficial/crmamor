@@ -642,6 +642,10 @@ export function ChatPanel({
                   lastInboundAt={lastInboundAt ?? null}
                   onSendTemplate={() => setTemplateDialogOpen(true)}
                 />
+                <ConsumptionBadge
+                  conversationId={conversa.id}
+                  lastInboundAt={lastInboundAt ?? null}
+                />
               </div>
               {ci.subtitle && (
                 <p className="text-[10px] text-muted-foreground/40 truncate">{ci.subtitle}</p>
