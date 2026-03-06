@@ -574,6 +574,7 @@ export function ChatPanel({
     setVisibleCount(MESSAGES_PER_PAGE);
     setReplyTo(null);
     setShowFavoritesOnly(false);
+    prevMsgCountRef.current = 0;
   }, [conversa?.id]);
 
   const handlePin = useCallback((m: Mensagem) => {
