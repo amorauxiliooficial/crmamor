@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.whatsapp-media-download]
 verify_jwt = false
+
+[functions.wa-ai-reply]
+verify_jwt = false
