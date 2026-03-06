@@ -8,8 +8,9 @@ import { useWindowStatus } from "@/components/atendimento/WindowBadge";
 import { ConsumptionDrawer } from "@/components/atendimento/ConsumptionDrawer";
 
 const USD_TO_BRL = 5.80;
-function toBRL(usd: number, decimals = 2): string {
-  return `R$ ${(usd * USD_TO_BRL).toFixed(decimals)}`;
+function toBRL(usd: number): string {
+  const brl = usd * USD_TO_BRL;
+  return `R$ ${brl.toFixed(2)}`;
 }
 
 interface ConsumptionBadgeProps {
@@ -53,13 +54,13 @@ export function ConsumptionBadge({ conversationId, lastInboundAt, className }: C
               onClick={() => setDrawerOpen(true)}
             >
               <DollarSign className="h-2.5 w-2.5" />
-              {windowStatus.isOpen ? "Grátis" : `~${toBRL(estimate.cost, 4)}`}
+              {windowStatus.isOpen ? "Grátis" : `~${toBRL(estimate.cost)}`}
             </Badge>
           </TooltipTrigger>
           <TooltipContent className="text-xs space-y-1">
             <p className="font-medium">Consumo WhatsApp</p>
             <p>Próxima msg: {estimate.label}</p>
-            <p>Mês: {toBRL(monthTotal)} / {toBRL(monthLimit, 0)} ({pct.toFixed(0)}%)</p>
+            <p>Mês: {toBRL(monthTotal)} / {toBRL(monthLimit)} ({pct.toFixed(0)}%)</p>
             <p className="text-muted-foreground/60">Clique para detalhes</p>
           </TooltipContent>
         </Tooltip>
