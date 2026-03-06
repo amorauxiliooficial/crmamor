@@ -370,6 +370,14 @@ export function ChatPanel({
   const [visibleCount, setVisibleCount] = useState(MESSAGES_PER_PAGE);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingPreview, setPendingPreview] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<Mensagem | null>(null);
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => {
+    try { const v = localStorage.getItem("atd_pinned"); return v ? new Set(JSON.parse(v)) : new Set(); } catch { return new Set(); }
+  });
+  const [favoritedIds, setFavoritedIds] = useState<Set<string>>(() => {
+    try { const v = localStorage.getItem("atd_favorited"); return v ? new Set(JSON.parse(v)) : new Set(); } catch { return new Set(); }
+  });
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const { toast } = useToast();
 
   const filteredReplies = useMemo(() => {
