@@ -221,8 +221,22 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
         </span>
       )}
 
-      {/* Hover actions */}
-      {isHovered && !isSelected && (onAssume || onPendente) && (
+      {/* CTA for new conversations or hover actions */}
+      {c.queueStatus === "novo" && onStartAtendimento ? (
+        <div
+          className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Button
+            size="sm"
+            className="h-7 rounded-lg text-[11px] gap-1.5 px-3"
+            onClick={(e) => { e.stopPropagation(); onStartAtendimento(c.id); }}
+          >
+            <Play className="h-3 w-3" />
+            Iniciar
+          </Button>
+        </div>
+      ) : isHovered && !isSelected && (onAssume || onPendente) ? (
         <div
           className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={(e) => e.stopPropagation()}
@@ -252,7 +266,7 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
             )}
           </TooltipProvider>
         </div>
-      )}
+      ) : null}
     </div>
   );
 });
