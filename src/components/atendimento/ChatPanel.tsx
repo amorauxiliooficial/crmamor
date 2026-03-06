@@ -84,11 +84,11 @@ function getBubblePosition(
 }
 
 function getBubbleRounding(isMe: boolean, pos: BubblePosition): string {
-  // WhatsApp-style: consistent rounding with small tail corner
-  if (pos === "solo") return isMe ? "rounded-lg rounded-br-[3px]" : "rounded-lg rounded-bl-[3px]";
-  if (pos === "first") return isMe ? "rounded-lg rounded-br-[3px]" : "rounded-lg rounded-bl-[3px]";
-  if (pos === "middle") return isMe ? "rounded-lg rounded-r-[3px]" : "rounded-lg rounded-l-[3px]";
-  return isMe ? "rounded-lg rounded-tr-[3px]" : "rounded-lg rounded-tl-[3px]";
+  // WhatsApp Desktop: 8px radius, small tail on first/solo
+  if (pos === "solo") return isMe ? "rounded-[8px] rounded-br-[3px]" : "rounded-[8px] rounded-bl-[3px]";
+  if (pos === "first") return isMe ? "rounded-[8px] rounded-br-[3px]" : "rounded-[8px] rounded-bl-[3px]";
+  if (pos === "middle") return isMe ? "rounded-[8px] rounded-r-[3px]" : "rounded-[8px] rounded-l-[3px]";
+  return isMe ? "rounded-[8px] rounded-tr-[3px]" : "rounded-[8px] rounded-tl-[3px]";
 }
 
 /** Detect URLs in text and render as clickable links */
@@ -202,7 +202,7 @@ const MessageBubble = memo(function MessageBubble({
         </div>
       )}
 
-      <div className={cn("max-w-[85%] sm:max-w-[68%] overflow-hidden min-w-0 flex flex-col", isMe ? "items-end" : "items-start")}>
+      <div className={cn("max-w-[85%] sm:max-w-[65%] overflow-hidden min-w-0 flex flex-col", isMe ? "items-end" : "items-start")}>
         {/* Author label — shown on first msg of block when multiple agents */}
         {showAuthorLabel && isMe && m.sentByAgentName && (
           <p className="text-[10px] text-muted-foreground/40 font-medium mb-0.5 px-2">
@@ -267,13 +267,14 @@ const MessageBubble = memo(function MessageBubble({
 
             <div
               className={cn(
-                "relative overflow-hidden break-words min-w-0",
-                isMedia ? "px-1 pb-1 pt-1.5" : "px-3 py-[7px]",
+                "relative overflow-hidden break-words min-w-0 shadow-[0_1px_0.5px_rgba(0,0,0,0.06)]",
+                isMedia ? "p-[3px]" : "px-[9px] py-[6px]",
                 isMe
-                  ? cn("bg-secondary text-secondary-foreground", rounding)
-                  : cn("bg-card text-card-foreground border border-border/10", rounding),
+                  ? cn("bg-chat-outbound text-chat-outbound-foreground", rounding)
+                  : cn("bg-chat-inbound text-chat-inbound-foreground", rounding),
                 isFailed && "ring-1 ring-destructive/30"
               )}
+              style={{ fontFamily: "var(--chat-font, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif)" }}
             >
               {isMedia ? (
                 <MediaBubble
@@ -287,27 +288,30 @@ const MessageBubble = memo(function MessageBubble({
                   isMe={isMe}
                 />
               ) : (
-                <span className="text-[14px] leading-[1.45] whitespace-pre-wrap break-words" style={{ overflowWrap: "break-word" }}>
+                <span
+                  className="text-[14.2px] leading-[19px] whitespace-pre-wrap"
+                  style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
+                >
                   {/^\[.+\]$/.test(m.texto.trim()) ? "" : renderTextWithLinks(m.texto)}
                 </span>
               )}
 
-              {/* Time + ticks inline after text */}
+              {/* Time + ticks — WhatsApp: float-right inside bubble */}
               <span className={cn(
-                "inline-flex items-center gap-1 float-right mt-1 ml-3 relative -mb-0.5",
+                "inline-flex items-center gap-0.5 float-right ml-2 mt-[3px] relative -mb-[3px]",
                 isMedia ? "px-1.5 pb-0.5" : ""
               )}>
                 {m.editedAt && (
-                  <span className={cn("text-[9px] italic", isMe ? "text-secondary-foreground/40" : "text-muted-foreground/35")}>editada</span>
+                  <span className="text-[11px] italic text-chat-meta/40 mr-0.5">editada</span>
                 )}
-                <span className={cn("text-[10.5px] tabular-nums", isMe ? "text-secondary-foreground/50" : "text-muted-foreground/40")}>
+                <span className="text-[11px] tabular-nums text-chat-meta/55">
                   {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                 </span>
                 {isMe && (
                   <MessageStatusIcon
                     status={m.status}
                     errorMessage={m.errorMessage}
-                    className="!h-[13px] !w-[13px]"
+                    className="!h-[14px] !w-[14px]"
                   />
                 )}
               </span>
@@ -868,8 +872,8 @@ export function ChatPanel({
       )}
 
       {/* Messages */}
-      <ScrollArea className="flex-1 w-full overflow-x-hidden">
-        <div className="px-4 md:px-6 py-3 space-y-0.5 max-w-3xl mx-auto w-full overflow-x-hidden">
+      <ScrollArea className="flex-1 w-full overflow-x-hidden bg-chat-bg">
+        <div className="px-4 md:px-8 py-3 space-y-0.5 max-w-3xl mx-auto w-full overflow-x-hidden">
           {hasMore && (
             <div className="flex justify-center py-3">
               <Button
