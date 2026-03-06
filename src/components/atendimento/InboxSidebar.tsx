@@ -1,6 +1,6 @@
 import { useMemo, useState, memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Settings, User, UserCheck, Clock, Inbox, AlertTriangle, Hourglass, MessageCircle, ArrowLeft, Play } from "lucide-react";
+import { Search, Settings, User, UserCheck, Clock, Inbox, AlertTriangle, MessageCircle, ArrowLeft, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
