@@ -96,7 +96,7 @@ All colors MUST be HSL.
     --spacing: 0.25rem;
 
     /* ── Chat bubbles (WhatsApp-like) ── */
-    --chat-outbound: 333 55% 88%;
+    --chat-outbound: 333 60% 82%;
     --chat-outbound-foreground: 240 5% 10%;
     --chat-inbound: 0 0% 100%;
     --chat-inbound-foreground: 240 5% 10%;
