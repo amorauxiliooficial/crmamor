@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDebouncedCallback } from "use-debounce";
 import type { AiAgent, AiAgentInsert } from "@/hooks/useAiAgents";
+import { FaqEditor } from "@/components/agentes/FaqEditor";
 
 /* ── Constants ── */
 const MODELS = [
@@ -238,11 +239,6 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
   };
 
   const toggleDepartment = (d: string) => { setDepartments(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]); markDirty(); };
-  const addFaq = () => { setKnowledgeFaq(prev => [...prev, { question: "", answer: "" }]); markDirty(); };
-  const removeFaq = (i: number) => { setKnowledgeFaq(prev => prev.filter((_, idx) => idx !== i)); markDirty(); };
-  const updateFaq = (i: number, field: "question" | "answer", val: string) => {
-    setKnowledgeFaq(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: val } : item)); markDirty();
-  };
   const insertPromptTemplate = () => {
     setSystemPrompt(PROMPT_TEMPLATE.replace("{nome_agente}", name || "Agente").replace("{tom}", tone)); markDirty();
   };
@@ -559,40 +555,10 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div><CardTitle className="text-sm">Perguntas e Respostas</CardTitle><CardDescription className="text-xs">FAQ do agente</CardDescription></div>
-                    <Button size="sm" variant="outline" onClick={addFaq} className="text-[11px] h-7"><Plus className="h-3 w-3 mr-1" /> Adicionar</Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {knowledgeFaq.length === 0 ? (
-                    <div className="text-center py-6 border border-dashed border-border/30 rounded-xl">
-                      <BookOpen className="h-7 w-7 mx-auto text-muted-foreground/15 mb-2" />
-                      <p className="text-xs text-muted-foreground/50">Nenhuma pergunta cadastrada</p>
-                      <Button size="sm" variant="ghost" onClick={addFaq} className="mt-1.5 text-[11px] h-7"><Plus className="h-3 w-3 mr-1" /> Criar primeira</Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-                      {knowledgeFaq.map((faq, i) => (
-                        <div key={i} className="rounded-xl border border-border/30 bg-card overflow-hidden">
-                          <div className="flex items-center gap-2 px-3 py-2 border-b border-border/20">
-                            <span className="text-[10px] font-bold text-primary/60 shrink-0">Q{i + 1}</span>
-                            <div className="flex-1 min-w-0">
-                              <Input value={faq.question} onChange={e => updateFaq(i, "question", e.target.value)} placeholder="Pergunta..." className="text-sm border-0 bg-transparent p-0 h-auto focus-visible:ring-0 shadow-none font-medium truncate" />
-                            </div>
-                            <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-muted-foreground/40 hover:text-destructive" onClick={() => removeFaq(i)}><Trash2 className="h-3 w-3" /></Button>
-                          </div>
-                          <div className="px-3 py-2">
-                            <Textarea value={faq.answer} onChange={e => updateFaq(i, "answer", e.target.value)} placeholder="Resposta..." className="min-h-[40px] text-sm border-0 bg-transparent p-0 focus-visible:ring-0 shadow-none resize-none break-words" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <FaqEditor
+                value={knowledgeFaq}
+                onChange={(faqs) => { setKnowledgeFaq(faqs); markDirty(); }}
+              />
 
               <Card>
                 <CardHeader className="pb-3">
