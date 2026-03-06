@@ -44,6 +44,7 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
   // Geral
   const [enterToSend, setEnterToSend] = useState(() => getFromStorage("enter_send", true));
   const [compactMode, setCompactMode] = useState(() => getFromStorage("compact", false));
+  const [autoAssign, setAutoAssign] = useState(() => getFromStorage("auto_assign", false));
 
   // Privacidade
   const [showRead, setShowRead] = useState(() => getFromStorage("show_read", true));
@@ -121,6 +122,12 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
                         desc="Reduzir espaçamento entre mensagens"
                         checked={compactMode}
                         onChange={(v) => toggleSetting("compact", v, setCompactMode)}
+                      />
+                      <SettingRow
+                        label="Auto-atribuir novos atendimentos"
+                        desc="Atribuir automaticamente conversas novas a você"
+                        checked={autoAssign}
+                        onChange={(v) => toggleSetting("auto_assign", v, setAutoAssign)}
                       />
                       <Separator className="bg-border/10" />
                       <div>
