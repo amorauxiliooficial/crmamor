@@ -653,12 +653,12 @@ export function ChatPanel({
                 <p className="font-semibold text-[15px] truncate">{ci.displayName}</p>
                 <span className={cn("h-2 w-2 rounded-full shrink-0", connectionDot)} />
                 <WindowBadge
-                  lastInboundAt={lastInboundAt ?? null}
+                  lastInboundAt={effectiveLastInboundAt}
                   onSendTemplate={() => setTemplateDialogOpen(true)}
                 />
                 <ConsumptionBadge
                   conversationId={conversa.id}
-                  lastInboundAt={lastInboundAt ?? null}
+                  lastInboundAt={effectiveLastInboundAt}
                 />
               </div>
               {ci.subtitle && (
