@@ -62,10 +62,13 @@ export type Database = {
           max_tokens: number
           model: string
           name: string
+          published_at: string | null
+          published_config: Json | null
           system_prompt: string | null
           tone: string
           tools_config: Json | null
           updated_at: string
+          version: number
         }
         Insert: {
           created_at?: string
@@ -79,10 +82,13 @@ export type Database = {
           max_tokens?: number
           model?: string
           name: string
+          published_at?: string | null
+          published_config?: Json | null
           system_prompt?: string | null
           tone?: string
           tools_config?: Json | null
           updated_at?: string
+          version?: number
         }
         Update: {
           created_at?: string
@@ -96,10 +102,13 @@ export type Database = {
           max_tokens?: number
           model?: string
           name?: string
+          published_at?: string | null
+          published_config?: Json | null
           system_prompt?: string | null
           tone?: string
           tools_config?: Json | null
           updated_at?: string
+          version?: number
         }
         Relationships: []
       }
@@ -1633,6 +1642,7 @@ export type Database = {
           created_at: string
           id: string
           labels: string[] | null
+          last_ai_trigger_msg_id: string | null
           last_inbound_at: string | null
           last_message_at: string | null
           last_message_preview: string | null
@@ -1650,6 +1660,7 @@ export type Database = {
           created_at?: string
           id?: string
           labels?: string[] | null
+          last_ai_trigger_msg_id?: string | null
           last_inbound_at?: string | null
           last_message_at?: string | null
           last_message_preview?: string | null
@@ -1667,6 +1678,7 @@ export type Database = {
           created_at?: string
           id?: string
           labels?: string[] | null
+          last_ai_trigger_msg_id?: string | null
           last_inbound_at?: string | null
           last_message_at?: string | null
           last_message_preview?: string | null
