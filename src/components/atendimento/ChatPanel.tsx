@@ -689,6 +689,20 @@ export function ChatPanel({
                 <Clock className="h-3.5 w-3.5" /> Marcar pendente
               </button>
 
+              {/* AI toggle */}
+              {onToggleAi && (
+                <button
+                  className={cn(
+                    "w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors",
+                    aiEnabled ? "text-primary" : "text-muted-foreground/70"
+                  )}
+                  onClick={onToggleAi}
+                >
+                  <Bot className="h-3.5 w-3.5" />
+                  {aiEnabled ? "Desativar IA automática" : "Ativar IA automática"}
+                </button>
+              )}
+
               <div className="h-px bg-border/10 my-1" />
 
               {/* Etiquetas sub-section */}
