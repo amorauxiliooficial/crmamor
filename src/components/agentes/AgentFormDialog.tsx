@@ -153,8 +153,14 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
   const [isDirty, setIsDirty] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
+  // ── Track agent identity to avoid resetting tab on autosave ──
+  const prevAgentIdRef = useRef<string | null>(null);
+
   // ── Initialize from agent ──
   useEffect(() => {
+    const isNewAgent = (agent?.id ?? null) !== prevAgentIdRef.current;
+    prevAgentIdRef.current = agent?.id ?? null;
+
     if (agent) {
       setName(agent.name); setModel(agent.model); setTone(agent.tone);
       setMaxTokens(agent.max_tokens); setDepartments(agent.departments ?? []);
@@ -169,8 +175,12 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
       setKnowledgeInstructions(""); setKnowledgeFaq([]); setKnowledgeLinks([]);
       setToolsConfig({}); setIsActive(true);
     }
-    setTab("personality"); setPreviewInput(""); setPreviewMessages([]);
-    setDeptSearch(""); setValidationErrors([]); setIsDirty(false);
+    // Only reset tab/messages when switching to a different agent
+    if (isNewAgent) {
+      setTab("personality"); setPreviewInput(""); setPreviewMessages([]);
+      setDeptSearch(""); setValidationErrors([]);
+    }
+    setIsDirty(false);
     setLastSavedAt(agent?.updated_at ? new Date(agent.updated_at) : null);
   }, [agent]);
 
@@ -564,16 +574,18 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
                       <Button size="sm" variant="ghost" onClick={addFaq} className="mt-1.5 text-[11px] h-7"><Plus className="h-3 w-3 mr-1" /> Criar primeira</Button>
                     </div>
                   ) : (
-                    <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1">
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
                       {knowledgeFaq.map((faq, i) => (
-                        <div key={i} className="rounded-lg border border-border/30 overflow-hidden">
-                          <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/15 border-b border-border/20">
-                            <span className="text-[9px] font-bold text-primary/60">Q{i + 1}</span>
-                            <Input value={faq.question} onChange={e => updateFaq(i, "question", e.target.value)} placeholder="Pergunta..." className="text-sm border-0 bg-transparent p-0 h-auto focus-visible:ring-0 shadow-none font-medium" />
+                        <div key={i} className="rounded-xl border border-border/30 bg-card overflow-hidden">
+                          <div className="flex items-center gap-2 px-3 py-2 border-b border-border/20">
+                            <span className="text-[10px] font-bold text-primary/60 shrink-0">Q{i + 1}</span>
+                            <div className="flex-1 min-w-0">
+                              <Input value={faq.question} onChange={e => updateFaq(i, "question", e.target.value)} placeholder="Pergunta..." className="text-sm border-0 bg-transparent p-0 h-auto focus-visible:ring-0 shadow-none font-medium truncate" />
+                            </div>
                             <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-muted-foreground/40 hover:text-destructive" onClick={() => removeFaq(i)}><Trash2 className="h-3 w-3" /></Button>
                           </div>
                           <div className="px-3 py-2">
-                            <Textarea value={faq.answer} onChange={e => updateFaq(i, "answer", e.target.value)} placeholder="Resposta..." className="min-h-[40px] text-sm border-0 bg-transparent p-0 focus-visible:ring-0 shadow-none resize-none" />
+                            <Textarea value={faq.answer} onChange={e => updateFaq(i, "answer", e.target.value)} placeholder="Resposta..." className="min-h-[40px] text-sm border-0 bg-transparent p-0 focus-visible:ring-0 shadow-none resize-none break-words" />
                           </div>
                         </div>
                       ))}
