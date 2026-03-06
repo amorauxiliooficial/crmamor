@@ -10,7 +10,6 @@ const GRAPH_API_VERSION = 'v21.0';
 
 /**
  * Upload a media file to Meta's servers and return the media_id.
- * This is required for audio (and recommended for other types).
  */
 async function uploadMediaToMeta(
   mediaUrl: string,
@@ -18,7 +17,6 @@ async function uploadMediaToMeta(
   metaToken: string,
   phoneNumberId: string,
 ): Promise<string> {
-  // 1. Download the file from our storage
   console.log(`⬇️ Downloading media from: ${mediaUrl.slice(0, 100)}...`);
   const fileRes = await fetch(mediaUrl);
   if (!fileRes.ok) {
@@ -26,11 +24,7 @@ async function uploadMediaToMeta(
   }
   const fileBlob = await fileRes.blob();
 
-  // 2. Build multipart form data for Meta upload
   const form = new FormData();
-  
-  // Meta requires specific MIME types for audio voice notes: audio/ogg, audio/aac, audio/amr, audio/mpeg
-  // If the file is webm, we'll upload it but Meta may reject it
   const filename = mediaMime.includes('ogg') ? 'audio.ogg' 
     : mediaMime.includes('webm') ? 'audio.webm'
     : mediaMime.includes('mpeg') || mediaMime.includes('mp3') ? 'audio.mp3'
@@ -94,7 +88,8 @@ serve(async (req: Request): Promise<Response> => {
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
   try {
-    const { to, text, conversation_id, type, media_url, media_mime, media_filename, caption } = await req.json();
+    const body = await req.json();
+    const { to, text, conversation_id, type, media_url, media_mime, media_filename, caption } = body;
 
     if (!to) {
       return new Response(JSON.stringify({ error: 'Missing "to"' }), {
@@ -119,7 +114,26 @@ serve(async (req: Request): Promise<Response> => {
     // Build Meta API payload
     let metaPayload: Record<string, unknown>;
 
-    if (msgType === 'text') {
+    // ── TEMPLATE MESSAGE ──
+    if (msgType === 'template') {
+      const { template_name, template_language, template_components } = body;
+      if (!template_name) {
+        return new Response(JSON.stringify({ error: 'Missing template_name for template message' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      metaPayload = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: cleanPhone,
+        type: 'template',
+        template: {
+          name: template_name,
+          language: { code: template_language || 'pt_BR' },
+          components: template_components || [],
+        },
+      };
+    } else if (msgType === 'text') {
       if (!text) {
         return new Response(JSON.stringify({ error: 'Missing "text" for text message' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -133,7 +147,6 @@ serve(async (req: Request): Promise<Response> => {
         text: { preview_url: false, body: text },
       };
     } else if (msgType === 'audio') {
-      // Audio MUST be uploaded to Meta first, then sent by media_id
       if (!media_url) {
         return new Response(JSON.stringify({ error: 'Missing media_url for audio' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -142,16 +155,12 @@ serve(async (req: Request): Promise<Response> => {
       
       let effectiveMime = media_mime || 'audio/ogg';
       
-      // If webm with opus codec, re-label as audio/ogg for Meta compatibility
-      // The opus codec is identical; only the container differs
       if (effectiveMime.includes('webm') && effectiveMime.includes('opus')) {
         effectiveMime = 'audio/ogg';
         console.log('🔄 Re-labeling audio/webm;codecs=opus → audio/ogg for Meta compatibility');
       } else if (effectiveMime.includes('webm')) {
-        // Pure webm without opus - Meta won't accept it
         console.error('❌ Unsupported audio format:', effectiveMime);
         
-        // Save as failed
         if (conversation_id) {
           await adminClient.from('wa_messages').insert({
             conversation_id,
@@ -231,13 +240,17 @@ serve(async (req: Request): Promise<Response> => {
 
     if (!metaRes.ok) {
       const metaError = metaBody?.error;
+      const errorCode = metaError?.code || metaRes.status;
       const errorDetail = `code=${metaError?.code}, msg=${metaError?.message}, type=${metaError?.type}`;
       console.error(`❌ Meta API error ${metaRes.status}: ${errorDetail}`);
       
+      // Check for 24h window error (code 131047)
+      const isWindowError = errorCode === 131047 || metaError?.error_subcode === 131047;
+
       // Save failed message in DB so UI shows the error
       let convoId = conversation_id;
       if (convoId) {
-        const bodyText = msgType === 'text' ? text : (caption || `[${msgType}]`);
+        const bodyText = msgType === 'text' ? text : (msgType === 'template' ? `[template: ${body.template_name}]` : (caption || `[${msgType}]`));
         await adminClient.from('wa_messages').insert({
           conversation_id: convoId,
           direction: 'out',
@@ -246,18 +259,33 @@ serve(async (req: Request): Promise<Response> => {
           status: 'failed',
           sent_by: userId,
           sent_at: new Date().toISOString(),
-          media_url: msgType !== 'text' ? media_url : null,
+          media_url: msgType !== 'text' && msgType !== 'template' ? media_url : null,
           media_mime: media_mime || null,
           media_filename: media_filename || null,
-          error_code: String(metaError?.code || metaRes.status),
-          error_message: metaError?.message || 'Erro desconhecido da Meta API',
+          error_code: String(errorCode),
+          error_message: isWindowError
+            ? 'Janela de 24h expirada. Use um template aprovado para retomar a conversa.'
+            : (metaError?.message || 'Erro desconhecido da Meta API'),
+          template_name: msgType === 'template' ? body.template_name : null,
+          template_variables: msgType === 'template' ? (body.template_components || null) : null,
         });
+
+        // Log window error as conversation event
+        if (isWindowError) {
+          await adminClient.from('conversation_events').insert({
+            conversation_id: convoId,
+            event_type: 'window_expired',
+            created_by_agent_id: userId,
+            meta: { error_code: errorCode },
+          });
+        }
       }
       
       return new Response(JSON.stringify({ 
         error: 'Meta API error', 
         error_message: metaError?.message || 'Unknown error',
-        error_code: metaError?.code,
+        error_code: errorCode,
+        is_window_error: isWindowError,
         details: metaBody 
       }), {
         status: metaRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -288,8 +316,8 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // Save outbound message with status=sent (Meta accepted it)
-    const bodyText = msgType === 'text' ? text : (caption || `[${msgType}]`);
+    // Save outbound message
+    const bodyText = msgType === 'text' ? text : (msgType === 'template' ? `[template: ${body.template_name}]` : (caption || `[${msgType}]`));
     await adminClient.from('wa_messages').insert({
       conversation_id: convoId,
       meta_message_id: metaMsgId,
@@ -299,9 +327,11 @@ serve(async (req: Request): Promise<Response> => {
       status: 'sent',
       sent_by: userId,
       sent_at: new Date().toISOString(),
-      media_url: msgType !== 'text' ? media_url : null,
+      media_url: msgType !== 'text' && msgType !== 'template' ? media_url : null,
       media_mime: media_mime || null,
       media_filename: media_filename || null,
+      template_name: msgType === 'template' ? body.template_name : null,
+      template_variables: msgType === 'template' ? (body.template_components || null) : null,
     });
 
     // Update conversation

@@ -20,6 +20,7 @@ import AtendimentoConfig from "./pages/AtendimentoConfig";
 import AgentesIA from "./pages/AgentesIA";
 import PreAnalises from "./pages/PreAnalises";
 import NotFound from "./pages/NotFound";
+import WaTemplatesConfig from "./pages/WaTemplatesConfig";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="/atendimento/chat/:id" element={<Atendimento />} />
               <Route path="/atendimento/config" element={<AtendimentoConfig />} />
               <Route path="/atendimento/agentes-ia" element={<AgentesIA />} />
+              <Route path="/atendimento/templates" element={<WaTemplatesConfig />} />
               <Route path="/pre-analises" element={<PreAnalises />} />
               <Route path="/roadmap" element={<Roadmap />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

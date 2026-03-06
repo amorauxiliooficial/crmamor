@@ -6,7 +6,10 @@ import {
   X, RotateCcw, MoreVertical, Pencil, Bot,
   ArrowRightLeft, Wifi, WifiOff, RotateCw,
   Pin, Star, Reply, UserCheck, Tag, Bell, BellOff, Info,
+  Lock, MessageSquareText,
 } from "lucide-react";
+import { WindowBadge, useWindowStatus } from "@/components/atendimento/WindowBadge";
+import { SendTemplateDialog } from "@/components/atendimento/SendTemplateDialog";
 import { AudioRecorder } from "@/components/atendimento/AudioRecorder";
 import { MessageStatusIcon } from "@/components/atendimento/MessageStatusIcon";
 import { AttachmentMenu } from "@/components/atendimento/AttachmentMenu";
@@ -391,6 +394,8 @@ interface ChatPanelProps {
   aiAgents?: { id: string; name: string; model: string }[];
   selectedAiAgentId?: string | null;
   onChangeAiAgent?: (agentId: string | null) => void;
+  lastInboundAt?: Date | null;
+  conversationPhone?: string;
 }
 
 export function ChatPanel({
@@ -427,9 +432,13 @@ export function ChatPanel({
   aiAgents = [],
   selectedAiAgentId,
   onChangeAiAgent,
+  lastInboundAt,
+  conversationPhone,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const windowStatus = useWindowStatus(lastInboundAt ?? null);
   
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [quickReplyIndex, setQuickReplyIndex] = useState(0);
@@ -628,6 +637,10 @@ export function ChatPanel({
               <div className="flex items-center gap-2">
                 <p className="font-semibold text-[15px] truncate">{ci.displayName}</p>
                 <span className={cn("h-2 w-2 rounded-full shrink-0", connectionDot)} />
+                <WindowBadge
+                  lastInboundAt={lastInboundAt ?? null}
+                  onSendTemplate={() => setTemplateDialogOpen(true)}
+                />
               </div>
               {ci.subtitle && (
                 <p className="text-[10px] text-muted-foreground/40 truncate">{ci.subtitle}</p>
@@ -957,6 +970,26 @@ export function ChatPanel({
 
       {/* ── Composer ── Clean, no chips */}
       <div className="relative border-t border-border/10 w-full overflow-x-hidden">
+        {/* Window closed banner */}
+        {!windowStatus.isOpen && (
+          <div className="mx-4 mt-2 mb-1 p-2.5 bg-destructive/5 border border-destructive/10 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
+            <Lock className="h-4 w-4 text-destructive/60 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-destructive/80">Janela de 24h fechada</p>
+              <p className="text-[10px] text-destructive/50">Envie um template aprovado para retomar a conversa</p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0 text-xs h-7 gap-1 border-destructive/20 text-destructive/70 hover:bg-destructive/5"
+              onClick={() => setTemplateDialogOpen(true)}
+            >
+              <MessageSquareText className="h-3 w-3" />
+              Enviar Template
+            </Button>
+          </div>
+        )}
+
         {/* Quick replies */}
         {showQuickReplies && (
           <div className="absolute bottom-full left-0 right-0 mx-4 mb-1.5 bg-popover border border-border/20 rounded-xl shadow-lg max-h-[200px] overflow-y-auto z-50">
@@ -1035,19 +1068,19 @@ export function ChatPanel({
                     size="icon"
                     variant="ghost"
                     className="h-9 w-9 rounded-lg text-muted-foreground/30 hover:text-muted-foreground/60"
-                    onClick={() => onMsgTextChange(msgText.startsWith("/") ? msgText : "/")}
+                    onClick={() => setTemplateDialogOpen(true)}
                   >
-                    <FileText className="h-4 w-4" />
+                    <MessageSquareText className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="text-xs">Templates (/)</TooltipContent>
+                <TooltipContent className="text-xs">Enviar Template</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
 
           <Textarea
             ref={textareaRef}
-            placeholder={pendingFile ? "Legenda (opcional)..." : "Mensagem..."}
+            placeholder={!windowStatus.isOpen ? "Janela fechada — use um template" : pendingFile ? "Legenda (opcional)..." : "Mensagem..."}
             value={msgText}
             onChange={(e) => {
               onMsgTextChange(e.target.value);
@@ -1055,7 +1088,11 @@ export function ChatPanel({
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
             }}
             onKeyDown={handleKeyDown}
-            className="min-h-[42px] max-h-[120px] resize-none text-[14px] flex-1 rounded-xl bg-muted/10 border-border/10 focus-visible:border-primary/20 focus-visible:bg-background transition-all"
+            disabled={!windowStatus.isOpen}
+            className={cn(
+              "min-h-[42px] max-h-[120px] resize-none text-[14px] flex-1 rounded-xl bg-muted/10 border-border/10 focus-visible:border-primary/20 focus-visible:bg-background transition-all",
+              !windowStatus.isOpen && "opacity-50 cursor-not-allowed"
+            )}
             rows={1}
           />
 
@@ -1077,7 +1114,7 @@ export function ChatPanel({
                   onSend();
                 }
               }}
-              disabled={!msgText.trim() && !pendingFile}
+              disabled={(!msgText.trim() && !pendingFile) || !windowStatus.isOpen}
               className="shrink-0 rounded-xl h-10 w-10"
             >
               <Send className="h-4 w-4" />
@@ -1091,6 +1128,16 @@ export function ChatPanel({
           </div>
         )}
       </div>
+
+      {/* Template Dialog */}
+      {conversationPhone && (
+        <SendTemplateDialog
+          open={templateDialogOpen}
+          onOpenChange={setTemplateDialogOpen}
+          conversationId={conversa.id}
+          phone={conversationPhone}
+        />
+      )}
     </div>
   );
 }

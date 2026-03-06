@@ -1730,6 +1730,8 @@ export type Database = {
           sent_at: string | null
           sent_by: string | null
           status: string | null
+          template_name: string | null
+          template_variables: Json | null
         }
         Insert: {
           body?: string | null
@@ -1754,6 +1756,8 @@ export type Database = {
           sent_at?: string | null
           sent_by?: string | null
           status?: string | null
+          template_name?: string | null
+          template_variables?: Json | null
         }
         Update: {
           body?: string | null
@@ -1778,6 +1782,8 @@ export type Database = {
           sent_at?: string | null
           sent_by?: string | null
           status?: string | null
+          template_name?: string | null
+          template_variables?: Json | null
         }
         Relationships: [
           {
@@ -1788,6 +1794,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wa_templates: {
+        Row: {
+          category: string
+          components_schema: Json
+          created_at: string
+          id: string
+          language_code: string
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          components_schema?: Json
+          created_at?: string
+          id?: string
+          language_code?: string
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          components_schema?: Json
+          created_at?: string
+          id?: string
+          language_code?: string
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
