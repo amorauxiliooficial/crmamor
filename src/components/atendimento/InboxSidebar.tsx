@@ -112,11 +112,8 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, onSel
     >
       {/* Avatar */}
       <Avatar className="h-[46px] w-[46px] shrink-0 mt-0.5">
-        <AvatarFallback className={cn(
-          "text-[15px] font-semibold",
-          contact.initials === "#" ? "bg-muted/30 text-muted-foreground/50" : avatarColor
-        )}>
-          {contact.initials === "#" ? <User className="h-5 w-5" /> : contact.initials}
+        <AvatarFallback className="bg-muted/20 text-muted-foreground/40">
+          <User className="h-5 w-5" />
         </AvatarFallback>
       </Avatar>
 

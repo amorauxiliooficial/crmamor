@@ -658,11 +658,8 @@ export function ChatPanel({
         )}
 
         <Avatar className="h-9 w-9 shrink-0">
-          <AvatarFallback className="text-sm font-semibold bg-muted/30 text-foreground/70">
-            {(() => {
-              const ci = getContactDisplay(conversa.nome, conversa.waName, conversa.telefone);
-              return ci.initials === "#" ? <User className="h-4 w-4" /> : ci.initials;
-            })()}
+          <AvatarFallback className="bg-muted/20 text-muted-foreground/40">
+            <User className="h-4 w-4" />
           </AvatarFallback>
         </Avatar>
 
