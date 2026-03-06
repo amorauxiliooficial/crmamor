@@ -330,6 +330,9 @@ const EVENT_LABELS: Record<string, { icon: string; label: string }> = {
   closed: { icon: "✅", label: "encerrou a conversa" },
   reopened: { icon: "🔄", label: "reabriu a conversa" },
   status_change: { icon: "📋", label: "alterou o status" },
+  ai_replied: { icon: "🤖", label: "IA respondeu" },
+  ai_handoff: { icon: "🤝", label: "IA transferiu para humano" },
+  ai_error: { icon: "⚠️", label: "erro na IA" },
 };
 
 function InlineEvent({ event, profileMap }: { event: ConversationEvent; profileMap?: Map<string, string> }) {
@@ -383,6 +386,8 @@ interface ChatPanelProps {
   onReconnect?: () => void;
   conversationEvents?: ConversationEvent[];
   profileMap?: Map<string, string>;
+  aiEnabled?: boolean;
+  onToggleAi?: () => void;
 }
 
 export function ChatPanel({
