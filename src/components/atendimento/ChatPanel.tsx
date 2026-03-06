@@ -194,18 +194,18 @@ const MessageBubble = memo(function MessageBubble({
     >
       {/* Left avatar slot (contact messages) */}
       {!isMe && (
-        <div className="w-8 shrink-0 flex flex-col justify-end mr-1.5">
+        <div className="w-7 shrink-0 flex flex-col justify-end mr-1">
           {showAvatar && (
-            <Avatar className="h-7 w-7">
-              <AvatarFallback className="text-[11px] font-semibold bg-muted/30 text-foreground/50">
-                <User className="h-3.5 w-3.5" />
+            <Avatar className="h-6 w-6">
+              <AvatarFallback className="text-[10px] font-semibold bg-muted/30 text-foreground/50">
+                <User className="h-3 w-3" />
               </AvatarFallback>
             </Avatar>
           )}
         </div>
       )}
 
-      <div className={cn("max-w-[80%] sm:max-w-[65%] overflow-hidden min-w-0 flex flex-col", isMe ? "items-end" : "items-start")}>
+      <div className={cn("max-w-[85%] sm:max-w-[70%] overflow-hidden min-w-0 flex flex-col", isMe ? "items-end" : "items-start")}>
         {/* Author label — shown on first msg of block when multiple agents */}
         {showAuthorLabel && isMe && m.sentByAgentName && (
           <p className="text-[10px] text-muted-foreground/40 font-medium mb-0.5 px-2">
@@ -270,10 +270,10 @@ const MessageBubble = memo(function MessageBubble({
 
             <div
               className={cn(
-                "py-2 overflow-hidden break-words min-w-0",
-                isMedia ? "px-1" : "px-3",
+                "relative py-1.5 overflow-hidden break-words min-w-0",
+                isMedia ? "px-0.5 pb-0.5" : "px-3 pb-1",
                 isMe
-                  ? cn("bg-primary text-primary-foreground", rounding)
+                  ? cn("bg-[hsl(var(--primary)/0.12)] dark:bg-[hsl(var(--primary)/0.18)] text-foreground", rounding)
                   : cn("bg-card border border-border/10", rounding),
                 isFailed && "ring-1 ring-destructive/30"
               )}
@@ -290,41 +290,40 @@ const MessageBubble = memo(function MessageBubble({
                   isMe={isMe}
                 />
               ) : (
-                <p className="text-[14px] leading-relaxed whitespace-pre-wrap break-words" style={{ overflowWrap: "break-word" }}>
-                  {/^\[.+\]$/.test(m.texto.trim()) ? "" : m.texto}
+                <p className="text-[14px] leading-relaxed whitespace-pre-wrap break-words pr-16" style={{ overflowWrap: "break-word" }}>
+                  {/^\[.+\]$/.test(m.texto.trim()) ? "" : renderTextWithLinks(m.texto)}
                 </p>
               )}
+
+              {/* Time + ticks INSIDE the bubble — WhatsApp style */}
+              <span className={cn(
+                "flex items-center gap-1 float-right mt-0.5 ml-2",
+                isMedia ? "px-2 pb-1" : ""
+              )}>
+                {m.editedAt && (
+                  <span className={cn(
+                    "text-[9px] italic",
+                    isMe ? "text-foreground/35" : "text-muted-foreground/35"
+                  )}>editada</span>
+                )}
+                <span className={cn(
+                  "text-[10px] tabular-nums",
+                  isMe ? "text-foreground/35" : "text-muted-foreground/35"
+                )}>
+                  {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                </span>
+                {isMe && (
+                  <MessageStatusIcon
+                    status={m.status}
+                    errorMessage={m.errorMessage}
+                    className="!h-[13px] !w-[13px]"
+                  />
+                )}
+              </span>
             </div>
           </div>
         )}
-        <div className={cn(
-          "flex items-center gap-1 mt-0.5 px-1.5",
-          isMe ? "justify-end" : ""
-        )}>
-          {m.editedAt && (
-            <TooltipProvider delayDuration={200}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="text-[9px] text-muted-foreground/30 italic">editada</span>
-                </TooltipTrigger>
-                <TooltipContent className="text-xs">
-                  Editada em {new Date(m.editedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          {showTime && (
-            <span className="text-[10px] text-muted-foreground/30">
-              {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-            </span>
-          )}
-          {isMe && (
-            <MessageStatusIcon
-              status={m.status}
-              errorMessage={m.errorMessage}
-            />
-          )}
-        </div>
+
         {isFailed && onRetry && (
           <button
             onClick={() => onRetry(m)}
@@ -338,11 +337,11 @@ const MessageBubble = memo(function MessageBubble({
 
       {/* Right avatar slot (agent messages) */}
       {isMe && (
-        <div className="w-8 shrink-0 flex flex-col justify-end ml-1.5">
+        <div className="w-7 shrink-0 flex flex-col justify-end ml-1">
           {showAvatar && (
-            <Avatar className="h-7 w-7">
-              <AvatarFallback className="text-[11px] font-semibold bg-primary/10 text-primary/70">
-                {avatarInitial || <User className="h-3.5 w-3.5" />}
+            <Avatar className="h-6 w-6">
+              <AvatarFallback className="text-[10px] font-semibold bg-primary/10 text-primary/70">
+                {avatarInitial || <User className="h-3 w-3" />}
               </AvatarFallback>
             </Avatar>
           )}
