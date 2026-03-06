@@ -455,6 +455,7 @@ export function ChatPanel({
   }, [lastInboundAt, mensagens]);
 
   const windowStatus = useWindowStatus(effectiveLastInboundAt);
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [quickReplyIndex, setQuickReplyIndex] = useState(0);
   const [aiLoading, setAiLoading] = useState<AiAction | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
