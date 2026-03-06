@@ -40,6 +40,7 @@ interface SettingsDrawerProps {
 }
 
 export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
+  const navigate = useNavigate();
   const [section, setSection] = useState<Section>("main");
 
   // Geral
