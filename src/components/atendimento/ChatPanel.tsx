@@ -439,9 +439,22 @@ export function ChatPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
-  const windowStatus = useWindowStatus(lastInboundAt ?? null);
-  
-  const [showQuickReplies, setShowQuickReplies] = useState(false);
+
+  const effectiveLastInboundAt = useMemo(() => {
+    const dbLastInbound = lastInboundAt ?? null;
+    const inboundFromMessages = mensagens
+      .filter((m) => m.de !== "atendente")
+      .reduce<Date | null>((latest, m) => {
+        if (!latest) return m.horario;
+        return m.horario > latest ? m.horario : latest;
+      }, null);
+
+    if (!dbLastInbound) return inboundFromMessages;
+    if (!inboundFromMessages) return dbLastInbound;
+    return inboundFromMessages > dbLastInbound ? inboundFromMessages : dbLastInbound;
+  }, [lastInboundAt, mensagens]);
+
+  const windowStatus = useWindowStatus(effectiveLastInboundAt);
   const [quickReplyIndex, setQuickReplyIndex] = useState(0);
   const [aiLoading, setAiLoading] = useState<AiAction | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
