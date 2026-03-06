@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Settings, User, Shield, MessageSquare, Bell, Volume2,
   ChevronRight, Moon, Sun, Globe, Clock, Eye, EyeOff,
-  Check, X,
+  Check, X, Bot,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
