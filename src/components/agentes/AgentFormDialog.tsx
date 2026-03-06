@@ -405,7 +405,7 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSave, isSaving }:
                         <p className="font-semibold text-sm">{name || "Agente IA"}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{MODELS.find(m => m.value === model)?.label}</p>
                         <div className="flex items-center justify-center gap-1.5 mt-2">
-                          <div className={cn("h-2 w-2 rounded-full", isActive ? "bg-emerald-500" : "bg-muted-foreground/30")} />
+                          <div className={cn("h-2 w-2 rounded-full", isActive ? "bg-primary" : "bg-muted-foreground/30")} />
                           <span className="text-[11px] text-muted-foreground">{isActive ? "Ativo" : "Inativo"}</span>
                         </div>
                       </div>
