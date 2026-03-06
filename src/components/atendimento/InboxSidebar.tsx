@@ -98,7 +98,7 @@ function categorizeConversas(conversas: Conversa[]): SmartQueue {
   for (const c of conversas) {
     if (c.prioridade === "alta" || c.etiquetas.includes("Urgente")) {
       urgentes.push(c);
-    } else if (c.queueStatus === "sem_responsavel") {
+    } else if (c.queueStatus === "novo") {
       pendentes.push(c);
     } else if (c.queueStatus === "aguardando_cliente") {
       aguardando.push(c);

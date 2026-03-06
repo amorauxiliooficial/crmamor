@@ -13,7 +13,7 @@ export interface Conversa {
   slaMinutos?: number;
   maeId?: string | null;
   lastInboundAt?: Date | null;
-  queueStatus?: "sem_responsavel" | "em_atendimento" | "aguardando_cliente" | "resolvido";
+  queueStatus?: "novo" | "em_atendimento" | "aguardando_cliente" | "encerrado";
 }
 
 export interface Mensagem {
