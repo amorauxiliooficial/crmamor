@@ -202,7 +202,7 @@ const MessageBubble = memo(function MessageBubble({
         </div>
       )}
 
-      <div className={cn("max-w-[85%] sm:max-w-[68%] overflow-hidden min-w-0 flex flex-col", isMe ? "items-end" : "items-start")}>
+      <div className={cn("max-w-[85%] sm:max-w-[65%] overflow-hidden min-w-0 flex flex-col", isMe ? "items-end" : "items-start")}>
         {/* Author label — shown on first msg of block when multiple agents */}
         {showAuthorLabel && isMe && m.sentByAgentName && (
           <p className="text-[10px] text-muted-foreground/40 font-medium mb-0.5 px-2">
