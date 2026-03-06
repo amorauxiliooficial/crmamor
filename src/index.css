@@ -96,12 +96,12 @@ All colors MUST be HSL.
     --spacing: 0.25rem;
 
     /* ── Chat bubbles (WhatsApp-like) ── */
-    --chat-outbound: 333 50% 95%;
+    --chat-outbound: 140 44% 90%;
     --chat-outbound-foreground: 240 5% 10%;
     --chat-inbound: 0 0% 100%;
     --chat-inbound-foreground: 240 5% 10%;
-    --chat-meta: 240 5% 10%;
-    --chat-bg: 240 4% 92%;
+    --chat-meta: 240 5% 45%;
+    --chat-bg: 225 15% 88%;
     --chat-font: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   }
 
@@ -148,11 +148,11 @@ All colors MUST be HSL.
     --sidebar-ring: 330 65% 60%;
 
     /* ── Chat bubbles (dark mode) ── */
-    --chat-outbound: 330 25% 18%;
+    --chat-outbound: 150 18% 20%;
     --chat-outbound-foreground: 220 5% 93%;
     --chat-inbound: 220 8% 15%;
     --chat-inbound-foreground: 220 5% 93%;
-    --chat-meta: 220 5% 70%;
+    --chat-meta: 220 5% 55%;
     --chat-bg: 220 10% 9%;
 
     /* ── Charts (desaturated) ── */
