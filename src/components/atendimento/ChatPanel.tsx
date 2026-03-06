@@ -970,6 +970,26 @@ export function ChatPanel({
 
       {/* ── Composer ── Clean, no chips */}
       <div className="relative border-t border-border/10 w-full overflow-x-hidden">
+        {/* Window closed banner */}
+        {!windowStatus.isOpen && (
+          <div className="mx-4 mt-2 mb-1 p-2.5 bg-destructive/5 border border-destructive/10 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
+            <Lock className="h-4 w-4 text-destructive/60 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-destructive/80">Janela de 24h fechada</p>
+              <p className="text-[10px] text-destructive/50">Envie um template aprovado para retomar a conversa</p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0 text-xs h-7 gap-1 border-destructive/20 text-destructive/70 hover:bg-destructive/5"
+              onClick={() => setTemplateDialogOpen(true)}
+            >
+              <MessageSquareText className="h-3 w-3" />
+              Enviar Template
+            </Button>
+          </div>
+        )}
+
         {/* Quick replies */}
         {showQuickReplies && (
           <div className="absolute bottom-full left-0 right-0 mx-4 mb-1.5 bg-popover border border-border/20 rounded-xl shadow-lg max-h-[200px] overflow-y-auto z-50">
@@ -978,6 +998,149 @@ export function ChatPanel({
                 key={r.id}
                 className={cn(
                   "w-full text-left px-3 py-2.5 text-xs hover:bg-muted/20 transition-colors first:rounded-t-xl last:rounded-b-xl",
+                  i === quickReplyIndex && "bg-muted/20"
+                )}
+                onMouseDown={(e) => { e.preventDefault(); selectQuickReply(r.texto); }}
+              >
+                <span className="font-medium text-primary text-[11px]">/{r.atalho}</span>
+                <span className="ml-2 text-muted-foreground/40 text-[11px]">{r.titulo}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Reply quote */}
+        {replyTo && (
+          <div className="mx-4 mt-2 mb-1 p-2 bg-muted/10 border-l-2 border-primary/30 rounded-r-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
+            <Reply className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-medium text-muted-foreground/50">
+                {replyTo.de === "atendente" ? (replyTo.sentByAgentName || "Você") : "Contato"}
+              </p>
+              <p className="text-[11px] text-muted-foreground/40 truncate">{replyTo.texto || `[${replyTo.msgType}]`}</p>
+            </div>
+            <Button size="icon" variant="ghost" className="h-6 w-6 rounded-lg shrink-0" onClick={() => setReplyTo(null)}>
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+
+        {/* Pending file preview */}
+        {pendingFile && pendingPreview && (
+          <div className="mx-4 mt-2 mb-1 p-2 bg-muted/10 border border-border/10 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
+            {pendingFile.type.startsWith("image/") ? (
+              <img src={pendingPreview} alt="Preview" className="h-14 w-14 rounded-lg object-cover" />
+            ) : pendingFile.type.startsWith("video/") ? (
+              <video src={pendingPreview} className="h-14 w-14 rounded-lg object-cover" muted />
+            ) : pendingFile.type.startsWith("audio/") ? (
+              <div className="h-14 w-14 rounded-lg bg-muted/20 flex items-center justify-center">
+                <Mic className="h-5 w-5 text-muted-foreground/50" />
+              </div>
+            ) : (
+              <div className="h-14 w-14 rounded-lg bg-muted/20 flex items-center justify-center">
+                <FileText className="h-5 w-5 text-muted-foreground/50" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-medium truncate">{pendingFile.name}</p>
+              <p className="text-[10px] text-muted-foreground/40">
+                {(pendingFile.size / 1024).toFixed(0)} KB
+              </p>
+            </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 rounded-lg shrink-0"
+              onClick={() => { setPendingFile(null); setPendingPreview(null); }}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+
+        <div className="flex gap-2 items-end px-4 pb-3 pt-2">
+          <div className="flex gap-0.5 shrink-0">
+            <AttachmentMenu onFileSelected={handleFileFromMenu} />
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-9 w-9 rounded-lg text-muted-foreground/30 hover:text-muted-foreground/60"
+                    onClick={() => setTemplateDialogOpen(true)}
+                  >
+                    <MessageSquareText className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="text-xs">Enviar Template</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+          <Textarea
+            ref={textareaRef}
+            placeholder={!windowStatus.isOpen ? "Janela fechada — use um template" : pendingFile ? "Legenda (opcional)..." : "Mensagem..."}
+            value={msgText}
+            onChange={(e) => {
+              onMsgTextChange(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+            }}
+            onKeyDown={handleKeyDown}
+            disabled={!windowStatus.isOpen}
+            className={cn(
+              "min-h-[42px] max-h-[120px] resize-none text-[14px] flex-1 rounded-xl bg-muted/10 border-border/10 focus-visible:border-primary/20 focus-visible:bg-background transition-all",
+              !windowStatus.isOpen && "opacity-50 cursor-not-allowed"
+            )}
+            rows={1}
+          />
+
+          {!msgText.trim() && !pendingFile ? (
+            <AudioRecorder
+              onSendAudio={(file) => {
+                if (onSendMedia) onSendMedia(file);
+              }}
+            />
+          ) : (
+            <Button
+              size="icon"
+              onClick={() => {
+                if (pendingFile && onSendMedia) {
+                  onSendMedia(pendingFile);
+                  setPendingFile(null);
+                  setPendingPreview(null);
+                } else {
+                  onSend();
+                }
+              }}
+              disabled={(!msgText.trim() && !pendingFile) || !windowStatus.isOpen}
+              className="shrink-0 rounded-xl h-10 w-10"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {!isMobile && (
+          <div className="text-center pb-1">
+            <span className="text-[9px] text-muted-foreground/20">Enter envia · Shift+Enter nova linha · / templates · ⌘K buscar</span>
+          </div>
+        )}
+      </div>
+
+      {/* Template Dialog */}
+      {conversationPhone && (
+        <SendTemplateDialog
+          open={templateDialogOpen}
+          onOpenChange={setTemplateDialogOpen}
+          conversationId={conversa.id}
+          phone={conversationPhone}
+        />
+      )}
+    </div>
+  );
+}
                   i === quickReplyIndex && "bg-muted/20"
                 )}
                 onMouseDown={(e) => { e.preventDefault(); selectQuickReply(r.texto); }}
