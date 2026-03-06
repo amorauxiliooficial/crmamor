@@ -409,7 +409,42 @@ export function ChatPanel({
     setSummary(null);
     setAiResult(null);
     setVisibleCount(MESSAGES_PER_PAGE);
+    setReplyTo(null);
+    setShowFavoritesOnly(false);
   }, [conversa?.id]);
+
+  const handlePin = useCallback((m: Mensagem) => {
+    setPinnedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(m.id)) { next.delete(m.id); toast({ title: "Mensagem desafixada" }); }
+      else { next.add(m.id); toast({ title: "Mensagem fixada 📌" }); }
+      localStorage.setItem("atd_pinned", JSON.stringify([...next]));
+      return next;
+    });
+  }, [toast]);
+
+  const handleFavorite = useCallback((m: Mensagem) => {
+    setFavoritedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(m.id)) { next.delete(m.id); toast({ title: "Removido dos favoritos" }); }
+      else { next.add(m.id); toast({ title: "Mensagem favoritada ⭐" }); }
+      localStorage.setItem("atd_favorited", JSON.stringify([...next]));
+      return next;
+    });
+  }, [toast]);
+
+  const handleDeleteMessage = useCallback((m: Mensagem) => {
+    toast({ title: "Mensagem apagada 🗑️", description: "Apenas local" });
+  }, [toast]);
+
+  const handleFileFromMenu = useCallback((file: File) => {
+    setPendingFile(file);
+    if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
+      setPendingPreview(URL.createObjectURL(file));
+    } else {
+      setPendingPreview("file");
+    }
+  }, []);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (showQuickReplies) {
