@@ -97,7 +97,12 @@ export const VoiceNote = memo(function VoiceNote({ src, duration, isMe }: VoiceN
       {/* Play/Pause */}
       <button
         onClick={togglePlay}
-        className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 bg-muted-foreground/10 hover:bg-muted-foreground/15 text-foreground/60 transition-colors"
+        className={cn(
+          "h-8 w-8 rounded-full flex items-center justify-center shrink-0 transition-colors",
+          isMe
+            ? "bg-white/20 hover:bg-white/30 text-white"
+            : "bg-muted-foreground/10 hover:bg-muted-foreground/15 text-foreground/60"
+        )}
       >
         {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
       </button>
@@ -108,10 +113,12 @@ export const VoiceNote = memo(function VoiceNote({ src, duration, isMe }: VoiceN
           className="flex items-center gap-[1.5px] h-[26px] cursor-pointer"
           onClick={handleBarClick}
         >
-          {/* Green dot indicator */}
+          {/* Dot indicator */}
           <div className={cn(
             "h-2 w-2 rounded-full shrink-0 mr-0.5",
-            playing ? "bg-primary animate-pulse" : "bg-primary/60"
+            isMe
+              ? (playing ? "bg-white animate-pulse" : "bg-white/60")
+              : (playing ? "bg-primary animate-pulse" : "bg-primary/60")
           )} />
 
           {staticBars.map((h, i) => {
@@ -121,9 +128,9 @@ export const VoiceNote = memo(function VoiceNote({ src, duration, isMe }: VoiceN
                 key={i}
                 className={cn(
                   "flex-1 rounded-full min-w-[1.5px] max-w-[3px] transition-colors duration-75",
-                  active
-                    ? "bg-primary"
-                    : "bg-muted-foreground/20"
+                  isMe
+                    ? (active ? "bg-white" : "bg-white/30")
+                    : (active ? "bg-primary" : "bg-muted-foreground/20")
                 )}
                 style={{ height: `${h * 100}%` }}
               />
@@ -131,12 +138,20 @@ export const VoiceNote = memo(function VoiceNote({ src, duration, isMe }: VoiceN
           })}
         </div>
         <div className="flex items-center justify-between px-0.5">
-          <span className="text-[10px] font-mono tabular-nums text-muted-foreground/50">
+          <span className={cn(
+            "text-[10px] font-mono tabular-nums",
+            isMe ? "text-white/70" : "text-muted-foreground/50"
+          )}>
             {formatTime(displayTime)}
           </span>
           <button
             onClick={toggleSpeed}
-            className="text-[9px] font-bold tabular-nums px-1 py-0.5 rounded text-muted-foreground/40 hover:bg-muted/30 transition-colors"
+            className={cn(
+              "text-[9px] font-bold tabular-nums px-1 py-0.5 rounded transition-colors",
+              isMe
+                ? "text-white/60 hover:bg-white/10"
+                : "text-muted-foreground/40 hover:bg-muted/30"
+            )}
           >
             {speed}x
           </button>
@@ -144,7 +159,10 @@ export const VoiceNote = memo(function VoiceNote({ src, duration, isMe }: VoiceN
       </div>
 
       {/* Mic icon */}
-      <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 bg-primary/10 text-primary">
+      <div className={cn(
+        "h-8 w-8 rounded-full flex items-center justify-center shrink-0",
+        isMe ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+      )}>
         <Mic className="h-3.5 w-3.5" />
       </div>
     </div>
