@@ -204,9 +204,9 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
           {formatInboxPreview(c.ultimaMensagem)}
         </p>
 
-        {/* Minimal metadata — only show critical info */}
-        {c.queueStatus === "sem_responsavel" && (
-          <span className="text-[10px] text-destructive/50 font-medium mt-0.5 block">Sem responsável</span>
+        {/* Minimal metadata — show "Novo" for unassigned */}
+        {c.queueStatus === "novo" && (
+          <span className="text-[10px] text-primary font-medium mt-0.5 block">Disponível na fila</span>
         )}
       </div>
 

@@ -34,9 +34,9 @@ function waToConversa(wa: WaConversation, profileMap: Map<string, string>): Conv
   const assignedName = wa.assigned_to ? profileMap.get(wa.assigned_to) ?? null : null;
 
   // Derive queue status
-  let queueStatus: Conversa["queueStatus"] = "sem_responsavel";
-  if (wa.status === "closed") queueStatus = "resolvido";
-  else if (!wa.assigned_to) queueStatus = "sem_responsavel";
+  let queueStatus: Conversa["queueStatus"] = "novo";
+  if (wa.status === "closed") queueStatus = "encerrado";
+  else if (!wa.assigned_to) queueStatus = "novo";
   else if (wa.unread_count === 0) queueStatus = "aguardando_cliente";
   else queueStatus = "em_atendimento";
 
