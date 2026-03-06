@@ -113,6 +113,7 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
                       <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors" />
                     </button>
                   </div>
+                </ScrollArea>
             </>
           ) : (
             <>
