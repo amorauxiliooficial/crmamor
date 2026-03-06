@@ -102,7 +102,7 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, onSel
   return (
     <div
       className={cn(
-        "flex items-center gap-3 px-4 py-[10px] cursor-pointer transition-colors",
+        "flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors",
         isSelected
           ? "bg-primary/8"
           : "hover:bg-muted/15 active:bg-muted/25"
@@ -110,7 +110,7 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, onSel
       onClick={() => onSelect(c.id)}
     >
       {/* Avatar */}
-      <Avatar className="h-[49px] w-[49px] shrink-0">
+      <Avatar className="h-[46px] w-[46px] shrink-0 mt-0.5">
         <AvatarFallback className={cn(
           "text-[15px] font-semibold",
           contact.initials === "#" ? "bg-muted/30 text-muted-foreground/50" : avatarColor
@@ -121,34 +121,40 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, onSel
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        {/* Row 1: Name + Time */}
-        <div className="flex items-center justify-between gap-2">
+        {/* Row 1: Phone + Time */}
+        <div className="flex items-baseline justify-between gap-2">
           <span className={cn(
-            "text-[15px] truncate leading-tight",
-            hasUnread ? "font-semibold text-foreground" : "font-normal text-foreground/85"
+            "text-[14.5px] leading-tight truncate tracking-tight",
+            hasUnread ? "font-semibold text-foreground" : "font-medium text-foreground/90"
           )}>
             {contact.displayName}
           </span>
           <span className={cn(
-            "text-[12px] shrink-0 tabular-nums",
-            hasUnread ? "text-emerald-500 font-medium" : "text-muted-foreground"
+            "text-[11px] shrink-0 tabular-nums leading-none",
+            hasUnread ? "text-emerald-500 font-semibold" : "text-muted-foreground/60"
           )}>
             {formatHorario(c.horario)}
           </span>
         </div>
 
-        {/* Row 2: Preview + Unread badge */}
-        <div className="flex items-center justify-between gap-2 mt-[2px]">
+        {/* Row 2: Contact name (subtle) */}
+        {contact.subtitle && (
+          <p className="text-[12px] leading-tight text-muted-foreground/50 truncate mt-[1px]">
+            {contact.subtitle}
+          </p>
+        )}
+
+        {/* Row 3: Preview + Unread badge */}
+        <div className="flex items-center justify-between gap-2 mt-[3px]">
           <p className={cn(
             "text-[13px] truncate leading-tight",
-            hasUnread ? "text-foreground/70" : "text-muted-foreground"
+            hasUnread ? "text-foreground/60" : "text-muted-foreground/45"
           )}>
             {formatInboxPreview(c.ultimaMensagem)}
           </p>
 
-          {/* WhatsApp green unread badge */}
           {hasUnread && (
-            <span className="bg-emerald-500 text-white h-[20px] min-w-[20px] px-[5px] flex items-center justify-center rounded-full text-[11px] font-bold shrink-0 leading-none">
+            <span className="bg-emerald-500 text-white h-[19px] min-w-[19px] px-[5px] flex items-center justify-center rounded-full text-[10.5px] font-bold shrink-0 leading-none">
               {c.naoLidas}
             </span>
           )}
