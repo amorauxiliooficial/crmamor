@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { WindowBadge, useWindowStatus } from "@/components/atendimento/WindowBadge";
 import { SendTemplateDialog } from "@/components/atendimento/SendTemplateDialog";
+import { ConsumptionBadge } from "@/components/atendimento/ConsumptionBadge";
 import { AudioRecorder } from "@/components/atendimento/AudioRecorder";
 import { MessageStatusIcon } from "@/components/atendimento/MessageStatusIcon";
 import { AttachmentMenu } from "@/components/atendimento/AttachmentMenu";
