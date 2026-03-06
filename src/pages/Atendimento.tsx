@@ -342,6 +342,35 @@ export default function Atendimento() {
     [selectedId]
   );
 
+  // AI toggle: add/remove AI_ON label
+  const aiEnabled = useMemo(() => {
+    return (selectedWa?.labels ?? []).includes("AI_ON");
+  }, [selectedWa]);
+
+  const handleToggleAi = useCallback(async () => {
+    if (!selectedId || !selectedWa) return;
+    const currentLabels: string[] = selectedWa.labels ?? [];
+    let newLabels: string[];
+    if (currentLabels.includes("AI_ON")) {
+      newLabels = currentLabels.filter(l => l !== "AI_ON" && l !== "AI_PRIMARY");
+    } else {
+      newLabels = [...currentLabels.filter(l => l !== "HANDOFF_HUMAN" && l !== "AI_PAUSED"), "AI_ON"];
+    }
+    const { error } = await supabase
+      .from("wa_conversations")
+      .update({ labels: newLabels } as any)
+      .eq("id", selectedId);
+    if (error) {
+      toast({ title: "Erro ao atualizar IA", variant: "destructive" });
+    } else {
+      toast({ title: newLabels.includes("AI_ON") ? "IA ativada 🤖" : "IA desativada" });
+      createEvent.mutate({
+        conversation_id: selectedId,
+        event_type: newLabels.includes("AI_ON") ? "ai_enabled" : "ai_disabled",
+      });
+    }
+  }, [selectedId, selectedWa, toast, createEvent]);
+
   const handleSend = useCallback(() => {
     if (!selectedId || !msgText.trim() || !selectedWa) return;
     const text = msgText.trim();
