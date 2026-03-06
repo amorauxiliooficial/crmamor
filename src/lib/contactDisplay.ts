@@ -52,9 +52,17 @@ export function getContactDisplay(
   const formattedPhone = formatE164ToBR(phone);
   const name = crmName?.trim() || waName?.trim() || null;
 
+  if (name) {
+    return {
+      displayName: name,
+      subtitle: formattedPhone,
+      initials: name.charAt(0).toUpperCase(),
+    };
+  }
+
   return {
     displayName: formattedPhone,
-    subtitle: name ? abbreviateName(name) : null,
-    initials: name ? name.charAt(0).toUpperCase() : "#",
+    subtitle: null,
+    initials: "#",
   };
 }
