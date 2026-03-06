@@ -852,6 +852,41 @@ export function ChatPanel({
             </div>
           )}
 
+          {/* Pinned messages bar */}
+          {(() => {
+            const pinnedMsgs = mensagens.filter((m) => pinnedIds.has(m.id));
+            if (pinnedMsgs.length === 0) return null;
+            return (
+              <div className="mx-auto w-full max-w-3xl mb-2">
+                <div className="bg-primary/5 border border-primary/10 rounded-xl p-2.5 flex items-center gap-2">
+                  <Pin className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[11px] font-medium text-primary/70">{pinnedMsgs.length} fixada{pinnedMsgs.length > 1 ? "s" : ""}</span>
+                    <p className="text-[11px] text-muted-foreground/50 truncate">{pinnedMsgs[pinnedMsgs.length - 1]?.texto}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Favorites filter */}
+          {favoritedIds.size > 0 && (
+            <div className="flex justify-center mb-2">
+              <button
+                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                className={cn(
+                  "flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-full border transition-all",
+                  showFavoritesOnly
+                    ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400"
+                    : "border-border/20 text-muted-foreground/50 hover:text-foreground"
+                )}
+              >
+                <Star className="h-3 w-3" />
+                {showFavoritesOnly ? "Mostrando favoritas" : `${favoritedIds.size} favorita${favoritedIds.size > 1 ? "s" : ""}`}
+              </button>
+            </div>
+          )}
+
           {isLoadingMessages ? (
             <MessageSkeleton />
           ) : (
@@ -863,10 +898,11 @@ export function ChatPanel({
                   </span>
                 </div>
 
-                {group.messages.map((m, idx) => {
+                {group.messages.filter((m) => !showFavoritesOnly || favoritedIds.has(m.id)).map((m, idx) => {
                   const prev = idx > 0 ? group.messages[idx - 1] : null;
                   const isGrouped = isSameAuthorGroup(m, prev);
                   const showTime = shouldShowTimestamp(m, prev);
+                  const isMe = m.de === "atendente";
 
                   // Find events that occurred between prev message and current
                   const eventsBeforeThis = conversationEvents.filter((ev) => {
@@ -881,14 +917,35 @@ export function ChatPanel({
                       {eventsBeforeThis.map((ev) => (
                         <InlineEvent key={ev.id} event={ev} profileMap={profileMap} />
                       ))}
-                      <MessageBubble
+                      <MessageContextMenu
                         message={m}
-                        isGrouped={isGrouped}
-                        showTime={showTime}
-                        onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
-                        currentUserId={currentUserId}
-                        onEditMessage={onEditMessage}
-                      />
+                        isMe={isMe}
+                        isMobile={isMobile}
+                        onReply={setReplyTo}
+                        onPin={handlePin}
+                        onFavorite={handleFavorite}
+                        onDelete={handleDeleteMessage}
+                        isPinned={pinnedIds.has(m.id)}
+                        isFavorited={favoritedIds.has(m.id)}
+                      >
+                        <div className="relative">
+                          {/* Pin/star indicators */}
+                          {(pinnedIds.has(m.id) || favoritedIds.has(m.id)) && (
+                            <div className={cn("absolute -top-1 flex gap-0.5", isMe ? "right-1" : "left-1")}>
+                              {pinnedIds.has(m.id) && <Pin className="h-2.5 w-2.5 text-primary/40" />}
+                              {favoritedIds.has(m.id) && <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400" />}
+                            </div>
+                          )}
+                          <MessageBubble
+                            message={m}
+                            isGrouped={isGrouped}
+                            showTime={showTime}
+                            onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
+                            currentUserId={currentUserId}
+                            onEditMessage={onEditMessage}
+                          />
+                        </div>
+                      </MessageContextMenu>
                     </div>
                   );
                 })}
