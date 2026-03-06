@@ -7,6 +7,11 @@ import { cn } from "@/lib/utils";
 import { useMonthlyBilling, useConversationBilling, useBillingSettings, useRateCards, estimateCost } from "@/hooks/useBillingData";
 import { useWindowStatus } from "@/components/atendimento/WindowBadge";
 
+const USD_TO_BRL = 5.80;
+function toBRL(usd: number, decimals = 2): string {
+  return `R$ ${(usd * USD_TO_BRL).toFixed(decimals)}`;
+}
+
 const CATEGORY_COLORS: Record<string, string> = {
   marketing: "text-purple-600 dark:text-purple-400",
   utility: "text-blue-600 dark:text-blue-400",
@@ -71,7 +76,7 @@ export function ConsumptionDrawer({ open, onOpenChange, conversationId, lastInbo
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold">
-                  {nextEstimate.cost === 0 ? "Grátis" : `$${nextEstimate.cost.toFixed(4)}`}
+                  {nextEstimate.cost === 0 ? "Grátis" : toBRL(nextEstimate.cost, 4)}
                 </span>
                 <span className="text-xs text-muted-foreground/60">
                   {nextEstimate.category}
@@ -91,7 +96,7 @@ export function ConsumptionDrawer({ open, onOpenChange, conversationId, lastInbo
                   <MessageSquare className="h-3 w-3" /> Esta conversa
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
-                  <StatCard label="Total" value={`$${convoBilling.total.toFixed(4)}`} />
+                  <StatCard label="Total" value={toBRL(convoBilling.total, 4)} />
                   <StatCard label="Mensagens" value={String(convoBilling.count)} />
                 </div>
                 {Object.keys(convoBilling.byCategory).length > 0 && (
@@ -102,7 +107,7 @@ export function ConsumptionDrawer({ open, onOpenChange, conversationId, lastInbo
                           {CATEGORY_LABELS[cat] || cat}
                         </span>
                         <span className="text-muted-foreground/60">
-                          {data.count}× · ${data.cost.toFixed(4)}
+                          {data.count}× · {toBRL(data.cost, 4)}
                         </span>
                       </div>
                     ))}
@@ -118,8 +123,8 @@ export function ConsumptionDrawer({ open, onOpenChange, conversationId, lastInbo
               </h4>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground/70">${todayTotal.toFixed(2)}</span>
-                  <span className="text-muted-foreground/40">limite: ${dailyLimit.toFixed(0)}</span>
+                  <span className="text-muted-foreground/70">{toBRL(todayTotal)}</span>
+                  <span className="text-muted-foreground/40">limite: {toBRL(dailyLimit, 0)}</span>
                 </div>
                 <Progress value={dayPct} className="h-1.5" />
                 <p className="text-[10px] text-muted-foreground/40">
@@ -135,8 +140,8 @@ export function ConsumptionDrawer({ open, onOpenChange, conversationId, lastInbo
               </h4>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground/70">${monthTotal.toFixed(2)}</span>
-                  <span className="text-muted-foreground/40">limite: ${monthLimit.toFixed(0)}</span>
+                  <span className="text-muted-foreground/70">{toBRL(monthTotal)}</span>
+                  <span className="text-muted-foreground/40">limite: {toBRL(monthLimit, 0)}</span>
                 </div>
                 <Progress value={monthPct} className="h-1.5" />
                 <p className="text-[10px] text-muted-foreground/40">
@@ -154,7 +159,7 @@ export function ConsumptionDrawer({ open, onOpenChange, conversationId, lastInbo
                         {CATEGORY_LABELS[cat] || cat}
                       </span>
                       <span className="text-muted-foreground/60">
-                        {data.count}× · ${data.cost.toFixed(2)}
+                        {data.count}× · {toBRL(data.cost)}
                       </span>
                     </div>
                   ))}
@@ -174,7 +179,7 @@ export function ConsumptionDrawer({ open, onOpenChange, conversationId, lastInbo
                       {CATEGORY_LABELS[rc.category] || rc.category}
                       <span className="text-muted-foreground/40 font-normal ml-1">({rc.direction === "user_initiated" ? "user" : "business"})</span>
                     </span>
-                    <span className="font-mono text-muted-foreground/70">${rc.cost_per_message.toFixed(4)}</span>
+                    <span className="font-mono text-muted-foreground/70">{toBRL(rc.cost_per_message, 4)}</span>
                   </div>
                 ))}
               </div>
