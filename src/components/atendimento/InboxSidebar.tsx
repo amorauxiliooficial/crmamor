@@ -141,7 +141,7 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, onSel
         <div className="flex items-center justify-between gap-2 mt-[2px]">
           <p className={cn(
             "text-[13px] truncate leading-tight",
-            hasUnread ? "text-foreground/60" : "text-muted-foreground/45"
+            hasUnread ? "text-foreground/70" : "text-muted-foreground"
           )}>
             {formatInboxPreview(c.ultimaMensagem)}
           </p>
