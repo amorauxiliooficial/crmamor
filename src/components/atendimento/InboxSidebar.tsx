@@ -202,7 +202,6 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, isHov
         {c.status === "Aberto" && c.queueStatus !== "novo" && (
           <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-background" />
         )}
-        )}
       </div>
 
       {/* Content */}
