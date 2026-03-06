@@ -246,6 +246,29 @@ export default function Atendimento() {
     [selectedId, toast, recordAssignment, user, assumeConversation, createEvent]
   );
 
+  const DEFAULT_GREETING = "Olá! Tudo bem? Sou atendente da equipe. Como posso te ajudar hoje? 😊";
+
+  const handleStartAtendimento = useCallback(
+    (id: string) => {
+      assumeConversation.mutate(id, {
+        onSuccess: () => {
+          toast({ title: "Atendimento iniciado ✅" });
+          createEvent.mutate({ conversation_id: id, event_type: "assumed", to_agent_id: user?.id });
+          recordAssignment.mutate({
+            conversation_id: id,
+            from_user_id: null,
+            to_user_id: user?.id,
+            reason: "Atendimento iniciado via fila",
+          });
+          setSelectedId(id);
+          navigate(`/atendimento/chat/${id}`, { replace: true });
+          setMsgText(DEFAULT_GREETING);
+        },
+      });
+    },
+    [toast, recordAssignment, user, assumeConversation, createEvent, navigate]
+  );
+
   const handleTransfer = useCallback(
     (toAgentId: string, reason?: string) => {
       if (!selectedId) return;
