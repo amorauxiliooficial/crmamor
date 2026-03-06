@@ -419,6 +419,8 @@ export function ChatPanel({
   onReconnect,
   conversationEvents = [],
   profileMap,
+  aiEnabled,
+  onToggleAi,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
