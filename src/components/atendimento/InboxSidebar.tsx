@@ -280,7 +280,7 @@ export function InboxSidebar({
       </div>
 
       {/* Conversation list — flat, WhatsApp style */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <InboxSkeleton />
         ) : filtered.length === 0 ? (
@@ -303,7 +303,7 @@ export function InboxSidebar({
             ))}
           </div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 }
