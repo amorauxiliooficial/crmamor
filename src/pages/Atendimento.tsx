@@ -520,6 +520,7 @@ export default function Atendimento() {
               onAtendenteFilterChange={setAtendenteFilter}
               onAssume={handleAssume}
               onPendente={handlePendente}
+              onStartAtendimento={handleStartAtendimento}
               isLoading={loadingConvos}
             />
           ) : mobileTab === "kanban" ? (
@@ -589,6 +590,7 @@ export default function Atendimento() {
         onAtendenteFilterChange={setAtendenteFilter}
         onAssume={handleAssume}
         onPendente={handlePendente}
+        onStartAtendimento={handleStartAtendimento}
         isLoading={loadingConvos}
       />
 
