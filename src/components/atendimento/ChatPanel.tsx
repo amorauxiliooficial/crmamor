@@ -271,7 +271,7 @@ const MessageBubble = memo(function MessageBubble({
                 "relative overflow-hidden break-words min-w-0",
                 isMedia ? "px-0.5 pb-0.5 pt-1" : "px-4 py-2.5",
                 isMe
-                  ? cn("bg-primary/[0.07] dark:bg-primary/[0.13] text-foreground border border-primary/[0.08]", rounding)
+                  ? cn("bg-accent text-accent-foreground border border-accent-foreground/[0.06]", rounding)
                   : cn("bg-card border border-border/15", rounding),
                 isFailed && "ring-1 ring-destructive/30"
               )}
