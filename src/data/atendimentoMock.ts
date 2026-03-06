@@ -39,11 +39,11 @@ export interface Mensagem {
 }
 
 export const mockConversas: Conversa[] = [
-  { id: "1", nome: "João Silva", telefone: "(11) 99999-1111", ultimaMensagem: "Oi, gostaria de saber sobre o produto...", horario: new Date(Date.now() - 5 * 60000), status: "Aberto", atendente: "Maria", assignedAgentId: null, naoLidas: 0, etiquetas: ["Suporte"] },
-  { id: "2", nome: "Fernanda Costa", telefone: "(11) 98888-2222", ultimaMensagem: "Já fiz o pagamento, quando chega?", horario: new Date(Date.now() - 25 * 60000), status: "Pendente", atendente: "Você", assignedAgentId: null, naoLidas: 2, etiquetas: ["Financeiro"] },
-  { id: "3", nome: null, telefone: "(11) 97777-3333", ultimaMensagem: "Olá!", horario: new Date(Date.now() - 45 * 60000), status: "Aberto", atendente: null, assignedAgentId: null, naoLidas: 3, etiquetas: [] },
-  { id: "4", nome: "Carlos Mendes", telefone: "(11) 96666-4444", ultimaMensagem: "Ok, obrigado!", horario: new Date(Date.now() - 120 * 60000), status: "Fechado", atendente: "João", assignedAgentId: null, naoLidas: 0, etiquetas: [] },
-  { id: "5", nome: "Ana Lima", telefone: "(11) 95555-5555", ultimaMensagem: "Preciso cancelar meu pedido urgente", horario: new Date(Date.now() - 2 * 60000), status: "Aberto", atendente: null, assignedAgentId: null, naoLidas: 1, etiquetas: ["Urgente"] },
+  { id: "1", nome: "João Silva", waName: null, telefone: "(11) 99999-1111", ultimaMensagem: "Oi, gostaria de saber sobre o produto...", horario: new Date(Date.now() - 5 * 60000), status: "Aberto", atendente: "Maria", assignedAgentId: null, naoLidas: 0, etiquetas: ["Suporte"] },
+  { id: "2", nome: "Fernanda Costa", waName: null, telefone: "(11) 98888-2222", ultimaMensagem: "Já fiz o pagamento, quando chega?", horario: new Date(Date.now() - 25 * 60000), status: "Pendente", atendente: "Você", assignedAgentId: null, naoLidas: 2, etiquetas: ["Financeiro"] },
+  { id: "3", nome: null, waName: null, telefone: "(11) 97777-3333", ultimaMensagem: "Olá!", horario: new Date(Date.now() - 45 * 60000), status: "Aberto", atendente: null, assignedAgentId: null, naoLidas: 3, etiquetas: [] },
+  { id: "4", nome: "Carlos Mendes", waName: null, telefone: "(11) 96666-4444", ultimaMensagem: "Ok, obrigado!", horario: new Date(Date.now() - 120 * 60000), status: "Fechado", atendente: "João", assignedAgentId: null, naoLidas: 0, etiquetas: [] },
+  { id: "5", nome: "Ana Lima", waName: null, telefone: "(11) 95555-5555", ultimaMensagem: "Preciso cancelar meu pedido urgente", horario: new Date(Date.now() - 2 * 60000), status: "Aberto", atendente: null, assignedAgentId: null, naoLidas: 1, etiquetas: ["Urgente"] },
 ];
 
 export const mockMensagens: Record<string, Mensagem[]> = {
