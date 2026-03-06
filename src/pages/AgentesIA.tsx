@@ -32,6 +32,24 @@ export default function AgentesIA() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<ListFilter>("all");
 
+  const filteredAgents = useMemo(() => {
+    if (!agents) return [];
+    let result = [...agents];
+    if (filter === "active") result = result.filter(a => a.is_active);
+    else if (filter === "inactive") result = result.filter(a => !a.is_active);
+    else if (filter === "default") result = result.filter(a => a.is_default);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(a =>
+        a.name.toLowerCase().includes(q) ||
+        a.model.toLowerCase().includes(q) ||
+        a.departments?.some(d => d.toLowerCase().includes(q))
+      );
+    }
+    result.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+    return result;
+  }, [agents, filter, searchQuery]);
+
   if (authLoading) return null;
   if (!user) { navigate("/auth"); return null; }
 
