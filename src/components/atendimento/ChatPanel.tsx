@@ -641,6 +641,7 @@ export function ChatPanel({
                   lastInboundAt={lastInboundAt ?? null}
                   onSendTemplate={() => setTemplateDialogOpen(true)}
                 />
+              </div>
               {ci.subtitle && (
                 <p className="text-[10px] text-muted-foreground/40 truncate">{ci.subtitle}</p>
               )}
