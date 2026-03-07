@@ -44,6 +44,7 @@ export function ResumoFinanceiroCards({
     // Receitas filtradas
     let receitasRecebidas = 0;
     let receitasPendentes = 0;
+    let receitasInadimplentes = 0;
 
     pagamentos.forEach((pag) => {
       pag.parcelas.forEach((p) => {
@@ -54,8 +55,9 @@ export function ResumoFinanceiroCards({
           receitasRecebidas += valor;
         } else if (p.status === "pendente") {
           receitasPendentes += valor;
+        } else if (p.status === "inadimplente") {
+          receitasInadimplentes += valor;
         }
-        // inadimplente parcelas are excluded from both totals
       });
     });
 
@@ -74,7 +76,7 @@ export function ResumoFinanceiroCards({
     });
 
     const saldoRecebido = receitasRecebidas - despesasPagas;
-    const saldoPrevisto = (receitasRecebidas + receitasPendentes) - (despesasPagas + despesasPendentes);
+    const saldoPrevisto = (receitasRecebidas + receitasPendentes + receitasInadimplentes) - (despesasPagas + despesasPendentes);
 
     return {
       receitasRecebidas,
