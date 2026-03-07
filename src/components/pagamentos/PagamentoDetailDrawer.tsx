@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,8 @@ import { Progress } from "@/components/ui/progress";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { formatCpf } from "@/lib/formatters";
+import { formatCpf, formatCurrency as formatCurrencyLib } from "@/lib/formatters";
+import { processarComissaoParcela } from "@/lib/comissaoUtils";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -133,7 +134,21 @@ function DrawerBody({
     if (error) {
       toast({ variant: "destructive", title: "Erro", description: error.message });
     } else {
-      toast({ title: "Parcela registrada como paga" });
+      // Auto-calculate commission and create despesa
+      try {
+        if (parcela.valor && parcela.valor > 0) {
+          await processarComissaoParcela({
+            parcelaId: parcela.id,
+            valorParcela: parcela.valor,
+            userId: pagamento.user_id || "",
+            maeNome: pagamento.mae_nome,
+            numeroParcela: parcela.numero_parcela,
+          });
+        }
+      } catch (err) {
+        console.error("Erro ao processar comissão:", err);
+      }
+      toast({ title: "Parcela registrada como paga", description: parcela.valor ? `Comissão de 10% (${formatCurrency(parcela.valor * 0.1)}) programada para dia 5` : undefined });
       onUpdated();
     }
     setSavingParcelaId(null);
