@@ -85,8 +85,17 @@ export function DespesasTable({ period = "mes", selectedMonth, selectedYear }: D
       });
     }
 
+    // Filtro por busca de fornecedor/descrição
+    if (searchFornecedor.trim()) {
+      const term = searchFornecedor.toLowerCase();
+      filtered = filtered.filter((d) =>
+        (d.fornecedor || "").toLowerCase().includes(term) ||
+        d.descricao.toLowerCase().includes(term)
+      );
+    }
+
     return filtered;
-  }, [despesas, period, selectedMonth, selectedYear, statusFilter]);
+  }, [despesas, period, selectedMonth, selectedYear, statusFilter, searchFornecedor]);
 
   // Resumo do período filtrado
   const resumo = useMemo(() => {
