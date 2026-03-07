@@ -314,13 +314,12 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="telefone">Telefone</Label>
-                <Input
-                  id="telefone"
-                  value={formData.telefone}
-                  onChange={(e) => setFormData({ ...formData, telefone: formatPhone(e.target.value) })}
-                  placeholder="(00) 00000-0000"
+              <div className="md:col-span-2">
+                <PhoneContactsEditor
+                  phones={phones}
+                  onChange={setPhones}
+                  maxPhones={3}
+                  firstRequired
                 />
               </div>
               <div className="space-y-2">
