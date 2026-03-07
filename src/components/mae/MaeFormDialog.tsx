@@ -190,7 +190,9 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
       return;
     }
     
-    const phoneRaw = formData.telefone || null;
+    // Get primary phone for mae_processo backward compat
+    const primaryPhone = phones.find((p) => p.isPrimary && p.value.replace(/\D/g, "").length >= 10);
+    const phoneRaw = primaryPhone?.value || null;
     const phoneE164 = normalizePhoneToE164BR(phoneRaw);
 
     const { data, error } = await supabase.from("mae_processo").insert({
