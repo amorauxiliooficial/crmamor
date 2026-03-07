@@ -365,6 +365,27 @@ export function PagamentoDialog({
     }
   };
 
+  const formatPhoneMask = (value: string) => {
+    const numbers = value.replace(/\D/g, "").slice(0, 11);
+    if (numbers.length <= 10) {
+      return numbers.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{4})(\d)/, "$1-$2");
+    }
+    return numbers.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d)/, "$1-$2");
+  };
+
+  const validateContatos = (): boolean => {
+    const errors: Record<string, string> = {};
+    for (const n of [1, 2, 3]) {
+      const telKey = `contato_telefone_${n}` as keyof typeof contatos;
+      const raw = contatos[telKey].replace(/\D/g, "");
+      if (raw.length > 0 && (raw.length < 10 || raw.length > 11)) {
+        errors[telKey] = "Telefone inválido (10-11 dígitos)";
+      }
+    }
+    setContatoErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
