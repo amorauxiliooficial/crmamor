@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,26 @@ interface ChatStats {
 }
 
 function useChatStats(): { stats: ChatStats; isLoading: boolean } {
+  const queryClient = useQueryClient();
+
+  // Realtime subscription to invalidate stats on conversation changes
+  useEffect(() => {
+    const channel = supabase
+      .channel("home-chat-stats")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "wa_conversations" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["chat_stats_home"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   const { data, isLoading } = useQuery({
     queryKey: ["chat_stats_home"],
     queryFn: async () => {
