@@ -16,8 +16,7 @@ import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { GuidedTour } from "@/components/tour/GuidedTour";
 import { MobileViewSelector } from "@/components/layout/MobileViewSelector";
 import { ViewTransition } from "@/components/layout/ViewTransition";
-import { MetasDashboard } from "@/components/metas/MetasDashboard";
-import { MetasConfigDialog } from "@/components/metas/MetasConfigDialog";
+import { OperationsPanel } from "@/components/dashboard/OperationsPanel";
 
 import { AtividadeDialog } from "@/components/atividades/AtividadeDialog";
 import { CrmTab } from "@/components/atividades/CrmTab";
@@ -55,13 +54,6 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { parseISO } from "date-fns";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
@@ -94,11 +86,8 @@ const Index = () => {
   const [selectedIndicacaoFromNotification, setSelectedIndicacaoFromNotification] = useState<Indicacao | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [metasConfigOpen, setMetasConfigOpen] = useState(false);
 
-  const handleOpenMetasConfig = useCallback(() => {
-    setMetasConfigOpen(true);
-  }, []);
+
 
   const handleNotificationClick = (indicacao: Indicacao) => {
     setViewMode("indicacoes");
@@ -285,35 +274,17 @@ const Index = () => {
 
       <main className="p-3 md:p-6 space-y-3 md:space-y-6 overflow-x-hidden">
 
-        {/* Responsável Filter - Visible for all users */}
-        <section className="flex items-center gap-3">
-          <span className="text-sm font-medium text-muted-foreground">Responsável:</span>
-          <Select value={selectedUserId || "all"} onValueChange={setSelectedUserId}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Todos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {users.map((u) => (
-                <SelectItem key={u.id} value={u.id}>
-                  {getUserDisplayName(u)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {selectedUserId && selectedUserId !== "all" && (
-            <Button variant="ghost" size="sm" onClick={() => setSelectedUserId("all")} className="text-xs">
-              Limpar
-            </Button>
-          )}
-        </section>
-
-        {/* Metas Dashboard - replaces old stats cards */}
+        {/* Operations Panel - Chat stats + Filters */}
         <section className="tour-stats">
-          <MetasDashboard 
-            userId={selectedUserId && selectedUserId !== "all" ? selectedUserId : null}
-            isAdmin={isAdmin}
-            onConfigClick={handleOpenMetasConfig}
+          <OperationsPanel
+            totalMaes={maes.length}
+            filteredCount={filteredMaes.length}
+            selectedUserId={selectedUserId}
+            onUserChange={setSelectedUserId}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            users={users}
+            getUserDisplayName={getUserDisplayName}
           />
         </section>
 
@@ -703,11 +674,6 @@ const Index = () => {
       <OnboardingModal
         open={onboardingOpen}
         onOpenChange={setOnboardingOpen}
-      />
-
-      <MetasConfigDialog
-        open={metasConfigOpen}
-        onOpenChange={setMetasConfigOpen}
       />
     </div>
   );
