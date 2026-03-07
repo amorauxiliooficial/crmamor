@@ -1182,10 +1182,11 @@ export function ChatPanel({
             }}
             onKeyDown={handleKeyDown}
             disabled={!windowStatus.isOpen}
-            spellCheck
-            autoCorrect="off"
+            spellCheck={true}
+            autoComplete="off"
             autoCapitalize="sentences"
             lang="pt-BR"
+            data-gramm="true"
             className={cn(
               "min-h-[42px] max-h-[120px] resize-none text-[14px] flex-1 rounded-xl bg-muted/10 border-border/10 focus-visible:border-primary/20 focus-visible:bg-background transition-all",
               !windowStatus.isOpen && "opacity-50 cursor-not-allowed"
