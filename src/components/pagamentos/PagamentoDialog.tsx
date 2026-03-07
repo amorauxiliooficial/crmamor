@@ -20,8 +20,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useFornecedores } from "@/hooks/useFornecedores";
-import { useMotherContacts, useMotherContactActions } from "@/hooks/useMotherContacts";
-import { PhoneContactsEditor, PhoneEntry } from "@/components/mae/PhoneContactsEditor";
 import { normalizePhoneToE164BR } from "@/lib/phoneUtils";
 import { Loader2, Plus, Trash2, DollarSign, Calendar, FileText, Percent, Users, Phone } from "lucide-react";
 import { TipoPagamento, StatusParcela } from "@/types/pagamento";
@@ -74,31 +72,36 @@ export function PagamentoDialog({
   const [tipoPagamento, setTipoPagamento] = useState<TipoPagamento>("parcelado");
   const [parcelas, setParcelas] = useState<ParcelaForm[]>([{ ...DEFAULT_PARCELA }]);
 
-  // Phone contacts
-  const { data: existingContacts } = useMotherContacts(maeId);
-  const { addContact, deactivateContact, setPrimary: setPrimaryContact } = useMotherContactActions();
-  const [phones, setPhones] = useState<PhoneEntry[]>([]);
+  // Contact fields from mae_processo columns
+  const [contatos, setContatos] = useState({
+    contato_nome_1: "", contato_telefone_1: "",
+    contato_nome_2: "", contato_telefone_2: "",
+    contato_nome_3: "", contato_telefone_3: "",
+  });
+  const [contatoErrors, setContatoErrors] = useState<Record<string, string>>({});
 
+  // Load mae contact data
   useEffect(() => {
-    if (existingContacts && open) {
-      const formatE164Display = (e164: string) => {
-        const digits = e164.replace(/\D/g, "");
-        const local = digits.startsWith("55") ? digits.slice(2) : digits;
-        if (local.length === 11) return local.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
-        if (local.length === 10) return local.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
-        return e164;
-      };
-      const phoneContacts = existingContacts
-        .filter((c) => c.active && (c.contact_type === "phone" || c.contact_type === "whatsapp"))
-        .slice(0, 3)
-        .map((c): PhoneEntry => ({
-          id: c.id,
-          value: formatE164Display(c.value_e164),
-          isPrimary: c.is_primary,
-        }));
-      setPhones(phoneContacts.length > 0 ? phoneContacts : [{ value: "", isPrimary: true }]);
-    }
-  }, [existingContacts, open]);
+    if (!open || !maeId) return;
+    const loadContatos = async () => {
+      const { data } = await supabase
+        .from("mae_processo")
+        .select("contato_nome_1, contato_telefone_1, contato_nome_2, contato_telefone_2, contato_nome_3, contato_telefone_3")
+        .eq("id", maeId)
+        .single();
+      if (data) {
+        setContatos({
+          contato_nome_1: (data as any).contato_nome_1 || "",
+          contato_telefone_1: (data as any).contato_telefone_1 || "",
+          contato_nome_2: (data as any).contato_nome_2 || "",
+          contato_telefone_2: (data as any).contato_telefone_2 || "",
+          contato_nome_3: (data as any).contato_nome_3 || "",
+          contato_telefone_3: (data as any).contato_telefone_3 || "",
+        });
+      }
+    };
+    loadContatos();
+  }, [open, maeId]);
 
   useEffect(() => {
     if (open && existingPagamentoId) {
@@ -222,6 +225,7 @@ export function PagamentoDialog({
 
   const handleSave = async () => {
     if (!user) return;
+    if (!validateContatos()) return;
     setSaving(true);
     try {
       const valorTotal = calcularValorTotal();
@@ -327,41 +331,19 @@ export function PagamentoDialog({
         }
       }
 
-      // Save phone contact changes
+      // Save contact fields to mae_processo
       try {
-        const currentIds = phones.filter((p) => p.id).map((p) => p.id!);
-        const toDeactivate = (existingContacts || [])
-          .filter((c) => c.active && (c.contact_type === "phone" || c.contact_type === "whatsapp") && !currentIds.includes(c.id));
-        for (const c of toDeactivate) {
-          await deactivateContact.mutateAsync({ id: c.id, mae_id: maeId });
-        }
-        for (const phone of phones) {
-          const digits = phone.value.replace(/\D/g, "");
-          if (digits.length < 10) continue;
-          if (!phone.id) {
-            await addContact.mutateAsync({
-              mae_id: maeId,
-              contact_type: "phone",
-              value: phone.value,
-              is_primary: phone.isPrimary,
-            });
-          }
-        }
-        const primaryEntry = phones.find((p) => p.isPrimary && p.id);
-        if (primaryEntry?.id) {
-          await setPrimaryContact.mutateAsync({ id: primaryEntry.id, mae_id: maeId });
-        }
-        // Sync primary to mae_processo
-        const primaryPhone = phones.find((p) => p.isPrimary && p.value.replace(/\D/g, "").length >= 10);
-        if (primaryPhone) {
-          const e164 = normalizePhoneToE164BR(primaryPhone.value);
-          await supabase.from("mae_processo").update({
-            telefone: primaryPhone.value,
-            telefone_e164: e164,
-          } as any).eq("id", maeId);
-        }
+        const cleanPhone = (v: string) => v ? v.replace(/\D/g, "") : "";
+        await supabase.from("mae_processo").update({
+          contato_nome_1: contatos.contato_nome_1 || null,
+          contato_telefone_1: cleanPhone(contatos.contato_telefone_1) || null,
+          contato_nome_2: contatos.contato_nome_2 || null,
+          contato_telefone_2: cleanPhone(contatos.contato_telefone_2) || null,
+          contato_nome_3: contatos.contato_nome_3 || null,
+          contato_telefone_3: cleanPhone(contatos.contato_telefone_3) || null,
+        } as any).eq("id", maeId);
       } catch (e) {
-        console.warn("Error syncing contacts from payment dialog", e);
+        console.warn("Error saving contacts", e);
       }
 
       toast({
@@ -384,6 +366,27 @@ export function PagamentoDialog({
     }
   };
 
+  const formatPhoneMask = (value: string) => {
+    const numbers = value.replace(/\D/g, "").slice(0, 11);
+    if (numbers.length <= 10) {
+      return numbers.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{4})(\d)/, "$1-$2");
+    }
+    return numbers.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d)/, "$1-$2");
+  };
+
+  const validateContatos = (): boolean => {
+    const errors: Record<string, string> = {};
+    for (const n of [1, 2, 3]) {
+      const telKey = `contato_telefone_${n}` as keyof typeof contatos;
+      const raw = contatos[telKey].replace(/\D/g, "");
+      if (raw.length > 0 && (raw.length < 10 || raw.length > 11)) {
+        errors[telKey] = "Telefone inválido (10-11 dígitos)";
+      }
+    }
+    setContatoErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
@@ -402,13 +405,48 @@ export function PagamentoDialog({
           </div>
         ) : (
           <div className="space-y-5">
-            {/* Phone contacts */}
-            <div className="rounded-xl border bg-muted/30 p-4">
-              <PhoneContactsEditor
-                phones={phones}
-                onChange={setPhones}
-                maxPhones={3}
-              />
+            {/* Contatos para cobrança */}
+            <div className="rounded-xl border bg-muted/30 p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-primary" />
+                <Label className="text-sm font-semibold">Contatos para cobrança</Label>
+              </div>
+              {[1, 2, 3].map((n) => {
+                const nomeKey = `contato_nome_${n}` as keyof typeof contatos;
+                const telKey = `contato_telefone_${n}` as keyof typeof contatos;
+                const telError = contatoErrors[telKey];
+                return (
+                  <div key={n} className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
+                      Contato {n}
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        placeholder="Nome (opcional)"
+                        value={contatos[nomeKey]}
+                        onChange={(e) => setContatos((prev) => ({ ...prev, [nomeKey]: e.target.value }))}
+                        className="h-9"
+                      />
+                      <div>
+                        <Input
+                          placeholder="(00) 00000-0000"
+                          value={contatos[telKey]}
+                          onChange={(e) => {
+                            const formatted = formatPhoneMask(e.target.value);
+                            setContatos((prev) => ({ ...prev, [telKey]: formatted }));
+                            // Clear error on change
+                            if (contatoErrors[telKey]) {
+                              setContatoErrors((prev) => ({ ...prev, [telKey]: "" }));
+                            }
+                          }}
+                          className={`h-9 ${telError ? "border-destructive" : ""}`}
+                        />
+                        {telError && <span className="text-[10px] text-destructive">{telError}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Config section - only tipo now */}
