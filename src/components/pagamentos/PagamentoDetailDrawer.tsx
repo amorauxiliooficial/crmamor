@@ -33,6 +33,7 @@ interface PagamentoDetailDrawerProps {
   pagamento: {
     id: string;
     mae_id: string;
+    user_id?: string;
     mae_nome: string;
     mae_cpf: string;
     tipo_pagamento: string;
