@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Edit, Trash2, Plus, Receipt, CheckCircle2, Clock, AlertTriangle, XCircle } from "lucide-react";
+import { Edit, Trash2, Plus, Receipt, CheckCircle2, Clock, AlertTriangle, XCircle, Filter } from "lucide-react";
 import { format, parseISO, getMonth, getYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useDespesas } from "@/hooks/useDespesas";
@@ -28,6 +28,7 @@ import { DespesaFormDialog } from "./DespesaFormDialog";
 import type { Despesa, StatusTransacao } from "@/types/despesa";
 import { CATEGORIA_LABELS, RECORRENCIA_LABELS } from "@/types/despesa";
 import type { FilterPeriod } from "./FinanceiroFilters";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface DespesasTableProps {
   period?: FilterPeriod;
@@ -35,37 +36,61 @@ interface DespesasTableProps {
   selectedYear?: number;
 }
 
+type StatusFilter = "todos" | "pago" | "pendente" | "atrasado";
+
 export function DespesasTable({ period = "mes", selectedMonth, selectedYear }: DespesasTableProps) {
   const { despesas, deleteDespesa, isLoading } = useDespesas();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDespesa, setEditingDespesa] = useState<Despesa | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [despesaToDelete, setDespesaToDelete] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
 
-  // Filtrar despesas pelo período selecionado (usando data de lançamento created_at)
+  // Filtrar despesas pelo período selecionado (usando data_vencimento)
   const filteredDespesas = useMemo(() => {
-    if (period === "total") return despesas;
+    let filtered = despesas;
 
-    const now = new Date();
-    const filterMonth = selectedMonth ?? getMonth(now);
-    const filterYear = selectedYear ?? getYear(now);
+    // Filtro por período usando data_vencimento
+    if (period !== "total") {
+      const now = new Date();
+      const filterMonth = selectedMonth ?? getMonth(now);
+      const filterYear = selectedYear ?? getYear(now);
 
-    return despesas.filter((d) => {
-      try {
-        const createdDate = parseISO(d.created_at);
-        const despesaMonth = getMonth(createdDate);
-        const despesaYear = getYear(createdDate);
+      filtered = filtered.filter((d) => {
+        try {
+          const vencDate = parseISO(d.data_vencimento);
+          const despesaMonth = getMonth(vencDate);
+          const despesaYear = getYear(vencDate);
 
-        if (period === "ano") {
-          return despesaYear === filterYear;
+          if (period === "ano") {
+            return despesaYear === filterYear;
+          }
+          return despesaYear === filterYear && despesaMonth === filterMonth;
+        } catch {
+          return false;
         }
-        // period === "mes"
-        return despesaYear === filterYear && despesaMonth === filterMonth;
-      } catch {
-        return false;
-      }
-    });
-  }, [despesas, period, selectedMonth, selectedYear]);
+      });
+    }
+
+    // Filtro por status
+    if (statusFilter !== "todos") {
+      filtered = filtered.filter((d) => {
+        if (statusFilter === "pendente") {
+          return d.status === "pendente" || d.status === "atrasado";
+        }
+        return d.status === statusFilter;
+      });
+    }
+
+    return filtered;
+  }, [despesas, period, selectedMonth, selectedYear, statusFilter]);
+
+  // Resumo do período filtrado
+  const resumo = useMemo(() => {
+    const totalPago = filteredDespesas.filter(d => d.status === "pago").reduce((s, d) => s + d.valor, 0);
+    const totalPendente = filteredDespesas.filter(d => d.status === "pendente" || d.status === "atrasado").reduce((s, d) => s + d.valor, 0);
+    return { totalPago, totalPendente, total: totalPago + totalPendente };
+  }, [filteredDespesas]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -136,15 +161,53 @@ export function DespesasTable({ period = "mes", selectedMonth, selectedYear }: D
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base md:text-lg flex items-center gap-2">
-            <Receipt className="h-4 w-4 text-destructive" />
-            Despesas
-          </CardTitle>
-          <Button size="sm" onClick={handleNew}>
-            <Plus className="h-4 w-4 mr-1" />
-            Nova Despesa
-          </Button>
+        <CardHeader className="flex flex-col gap-3 pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base md:text-lg flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-destructive" />
+              Despesas
+            </CardTitle>
+            <Button size="sm" onClick={handleNew}>
+              <Plus className="h-4 w-4 mr-1" />
+              Nova Despesa
+            </Button>
+          </div>
+
+          {/* Status filter + resumo */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <ToggleGroup
+              type="single"
+              value={statusFilter}
+              onValueChange={(v) => v && setStatusFilter(v as StatusFilter)}
+              className="justify-start"
+            >
+              <ToggleGroupItem value="todos" size="sm" className="text-xs h-7 px-2.5">
+                Todos
+              </ToggleGroupItem>
+              <ToggleGroupItem value="pago" size="sm" className="text-xs h-7 px-2.5">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Pagos
+              </ToggleGroupItem>
+              <ToggleGroupItem value="pendente" size="sm" className="text-xs h-7 px-2.5">
+                <Clock className="h-3 w-3 mr-1" />
+                Pendentes
+              </ToggleGroupItem>
+            </ToggleGroup>
+            
+            <div className="flex gap-3 text-xs">
+              <span className="text-primary font-semibold">
+                Pago: {formatCurrency(resumo.totalPago)}
+              </span>
+              <span className="text-muted-foreground">|</span>
+              <span className="text-destructive font-semibold">
+                Pendente: {formatCurrency(resumo.totalPendente)}
+              </span>
+              <span className="text-muted-foreground">|</span>
+              <span className="font-semibold">
+                Total: {formatCurrency(resumo.total)}
+              </span>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {/* Desktop Table */}
