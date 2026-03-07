@@ -47,6 +47,7 @@ export function DespesasTable({ period = "mes", selectedMonth, selectedYear }: D
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [despesaToDelete, setDespesaToDelete] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
+  const [searchFornecedor, setSearchFornecedor] = useState("");
 
   // Filtrar despesas pelo período selecionado (usando data_vencimento)
   const filteredDespesas = useMemo(() => {
