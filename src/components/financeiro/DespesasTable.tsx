@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -45,6 +47,7 @@ export function DespesasTable({ period = "mes", selectedMonth, selectedYear }: D
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [despesaToDelete, setDespesaToDelete] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
+  const [searchFornecedor, setSearchFornecedor] = useState("");
 
   // Filtrar despesas pelo período selecionado (usando data_vencimento)
   const filteredDespesas = useMemo(() => {
@@ -82,8 +85,17 @@ export function DespesasTable({ period = "mes", selectedMonth, selectedYear }: D
       });
     }
 
+    // Filtro por busca de fornecedor/descrição
+    if (searchFornecedor.trim()) {
+      const term = searchFornecedor.toLowerCase();
+      filtered = filtered.filter((d) =>
+        (d.fornecedor || "").toLowerCase().includes(term) ||
+        d.descricao.toLowerCase().includes(term)
+      );
+    }
+
     return filtered;
-  }, [despesas, period, selectedMonth, selectedYear, statusFilter]);
+  }, [despesas, period, selectedMonth, selectedYear, statusFilter, searchFornecedor]);
 
   // Resumo do período filtrado
   const resumo = useMemo(() => {
@@ -167,10 +179,21 @@ export function DespesasTable({ period = "mes", selectedMonth, selectedYear }: D
               <Receipt className="h-4 w-4 text-destructive" />
               Despesas
             </CardTitle>
-            <Button size="sm" onClick={handleNew}>
-              <Plus className="h-4 w-4 mr-1" />
-              Nova Despesa
-            </Button>
+            <div className="flex items-center gap-2">
+              <div className="relative w-48">
+                <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar fornecedor..."
+                  value={searchFornecedor}
+                  onChange={(e) => setSearchFornecedor(e.target.value)}
+                  className="pl-8 h-8 text-sm"
+                />
+              </div>
+              <Button size="sm" onClick={handleNew}>
+                <Plus className="h-4 w-4 mr-1" />
+                Nova Despesa
+              </Button>
+            </div>
           </div>
 
           {/* Status filter + resumo */}
