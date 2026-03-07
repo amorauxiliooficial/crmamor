@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useFornecedores } from "@/hooks/useFornecedores";
-import { Loader2, Plus, Trash2, DollarSign, Calendar, FileText, Percent } from "lucide-react";
+import { Loader2, Plus, Trash2, DollarSign, Calendar, FileText, Percent, Users } from "lucide-react";
 import { TipoPagamento, StatusParcela } from "@/types/pagamento";
 import { processarComissaoParcela } from "@/lib/comissaoUtils";
 
