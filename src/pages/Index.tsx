@@ -118,13 +118,12 @@ const Index = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Set default user filter based on role
+  // Set default user filter - all users see everything by default
   useEffect(() => {
     if (user && selectedUserId === null) {
-      // Admin sees all users by default, non-admin sees only their own
-      setSelectedUserId(isAdmin ? "all" : user.id);
+      setSelectedUserId("all");
     }
-  }, [user, isAdmin, selectedUserId]);
+  }, [user, selectedUserId]);
 
   // Helper to get display name for user
   const getUserDisplayName = (u: { id: string; full_name: string | null; email: string | null }) => {
@@ -179,7 +178,9 @@ const Index = () => {
         const normalizedName = removeAccents(mae.nome_mae?.toLowerCase() || "");
         const nameMatch = normalizedName.includes(query);
         const cpfMatch = queryDigits.length > 0 && mae.cpf?.replace(/\D/g, "").includes(queryDigits);
-        return nameMatch || cpfMatch;
+        const phoneMatch = queryDigits.length > 0 && mae.telefone?.replace(/\D/g, "").includes(queryDigits);
+        const statusMatch = removeAccents((mae.status_processo || "").toLowerCase()).includes(query);
+        return nameMatch || cpfMatch || phoneMatch || statusMatch;
       });
     }
     
@@ -284,30 +285,28 @@ const Index = () => {
 
       <main className="p-3 md:p-6 space-y-3 md:space-y-6 overflow-x-hidden">
 
-        {/* User Selector - Only visible for admins */}
-        {isAdmin && (
-          <section className="flex items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground">Usuário:</span>
-            <Select value={selectedUserId || "all"} onValueChange={setSelectedUserId}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Todos os usuários" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os usuários</SelectItem>
-                {users.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {getUserDisplayName(u)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedUserId && selectedUserId !== "all" && (
-              <Badge variant="secondary" className="gap-1">
-                {getUserDisplayName(users.find((u) => u.id === selectedUserId) || { id: "", full_name: null, email: null })}
-              </Badge>
-            )}
-          </section>
-        )}
+        {/* Responsável Filter - Visible for all users */}
+        <section className="flex items-center gap-3">
+          <span className="text-sm font-medium text-muted-foreground">Responsável:</span>
+          <Select value={selectedUserId || "all"} onValueChange={setSelectedUserId}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {users.map((u) => (
+                <SelectItem key={u.id} value={u.id}>
+                  {getUserDisplayName(u)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedUserId && selectedUserId !== "all" && (
+            <Button variant="ghost" size="sm" onClick={() => setSelectedUserId("all")} className="text-xs">
+              Limpar
+            </Button>
+          )}
+        </section>
 
         {/* Metas Dashboard - replaces old stats cards */}
         <section className="tour-stats">
