@@ -161,15 +161,53 @@ export function DespesasTable({ period = "mes", selectedMonth, selectedYear }: D
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base md:text-lg flex items-center gap-2">
-            <Receipt className="h-4 w-4 text-destructive" />
-            Despesas
-          </CardTitle>
-          <Button size="sm" onClick={handleNew}>
-            <Plus className="h-4 w-4 mr-1" />
-            Nova Despesa
-          </Button>
+        <CardHeader className="flex flex-col gap-3 pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base md:text-lg flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-destructive" />
+              Despesas
+            </CardTitle>
+            <Button size="sm" onClick={handleNew}>
+              <Plus className="h-4 w-4 mr-1" />
+              Nova Despesa
+            </Button>
+          </div>
+
+          {/* Status filter + resumo */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <ToggleGroup
+              type="single"
+              value={statusFilter}
+              onValueChange={(v) => v && setStatusFilter(v as StatusFilter)}
+              className="justify-start"
+            >
+              <ToggleGroupItem value="todos" size="sm" className="text-xs h-7 px-2.5">
+                Todos
+              </ToggleGroupItem>
+              <ToggleGroupItem value="pago" size="sm" className="text-xs h-7 px-2.5">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Pagos
+              </ToggleGroupItem>
+              <ToggleGroupItem value="pendente" size="sm" className="text-xs h-7 px-2.5">
+                <Clock className="h-3 w-3 mr-1" />
+                Pendentes
+              </ToggleGroupItem>
+            </ToggleGroup>
+            
+            <div className="flex gap-3 text-xs">
+              <span className="text-primary font-semibold">
+                Pago: {formatCurrency(resumo.totalPago)}
+              </span>
+              <span className="text-muted-foreground">|</span>
+              <span className="text-destructive font-semibold">
+                Pendente: {formatCurrency(resumo.totalPendente)}
+              </span>
+              <span className="text-muted-foreground">|</span>
+              <span className="font-semibold">
+                Total: {formatCurrency(resumo.total)}
+              </span>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {/* Desktop Table */}
