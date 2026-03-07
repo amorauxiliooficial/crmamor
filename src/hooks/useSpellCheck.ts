@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import Typo from "typo-js";
 
 interface MisspelledWord {
   word: string;
@@ -7,42 +6,175 @@ interface MisspelledWord {
   suggestions: string[];
 }
 
-let dictionaryPromise: Promise<Typo> | null = null;
+// Common Portuguese words that are frequently misspelled (without accents)
+// Maps misspelling -> correct forms
+const COMMON_CORRECTIONS: Record<string, string[]> = {
+  // Missing accents
+  "voce": ["você"],
+  "voces": ["vocês"],
+  "nos": ["nós"],
+  "ate": ["até"],
+  "ja": ["já"],
+  "so": ["só"],
+  "ai": ["aí"],
+  "entao": ["então"],
+  "nao": ["não"],
+  "tambem": ["também"],
+  "obrigacao": ["obrigação"],
+  "informacao": ["informação"],
+  "situacao": ["situação"],
+  "atencao": ["atenção"],
+  "opcao": ["opção"],
+  "autorizacao": ["autorização"],
+  "documentacao": ["documentação"],
+  "previdenciario": ["previdenciário"],
+  "necessario": ["necessário"],
+  "salario": ["salário"],
+  "maternidade": [], // correct
+  "beneficio": ["benefício"],
+  "possivel": ["possível"],
+  "disponivel": ["disponível"],
+  "horario": ["horário"],
+  "obrigado": [], // correct  
+  "obrigada": [], // correct
+  "esta": ["está"],
+  "e": ["é"],
+  "sera": ["será"],
+  "numero": ["número"],
+  "telefone": [], // correct
+  "analise": ["análise"],
+  "mae": ["mãe"],
+  "maes": ["mães"],
+  "tera": ["terá"],
+  "alguem": ["alguém"],
+  "ninguem": ["ninguém"],
+  // "tambem" already defined above
+  "alem": ["além"],
+  "porem": ["porém"],
+  "atraves": ["através"],
+  "duvida": ["dúvida"],
+  "duvidas": ["dúvidas"],
+  "pagina": ["página"],
+  "ultimo": ["último"],
+  "ultima": ["última"],
+  "proxima": ["próxima"],
+  "proximo": ["próximo"],
+  "sabado": ["sábado"],
+  "periodo": ["período"],
+  "inicio": ["início"],
+  "apos": ["após"],
+  "valido": ["válido"],
+  "valida": ["válida"],
+  "unico": ["único"],
+  "unica": ["única"],
+  "otimo": ["ótimo"],
+  "otima": ["ótima"],
+  "obrigatorio": ["obrigatório"],
+  "obrigatoria": ["obrigatória"],
+  "solicitacao": ["solicitação"],
+  "anexacao": ["anexação"],
+  "verificacao": ["verificação"],
+  "comprovacao": ["comprovação"],
+  "contribuicao": ["contribuição"],
+  "contribuicoes": ["contribuições"],
+  "resolucao": ["resolução"],
+  "pendencia": ["pendência"],
+  "pendencias": ["pendências"],
+  "referencia": ["referência"],
+  "consequencia": ["consequência"],
+  "experiencia": ["experiência"],
+  "audiencia": ["audiência"],
+  "exigencia": ["exigência"],
+  "urgencia": ["urgência"],
+  "frequencia": ["frequência"],
+  "transferencia": ["transferência"],
+  "diferenca": ["diferença"],
+  "licenca": ["licença"],
+  "aguardem": [], // correct
+  "previdencia": ["previdência"],
+  "providencia": ["providência"],
+  "permanencia": ["permanência"],
+  
+  // Common typos / letter swaps
+  "cmo": ["como"],
+  "qeu": ["que"],
+  "qeuro": ["quero"],
+  "ola": ["olá"],
+  "oq": ["o que", "o quê"],
+  "pq": ["por que", "porque"],
+  "tb": ["também"],
+  "tbm": ["também"],
+  "vc": ["você"],
+  "vcs": ["vocês"],
+  "hj": ["hoje"],
+  "msg": ["mensagem"],
+  "qdo": ["quando"],
+  "qnd": ["quando"],
+  "td": ["tudo"],
+  "tdo": ["tudo"],
+  "mto": ["muito"],
+  "mt": ["muito"],
+  "obrg": ["obrigado", "obrigada"],
+  "obg": ["obrigado", "obrigada"],
+  "blz": ["beleza"],
+  "flw": ["falou"],
+  "cmg": ["comigo"],
+  "ctg": ["contigo"],
+  "dps": ["depois"],
+  "msm": ["mesmo"],
+  "ngm": ["ninguém"],
+  "agr": ["agora"],
+  "tmb": ["também"],
+  "dnv": ["de novo"],
+  "pfv": ["por favor"],
+  "pfvr": ["por favor"],
+  "nd": ["nada"],
+  "bom dia": [], // correct
+  
+  // More accent errors
+  "mae maternidade": [], // skip compound
+  "elegivel": ["elegível"],
+  "inelegivel": ["inelegível"],
+  "indeferida": [], // correct
+  "protocolo": [], // correct
+  "recurso": [], // correct
+  "judicial": [], // correct
+  "encerrado": [], // correct
+  "rescisao": ["rescisão"],
+  "contrato": [], // correct
+  "comissao": ["comissão"],
+  "financeiro": [], // correct
+  "orcamento": ["orçamento"],
+  "servico": ["serviço"],
+  "servicos": ["serviços"],
+  "preco": ["preço"],
+  "precos": ["preços"],
+  "acoes": ["ações"],
+  "condicao": ["condição"],
+  "condicoes": ["condições"],
+  "excecao": ["exceção"],
+  "instrucao": ["instrução"],
+  "instrucoes": ["instruções"],
+  "protecao": ["proteção"],
+  "producao": ["produção"],
+};
 
-function loadDictionary(): Promise<Typo> {
-  if (!dictionaryPromise) {
-    dictionaryPromise = Promise.all([
-      fetch("/dictionaries/pt_BR.aff").then((r) => r.text()),
-      fetch("/dictionaries/pt_BR.dic").then((r) => r.text()),
-    ]).then(
-      ([aff, dic]) =>
-        new Typo("pt_BR", aff, dic, { platform: "any" })
-    );
-  }
-  return dictionaryPromise;
-}
-
-// Preload dictionary on import
-loadDictionary();
+// Build a Set of known-good words (Portuguese)
+const KNOWN_GOOD = new Set([
+  "a", "o", "e", "de", "do", "da", "em", "um", "uma", "os", "as", "no", "na",
+  "por", "com", "para", "se", "que", "ou", "ao", "dos", "das", "nos", "nas",
+  "seu", "sua", "ele", "ela", "eu", "me", "te", "lo", "la", "lhe",
+  "sim", "ok", "oi", "ei", "ah", "oh",
+]);
 
 const WORD_REGEX = /[a-zA-ZÀ-ÿ]+/g;
 const MIN_WORD_LENGTH = 2;
 
-export function useSpellCheck(text: string, debounceMs = 400) {
+export function useSpellCheck(text: string, debounceMs = 300) {
   const [misspelled, setMisspelled] = useState<MisspelledWord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const dictRef = useRef<Typo | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    loadDictionary().then((d) => {
-      dictRef.current = d;
-      setIsLoading(false);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (isLoading || !dictRef.current) return;
     if (!text.trim()) {
       setMisspelled([]);
       return;
@@ -50,7 +182,6 @@ export function useSpellCheck(text: string, debounceMs = 400) {
 
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      const dict = dictRef.current!;
       const results: MisspelledWord[] = [];
       let match: RegExpExecArray | null;
       
@@ -58,12 +189,14 @@ export function useSpellCheck(text: string, debounceMs = 400) {
       while ((match = WORD_REGEX.exec(text)) !== null) {
         const word = match[0];
         if (word.length < MIN_WORD_LENGTH) continue;
-        // Skip ALL CAPS words (acronyms)
-        if (word === word.toUpperCase()) continue;
+        if (word === word.toUpperCase()) continue; // skip acronyms
         
-        if (!dict.check(word)) {
-          const suggestions = dict.suggest(word, 3);
-          results.push({ word, index: match.index, suggestions });
+        const lower = word.toLowerCase();
+        if (KNOWN_GOOD.has(lower)) continue;
+        
+        const corrections = COMMON_CORRECTIONS[lower];
+        if (corrections !== undefined && corrections.length > 0) {
+          results.push({ word, index: match.index, suggestions: corrections });
         }
       }
       
@@ -71,16 +204,15 @@ export function useSpellCheck(text: string, debounceMs = 400) {
     }, debounceMs);
 
     return () => clearTimeout(timerRef.current);
-  }, [text, isLoading, debounceMs]);
+  }, [text, debounceMs]);
 
   const applySuggestion = useCallback(
     (original: string, suggestion: string, currentText: string): string => {
-      // Replace first occurrence of the misspelled word
       const regex = new RegExp(`\\b${original}\\b`, "i");
       return currentText.replace(regex, suggestion);
     },
     []
   );
 
-  return { misspelled, isLoading, applySuggestion };
+  return { misspelled, isLoading: false, applySuggestion };
 }
