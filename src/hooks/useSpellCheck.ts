@@ -48,7 +48,7 @@ const COMMON_CORRECTIONS: Record<string, string[]> = {
   "tera": ["terá"],
   "alguem": ["alguém"],
   "ninguem": ["ninguém"],
-  "tambem": ["também"],
+  // "tambem" already defined above
   "alem": ["além"],
   "porem": ["porém"],
   "atraves": ["através"],
