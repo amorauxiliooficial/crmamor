@@ -52,9 +52,10 @@ export function ResumoFinanceiroCards({
         const valor = p.valor || 0;
         if (p.status === "pago") {
           receitasRecebidas += valor;
-        } else {
+        } else if (p.status === "pendente") {
           receitasPendentes += valor;
         }
+        // inadimplente parcelas are excluded from both totals
       });
     });
 
