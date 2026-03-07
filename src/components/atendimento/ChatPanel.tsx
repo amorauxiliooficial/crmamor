@@ -498,6 +498,7 @@ export function ChatPanel({
     try { const v = localStorage.getItem("atd_favorited"); return v ? new Set(JSON.parse(v)) : new Set(); } catch { return new Set(); }
   });
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const spellCheck = useSpellCheck(msgText);
   const { toast } = useToast();
 
   const filteredReplies = useMemo(() => {
