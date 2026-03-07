@@ -30,10 +30,11 @@ export async function processarComissaoParcela({
   const percentual = percentualComissao ?? PERCENTUAL_COMISSAO_PADRAO;
   const valorComissao = Math.round(valorParcela * percentual) / 100;
 
-  // Calculate day 5 of next month
+  // Calculate day 5 of current month (or next month if we're past day 5)
   const now = new Date();
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 5);
-  const dataVencimento = nextMonth.toISOString().split("T")[0];
+  const day5ThisMonth = new Date(now.getFullYear(), now.getMonth(), 5);
+  const target = now.getDate() > 5 ? new Date(now.getFullYear(), now.getMonth() + 1, 5) : day5ThisMonth;
+  const dataVencimento = target.toISOString().split("T")[0];
 
   // Resolve fornecedor name if not provided
   let nomeFornecedor = fornecedorNome;
