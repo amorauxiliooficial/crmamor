@@ -12,18 +12,28 @@ let dictionaryPromise: Promise<Typo> | null = null;
 function loadDictionary(): Promise<Typo> {
   if (!dictionaryPromise) {
     dictionaryPromise = Promise.all([
-      fetch("/dictionaries/pt_BR.aff").then((r) => r.text()),
-      fetch("/dictionaries/pt_BR.dic").then((r) => r.text()),
-    ]).then(
-      ([aff, dic]) =>
-        new Typo("pt_BR", aff, dic, { platform: "any" })
-    );
+      fetch("/dictionaries/pt_BR.aff").then((r) => {
+        if (!r.ok) throw new Error(`Failed to load .aff: ${r.status}`);
+        return r.text();
+      }),
+      fetch("/dictionaries/pt_BR.dic").then((r) => {
+        if (!r.ok) throw new Error(`Failed to load .dic: ${r.status}`);
+        return r.text();
+      }),
+    ]).then(([aff, dic]) => {
+      console.log("[SpellCheck] Dictionary loaded, aff length:", aff.length, "dic length:", dic.length);
+      const typo = new Typo("pt_BR", aff, dic, { platform: "any" });
+      // Quick test
+      console.log("[SpellCheck] Test 'voce':", typo.check("voce"), "suggestions:", typo.suggest("voce", 3));
+      console.log("[SpellCheck] Test 'você':", typo.check("você"));
+      return typo;
+    }).catch((err) => {
+      console.error("[SpellCheck] Failed to load dictionary:", err);
+      throw err;
+    });
   }
   return dictionaryPromise;
 }
-
-// Preload dictionary on import
-loadDictionary();
 
 const WORD_REGEX = /[a-zA-ZÀ-ÿ]+/g;
 const MIN_WORD_LENGTH = 2;
@@ -37,6 +47,8 @@ export function useSpellCheck(text: string, debounceMs = 400) {
   useEffect(() => {
     loadDictionary().then((d) => {
       dictRef.current = d;
+      setIsLoading(false);
+    }).catch(() => {
       setIsLoading(false);
     });
   }, []);
@@ -75,7 +87,6 @@ export function useSpellCheck(text: string, debounceMs = 400) {
 
   const applySuggestion = useCallback(
     (original: string, suggestion: string, currentText: string): string => {
-      // Replace first occurrence of the misspelled word
       const regex = new RegExp(`\\b${original}\\b`, "i");
       return currentText.replace(regex, suggestion);
     },
