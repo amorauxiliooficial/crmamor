@@ -45,7 +45,7 @@ const MIN_WORD_LENGTH = 2;
 export function useSpellCheck(text: string, debounceMs = 400) {
   const [misspelled, setMisspelled] = useState<MisspelledWord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const dictRef = useRef<Typo | null>(null);
+  const dictRef = useRef<TypoInstance | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
