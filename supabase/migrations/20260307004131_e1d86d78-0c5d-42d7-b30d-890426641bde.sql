@@ -1,0 +1,1 @@
+ALTER TABLE public.despesas ADD COLUMN parcela_origem_id uuid REFERENCES public.parcelas_pagamento(id) ON DELETE SET NULL;

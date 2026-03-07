@@ -575,6 +575,7 @@ export type Database = {
           fornecedor_id: string | null
           id: string
           observacoes: string | null
+          parcela_origem_id: string | null
           recorrencia: Database["public"]["Enums"]["tipo_recorrencia"]
           status: Database["public"]["Enums"]["status_transacao"]
           updated_at: string
@@ -592,6 +593,7 @@ export type Database = {
           fornecedor_id?: string | null
           id?: string
           observacoes?: string | null
+          parcela_origem_id?: string | null
           recorrencia?: Database["public"]["Enums"]["tipo_recorrencia"]
           status?: Database["public"]["Enums"]["status_transacao"]
           updated_at?: string
@@ -609,6 +611,7 @@ export type Database = {
           fornecedor_id?: string | null
           id?: string
           observacoes?: string | null
+          parcela_origem_id?: string | null
           recorrencia?: Database["public"]["Enums"]["tipo_recorrencia"]
           status?: Database["public"]["Enums"]["status_transacao"]
           updated_at?: string
@@ -621,6 +624,13 @@ export type Database = {
             columns: ["fornecedor_id"]
             isOneToOne: false
             referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_parcela_origem_id_fkey"
+            columns: ["parcela_origem_id"]
+            isOneToOne: false
+            referencedRelation: "parcelas_pagamento"
             referencedColumns: ["id"]
           },
         ]
