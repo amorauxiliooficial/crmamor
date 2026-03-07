@@ -47,11 +47,11 @@ export async function processarComissaoParcela({
   const { data: existing } = await supabase
     .from("despesas")
     .select("id")
-    .eq("parcela_origem_id" as any, parcelaId)
+    .eq("parcela_origem_id", parcelaId as any)
     .limit(1);
 
   if (existing && existing.length > 0) {
-    return valorComissao; // Already exists, just return
+    return valorComissao;
   }
 
   // Create despesa entry
