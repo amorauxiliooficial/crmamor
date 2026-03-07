@@ -20,8 +20,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useFornecedores } from "@/hooks/useFornecedores";
-import { useMotherContacts, useMotherContactActions } from "@/hooks/useMotherContacts";
-import { PhoneContactsEditor, PhoneEntry } from "@/components/mae/PhoneContactsEditor";
 import { normalizePhoneToE164BR } from "@/lib/phoneUtils";
 import { Loader2, Plus, Trash2, DollarSign, Calendar, FileText, Percent, Users, Phone } from "lucide-react";
 import { TipoPagamento, StatusParcela } from "@/types/pagamento";
