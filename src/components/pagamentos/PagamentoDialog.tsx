@@ -211,6 +211,19 @@ export function PagamentoDialog({
           .eq("id", existingPagamentoId);
         if (updateError) throw updateError;
 
+        // Delete old commission despesas linked to old parcelas before deleting parcelas
+        const { data: oldParcelas } = await supabase
+          .from("parcelas_pagamento")
+          .select("id")
+          .eq("pagamento_id", existingPagamentoId);
+        if (oldParcelas && oldParcelas.length > 0) {
+          const oldIds = oldParcelas.map((p: any) => p.id);
+          await supabase
+            .from("despesas")
+            .delete()
+            .eq("categoria", "comissao_parceiro" as any)
+            .in("parcela_origem_id", oldIds as any);
+        }
         await supabase.from("parcelas_pagamento").delete().eq("pagamento_id", existingPagamentoId);
         for (const parcela of parcelas) {
           const perc = parseFloat(parcela.percentual_comissao) || 10;
