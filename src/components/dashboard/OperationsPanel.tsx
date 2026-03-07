@@ -115,7 +115,7 @@ export function OperationsPanel({
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-sm">Atendimento</h3>
                 {stats.totalUnread > 0 && (
-                  <Badge className="bg-emerald-500 text-primary-foreground text-xs px-1.5 py-0 h-5">
+                  <Badge className="bg-primary text-primary-foreground text-xs px-1.5 py-0 h-5">
                     {stats.totalUnread}
                   </Badge>
                 )}
@@ -147,7 +147,7 @@ export function OperationsPanel({
           </Card>
           <Card className="border-border/50">
             <CardContent className="p-3 text-center">
-              <Clock className="h-4 w-4 text-amber-500 mx-auto mb-1" />
+              <Clock className="h-4 w-4 text-primary mx-auto mb-1" />
               <p className="text-xl font-bold tabular-nums">{stats.waitingResponse}</p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Aguardando</p>
             </CardContent>
