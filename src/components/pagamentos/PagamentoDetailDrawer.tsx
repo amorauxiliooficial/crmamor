@@ -135,7 +135,8 @@ function DrawerBody({
     if (error) {
       toast({ variant: "destructive", title: "Erro", description: error.message });
     } else {
-      // Auto-calculate commission and create despesa
+      // Auto-calculate commission using pagamento's percentual_comissao
+      const perc = pagamento.percentual_comissao ?? 10;
       try {
         if (parcela.valor && parcela.valor > 0) {
           await processarComissaoParcela({
@@ -144,12 +145,14 @@ function DrawerBody({
             userId: pagamento.user_id || "",
             maeNome: pagamento.mae_nome,
             numeroParcela: parcela.numero_parcela,
+            percentualComissao: perc,
           });
         }
       } catch (err) {
         console.error("Erro ao processar comissão:", err);
       }
-      toast({ title: "Parcela registrada como paga", description: parcela.valor ? `Comissão de 10% (${formatCurrency(parcela.valor * 0.1)}) programada para dia 5` : undefined });
+      const comissaoValor = parcela.valor ? parcela.valor * perc / 100 : 0;
+      toast({ title: "Parcela registrada como paga", description: parcela.valor ? `Comissão de ${perc}% (${formatCurrency(comissaoValor)}) programada para dia 5` : undefined });
       onUpdated();
     }
     setSavingParcelaId(null);
@@ -226,7 +229,7 @@ function DrawerBody({
                 </div>
                 {parcela.status === "pago" && parcela.valor_comissao != null && parcela.valor_comissao > 0 && (
                   <div className="col-span-2">
-                    <span className="text-muted-foreground text-xs">Comissão (10%)</span>
+                    <span className="text-muted-foreground text-xs">Comissão ({pagamento.percentual_comissao ?? 10}%)</span>
                     <p className="font-medium text-primary">{formatCurrency(parcela.valor_comissao)} — vence dia 5</p>
                   </div>
                 )}
