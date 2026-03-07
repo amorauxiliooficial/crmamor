@@ -327,6 +327,43 @@ export function PagamentoDialog({
         }
       }
 
+      // Save phone contact changes
+      try {
+        const currentIds = phones.filter((p) => p.id).map((p) => p.id!);
+        const toDeactivate = (existingContacts || [])
+          .filter((c) => c.active && (c.contact_type === "phone" || c.contact_type === "whatsapp") && !currentIds.includes(c.id));
+        for (const c of toDeactivate) {
+          await deactivateContact.mutateAsync({ id: c.id, mae_id: maeId });
+        }
+        for (const phone of phones) {
+          const digits = phone.value.replace(/\D/g, "");
+          if (digits.length < 10) continue;
+          if (!phone.id) {
+            await addContact.mutateAsync({
+              mae_id: maeId,
+              contact_type: "phone",
+              value: phone.value,
+              is_primary: phone.isPrimary,
+            });
+          }
+        }
+        const primaryEntry = phones.find((p) => p.isPrimary && p.id);
+        if (primaryEntry?.id) {
+          await setPrimaryContact.mutateAsync({ id: primaryEntry.id, mae_id: maeId });
+        }
+        // Sync primary to mae_processo
+        const primaryPhone = phones.find((p) => p.isPrimary && p.value.replace(/\D/g, "").length >= 10);
+        if (primaryPhone) {
+          const e164 = normalizePhoneToE164BR(primaryPhone.value);
+          await supabase.from("mae_processo").update({
+            telefone: primaryPhone.value,
+            telefone_e164: e164,
+          } as any).eq("id", maeId);
+        }
+      } catch (e) {
+        console.warn("Error syncing contacts from payment dialog", e);
+      }
+
       toast({
         title: "Sucesso",
         description: existingPagamentoId ? "Pagamento atualizado com sucesso" : "Pagamento cadastrado com sucesso",
@@ -365,6 +402,15 @@ export function PagamentoDialog({
           </div>
         ) : (
           <div className="space-y-5">
+            {/* Phone contacts */}
+            <div className="rounded-xl border bg-muted/30 p-4">
+              <PhoneContactsEditor
+                phones={phones}
+                onChange={setPhones}
+                maxPhones={3}
+              />
+            </div>
+
             {/* Config section - only tipo now */}
             <div className="rounded-xl border bg-muted/30 p-4">
               <div className="space-y-1.5">
