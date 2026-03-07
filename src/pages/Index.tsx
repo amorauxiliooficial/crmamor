@@ -682,11 +682,6 @@ const Index = () => {
         open={onboardingOpen}
         onOpenChange={setOnboardingOpen}
       />
-
-      <MetasConfigDialog
-        open={metasConfigOpen}
-        onOpenChange={setMetasConfigOpen}
-      />
     </div>
   );
 };
