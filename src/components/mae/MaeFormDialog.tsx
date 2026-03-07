@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { normalizePhoneToE164BR } from "@/lib/phoneUtils";
+import { PhoneContactsEditor, PhoneEntry } from "@/components/mae/PhoneContactsEditor";
+import { useMotherContactActions } from "@/hooks/useMotherContacts";
 
 interface MaeFormDialogProps {
   open: boolean;
@@ -114,6 +116,8 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [phones, setPhones] = useState<PhoneEntry[]>([{ value: "", isPrimary: true }]);
+  const { addContact } = useMotherContactActions();
 
   const [formData, setFormData] = useState<MaeFormData>(getEmptyFormData);
 
@@ -121,6 +125,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
   useEffect(() => {
     if (open) {
       setFormData(getEmptyFormData());
+      setPhones([{ value: "", isPrimary: true }]);
     }
   }, [open]);
 
