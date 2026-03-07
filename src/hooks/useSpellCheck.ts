@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Typo from "typo-js";
 
 type TypoInstance = { check: (word: string) => boolean; suggest: (word: string, limit?: number) => string[] };
+
+interface MisspelledWord {
   word: string;
   index: number;
   suggestions: string[];
