@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useFornecedores } from "@/hooks/useFornecedores";
-import { Loader2, Plus, Trash2, DollarSign, Calendar, FileText, Percent } from "lucide-react";
+import { Loader2, Plus, Trash2, DollarSign, Calendar, FileText, Percent, Users } from "lucide-react";
 import { TipoPagamento, StatusParcela } from "@/types/pagamento";
 import { processarComissaoParcela } from "@/lib/comissaoUtils";
 
@@ -300,75 +300,86 @@ export function PagamentoDialog({
           </div>
         ) : (
           <div className="space-y-5">
-            {/* Header fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Tipo de Pagamento</Label>
-                <Select value={tipoPagamento} onValueChange={handleTipoPagamentoChange}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="z-[100]">
-                    <SelectItem value="a_vista">Mãe Única</SelectItem>
-                    <SelectItem value="parcelado">Mãe Parcelada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Percent className="h-3 w-3" /> Comissão (%)
-                </Label>
-                <Input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="100"
-                  value={percentualComissao}
-                  onChange={(e) => setPercentualComissao(e.target.value)}
-                  placeholder="10"
-                  className="h-9"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Fornecedor (comissão)</Label>
-                <Select value={fornecedorId} onValueChange={setFornecedorId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar fornecedor" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[100]">
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {fornecedoresAtivos.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>
-                        {f.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Config section */}
+            <div className="rounded-xl border bg-muted/30 p-4 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Tipo</Label>
+                  <Select value={tipoPagamento} onValueChange={handleTipoPagamentoChange}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[100]">
+                      <SelectItem value="a_vista">Mãe Única</SelectItem>
+                      <SelectItem value="parcelado">Mãe Parcelada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
+                    <Percent className="h-3 w-3" /> Comissão
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      max="100"
+                      value={percentualComissao}
+                      onChange={(e) => setPercentualComissao(e.target.value)}
+                      placeholder="10"
+                      className="h-10 pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
+                    <Users className="h-3 w-3" /> Fornecedor
+                  </Label>
+                  <Select value={fornecedorId} onValueChange={setFornecedorId}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Selecionar" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[100]">
+                      <SelectItem value="none">Nenhum</SelectItem>
+                      {fornecedoresAtivos.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
-            {/* Parcelas header */}
-            <div className="flex items-center justify-between flex-wrap gap-2">
+            {/* Parcelas header with summary badges */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h3 className="text-sm font-semibold">Parcelas ({parcelas.length})</h3>
+                {tipoPagamento === "parcelado" && (
+                  <Button type="button" variant="outline" size="sm" onClick={addParcela} className="h-8">
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Adicionar
+                  </Button>
+                )}
+              </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-semibold">Parcelas ({parcelas.length})</span>
-                <Badge variant="outline" className="font-mono text-xs">
+                <Badge variant="outline" className="font-mono text-xs h-6 px-2.5">
+                  <DollarSign className="h-3 w-3 mr-1" />
                   Nosso: {formatCurrency(calcularValorTotal())}
                 </Badge>
-                <Badge variant="outline" className="font-mono text-xs border-primary/30 text-primary">
+                <Badge variant="outline" className="font-mono text-xs h-6 px-2.5 border-primary/30 text-primary">
                   Mãe recebe: {formatCurrency(calcularTotalAReceber())}
                 </Badge>
                 {calcularComissaoTotal() > 0 && (
-                  <Badge variant="secondary" className="font-mono text-xs">
+                  <Badge className="font-mono text-xs h-6 px-2.5 bg-accent text-accent-foreground">
+                    <Percent className="h-3 w-3 mr-1" />
                     Comissão: {formatCurrency(calcularComissaoTotal())}
                   </Badge>
                 )}
               </div>
-              {tipoPagamento === "parcelado" && (
-                <Button type="button" variant="outline" size="sm" onClick={addParcela}>
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  Adicionar
-                </Button>
-              )}
             </div>
 
             {/* Parcelas cards */}
@@ -376,13 +387,26 @@ export function PagamentoDialog({
               {parcelas.map((parcela, index) => (
                 <div
                   key={index}
-                  className="relative rounded-xl border bg-card p-4 space-y-3 transition-shadow hover:shadow-sm"
+                  className={`relative rounded-xl border p-4 space-y-3 transition-all ${
+                    parcela.status === "pago" 
+                      ? "bg-primary/5 border-primary/20" 
+                      : parcela.status === "inadimplente"
+                      ? "bg-destructive/5 border-destructive/20"
+                      : "bg-card"
+                  }`}
                 >
-                  {/* Parcela number badge + delete */}
+                  {/* Parcela header */}
                   <div className="flex items-center justify-between">
-                    <Badge variant="secondary" className="text-xs font-semibold px-2.5">
-                      {parcela.numero_parcela}ª parcela
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs font-semibold px-2.5">
+                        {parcela.numero_parcela}ª parcela
+                      </Badge>
+                      {parcela.status === "pago" && parcela.valor && (
+                        <span className="text-[10px] text-muted-foreground">
+                          Comissão: {formatCurrency(Math.round(parseFloat(parcela.valor) * (parseFloat(percentualComissao) || 0)) / 100)}
+                        </span>
+                      )}
+                    </div>
                     {tipoPagamento === "parcelado" && parcelas.length > 1 && (
                       <Button
                         type="button"
@@ -396,9 +420,8 @@ export function PagamentoDialog({
                     )}
                   </div>
 
-                  {/* Fields */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {/* Valor */}
+                  {/* Fields - row 1: Valor, Data, Status */}
+                  <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <DollarSign className="h-3 w-3" /> Valor (R$)
@@ -410,10 +433,9 @@ export function PagamentoDialog({
                         value={parcela.valor}
                         onChange={(e) => updateParcela(index, "valor", e.target.value)}
                         placeholder="0,00"
-                        className="h-9"
+                        className="h-10"
                       />
                     </div>
-                    {/* Data */}
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" /> Data
@@ -422,21 +444,20 @@ export function PagamentoDialog({
                         type="date"
                         value={parcela.data_pagamento}
                         onChange={(e) => updateParcela(index, "data_pagamento", e.target.value)}
-                        className="h-9"
+                        className="h-10"
                       />
                     </div>
-                    {/* Status */}
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground">Status</Label>
                       <Select
                         value={parcela.status}
                         onValueChange={(value) => updateParcela(index, "status", value)}
                       >
-                        <SelectTrigger className="h-9">
+                        <SelectTrigger className="h-10">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className={`shrink-0 inline-block h-2 w-2 rounded-full ${
-                              parcela.status === "pago" ? "bg-emerald-500" :
-                              parcela.status === "inadimplente" ? "bg-destructive" : "bg-amber-500"
+                              parcela.status === "pago" ? "bg-primary" :
+                              parcela.status === "inadimplente" ? "bg-destructive" : "bg-muted-foreground/50"
                             }`} />
                             <span className="truncate"><SelectValue /></span>
                           </div>
@@ -448,10 +469,13 @@ export function PagamentoDialog({
                         </SelectContent>
                       </Select>
                     </div>
-                    {/* Valor a receber */}
+                  </div>
+
+                  {/* Fields - row 2: Mãe recebe, Obs */}
+                  <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" /> Mãe recebe (R$)
+                        <DollarSign className="h-3 w-3" /> Mãe recebe
                       </Label>
                       <Input
                         type="number"
@@ -460,20 +484,18 @@ export function PagamentoDialog({
                         value={parcela.valor_a_receber}
                         onChange={(e) => updateParcela(index, "valor_a_receber", e.target.value)}
                         placeholder="Conferência"
-                        className="h-9"
+                        className="h-10"
                       />
-                      <p className="text-[10px] text-muted-foreground leading-tight">Apenas referência.</p>
                     </div>
-                    {/* Observações */}
                     <div className="space-y-1 col-span-2">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
-                        <FileText className="h-3 w-3" /> Obs.
+                        <FileText className="h-3 w-3" /> Observações
                       </Label>
                       <Input
                         value={parcela.observacoes}
                         onChange={(e) => updateParcela(index, "observacoes", e.target.value)}
-                        placeholder="Observações"
-                        className="h-9"
+                        placeholder="Observações da parcela"
+                        className="h-10"
                       />
                     </div>
                   </div>
@@ -482,7 +504,7 @@ export function PagamentoDialog({
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-2 border-t">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
