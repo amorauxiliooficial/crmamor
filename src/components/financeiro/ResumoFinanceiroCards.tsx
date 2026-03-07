@@ -76,7 +76,7 @@ export function ResumoFinanceiroCards({
     });
 
     const saldoRecebido = receitasRecebidas - despesasPagas;
-    const saldoPrevisto = (receitasRecebidas + receitasPendentes) - (despesasPagas + despesasPendentes);
+    const saldoPrevisto = (receitasRecebidas + receitasPendentes + receitasInadimplentes) - (despesasPagas + despesasPendentes);
 
     return {
       receitasRecebidas,
