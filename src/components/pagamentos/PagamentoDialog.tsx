@@ -301,8 +301,8 @@ export function PagamentoDialog({
         ) : (
           <div className="space-y-5">
             {/* Config section */}
-            <div className="rounded-xl border bg-muted/30 p-4 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Tipo</Label>
                   <Select value={tipoPagamento} onValueChange={handleTipoPagamentoChange}>
@@ -333,24 +333,24 @@ export function PagamentoDialog({
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
-                    <Users className="h-3 w-3" /> Fornecedor
-                  </Label>
-                  <Select value={fornecedorId} onValueChange={setFornecedorId}>
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Selecionar" />
-                    </SelectTrigger>
-                    <SelectContent className="z-[100]">
-                      <SelectItem value="none">Nenhum</SelectItem>
-                      {fornecedoresAtivos.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>
-                          {f.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
+                  <Users className="h-3 w-3" /> Fornecedor (comissão)
+                </Label>
+                <Select value={fornecedorId} onValueChange={setFornecedorId}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Selecionar fornecedor" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {fornecedoresAtivos.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {f.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -420,8 +420,8 @@ export function PagamentoDialog({
                     )}
                   </div>
 
-                  {/* Fields - row 1: Valor, Data, Status */}
-                  <div className="grid grid-cols-3 gap-2">
+                  {/* Fields - row 1: Valor, Data */}
+                  <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <DollarSign className="h-3 w-3" /> Valor (R$)
@@ -447,6 +447,10 @@ export function PagamentoDialog({
                         className="h-10"
                       />
                     </div>
+                  </div>
+
+                  {/* Fields - row 2: Status, Mãe recebe */}
+                  <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground">Status</Label>
                       <Select
@@ -469,10 +473,6 @@ export function PagamentoDialog({
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-
-                  {/* Fields - row 2: Mãe recebe, Obs */}
-                  <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <DollarSign className="h-3 w-3" /> Mãe recebe
@@ -487,17 +487,19 @@ export function PagamentoDialog({
                         className="h-10"
                       />
                     </div>
-                    <div className="space-y-1 col-span-2">
-                      <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
-                        <FileText className="h-3 w-3" /> Observações
-                      </Label>
-                      <Input
-                        value={parcela.observacoes}
-                        onChange={(e) => updateParcela(index, "observacoes", e.target.value)}
-                        placeholder="Observações da parcela"
-                        className="h-10"
-                      />
-                    </div>
+                  </div>
+
+                  {/* Fields - row 3: Observações full width */}
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                      <FileText className="h-3 w-3" /> Observações
+                    </Label>
+                    <Input
+                      value={parcela.observacoes}
+                      onChange={(e) => updateParcela(index, "observacoes", e.target.value)}
+                      placeholder="Observações da parcela"
+                      className="h-10"
+                    />
                   </div>
                 </div>
               ))}
