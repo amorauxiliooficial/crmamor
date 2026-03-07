@@ -19,7 +19,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, Plus, Trash2, DollarSign, Calendar, FileText } from "lucide-react";
+import { useFornecedores } from "@/hooks/useFornecedores";
+import { Loader2, Plus, Trash2, DollarSign, Calendar, FileText, Percent } from "lucide-react";
 import { TipoPagamento, StatusParcela } from "@/types/pagamento";
 import { processarComissaoParcela } from "@/lib/comissaoUtils";
 
@@ -50,12 +51,6 @@ const DEFAULT_PARCELA: ParcelaForm = {
   valor_a_receber: "",
 };
 
-const statusConfig: Record<StatusParcela, { label: string; className: string }> = {
-  pendente: { label: "Pendente", className: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30" },
-  pago: { label: "Pago", className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30" },
-  inadimplente: { label: "Inadimplente", className: "bg-destructive/15 text-destructive border-destructive/30" },
-};
-
 export function PagamentoDialog({
   open,
   onOpenChange,
@@ -66,10 +61,13 @@ export function PagamentoDialog({
 }: PagamentoDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { fornecedoresAtivos } = useFornecedores();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tipoPagamento, setTipoPagamento] = useState<TipoPagamento>("parcelado");
   const [parcelas, setParcelas] = useState<ParcelaForm[]>([{ ...DEFAULT_PARCELA }]);
+  const [percentualComissao, setPercentualComissao] = useState("10");
+  const [fornecedorId, setFornecedorId] = useState<string>("");
 
   useEffect(() => {
     if (open && existingPagamentoId) {
@@ -77,6 +75,8 @@ export function PagamentoDialog({
     } else if (open && !existingPagamentoId) {
       setTipoPagamento("parcelado");
       setParcelas([{ ...DEFAULT_PARCELA }]);
+      setPercentualComissao("10");
+      setFornecedorId("");
     }
   }, [open, existingPagamentoId]);
 
@@ -108,6 +108,22 @@ export function PagamentoDialog({
     }
 
     setTipoPagamento(pagamento.tipo_pagamento as TipoPagamento);
+    setPercentualComissao(String(pagamento.percentual_comissao ?? 10));
+    
+    // Try to find fornecedor_id from existing commission despesas
+    const { data: despesaComissao } = await supabase
+      .from("despesas")
+      .select("fornecedor_id")
+      .eq("categoria", "comissao_parceiro" as any)
+      .not("fornecedor_id", "is", null)
+      .limit(1);
+    
+    if (despesaComissao && despesaComissao.length > 0 && despesaComissao[0].fornecedor_id) {
+      setFornecedorId(despesaComissao[0].fornecedor_id);
+    } else {
+      setFornecedorId("");
+    }
+
     if (parcelasData && parcelasData.length > 0) {
       setParcelas(
         parcelasData.map((p: any) => ({
@@ -151,11 +167,23 @@ export function PagamentoDialog({
     return parcelas.reduce((acc, p) => acc + (parseFloat(p.valor_a_receber) || 0), 0);
   };
 
+  const calcularComissaoTotal = () => {
+    const perc = parseFloat(percentualComissao) || 0;
+    const totalPago = parcelas
+      .filter((p) => p.status === "pago")
+      .reduce((acc, p) => acc + (parseFloat(p.valor) || 0), 0);
+    return Math.round(totalPago * perc) / 100;
+  };
+
+  const selectedFornecedor = fornecedoresAtivos.find((f) => f.id === fornecedorId);
+
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
     try {
       const valorTotal = calcularValorTotal();
+      const perc = parseFloat(percentualComissao) || 10;
+
       if (existingPagamentoId) {
         const { error: updateError } = await supabase
           .from("pagamentos_mae")
@@ -163,6 +191,7 @@ export function PagamentoDialog({
             tipo_pagamento: tipoPagamento,
             total_parcelas: parcelas.length,
             valor_total: valorTotal || null,
+            percentual_comissao: perc,
           } as any)
           .eq("id", existingPagamentoId);
         if (updateError) throw updateError;
@@ -179,7 +208,6 @@ export function PagamentoDialog({
             valor_a_receber: parcela.valor_a_receber ? parseFloat(parcela.valor_a_receber) : null,
           } as any).select().single();
           if (insertError) throw insertError;
-          // Auto-process commission for parcelas marked as pago
           if (parcela.status === "pago" && parcela.valor && parseFloat(parcela.valor) > 0 && inserted) {
             await processarComissaoParcela({
               parcelaId: inserted.id,
@@ -187,6 +215,9 @@ export function PagamentoDialog({
               userId: user.id,
               maeNome,
               numeroParcela: parcela.numero_parcela,
+              percentualComissao: perc,
+              fornecedorId: fornecedorId || null,
+              fornecedorNome: selectedFornecedor?.nome || null,
             });
           }
         }
@@ -199,6 +230,7 @@ export function PagamentoDialog({
             tipo_pagamento: tipoPagamento,
             total_parcelas: parcelas.length,
             valor_total: valorTotal || null,
+            percentual_comissao: perc,
           } as any)
           .select()
           .single();
@@ -215,7 +247,6 @@ export function PagamentoDialog({
             valor_a_receber: parcela.valor_a_receber ? parseFloat(parcela.valor_a_receber) : null,
           } as any).select().single();
           if (insertError) throw insertError;
-          // Auto-process commission for parcelas marked as pago
           if (parcela.status === "pago" && parcela.valor && parseFloat(parcela.valor) > 0 && inserted) {
             await processarComissaoParcela({
               parcelaId: inserted.id,
@@ -223,6 +254,9 @@ export function PagamentoDialog({
               userId: user.id,
               maeNome,
               numeroParcela: parcela.numero_parcela,
+              percentualComissao: perc,
+              fornecedorId: fornecedorId || null,
+              fornecedorNome: selectedFornecedor?.nome || null,
             });
           }
         }
@@ -267,7 +301,7 @@ export function PagamentoDialog({
         ) : (
           <div className="space-y-5">
             {/* Header fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Tipo de Pagamento</Label>
                 <Select value={tipoPagamento} onValueChange={handleTipoPagamentoChange}>
@@ -277,6 +311,37 @@ export function PagamentoDialog({
                   <SelectContent className="z-[100]">
                     <SelectItem value="a_vista">Mãe Única</SelectItem>
                     <SelectItem value="parcelado">Mãe Parcelada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Percent className="h-3 w-3" /> Comissão (%)
+                </Label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="100"
+                  value={percentualComissao}
+                  onChange={(e) => setPercentualComissao(e.target.value)}
+                  placeholder="10"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Fornecedor (comissão)</Label>
+                <Select value={fornecedorId} onValueChange={setFornecedorId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar fornecedor" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {fornecedoresAtivos.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {f.nome}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -292,6 +357,11 @@ export function PagamentoDialog({
                 <Badge variant="outline" className="font-mono text-xs border-primary/30 text-primary">
                   Mãe recebe: {formatCurrency(calcularTotalAReceber())}
                 </Badge>
+                {calcularComissaoTotal() > 0 && (
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    Comissão: {formatCurrency(calcularComissaoTotal())}
+                  </Badge>
+                )}
               </div>
               {tipoPagamento === "parcelado" && (
                 <Button type="button" variant="outline" size="sm" onClick={addParcela}>
@@ -326,7 +396,7 @@ export function PagamentoDialog({
                     )}
                   </div>
 
-                  {/* Fields - 2 rows on mobile, single row on desktop */}
+                  {/* Fields */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {/* Valor */}
                     <div className="space-y-1">
