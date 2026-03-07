@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 import Typo from "typo-js";
 
-interface MisspelledWord {
+type TypoInstance = { check: (word: string) => boolean; suggest: (word: string, limit?: number) => string[] };
   word: string;
   index: number;
   suggestions: string[];
 }
 
-let dictionaryPromise: Promise<Typo> | null = null;
+let dictionaryPromise: Promise<TypoInstance> | null = null;
 
-function loadDictionary(): Promise<Typo> {
+function loadDictionary(): Promise<TypoInstance> {
   if (!dictionaryPromise) {
     dictionaryPromise = Promise.all([
       fetch("/dictionaries/pt_BR.aff").then((r) => {
