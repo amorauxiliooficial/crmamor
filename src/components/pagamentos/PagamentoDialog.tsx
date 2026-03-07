@@ -79,6 +79,7 @@ export function PagamentoDialog({
     contato_nome_3: "", contato_telefone_3: "",
   });
   const [contatoErrors, setContatoErrors] = useState<Record<string, string>>({});
+  const [visibleContatos, setVisibleContatos] = useState(1);
 
   // Load mae contact data
   useEffect(() => {
@@ -90,14 +91,19 @@ export function PagamentoDialog({
         .eq("id", maeId)
         .single();
       if (data) {
+        const d = data as any;
         setContatos({
-          contato_nome_1: (data as any).contato_nome_1 || "",
-          contato_telefone_1: (data as any).contato_telefone_1 || "",
-          contato_nome_2: (data as any).contato_nome_2 || "",
-          contato_telefone_2: (data as any).contato_telefone_2 || "",
-          contato_nome_3: (data as any).contato_nome_3 || "",
-          contato_telefone_3: (data as any).contato_telefone_3 || "",
+          contato_nome_1: d.contato_nome_1 || "",
+          contato_telefone_1: d.contato_telefone_1 || "",
+          contato_nome_2: d.contato_nome_2 || "",
+          contato_telefone_2: d.contato_telefone_2 || "",
+          contato_nome_3: d.contato_nome_3 || "",
+          contato_telefone_3: d.contato_telefone_3 || "",
         });
+        // Show slots that already have data
+        const filled = [d.contato_telefone_3, d.contato_telefone_2, d.contato_telefone_1];
+        const count = filled[0] ? 3 : filled[1] ? 2 : 1;
+        setVisibleContatos(count);
       }
     };
     loadContatos();
