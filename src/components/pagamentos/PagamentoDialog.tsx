@@ -205,7 +205,7 @@ export function PagamentoDialog({
         if (pagError) throw pagError;
 
         for (const parcela of parcelas) {
-          const { error: insertError } = await supabase.from("parcelas_pagamento").insert({
+          const { data: inserted, error: insertError } = await supabase.from("parcelas_pagamento").insert({
             pagamento_id: newPagamento.id,
             numero_parcela: parcela.numero_parcela,
             data_pagamento: parcela.data_pagamento || null,
@@ -213,8 +213,18 @@ export function PagamentoDialog({
             observacoes: parcela.observacoes || null,
             valor: parcela.valor ? parseFloat(parcela.valor) : null,
             valor_a_receber: parcela.valor_a_receber ? parseFloat(parcela.valor_a_receber) : null,
-          } as any);
+          } as any).select().single();
           if (insertError) throw insertError;
+          // Auto-process commission for parcelas marked as pago
+          if (parcela.status === "pago" && parcela.valor && parseFloat(parcela.valor) > 0 && inserted) {
+            await processarComissaoParcela({
+              parcelaId: inserted.id,
+              valorParcela: parseFloat(parcela.valor),
+              userId: user.id,
+              maeNome,
+              numeroParcela: parcela.numero_parcela,
+            });
+          }
         }
       }
 
