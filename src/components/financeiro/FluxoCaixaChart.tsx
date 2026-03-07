@@ -29,7 +29,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
       
       pagamentos.forEach((pag) => {
         pag.parcelas.forEach((p) => {
-          if (!p.data_pagamento) return;
+          if (!p.data_pagamento || p.status === "inadimplente") return;
           try {
             const parcelaDate = parseISO(p.data_pagamento);
             if (parcelaDate >= monthStart && parcelaDate <= monthEnd) {
