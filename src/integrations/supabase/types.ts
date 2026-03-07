@@ -767,6 +767,12 @@ export type Database = {
         Row: {
           categoria_previdenciaria: Database["public"]["Enums"]["categoria_previdenciaria"]
           cep: string | null
+          contato_nome_1: string | null
+          contato_nome_2: string | null
+          contato_nome_3: string | null
+          contato_telefone_1: string | null
+          contato_telefone_2: string | null
+          contato_telefone_3: string | null
           contrato_assinado: boolean
           cpf: string
           created_at: string
@@ -802,6 +808,12 @@ export type Database = {
         Insert: {
           categoria_previdenciaria?: Database["public"]["Enums"]["categoria_previdenciaria"]
           cep?: string | null
+          contato_nome_1?: string | null
+          contato_nome_2?: string | null
+          contato_nome_3?: string | null
+          contato_telefone_1?: string | null
+          contato_telefone_2?: string | null
+          contato_telefone_3?: string | null
           contrato_assinado?: boolean
           cpf: string
           created_at?: string
@@ -837,6 +849,12 @@ export type Database = {
         Update: {
           categoria_previdenciaria?: Database["public"]["Enums"]["categoria_previdenciaria"]
           cep?: string | null
+          contato_nome_1?: string | null
+          contato_nome_2?: string | null
+          contato_nome_3?: string | null
+          contato_telefone_1?: string | null
+          contato_telefone_2?: string | null
+          contato_telefone_3?: string | null
           contrato_assinado?: boolean
           cpf?: string
           created_at?: string
