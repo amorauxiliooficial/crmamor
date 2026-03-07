@@ -162,26 +162,27 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
     const isNewAgent = (agent?.id ?? null) !== prevAgentIdRef.current;
     prevAgentIdRef.current = agent?.id ?? null;
 
-    if (agent) {
-      setName(agent.name); setModel(agent.model); setTone(agent.tone);
-      setMaxTokens(agent.max_tokens); setDepartments(agent.departments ?? []);
-      setSystemPrompt(agent.system_prompt ?? "");
-      setKnowledgeInstructions(agent.knowledge_instructions ?? "");
-      setKnowledgeFaq(agent.knowledge_faq ?? []);
-      setKnowledgeLinks(agent.knowledge_links ?? []);
-      setToolsConfig(agent.tools_config ?? {}); setIsActive(agent.is_active);
-    } else {
-      setName(""); setModel("gpt-4o-mini"); setTone("amigável e profissional");
-      setMaxTokens(300); setDepartments([]); setSystemPrompt("");
-      setKnowledgeInstructions(""); setKnowledgeFaq([]); setKnowledgeLinks([]);
-      setToolsConfig({}); setIsActive(true);
-    }
-    // Only reset tab/messages when switching to a different agent
+    // Only reset all fields when switching to a different agent or loading for first time
+    // Skip resetting when it's just an autosave-triggered update (same agent, dirty state was just cleared)
     if (isNewAgent) {
+      if (agent) {
+        setName(agent.name); setModel(agent.model); setTone(agent.tone);
+        setMaxTokens(agent.max_tokens); setDepartments(agent.departments ?? []);
+        setSystemPrompt(agent.system_prompt ?? "");
+        setKnowledgeInstructions(agent.knowledge_instructions ?? "");
+        setKnowledgeFaq(agent.knowledge_faq ?? []);
+        setKnowledgeLinks(agent.knowledge_links ?? []);
+        setToolsConfig(agent.tools_config ?? {}); setIsActive(agent.is_active);
+      } else {
+        setName(""); setModel("gpt-4o-mini"); setTone("amigável e profissional");
+        setMaxTokens(300); setDepartments([]); setSystemPrompt("");
+        setKnowledgeInstructions(""); setKnowledgeFaq([]); setKnowledgeLinks([]);
+        setToolsConfig({}); setIsActive(true);
+      }
       setTab("personality"); setPreviewInput(""); setPreviewMessages([]);
       setDeptSearch(""); setValidationErrors([]);
     }
-    setIsDirty(false);
+    // Always update the saved timestamp
     setLastSavedAt(agent?.updated_at ? new Date(agent.updated_at) : null);
   }, [agent]);
 
