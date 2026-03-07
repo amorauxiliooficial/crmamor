@@ -229,7 +229,7 @@ function DrawerBody({
                 </div>
                 {parcela.status === "pago" && parcela.valor_comissao != null && parcela.valor_comissao > 0 && (
                   <div className="col-span-2">
-                    <span className="text-muted-foreground text-xs">Comissão (10%)</span>
+                    <span className="text-muted-foreground text-xs">Comissão ({pagamento.percentual_comissao ?? 10}%)</span>
                     <p className="font-medium text-primary">{formatCurrency(parcela.valor_comissao)} — vence dia 5</p>
                   </div>
                 )}
