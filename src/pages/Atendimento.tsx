@@ -158,7 +158,7 @@ export default function Atendimento() {
   const [statusFilter, setStatusFilter] = useState<TabFilter | null>(null);
   const [atendenteFilter, setAtendenteFilter] = useState<"todos" | "meus">("todos");
   const [msgText, setMsgText] = useState("");
-  const [showContext, setShowContext] = useState(true);
+  const [showContext, setShowContext] = useState(false);
   const [showContextDrawer, setShowContextDrawer] = useState(false);
   const [mobileCrmDrawerOpen, setMobileCrmDrawerOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("conversas");
