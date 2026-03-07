@@ -8,6 +8,8 @@ import {
   Pin, Star, Reply, UserCheck, Tag, Bell, BellOff, Info,
   Lock, MessageSquareText,
 } from "lucide-react";
+import { useSpellCheck } from "@/hooks/useSpellCheck";
+import { SpellCheckBadge } from "@/components/atendimento/SpellCheckBadge";
 import { WindowBadge, useWindowStatus } from "@/components/atendimento/WindowBadge";
 import { SendTemplateDialog } from "@/components/atendimento/SendTemplateDialog";
 import { ConsumptionBadge } from "@/components/atendimento/ConsumptionBadge";
@@ -496,6 +498,7 @@ export function ChatPanel({
     try { const v = localStorage.getItem("atd_favorited"); return v ? new Set(JSON.parse(v)) : new Set(); } catch { return new Set(); }
   });
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const spellCheck = useSpellCheck(msgText);
   const { toast } = useToast();
 
   const filteredReplies = useMemo(() => {
@@ -1171,28 +1174,46 @@ export function ChatPanel({
             </TooltipProvider>
           </div>
 
-          <Textarea
-            ref={textareaRef}
-            placeholder={!windowStatus.isOpen ? "Janela fechada — use um template" : pendingFile ? "Legenda (opcional)..." : "Mensagem..."}
-            value={msgText}
-            onChange={(e) => {
-              onMsgTextChange(e.target.value);
-              e.target.style.height = "auto";
-              e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
-            }}
-            onKeyDown={handleKeyDown}
-            disabled={!windowStatus.isOpen}
-            spellCheck={true}
-            autoComplete="off"
-            autoCapitalize="sentences"
-            lang="pt-BR"
-            data-gramm="true"
-            className={cn(
-              "min-h-[42px] max-h-[120px] resize-none text-[14px] flex-1 rounded-xl bg-muted/10 border-border/10 focus-visible:border-primary/20 focus-visible:bg-background transition-all",
-              !windowStatus.isOpen && "opacity-50 cursor-not-allowed"
-            )}
-            rows={1}
-          />
+          <div className="flex-1 flex flex-col gap-0.5 min-w-0">
+            <Textarea
+              ref={textareaRef}
+              placeholder={!windowStatus.isOpen ? "Janela fechada — use um template" : pendingFile ? "Legenda (opcional)..." : "Mensagem..."}
+              value={msgText}
+              onChange={(e) => {
+                onMsgTextChange(e.target.value);
+                e.target.style.height = "auto";
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+              }}
+              onKeyDown={handleKeyDown}
+              disabled={!windowStatus.isOpen}
+              spellCheck={true}
+              autoComplete="off"
+              autoCapitalize="sentences"
+              lang="pt-BR"
+              data-gramm="true"
+              className={cn(
+                "min-h-[42px] max-h-[120px] resize-none text-[14px] flex-1 rounded-xl bg-muted/10 border-border/10 focus-visible:border-primary/20 focus-visible:bg-background transition-all",
+                !windowStatus.isOpen && "opacity-50 cursor-not-allowed"
+              )}
+              rows={1}
+            />
+            <SpellCheckBadge
+              misspelled={spellCheck.misspelled}
+              isLoading={spellCheck.isLoading}
+              onApplySuggestion={(original, suggestion) => {
+                onMsgTextChange(spellCheck.applySuggestion(original, suggestion, msgText));
+              }}
+              onApplyAll={() => {
+                let fixed = msgText;
+                for (const item of spellCheck.misspelled) {
+                  if (item.suggestions.length > 0) {
+                    fixed = spellCheck.applySuggestion(item.word, item.suggestions[0], fixed);
+                  }
+                }
+                onMsgTextChange(fixed);
+              }}
+            />
+          </div>
 
           {!msgText.trim() && !pendingFile ? (
             <AudioRecorder
