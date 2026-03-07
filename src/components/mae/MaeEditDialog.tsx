@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,8 @@ import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
 import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { MultiAtendentesSelect } from "@/components/mae/MultiAtendentesSelect";
+import { PhoneContactsEditor, PhoneEntry } from "@/components/mae/PhoneContactsEditor";
+import { useMotherContacts, useMotherContactActions } from "@/hooks/useMotherContacts";
 
 interface MaeEditDialogProps {
   mae: MaeProcesso | null;
