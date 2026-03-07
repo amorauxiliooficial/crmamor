@@ -225,6 +225,7 @@ export function PagamentoDialog({
 
   const handleSave = async () => {
     if (!user) return;
+    if (!validateContatos()) return;
     setSaving(true);
     try {
       const valorTotal = calcularValorTotal();
