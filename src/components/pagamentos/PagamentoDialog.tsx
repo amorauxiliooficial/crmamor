@@ -330,41 +330,19 @@ export function PagamentoDialog({
         }
       }
 
-      // Save phone contact changes
+      // Save contact fields to mae_processo
       try {
-        const currentIds = phones.filter((p) => p.id).map((p) => p.id!);
-        const toDeactivate = (existingContacts || [])
-          .filter((c) => c.active && (c.contact_type === "phone" || c.contact_type === "whatsapp") && !currentIds.includes(c.id));
-        for (const c of toDeactivate) {
-          await deactivateContact.mutateAsync({ id: c.id, mae_id: maeId });
-        }
-        for (const phone of phones) {
-          const digits = phone.value.replace(/\D/g, "");
-          if (digits.length < 10) continue;
-          if (!phone.id) {
-            await addContact.mutateAsync({
-              mae_id: maeId,
-              contact_type: "phone",
-              value: phone.value,
-              is_primary: phone.isPrimary,
-            });
-          }
-        }
-        const primaryEntry = phones.find((p) => p.isPrimary && p.id);
-        if (primaryEntry?.id) {
-          await setPrimaryContact.mutateAsync({ id: primaryEntry.id, mae_id: maeId });
-        }
-        // Sync primary to mae_processo
-        const primaryPhone = phones.find((p) => p.isPrimary && p.value.replace(/\D/g, "").length >= 10);
-        if (primaryPhone) {
-          const e164 = normalizePhoneToE164BR(primaryPhone.value);
-          await supabase.from("mae_processo").update({
-            telefone: primaryPhone.value,
-            telefone_e164: e164,
-          } as any).eq("id", maeId);
-        }
+        const cleanPhone = (v: string) => v ? v.replace(/\D/g, "") : "";
+        await supabase.from("mae_processo").update({
+          contato_nome_1: contatos.contato_nome_1 || null,
+          contato_telefone_1: cleanPhone(contatos.contato_telefone_1) || null,
+          contato_nome_2: contatos.contato_nome_2 || null,
+          contato_telefone_2: cleanPhone(contatos.contato_telefone_2) || null,
+          contato_nome_3: contatos.contato_nome_3 || null,
+          contato_telefone_3: cleanPhone(contatos.contato_telefone_3) || null,
+        } as any).eq("id", maeId);
       } catch (e) {
-        console.warn("Error syncing contacts from payment dialog", e);
+        console.warn("Error saving contacts", e);
       }
 
       toast({
