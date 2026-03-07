@@ -225,12 +225,27 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
         description: getUserFriendlyError(error),
       });
     } else if (data) {
+      // Save phone contacts to mother_contacts
+      const validPhones = phones.filter((p) => p.value.replace(/\D/g, "").length >= 10);
+      for (const phone of validPhones) {
+        try {
+          await addContact.mutateAsync({
+            mae_id: data.id,
+            contact_type: "phone",
+            value: phone.value,
+            is_primary: phone.isPrimary,
+          });
+        } catch (e) {
+          // non-blocking
+          console.warn("Failed to save contact", e);
+        }
+      }
+
       toast({
         title: "Sucesso!",
         description: `${data.nome_mae} cadastrada com sucesso.`,
       });
       
-      // Create the MaeProcesso object to pass back
       const createdMae: MaeProcesso = {
         id: data.id,
         nome_mae: data.nome_mae,
@@ -257,6 +272,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
       };
 
       setFormData(getEmptyFormData());
+      setPhones([{ value: "", isPrimary: true }]);
       onOpenChange(false);
       onSuccess(createdMae);
     }
