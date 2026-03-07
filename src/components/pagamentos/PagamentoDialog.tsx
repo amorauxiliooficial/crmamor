@@ -74,6 +74,32 @@ export function PagamentoDialog({
   const [tipoPagamento, setTipoPagamento] = useState<TipoPagamento>("parcelado");
   const [parcelas, setParcelas] = useState<ParcelaForm[]>([{ ...DEFAULT_PARCELA }]);
 
+  // Phone contacts
+  const { data: existingContacts } = useMotherContacts(maeId);
+  const { addContact, deactivateContact, setPrimary: setPrimaryContact } = useMotherContactActions();
+  const [phones, setPhones] = useState<PhoneEntry[]>([]);
+
+  useEffect(() => {
+    if (existingContacts && open) {
+      const formatE164Display = (e164: string) => {
+        const digits = e164.replace(/\D/g, "");
+        const local = digits.startsWith("55") ? digits.slice(2) : digits;
+        if (local.length === 11) return local.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+        if (local.length === 10) return local.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+        return e164;
+      };
+      const phoneContacts = existingContacts
+        .filter((c) => c.active && (c.contact_type === "phone" || c.contact_type === "whatsapp"))
+        .slice(0, 3)
+        .map((c): PhoneEntry => ({
+          id: c.id,
+          value: formatE164Display(c.value_e164),
+          isPrimary: c.is_primary,
+        }));
+      setPhones(phoneContacts.length > 0 ? phoneContacts : [{ value: "", isPrimary: true }]);
+    }
+  }, [existingContacts, open]);
+
   useEffect(() => {
     if (open && existingPagamentoId) {
       loadExistingPagamento();
