@@ -383,13 +383,48 @@ export function PagamentoDialog({
           </div>
         ) : (
           <div className="space-y-5">
-            {/* Phone contacts */}
-            <div className="rounded-xl border bg-muted/30 p-4">
-              <PhoneContactsEditor
-                phones={phones}
-                onChange={setPhones}
-                maxPhones={3}
-              />
+            {/* Contatos para cobrança */}
+            <div className="rounded-xl border bg-muted/30 p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-primary" />
+                <Label className="text-sm font-semibold">Contatos para cobrança</Label>
+              </div>
+              {[1, 2, 3].map((n) => {
+                const nomeKey = `contato_nome_${n}` as keyof typeof contatos;
+                const telKey = `contato_telefone_${n}` as keyof typeof contatos;
+                const telError = contatoErrors[telKey];
+                return (
+                  <div key={n} className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
+                      Contato {n}
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        placeholder="Nome (opcional)"
+                        value={contatos[nomeKey]}
+                        onChange={(e) => setContatos((prev) => ({ ...prev, [nomeKey]: e.target.value }))}
+                        className="h-9"
+                      />
+                      <div>
+                        <Input
+                          placeholder="(00) 00000-0000"
+                          value={contatos[telKey]}
+                          onChange={(e) => {
+                            const formatted = formatPhoneMask(e.target.value);
+                            setContatos((prev) => ({ ...prev, [telKey]: formatted }));
+                            // Clear error on change
+                            if (contatoErrors[telKey]) {
+                              setContatoErrors((prev) => ({ ...prev, [telKey]: "" }));
+                            }
+                          }}
+                          className={`h-9 ${telError ? "border-destructive" : ""}`}
+                        />
+                        {telError && <span className="text-[10px] text-destructive">{telError}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Config section - only tipo now */}
