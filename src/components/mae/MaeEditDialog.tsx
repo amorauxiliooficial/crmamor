@@ -56,12 +56,19 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
   // Sync contacts into phones state when loaded
   useEffect(() => {
     if (existingContacts && open) {
+      const formatE164Display = (e164: string) => {
+        const digits = e164.replace(/\D/g, "");
+        const local = digits.startsWith("55") ? digits.slice(2) : digits;
+        if (local.length === 11) return local.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+        if (local.length === 10) return local.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+        return e164;
+      };
       const phoneContacts = existingContacts
         .filter((c) => c.active && (c.contact_type === "phone" || c.contact_type === "whatsapp"))
         .slice(0, 3)
-        .map((c) => ({
+        .map((c): PhoneEntry => ({
           id: c.id,
-          value: formatPhoneDisplay(c.value_e164),
+          value: formatE164Display(c.value_e164),
           isPrimary: c.is_primary,
         }));
       if (phoneContacts.length === 0 && mae?.telefone) {
