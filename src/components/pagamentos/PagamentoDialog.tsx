@@ -40,6 +40,8 @@ interface ParcelaForm {
   observacoes: string;
   valor: string;
   valor_a_receber: string;
+  percentual_comissao: string;
+  fornecedor_id: string;
 }
 
 const DEFAULT_PARCELA: ParcelaForm = {
@@ -49,6 +51,8 @@ const DEFAULT_PARCELA: ParcelaForm = {
   observacoes: "",
   valor: "",
   valor_a_receber: "",
+  percentual_comissao: "10",
+  fornecedor_id: "",
 };
 
 export function PagamentoDialog({
@@ -66,8 +70,7 @@ export function PagamentoDialog({
   const [saving, setSaving] = useState(false);
   const [tipoPagamento, setTipoPagamento] = useState<TipoPagamento>("parcelado");
   const [parcelas, setParcelas] = useState<ParcelaForm[]>([{ ...DEFAULT_PARCELA }]);
-  const [percentualComissao, setPercentualComissao] = useState("10");
-  const [fornecedorId, setFornecedorId] = useState<string>("");
+  // percentualComissao and fornecedorId are now per-parcela
 
   useEffect(() => {
     if (open && existingPagamentoId) {
@@ -75,8 +78,6 @@ export function PagamentoDialog({
     } else if (open && !existingPagamentoId) {
       setTipoPagamento("parcelado");
       setParcelas([{ ...DEFAULT_PARCELA }]);
-      setPercentualComissao("10");
-      setFornecedorId("");
     }
   }, [open, existingPagamentoId]);
 
