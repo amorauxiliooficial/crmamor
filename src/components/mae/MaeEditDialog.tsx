@@ -47,6 +47,29 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedAtendentes, setSelectedAtendentes] = useState<string[]>([]);
   const [originalAtendentes, setOriginalAtendentes] = useState<string[]>([]);
+  const [phones, setPhones] = useState<PhoneEntry[]>([]);
+
+  // Load existing contacts
+  const { data: existingContacts } = useMotherContacts(mae?.id ?? null);
+  const { addContact, deactivateContact, setPrimary } = useMotherContactActions();
+
+  // Sync contacts into phones state when loaded
+  useEffect(() => {
+    if (existingContacts && open) {
+      const phoneContacts = existingContacts
+        .filter((c) => c.active && (c.contact_type === "phone" || c.contact_type === "whatsapp"))
+        .slice(0, 3)
+        .map((c) => ({
+          id: c.id,
+          value: formatPhoneDisplay(c.value_e164),
+          isPrimary: c.is_primary,
+        }));
+      if (phoneContacts.length === 0 && mae?.telefone) {
+        phoneContacts.push({ value: mae.telefone, isPrimary: true });
+      }
+      setPhones(phoneContacts.length > 0 ? phoneContacts : [{ value: "", isPrimary: true }]);
+    }
+  }, [existingContacts, open, mae?.telefone]);
   
   const [formData, setFormData] = useState({
     nome_mae: "",
