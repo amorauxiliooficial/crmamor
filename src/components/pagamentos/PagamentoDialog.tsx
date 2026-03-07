@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Plus, Trash2, DollarSign, Calendar, FileText } from "lucide-react";
 import { TipoPagamento, StatusParcela } from "@/types/pagamento";
+import { processarComissaoParcela } from "@/lib/comissaoUtils";
 
 interface PagamentoDialogProps {
   open: boolean;
