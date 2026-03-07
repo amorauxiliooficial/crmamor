@@ -20,7 +20,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useFornecedores } from "@/hooks/useFornecedores";
-import { Loader2, Plus, Trash2, DollarSign, Calendar, FileText, Percent, Users } from "lucide-react";
+import { useMotherContacts, useMotherContactActions } from "@/hooks/useMotherContacts";
+import { PhoneContactsEditor, PhoneEntry } from "@/components/mae/PhoneContactsEditor";
+import { normalizePhoneToE164BR } from "@/lib/phoneUtils";
+import { Loader2, Plus, Trash2, DollarSign, Calendar, FileText, Percent, Users, Phone } from "lucide-react";
 import { TipoPagamento, StatusParcela } from "@/types/pagamento";
 import { processarComissaoParcela } from "@/lib/comissaoUtils";
 
@@ -70,6 +73,32 @@ export function PagamentoDialog({
   const [saving, setSaving] = useState(false);
   const [tipoPagamento, setTipoPagamento] = useState<TipoPagamento>("parcelado");
   const [parcelas, setParcelas] = useState<ParcelaForm[]>([{ ...DEFAULT_PARCELA }]);
+
+  // Phone contacts
+  const { data: existingContacts } = useMotherContacts(maeId);
+  const { addContact, deactivateContact, setPrimary: setPrimaryContact } = useMotherContactActions();
+  const [phones, setPhones] = useState<PhoneEntry[]>([]);
+
+  useEffect(() => {
+    if (existingContacts && open) {
+      const formatE164Display = (e164: string) => {
+        const digits = e164.replace(/\D/g, "");
+        const local = digits.startsWith("55") ? digits.slice(2) : digits;
+        if (local.length === 11) return local.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+        if (local.length === 10) return local.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+        return e164;
+      };
+      const phoneContacts = existingContacts
+        .filter((c) => c.active && (c.contact_type === "phone" || c.contact_type === "whatsapp"))
+        .slice(0, 3)
+        .map((c): PhoneEntry => ({
+          id: c.id,
+          value: formatE164Display(c.value_e164),
+          isPrimary: c.is_primary,
+        }));
+      setPhones(phoneContacts.length > 0 ? phoneContacts : [{ value: "", isPrimary: true }]);
+    }
+  }, [existingContacts, open]);
 
   useEffect(() => {
     if (open && existingPagamentoId) {
@@ -298,6 +327,43 @@ export function PagamentoDialog({
         }
       }
 
+      // Save phone contact changes
+      try {
+        const currentIds = phones.filter((p) => p.id).map((p) => p.id!);
+        const toDeactivate = (existingContacts || [])
+          .filter((c) => c.active && (c.contact_type === "phone" || c.contact_type === "whatsapp") && !currentIds.includes(c.id));
+        for (const c of toDeactivate) {
+          await deactivateContact.mutateAsync({ id: c.id, mae_id: maeId });
+        }
+        for (const phone of phones) {
+          const digits = phone.value.replace(/\D/g, "");
+          if (digits.length < 10) continue;
+          if (!phone.id) {
+            await addContact.mutateAsync({
+              mae_id: maeId,
+              contact_type: "phone",
+              value: phone.value,
+              is_primary: phone.isPrimary,
+            });
+          }
+        }
+        const primaryEntry = phones.find((p) => p.isPrimary && p.id);
+        if (primaryEntry?.id) {
+          await setPrimaryContact.mutateAsync({ id: primaryEntry.id, mae_id: maeId });
+        }
+        // Sync primary to mae_processo
+        const primaryPhone = phones.find((p) => p.isPrimary && p.value.replace(/\D/g, "").length >= 10);
+        if (primaryPhone) {
+          const e164 = normalizePhoneToE164BR(primaryPhone.value);
+          await supabase.from("mae_processo").update({
+            telefone: primaryPhone.value,
+            telefone_e164: e164,
+          } as any).eq("id", maeId);
+        }
+      } catch (e) {
+        console.warn("Error syncing contacts from payment dialog", e);
+      }
+
       toast({
         title: "Sucesso",
         description: existingPagamentoId ? "Pagamento atualizado com sucesso" : "Pagamento cadastrado com sucesso",
@@ -336,6 +402,15 @@ export function PagamentoDialog({
           </div>
         ) : (
           <div className="space-y-5">
+            {/* Phone contacts */}
+            <div className="rounded-xl border bg-muted/30 p-4">
+              <PhoneContactsEditor
+                phones={phones}
+                onChange={setPhones}
+                maxPhones={3}
+              />
+            </div>
+
             {/* Config section - only tipo now */}
             <div className="rounded-xl border bg-muted/30 p-4">
               <div className="space-y-1.5">

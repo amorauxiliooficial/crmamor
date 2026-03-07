@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { normalizePhoneToE164BR } from "@/lib/phoneUtils";
+import { PhoneContactsEditor, PhoneEntry } from "@/components/mae/PhoneContactsEditor";
+import { useMotherContactActions } from "@/hooks/useMotherContacts";
 
 interface MaeFormDialogProps {
   open: boolean;
@@ -114,6 +116,8 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [phones, setPhones] = useState<PhoneEntry[]>([{ value: "", isPrimary: true }]);
+  const { addContact } = useMotherContactActions();
 
   const [formData, setFormData] = useState<MaeFormData>(getEmptyFormData);
 
@@ -121,6 +125,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
   useEffect(() => {
     if (open) {
       setFormData(getEmptyFormData());
+      setPhones([{ value: "", isPrimary: true }]);
     }
   }, [open]);
 
@@ -185,7 +190,9 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
       return;
     }
     
-    const phoneRaw = formData.telefone || null;
+    // Get primary phone for mae_processo backward compat
+    const primaryPhone = phones.find((p) => p.isPrimary && p.value.replace(/\D/g, "").length >= 10);
+    const phoneRaw = primaryPhone?.value || null;
     const phoneE164 = normalizePhoneToE164BR(phoneRaw);
 
     const { data, error } = await supabase.from("mae_processo").insert({
@@ -218,12 +225,27 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
         description: getUserFriendlyError(error),
       });
     } else if (data) {
+      // Save phone contacts to mother_contacts
+      const validPhones = phones.filter((p) => p.value.replace(/\D/g, "").length >= 10);
+      for (const phone of validPhones) {
+        try {
+          await addContact.mutateAsync({
+            mae_id: data.id,
+            contact_type: "phone",
+            value: phone.value,
+            is_primary: phone.isPrimary,
+          });
+        } catch (e) {
+          // non-blocking
+          console.warn("Failed to save contact", e);
+        }
+      }
+
       toast({
         title: "Sucesso!",
         description: `${data.nome_mae} cadastrada com sucesso.`,
       });
       
-      // Create the MaeProcesso object to pass back
       const createdMae: MaeProcesso = {
         id: data.id,
         nome_mae: data.nome_mae,
@@ -250,6 +272,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
       };
 
       setFormData(getEmptyFormData());
+      setPhones([{ value: "", isPrimary: true }]);
       onOpenChange(false);
       onSuccess(createdMae);
     }
@@ -291,13 +314,12 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="telefone">Telefone</Label>
-                <Input
-                  id="telefone"
-                  value={formData.telefone}
-                  onChange={(e) => setFormData({ ...formData, telefone: formatPhone(e.target.value) })}
-                  placeholder="(00) 00000-0000"
+              <div className="md:col-span-2">
+                <PhoneContactsEditor
+                  phones={phones}
+                  onChange={setPhones}
+                  maxPhones={3}
+                  firstRequired
                 />
               </div>
               <div className="space-y-2">

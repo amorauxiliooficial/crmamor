@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,8 @@ import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
 import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { MultiAtendentesSelect } from "@/components/mae/MultiAtendentesSelect";
+import { PhoneContactsEditor, PhoneEntry } from "@/components/mae/PhoneContactsEditor";
+import { useMotherContacts, useMotherContactActions } from "@/hooks/useMotherContacts";
 
 interface MaeEditDialogProps {
   mae: MaeProcesso | null;
@@ -45,6 +47,36 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedAtendentes, setSelectedAtendentes] = useState<string[]>([]);
   const [originalAtendentes, setOriginalAtendentes] = useState<string[]>([]);
+  const [phones, setPhones] = useState<PhoneEntry[]>([]);
+
+  // Load existing contacts
+  const { data: existingContacts } = useMotherContacts(mae?.id ?? null);
+  const { addContact, deactivateContact, setPrimary } = useMotherContactActions();
+
+  // Sync contacts into phones state when loaded
+  useEffect(() => {
+    if (existingContacts && open) {
+      const formatE164Display = (e164: string) => {
+        const digits = e164.replace(/\D/g, "");
+        const local = digits.startsWith("55") ? digits.slice(2) : digits;
+        if (local.length === 11) return local.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+        if (local.length === 10) return local.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+        return e164;
+      };
+      const phoneContacts = existingContacts
+        .filter((c) => c.active && (c.contact_type === "phone" || c.contact_type === "whatsapp"))
+        .slice(0, 3)
+        .map((c): PhoneEntry => ({
+          id: c.id,
+          value: formatE164Display(c.value_e164),
+          isPrimary: c.is_primary,
+        }));
+      if (phoneContacts.length === 0 && mae?.telefone) {
+        phoneContacts.push({ value: mae.telefone, isPrimary: true });
+      }
+      setPhones(phoneContacts.length > 0 ? phoneContacts : [{ value: "", isPrimary: true }]);
+    }
+  }, [existingContacts, open, mae?.telefone]);
   
   const [formData, setFormData] = useState({
     nome_mae: "",
@@ -190,8 +222,9 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       "Aguardando Análise INSS" | "Aprovada" | "Indeferida" | 
       "Recurso / Judicial" | "Inadimplência" | "Processo Encerrado";
 
-    // Build update object - include user_id only if admin is changing it
-    const phoneRaw = formData.telefone || null;
+    // Build update object - sync primary phone to mae_processo
+    const primaryPhone = phones.find((p) => p.isPrimary && p.value.replace(/\D/g, "").length >= 10);
+    const phoneRaw = primaryPhone?.value || null;
     const phoneE164 = normalizePhoneToE164BR(phoneRaw);
 
     const updateData: Record<string, unknown> = {
@@ -253,6 +286,39 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           .delete()
           .eq("mae_id", mae.id)
           .in("user_id", toRemove);
+      }
+    }
+
+    // Sync phone contacts to mother_contacts
+    if (!error) {
+      try {
+        // Deactivate existing contacts not in current list
+        const currentIds = phones.filter((p) => p.id).map((p) => p.id!);
+        const toDeactivate = (existingContacts || [])
+          .filter((c) => c.active && (c.contact_type === "phone" || c.contact_type === "whatsapp") && !currentIds.includes(c.id));
+        for (const c of toDeactivate) {
+          await deactivateContact.mutateAsync({ id: c.id, mae_id: mae.id });
+        }
+        // Add new contacts (no id)
+        for (const phone of phones) {
+          const digits = phone.value.replace(/\D/g, "");
+          if (digits.length < 10) continue;
+          if (!phone.id) {
+            await addContact.mutateAsync({
+              mae_id: mae.id,
+              contact_type: "phone",
+              value: phone.value,
+              is_primary: phone.isPrimary,
+            });
+          }
+        }
+        // Update primary
+        const primaryEntry = phones.find((p) => p.isPrimary && p.id);
+        if (primaryEntry?.id) {
+          await setPrimary.mutateAsync({ id: primaryEntry.id, mae_id: mae.id });
+        }
+      } catch (e) {
+        console.warn("Error syncing contacts", e);
       }
     }
 
@@ -389,13 +455,11 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="telefone">Telefone</Label>
-                <Input
-                  id="telefone"
-                  value={formData.telefone}
-                  onChange={(e) => setFormData({ ...formData, telefone: formatPhone(e.target.value) })}
-                  placeholder="(00) 00000-0000"
+              <div className="md:col-span-2">
+                <PhoneContactsEditor
+                  phones={phones}
+                  onChange={setPhones}
+                  maxPhones={3}
                 />
               </div>
               <div className="space-y-2">
