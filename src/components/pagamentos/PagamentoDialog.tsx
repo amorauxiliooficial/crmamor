@@ -79,6 +79,7 @@ export function PagamentoDialog({
     contato_nome_3: "", contato_telefone_3: "",
   });
   const [contatoErrors, setContatoErrors] = useState<Record<string, string>>({});
+  const [visibleContatos, setVisibleContatos] = useState(1);
 
   // Load mae contact data
   useEffect(() => {
@@ -90,14 +91,19 @@ export function PagamentoDialog({
         .eq("id", maeId)
         .single();
       if (data) {
+        const d = data as any;
         setContatos({
-          contato_nome_1: (data as any).contato_nome_1 || "",
-          contato_telefone_1: (data as any).contato_telefone_1 || "",
-          contato_nome_2: (data as any).contato_nome_2 || "",
-          contato_telefone_2: (data as any).contato_telefone_2 || "",
-          contato_nome_3: (data as any).contato_nome_3 || "",
-          contato_telefone_3: (data as any).contato_telefone_3 || "",
+          contato_nome_1: d.contato_nome_1 || "",
+          contato_telefone_1: d.contato_telefone_1 || "",
+          contato_nome_2: d.contato_nome_2 || "",
+          contato_telefone_2: d.contato_telefone_2 || "",
+          contato_nome_3: d.contato_nome_3 || "",
+          contato_telefone_3: d.contato_telefone_3 || "",
         });
+        // Show slots that already have data
+        const filled = [d.contato_telefone_3, d.contato_telefone_2, d.contato_telefone_1];
+        const count = filled[0] ? 3 : filled[1] ? 2 : 1;
+        setVisibleContatos(count);
       }
     };
     loadContatos();
@@ -407,11 +413,25 @@ export function PagamentoDialog({
           <div className="space-y-5">
             {/* Contatos para cobrança */}
             <div className="rounded-xl border bg-muted/30 p-3 space-y-2">
-              <div className="flex items-center gap-2 mb-1">
-                <Phone className="h-3.5 w-3.5 text-primary" />
-                <Label className="text-xs font-semibold">Contatos para cobrança</Label>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Phone className="h-3.5 w-3.5 text-primary" />
+                  <Label className="text-xs font-semibold">Contatos para cobrança</Label>
+                </div>
+                {visibleContatos < 3 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setVisibleContatos((prev) => Math.min(prev + 1, 3))}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Adicionar
+                  </Button>
+                )}
               </div>
-              {[1, 2, 3].map((n) => {
+              {Array.from({ length: visibleContatos }, (_, i) => i + 1).map((n) => {
                 const nomeKey = `contato_nome_${n}` as keyof typeof contatos;
                 const telKey = `contato_telefone_${n}` as keyof typeof contatos;
                 const telError = contatoErrors[telKey];
@@ -439,9 +459,36 @@ export function PagamentoDialog({
                       />
                       {telError && <span className="text-[10px] text-destructive">{telError}</span>}
                     </div>
+                    {n > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => {
+                          // Clear this contact and shift others down
+                          setContatos((prev) => {
+                            const updated = { ...prev };
+                            for (let i = n; i < 3; i++) {
+                              (updated as any)[`contato_nome_${i}`] = (prev as any)[`contato_nome_${i + 1}`] || "";
+                              (updated as any)[`contato_telefone_${i}`] = (prev as any)[`contato_telefone_${i + 1}`] || "";
+                            }
+                            (updated as any)[`contato_nome_3`] = "";
+                            (updated as any)[`contato_telefone_3`] = "";
+                            return updated;
+                          });
+                          setVisibleContatos((prev) => prev - 1);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 );
               })}
+              {visibleContatos === 0 && (
+                <p className="text-xs text-muted-foreground py-1">Nenhum contato cadastrado.</p>
+              )}
             </div>
 
             {/* Config section - only tipo now */}
