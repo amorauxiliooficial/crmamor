@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { formatCpf, formatCurrency as formatCurrencyLib } from "@/lib/formatters";
+import { formatCpf } from "@/lib/formatters";
 import { processarComissaoParcela } from "@/lib/comissaoUtils";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
