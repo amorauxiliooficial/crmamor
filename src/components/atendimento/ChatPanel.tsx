@@ -484,6 +484,7 @@ export function ChatPanel({
   conversationPhone,
   channel = "official",
   onChangeChannel,
+  onTransferToWeb,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
