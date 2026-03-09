@@ -20,6 +20,7 @@ import { useAssignmentActions } from "@/hooks/useAssignmentEvents";
 import { useTimelineActions } from "@/hooks/useTimelineEvents";
 import { CommandPalette } from "@/components/atendimento/CommandPalette";
 import { TransferDialog } from "@/components/atendimento/TransferDialog";
+import { TransferToWebDialog } from "@/components/atendimento/TransferToWebDialog";
 import { SettingsDrawer } from "@/components/atendimento/SettingsDrawer";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
