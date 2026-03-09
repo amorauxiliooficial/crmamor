@@ -1120,12 +1120,12 @@ export function ChatPanel({
       {/* ── Composer ── Clean, no chips */}
       <div className="relative border-t border-border/10 w-full overflow-x-hidden">
         {/* Web channel warning */}
-        {channel === "web" && (
+        {channel === "web_manual_team" && (
           <div className="mx-4 mt-2 mb-1 p-2.5 bg-amber-500/5 border border-amber-500/10 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
             <Globe className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-amber-700 dark:text-amber-300">Atendimento manual no WhatsApp Web</p>
-              <p className="text-[10px] text-amber-600/60 dark:text-amber-400/60">IA automática desabilitada neste canal</p>
+              <p className="text-[10px] text-amber-600/60 dark:text-amber-400/60">IA automática desabilitada — use as notas do atendente para registrar o andamento</p>
             </div>
           </div>
         )}
