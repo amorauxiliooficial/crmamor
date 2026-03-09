@@ -685,6 +685,27 @@ export function ChatPanel({
     }
   }, [conversa, mensagens, toast, onMsgTextChange]);
 
+  const handleSaveAgentNote = useCallback(async () => {
+    if (!agentNote.trim() || !conversa) return;
+    setSavingNote(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("conversation_events").insert({
+        conversation_id: conversa.id,
+        event_type: "agent_note",
+        created_by_agent_id: user?.id,
+        meta: { note: agentNote.trim() },
+      } as any);
+      if (error) throw error;
+      toast({ title: "Nota salva ✅" });
+      setAgentNote("");
+    } catch {
+      toast({ title: "Erro ao salvar nota", variant: "destructive" });
+    } finally {
+      setSavingNote(false);
+    }
+  }, [agentNote, conversa, toast]);
+
   // Pagination
   const paginatedMessages = useMemo(() => {
     if (mensagens.length <= visibleCount) return mensagens;
