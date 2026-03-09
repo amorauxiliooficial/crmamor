@@ -841,8 +841,8 @@ export function ChatPanel({
               {/* Channel transfer */}
               {onChangeChannel && (
                 channel === "official" ? (
-                  <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors text-amber-600 dark:text-amber-400" onClick={() => onChangeChannel("web")}>
-                    <Globe className="h-3.5 w-3.5" /> Transferir para Web
+                  <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors text-amber-600 dark:text-amber-400" onClick={() => onTransferToWeb?.()}>
+                    <Globe className="h-3.5 w-3.5" /> Transferir para Web (Manual)
                   </button>
                 ) : (
                   <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors text-emerald-600 dark:text-emerald-400" onClick={() => onChangeChannel("official")}>
