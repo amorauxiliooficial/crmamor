@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Bot, ChevronRight, MessageSquareText } from "lucide-react";
+import { ArrowLeft, Bot, ChevronRight, MessageSquareText, Globe, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useChannels, useUpdateChannel } from "@/hooks/useChannels";
 
 const initialAtendentes = [
   { nome: "Maria Silva", email: "maria@aam.com", ativo: true },
