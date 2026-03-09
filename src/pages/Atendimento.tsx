@@ -754,6 +754,7 @@ export default function Atendimento() {
         conversationPhone={selectedWa?.wa_phone}
         channel={currentChannel}
         onChangeChannel={handleChangeChannel}
+        onTransferToWeb={() => setTransferToWebOpen(true)}
       />
 
       <TransferDialog
@@ -763,6 +764,17 @@ export default function Atendimento() {
         currentAgentId={conversa?.assignedAgentId}
         isLoading={transferConversation.isPending}
       />
+
+      {selectedWa && (
+        <TransferToWebDialog
+          open={transferToWebOpen}
+          onOpenChange={setTransferToWebOpen}
+          conversationId={selectedId!}
+          contactPhone={selectedWa.wa_phone}
+          contactName={selectedWa.wa_name}
+          onTransferred={() => handleChangeChannel("web_manual_team")}
+        />
+      )}
 
       {!isTablet && showContext && (
         <CrmContextPanel conversa={conversa} maeId={conversa?.maeId ?? null} />
