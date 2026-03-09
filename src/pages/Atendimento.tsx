@@ -398,7 +398,7 @@ export default function Atendimento() {
   }, [selectedId, aiAgents, toast]);
 
   const currentChannel = useMemo(() => {
-    return (selectedWa as any)?.channel ?? "official";
+    return (selectedWa as any)?.active_channel_code ?? (selectedWa as any)?.channel ?? "official";
   }, [selectedWa]);
 
   const handleChangeChannel = useCallback(async (newChannel: string) => {
