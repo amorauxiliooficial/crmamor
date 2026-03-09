@@ -490,6 +490,8 @@ export function ChatPanel({
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [agentNote, setAgentNote] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
   const isNearBottomRef = useRef(true);
   const prevConversationIdRef = useRef<string | null>(null);
   const prevMsgCountRef = useRef(0);
