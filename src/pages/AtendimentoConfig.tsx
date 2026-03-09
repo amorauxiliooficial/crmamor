@@ -27,6 +27,10 @@ export default function AtendimentoConfig() {
   const [foraHorarioAtivo, setForaHorarioAtivo] = useState(true);
   const [boasVindasAtivo, setBoasVindasAtivo] = useState(true);
   const [atendentes, setAtendentes] = useState(initialAtendentes);
+  const { data: channels, isLoading: loadingChannels } = useChannels();
+  const updateChannel = useUpdateChannel();
+  const webChannel = channels?.find(c => c.code === "web_manual_team");
+  const [webPhone, setWebPhone] = useState("");
 
   if (loading) return null;
   if (!user) { navigate("/auth"); return null; }
