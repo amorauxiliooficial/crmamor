@@ -164,6 +164,7 @@ export default function Atendimento() {
   const [mobileCrmDrawerOpen, setMobileCrmDrawerOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("conversas");
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [transferToWebOpen, setTransferToWebOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const debouncedSetSearch = useDebouncedCallback((value: string) => {
