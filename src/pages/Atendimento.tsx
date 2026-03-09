@@ -586,6 +586,7 @@ export default function Atendimento() {
                 conversationPhone={selectedWa?.wa_phone}
                 channel={currentChannel}
                 onChangeChannel={handleChangeChannel}
+                onTransferToWeb={() => setTransferToWebOpen(true)}
               />
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
@@ -603,6 +604,16 @@ export default function Atendimento() {
                 currentAgentId={conversa?.assignedAgentId}
                 isLoading={transferConversation.isPending}
               />
+              {selectedWa && (
+                <TransferToWebDialog
+                  open={transferToWebOpen}
+                  onOpenChange={setTransferToWebOpen}
+                  conversationId={selectedId!}
+                  contactPhone={selectedWa.wa_phone}
+                  contactName={selectedWa.wa_name}
+                  onTransferred={() => handleChangeChannel("web_manual_team")}
+                />
+              )}
             </>
           ) : mobileTab === "conversas" ? (
             <InboxSidebar
