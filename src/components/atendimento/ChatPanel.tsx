@@ -1153,6 +1153,36 @@ export function ChatPanel({
           </div>
         )}
 
+        {/* Agent notes input (web_manual_team mode) */}
+        {channel === "web_manual_team" && (
+          <div className="mx-4 mt-2 mb-1 p-2.5 bg-muted/5 border border-border/15 rounded-lg space-y-2 animate-in fade-in slide-in-from-bottom-1 duration-200">
+            <div className="flex items-center gap-1.5">
+              <StickyNote className="h-3.5 w-3.5 text-muted-foreground/50" />
+              <span className="text-[11px] font-medium text-muted-foreground/60">Nota do atendente</span>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Registre uma nota sobre o atendimento..."
+                value={agentNote}
+                onChange={(e) => setAgentNote(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && agentNote.trim()) { e.preventDefault(); handleSaveAgentNote(); } }}
+                className="flex-1 text-sm bg-transparent border-none outline-none placeholder:text-muted-foreground/30"
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 text-xs shrink-0"
+                onClick={handleSaveAgentNote}
+                disabled={!agentNote.trim() || savingNote}
+              >
+                <Send className="h-3 w-3" />
+                Salvar
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Window closed banner */}
         {!windowStatus.isOpen && (
           <div className="mx-4 mt-2 mb-1 p-2.5 bg-destructive/5 border border-destructive/10 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
