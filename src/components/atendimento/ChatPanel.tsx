@@ -421,6 +421,8 @@ interface ChatPanelProps {
   onChangeAiAgent?: (agentId: string | null) => void;
   lastInboundAt?: Date | null;
   conversationPhone?: string;
+  channel?: string;
+  onChangeChannel?: (channel: string) => void;
 }
 
 export function ChatPanel({
