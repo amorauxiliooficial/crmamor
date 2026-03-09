@@ -582,6 +582,8 @@ export default function Atendimento() {
                 onChangeAiAgent={handleChangeAiAgent}
                 lastInboundAt={conversa?.lastInboundAt}
                 conversationPhone={selectedWa?.wa_phone}
+                channel={currentChannel}
+                onChangeChannel={handleChangeChannel}
               />
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
