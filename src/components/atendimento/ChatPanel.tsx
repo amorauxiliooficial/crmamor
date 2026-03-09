@@ -461,6 +461,8 @@ export function ChatPanel({
   onChangeAiAgent,
   lastInboundAt,
   conversationPhone,
+  channel = "official",
+  onChangeChannel,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
