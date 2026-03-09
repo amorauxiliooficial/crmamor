@@ -6,7 +6,7 @@ import {
   X, RotateCcw, MoreVertical, Pencil, Bot,
   ArrowRightLeft, Wifi, WifiOff, RotateCw,
   Pin, Star, Reply, UserCheck, Tag, Bell, BellOff, Info,
-  Lock, MessageSquareText,
+  Lock, MessageSquareText, Globe, Smartphone,
 } from "lucide-react";
 import { useAutoCorrect } from "@/hooks/useAutoCorrect";
 import { WindowBadge, useWindowStatus } from "@/components/atendimento/WindowBadge";
