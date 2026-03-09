@@ -151,6 +151,81 @@ export default function AtendimentoConfig() {
           </CardContent>
         </Card>
 
+        {/* Canais de Atendimento */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Canais de Atendimento</CardTitle>
+            <CardDescription>Configure os canais disponíveis para handoff</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Official channel */}
+            <div className="flex items-center gap-3 py-3">
+              <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                <Smartphone className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">WhatsApp Oficial (API)</p>
+                <p className="text-xs text-muted-foreground">Canal principal — integração Cloud API</p>
+              </div>
+              <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">Ativo</span>
+            </div>
+
+            <Separator />
+
+            {/* Web Manual channel */}
+            <div className="flex items-center gap-3 py-3">
+              <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+                <Globe className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">WhatsApp Web Manual (Equipe)</p>
+                <p className="text-xs text-muted-foreground">Canal para handoff manual — sem sincronização</p>
+              </div>
+              {webChannel && (
+                <Switch
+                  checked={webChannel.active}
+                  onCheckedChange={(v) => {
+                    updateChannel.mutate({ id: webChannel.id, updates: { active: v } }, {
+                      onSuccess: () => toast({ title: v ? "Canal ativado" : "Canal desativado" }),
+                    });
+                  }}
+                />
+              )}
+            </div>
+
+            {webChannel?.active && (
+              <div className="space-y-2 pl-[52px]">
+                <Label className="text-xs">Número WhatsApp Web (E.164)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="+5511999990000"
+                    defaultValue={webChannel.phone_e164 ?? ""}
+                    onChange={(e) => setWebPhone(e.target.value)}
+                    className="max-w-[220px] text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (!webChannel) return;
+                      updateChannel.mutate(
+                        { id: webChannel.id, updates: { phone_e164: webPhone || null } },
+                        { onSuccess: () => toast({ title: "Número salvo ✅" }) }
+                      );
+                    }}
+                    disabled={updateChannel.isPending}
+                  >
+                    Salvar
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Número usado no link wa.me ao transferir conversas para o atendimento manual.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Templates WhatsApp */}
         <Card className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => navigate("/atendimento/templates")}>
           <CardContent className="p-4 flex items-center gap-4">
