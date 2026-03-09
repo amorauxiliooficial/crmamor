@@ -6,7 +6,7 @@ import {
   X, RotateCcw, MoreVertical, Pencil, Bot,
   ArrowRightLeft, Wifi, WifiOff, RotateCw,
   Pin, Star, Reply, UserCheck, Tag, Bell, BellOff, Info,
-  Lock, MessageSquareText, Globe, Smartphone,
+  Lock, MessageSquareText, Globe, Smartphone, StickyNote,
 } from "lucide-react";
 import { useAutoCorrect } from "@/hooks/useAutoCorrect";
 import { WindowBadge, useWindowStatus } from "@/components/atendimento/WindowBadge";
@@ -361,6 +361,7 @@ const EVENT_LABELS: Record<string, { icon: string; label: string }> = {
   ai_error: { icon: "⚠️", label: "erro na IA" },
   channel_to_web: { icon: "🌐", label: "transferiu para Web" },
   channel_to_official: { icon: "📱", label: "voltou para Oficial" },
+  agent_note: { icon: "📝", label: "nota" },
 };
 
 function InlineEvent({ event, profileMap }: { event: ConversationEvent; profileMap?: Map<string, string> }) {
@@ -368,6 +369,25 @@ function InlineEvent({ event, profileMap }: { event: ConversationEvent; profileM
   const agentName = event.created_by_agent_id && profileMap ? profileMap.get(event.created_by_agent_id) ?? "Agente" : "Sistema";
   const toAgent = event.to_agent_id && profileMap ? profileMap.get(event.to_agent_id) : null;
   const reason = (event.meta as any)?.reason;
+  const note = (event.meta as any)?.note;
+
+  // Agent note: render as a special card
+  if (event.event_type === "agent_note" && note) {
+    return (
+      <div className="flex items-center justify-center my-3">
+        <div className="inline-flex flex-col gap-1 px-3 py-2 rounded-xl bg-amber-500/5 border border-amber-500/10 text-[11px] text-muted-foreground/60 max-w-[80%]">
+          <div className="flex items-center gap-1.5">
+            <span>📝</span>
+            <span className="font-medium">{agentName}</span>
+            <span className="text-muted-foreground/25 ml-auto">
+              {new Date(event.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          </div>
+          <p className="text-xs whitespace-pre-line text-foreground/60">{note}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center my-3">
@@ -423,6 +443,7 @@ interface ChatPanelProps {
   conversationPhone?: string;
   channel?: string;
   onChangeChannel?: (channel: string) => void;
+  onTransferToWeb?: () => void;
 }
 
 export function ChatPanel({
@@ -463,11 +484,14 @@ export function ChatPanel({
   conversationPhone,
   channel = "official",
   onChangeChannel,
+  onTransferToWeb,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [agentNote, setAgentNote] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
   const isNearBottomRef = useRef(true);
   const prevConversationIdRef = useRef<string | null>(null);
   const prevMsgCountRef = useRef(0);
@@ -661,6 +685,27 @@ export function ChatPanel({
     }
   }, [conversa, mensagens, toast, onMsgTextChange]);
 
+  const handleSaveAgentNote = useCallback(async () => {
+    if (!agentNote.trim() || !conversa) return;
+    setSavingNote(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("conversation_events").insert({
+        conversation_id: conversa.id,
+        event_type: "agent_note",
+        created_by_agent_id: user?.id,
+        meta: { note: agentNote.trim() },
+      } as any);
+      if (error) throw error;
+      toast({ title: "Nota salva ✅" });
+      setAgentNote("");
+    } catch {
+      toast({ title: "Erro ao salvar nota", variant: "destructive" });
+    } finally {
+      setSavingNote(false);
+    }
+  }, [agentNote, conversa, toast]);
+
   // Pagination
   const paginatedMessages = useMemo(() => {
     if (mensagens.length <= visibleCount) return mensagens;
@@ -741,13 +786,13 @@ export function ChatPanel({
                   variant="outline"
                   className={cn(
                     "text-[9px] h-5 gap-1 px-1.5 font-medium border-border/20",
-                    channel === "web"
+                    channel === "web_manual_team"
                       ? "text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/5"
                       : "text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/5"
                   )}
                 >
-                  {channel === "web" ? <Globe className="h-3 w-3" /> : <Smartphone className="h-3 w-3" />}
-                  {channel === "web" ? "Web" : "Oficial"}
+                  {channel === "web_manual_team" ? <Globe className="h-3 w-3" /> : <Smartphone className="h-3 w-3" />}
+                  {channel === "web_manual_team" ? "Web Manual" : "Oficial"}
                 </Badge>
               </div>
               {ci.subtitle && (
@@ -819,8 +864,8 @@ export function ChatPanel({
               {/* Channel transfer */}
               {onChangeChannel && (
                 channel === "official" ? (
-                  <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors text-amber-600 dark:text-amber-400" onClick={() => onChangeChannel("web")}>
-                    <Globe className="h-3.5 w-3.5" /> Transferir para Web
+                  <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors text-amber-600 dark:text-amber-400" onClick={() => onTransferToWeb?.()}>
+                    <Globe className="h-3.5 w-3.5" /> Transferir para Web (Manual)
                   </button>
                 ) : (
                   <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors text-emerald-600 dark:text-emerald-400" onClick={() => onChangeChannel("official")}>
@@ -1098,12 +1143,42 @@ export function ChatPanel({
       {/* ── Composer ── Clean, no chips */}
       <div className="relative border-t border-border/10 w-full overflow-x-hidden">
         {/* Web channel warning */}
-        {channel === "web" && (
+        {channel === "web_manual_team" && (
           <div className="mx-4 mt-2 mb-1 p-2.5 bg-amber-500/5 border border-amber-500/10 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
             <Globe className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-amber-700 dark:text-amber-300">Atendimento manual no WhatsApp Web</p>
-              <p className="text-[10px] text-amber-600/60 dark:text-amber-400/60">IA automática desabilitada neste canal</p>
+              <p className="text-[10px] text-amber-600/60 dark:text-amber-400/60">IA automática desabilitada — use as notas do atendente para registrar o andamento</p>
+            </div>
+          </div>
+        )}
+
+        {/* Agent notes input (web_manual_team mode) */}
+        {channel === "web_manual_team" && (
+          <div className="mx-4 mt-2 mb-1 p-2.5 bg-muted/5 border border-border/15 rounded-lg space-y-2 animate-in fade-in slide-in-from-bottom-1 duration-200">
+            <div className="flex items-center gap-1.5">
+              <StickyNote className="h-3.5 w-3.5 text-muted-foreground/50" />
+              <span className="text-[11px] font-medium text-muted-foreground/60">Nota do atendente</span>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Registre uma nota sobre o atendimento..."
+                value={agentNote}
+                onChange={(e) => setAgentNote(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && agentNote.trim()) { e.preventDefault(); handleSaveAgentNote(); } }}
+                className="flex-1 text-sm bg-transparent border-none outline-none placeholder:text-muted-foreground/30"
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 text-xs shrink-0"
+                onClick={handleSaveAgentNote}
+                disabled={!agentNote.trim() || savingNote}
+              >
+                <Send className="h-3 w-3" />
+                Salvar
+              </Button>
             </div>
           </div>
         )}

@@ -20,6 +20,7 @@ import { useAssignmentActions } from "@/hooks/useAssignmentEvents";
 import { useTimelineActions } from "@/hooks/useTimelineEvents";
 import { CommandPalette } from "@/components/atendimento/CommandPalette";
 import { TransferDialog } from "@/components/atendimento/TransferDialog";
+import { TransferToWebDialog } from "@/components/atendimento/TransferToWebDialog";
 import { SettingsDrawer } from "@/components/atendimento/SettingsDrawer";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
@@ -163,6 +164,7 @@ export default function Atendimento() {
   const [mobileCrmDrawerOpen, setMobileCrmDrawerOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("conversas");
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [transferToWebOpen, setTransferToWebOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const debouncedSetSearch = useDebouncedCallback((value: string) => {
@@ -396,25 +398,25 @@ export default function Atendimento() {
   }, [selectedId, aiAgents, toast]);
 
   const currentChannel = useMemo(() => {
-    return (selectedWa as any)?.channel ?? "official";
+    return (selectedWa as any)?.active_channel_code ?? (selectedWa as any)?.channel ?? "official";
   }, [selectedWa]);
 
   const handleChangeChannel = useCallback(async (newChannel: string) => {
     if (!selectedId) return;
     const { error } = await supabase
       .from("wa_conversations")
-      .update({ channel: newChannel } as any)
+      .update({ active_channel_code: newChannel, channel: newChannel } as any)
       .eq("id", selectedId);
     if (error) {
       toast({ title: "Erro ao mudar canal", variant: "destructive" });
     } else {
-      toast({ title: newChannel === "web" ? "Transferido para Web 🌐" : "Voltou para Oficial 📱" });
+      toast({ title: newChannel === "web_manual_team" ? "Transferido para Web Manual 🌐" : "Voltou para Oficial 📱" });
       createEvent.mutate({
         conversation_id: selectedId,
-        event_type: newChannel === "web" ? "channel_to_web" : "channel_to_official",
+        event_type: newChannel === "web_manual_team" ? "channel_to_web" : "channel_to_official",
       });
-      // Disable AI when switching to web
-      if (newChannel === "web" && aiEnabled) {
+      // Disable AI when switching to web_manual_team
+      if (newChannel === "web_manual_team" && aiEnabled) {
         const currentLabels: string[] = selectedWa?.labels ?? [];
         await supabase
           .from("wa_conversations")
@@ -584,6 +586,7 @@ export default function Atendimento() {
                 conversationPhone={selectedWa?.wa_phone}
                 channel={currentChannel}
                 onChangeChannel={handleChangeChannel}
+                onTransferToWeb={() => setTransferToWebOpen(true)}
               />
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
@@ -601,6 +604,16 @@ export default function Atendimento() {
                 currentAgentId={conversa?.assignedAgentId}
                 isLoading={transferConversation.isPending}
               />
+              {selectedWa && (
+                <TransferToWebDialog
+                  open={transferToWebOpen}
+                  onOpenChange={setTransferToWebOpen}
+                  conversationId={selectedId!}
+                  contactPhone={selectedWa.wa_phone}
+                  contactName={selectedWa.wa_name}
+                  onTransferred={() => handleChangeChannel("web_manual_team")}
+                />
+              )}
             </>
           ) : mobileTab === "conversas" ? (
             <InboxSidebar
@@ -741,6 +754,7 @@ export default function Atendimento() {
         conversationPhone={selectedWa?.wa_phone}
         channel={currentChannel}
         onChangeChannel={handleChangeChannel}
+        onTransferToWeb={() => setTransferToWebOpen(true)}
       />
 
       <TransferDialog
@@ -750,6 +764,17 @@ export default function Atendimento() {
         currentAgentId={conversa?.assignedAgentId}
         isLoading={transferConversation.isPending}
       />
+
+      {selectedWa && (
+        <TransferToWebDialog
+          open={transferToWebOpen}
+          onOpenChange={setTransferToWebOpen}
+          conversationId={selectedId!}
+          contactPhone={selectedWa.wa_phone}
+          contactName={selectedWa.wa_name}
+          onTransferred={() => handleChangeChannel("web_manual_team")}
+        />
+      )}
 
       {!isTablet && showContext && (
         <CrmContextPanel conversa={conversa} maeId={conversa?.maeId ?? null} />

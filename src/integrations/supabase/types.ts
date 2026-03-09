@@ -283,6 +283,39 @@ export type Database = {
         }
         Relationships: []
       }
+      channels: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          display_name: string
+          id: string
+          phone_e164: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          display_name: string
+          id?: string
+          phone_e164?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          phone_e164?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       checklist_mae: {
         Row: {
           carencia_cumprida: boolean
@@ -1745,6 +1778,7 @@ export type Database = {
       }
       wa_conversations: {
         Row: {
+          active_channel_code: string
           ai_agent_id: string | null
           ai_enabled: boolean
           assigned_to: string | null
@@ -1756,6 +1790,8 @@ export type Database = {
           last_inbound_at: string | null
           last_message_at: string | null
           last_message_preview: string | null
+          lead_data: Json | null
+          lead_stage: string | null
           mae_id: string | null
           status: string
           unread_count: number
@@ -1764,6 +1800,7 @@ export type Database = {
           wa_phone: string
         }
         Insert: {
+          active_channel_code?: string
           ai_agent_id?: string | null
           ai_enabled?: boolean
           assigned_to?: string | null
@@ -1775,6 +1812,8 @@ export type Database = {
           last_inbound_at?: string | null
           last_message_at?: string | null
           last_message_preview?: string | null
+          lead_data?: Json | null
+          lead_stage?: string | null
           mae_id?: string | null
           status?: string
           unread_count?: number
@@ -1783,6 +1822,7 @@ export type Database = {
           wa_phone: string
         }
         Update: {
+          active_channel_code?: string
           ai_agent_id?: string | null
           ai_enabled?: boolean
           assigned_to?: string | null
@@ -1794,6 +1834,8 @@ export type Database = {
           last_inbound_at?: string | null
           last_message_at?: string | null
           last_message_preview?: string | null
+          lead_data?: Json | null
+          lead_stage?: string | null
           mae_id?: string | null
           status?: string
           unread_count?: number
