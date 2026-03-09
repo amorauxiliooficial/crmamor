@@ -359,6 +359,8 @@ const EVENT_LABELS: Record<string, { icon: string; label: string }> = {
   ai_replied: { icon: "🤖", label: "IA respondeu" },
   ai_handoff: { icon: "🤝", label: "IA transferiu para humano" },
   ai_error: { icon: "⚠️", label: "erro na IA" },
+  channel_to_web: { icon: "🌐", label: "transferiu para Web" },
+  channel_to_official: { icon: "📱", label: "voltou para Oficial" },
 };
 
 function InlineEvent({ event, profileMap }: { event: ConversationEvent; profileMap?: Map<string, string> }) {
