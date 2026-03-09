@@ -361,6 +361,7 @@ const EVENT_LABELS: Record<string, { icon: string; label: string }> = {
   ai_error: { icon: "⚠️", label: "erro na IA" },
   channel_to_web: { icon: "🌐", label: "transferiu para Web" },
   channel_to_official: { icon: "📱", label: "voltou para Oficial" },
+  agent_note: { icon: "📝", label: "nota" },
 };
 
 function InlineEvent({ event, profileMap }: { event: ConversationEvent; profileMap?: Map<string, string> }) {
