@@ -245,6 +245,12 @@ serve(async (req: Request): Promise<Response> => {
       console.log("⏭️ Skipping: AI not enabled");
       return jsonOk({ skipped: true, reason: "ai_not_enabled" });
     }
+    // Skip if conversation is on web_manual_team channel
+    const activeChannel = convo.active_channel_code || convo.channel || "official";
+    if (activeChannel === "web_manual_team") {
+      console.log("⏭️ Skipping: web_manual_team channel — manual mode");
+      return jsonOk({ skipped: true, reason: "web_manual_channel" });
+    }
     if (convo.status === "closed") {
       console.log("⏭️ Skipping: conversation is closed");
       return jsonOk({ skipped: true, reason: "closed" });
