@@ -405,18 +405,18 @@ export default function Atendimento() {
     if (!selectedId) return;
     const { error } = await supabase
       .from("wa_conversations")
-      .update({ channel: newChannel } as any)
+      .update({ active_channel_code: newChannel, channel: newChannel } as any)
       .eq("id", selectedId);
     if (error) {
       toast({ title: "Erro ao mudar canal", variant: "destructive" });
     } else {
-      toast({ title: newChannel === "web" ? "Transferido para Web 🌐" : "Voltou para Oficial 📱" });
+      toast({ title: newChannel === "web_manual_team" ? "Transferido para Web Manual 🌐" : "Voltou para Oficial 📱" });
       createEvent.mutate({
         conversation_id: selectedId,
-        event_type: newChannel === "web" ? "channel_to_web" : "channel_to_official",
+        event_type: newChannel === "web_manual_team" ? "channel_to_web" : "channel_to_official",
       });
-      // Disable AI when switching to web
-      if (newChannel === "web" && aiEnabled) {
+      // Disable AI when switching to web_manual_team
+      if (newChannel === "web_manual_team" && aiEnabled) {
         const currentLabels: string[] = selectedWa?.labels ?? [];
         await supabase
           .from("wa_conversations")
