@@ -17,6 +17,9 @@ export interface WaConversation {
   updated_at: string;
   last_inbound_at: string | null;
   channel: string;
+  active_channel_code: string;
+  lead_stage: string | null;
+  lead_data: any;
 }
 
 export interface WaMessage {
