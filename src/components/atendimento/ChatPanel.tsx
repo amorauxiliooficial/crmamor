@@ -369,6 +369,25 @@ function InlineEvent({ event, profileMap }: { event: ConversationEvent; profileM
   const agentName = event.created_by_agent_id && profileMap ? profileMap.get(event.created_by_agent_id) ?? "Agente" : "Sistema";
   const toAgent = event.to_agent_id && profileMap ? profileMap.get(event.to_agent_id) : null;
   const reason = (event.meta as any)?.reason;
+  const note = (event.meta as any)?.note;
+
+  // Agent note: render as a special card
+  if (event.event_type === "agent_note" && note) {
+    return (
+      <div className="flex items-center justify-center my-3">
+        <div className="inline-flex flex-col gap-1 px-3 py-2 rounded-xl bg-amber-500/5 border border-amber-500/10 text-[11px] text-muted-foreground/60 max-w-[80%]">
+          <div className="flex items-center gap-1.5">
+            <span>📝</span>
+            <span className="font-medium">{agentName}</span>
+            <span className="text-muted-foreground/25 ml-auto">
+              {new Date(event.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          </div>
+          <p className="text-xs whitespace-pre-line text-foreground/60">{note}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center my-3">
