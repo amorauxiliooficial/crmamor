@@ -6,7 +6,7 @@ import {
   X, RotateCcw, MoreVertical, Pencil, Bot,
   ArrowRightLeft, Wifi, WifiOff, RotateCw,
   Pin, Star, Reply, UserCheck, Tag, Bell, BellOff, Info,
-  Lock, MessageSquareText,
+  Lock, MessageSquareText, Globe, Smartphone,
 } from "lucide-react";
 import { useAutoCorrect } from "@/hooks/useAutoCorrect";
 import { WindowBadge, useWindowStatus } from "@/components/atendimento/WindowBadge";
@@ -359,6 +359,8 @@ const EVENT_LABELS: Record<string, { icon: string; label: string }> = {
   ai_replied: { icon: "🤖", label: "IA respondeu" },
   ai_handoff: { icon: "🤝", label: "IA transferiu para humano" },
   ai_error: { icon: "⚠️", label: "erro na IA" },
+  channel_to_web: { icon: "🌐", label: "transferiu para Web" },
+  channel_to_official: { icon: "📱", label: "voltou para Oficial" },
 };
 
 function InlineEvent({ event, profileMap }: { event: ConversationEvent; profileMap?: Map<string, string> }) {
@@ -419,6 +421,8 @@ interface ChatPanelProps {
   onChangeAiAgent?: (agentId: string | null) => void;
   lastInboundAt?: Date | null;
   conversationPhone?: string;
+  channel?: string;
+  onChangeChannel?: (channel: string) => void;
 }
 
 export function ChatPanel({
@@ -457,6 +461,8 @@ export function ChatPanel({
   onChangeAiAgent,
   lastInboundAt,
   conversationPhone,
+  channel = "official",
+  onChangeChannel,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
@@ -730,6 +736,19 @@ export function ChatPanel({
                   conversationId={conversa.id}
                   lastInboundAt={effectiveLastInboundAt}
                 />
+                {/* Channel badge */}
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-[9px] h-5 gap-1 px-1.5 font-medium border-border/20",
+                    channel === "web"
+                      ? "text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/5"
+                      : "text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/5"
+                  )}
+                >
+                  {channel === "web" ? <Globe className="h-3 w-3" /> : <Smartphone className="h-3 w-3" />}
+                  {channel === "web" ? "Web" : "Oficial"}
+                </Badge>
               </div>
               {ci.subtitle && (
                 <p className="text-[12px] text-primary/70 truncate">{ci.subtitle}</p>
@@ -796,6 +815,19 @@ export function ChatPanel({
               <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors" onClick={onPendente}>
                 <Clock className="h-3.5 w-3.5" /> Marcar pendente
               </button>
+
+              {/* Channel transfer */}
+              {onChangeChannel && (
+                channel === "official" ? (
+                  <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors text-amber-600 dark:text-amber-400" onClick={() => onChangeChannel("web")}>
+                    <Globe className="h-3.5 w-3.5" /> Transferir para Web
+                  </button>
+                ) : (
+                  <button className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors text-emerald-600 dark:text-emerald-400" onClick={() => onChangeChannel("official")}>
+                    <Smartphone className="h-3.5 w-3.5" /> Voltar para Oficial
+                  </button>
+                )
+              )}
 
               {/* AI toggle */}
               {onToggleAi && (
@@ -1065,6 +1097,17 @@ export function ChatPanel({
 
       {/* ── Composer ── Clean, no chips */}
       <div className="relative border-t border-border/10 w-full overflow-x-hidden">
+        {/* Web channel warning */}
+        {channel === "web" && (
+          <div className="mx-4 mt-2 mb-1 p-2.5 bg-amber-500/5 border border-amber-500/10 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
+            <Globe className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-300">Atendimento manual no WhatsApp Web</p>
+              <p className="text-[10px] text-amber-600/60 dark:text-amber-400/60">IA automática desabilitada neste canal</p>
+            </div>
+          </div>
+        )}
+
         {/* Window closed banner */}
         {!windowStatus.isOpen && (
           <div className="mx-4 mt-2 mb-1 p-2.5 bg-destructive/5 border border-destructive/10 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">

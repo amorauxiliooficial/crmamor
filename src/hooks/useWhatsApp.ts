@@ -16,6 +16,7 @@ export interface WaConversation {
   created_at: string;
   updated_at: string;
   last_inbound_at: string | null;
+  channel: string;
 }
 
 export interface WaMessage {

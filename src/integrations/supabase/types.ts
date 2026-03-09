@@ -1748,6 +1748,7 @@ export type Database = {
           ai_agent_id: string | null
           ai_enabled: boolean
           assigned_to: string | null
+          channel: string
           created_at: string
           id: string
           labels: string[] | null
@@ -1766,6 +1767,7 @@ export type Database = {
           ai_agent_id?: string | null
           ai_enabled?: boolean
           assigned_to?: string | null
+          channel?: string
           created_at?: string
           id?: string
           labels?: string[] | null
@@ -1784,6 +1786,7 @@ export type Database = {
           ai_agent_id?: string | null
           ai_enabled?: boolean
           assigned_to?: string | null
+          channel?: string
           created_at?: string
           id?: string
           labels?: string[] | null
