@@ -395,6 +395,35 @@ export default function Atendimento() {
     }
   }, [selectedId, aiAgents, toast]);
 
+  const currentChannel = useMemo(() => {
+    return (selectedWa as any)?.channel ?? "official";
+  }, [selectedWa]);
+
+  const handleChangeChannel = useCallback(async (newChannel: string) => {
+    if (!selectedId) return;
+    const { error } = await supabase
+      .from("wa_conversations")
+      .update({ channel: newChannel } as any)
+      .eq("id", selectedId);
+    if (error) {
+      toast({ title: "Erro ao mudar canal", variant: "destructive" });
+    } else {
+      toast({ title: newChannel === "web" ? "Transferido para Web 🌐" : "Voltou para Oficial 📱" });
+      createEvent.mutate({
+        conversation_id: selectedId,
+        event_type: newChannel === "web" ? "channel_to_web" : "channel_to_official",
+      });
+      // Disable AI when switching to web
+      if (newChannel === "web" && aiEnabled) {
+        const currentLabels: string[] = selectedWa?.labels ?? [];
+        await supabase
+          .from("wa_conversations")
+          .update({ ai_enabled: false, labels: currentLabels.filter(l => l !== "AI_ON" && l !== "AI_PRIMARY") } as any)
+          .eq("id", selectedId);
+      }
+    }
+  }, [selectedId, selectedWa, aiEnabled, toast, createEvent]);
+
   const handleSend = useCallback(() => {
     if (!selectedId || !msgText.trim() || !selectedWa) return;
     const text = msgText.trim();
