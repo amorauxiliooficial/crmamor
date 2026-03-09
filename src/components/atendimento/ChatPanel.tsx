@@ -443,6 +443,7 @@ interface ChatPanelProps {
   conversationPhone?: string;
   channel?: string;
   onChangeChannel?: (channel: string) => void;
+  onTransferToWeb?: () => void;
 }
 
 export function ChatPanel({
