@@ -739,6 +739,8 @@ export default function Atendimento() {
         onChangeAiAgent={handleChangeAiAgent}
         lastInboundAt={conversa?.lastInboundAt}
         conversationPhone={selectedWa?.wa_phone}
+        channel={currentChannel}
+        onChangeChannel={handleChangeChannel}
       />
 
       <TransferDialog
