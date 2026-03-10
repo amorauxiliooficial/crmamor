@@ -134,13 +134,13 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         {(bestMonth || worstMonth) && (
           <div className="flex flex-wrap gap-2 mt-1">
             {bestMonth && (
-              <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium">
+              <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full px-2 py-0.5 font-medium">
                 <Award className="h-3 w-3" />
                 Melhor: {bestMonth.fullName} ({formatCurrency(bestMonth.resultado)})
               </span>
             )}
             {worstMonth && worstMonth !== bestMonth && (
-              <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-destructive/10 text-destructive rounded-full px-2 py-0.5 font-medium">
+              <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full px-2 py-0.5 font-medium">
                 <AlertOctagon className="h-3 w-3" />
                 Pior: {worstMonth.fullName} ({formatCurrency(worstMonth.resultado)})
               </span>
@@ -242,18 +242,18 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                   if (payload.highlight === "best") {
                     return (
                       <g key={props.key}>
-                        <circle cx={cx} cy={cy} r={8} fill="hsl(var(--primary))" opacity={0.2} />
-                        <circle cx={cx} cy={cy} r={5} fill="hsl(var(--primary))" stroke="white" strokeWidth={2} />
-                        <text x={cx} y={cy - 14} textAnchor="middle" fill="hsl(var(--primary))" fontSize={10} fontWeight="bold">⭐</text>
+                        <circle cx={cx} cy={cy} r={8} fill="#10b981" opacity={0.25} />
+                        <circle cx={cx} cy={cy} r={5} fill="#10b981" stroke="white" strokeWidth={2} />
+                        <text x={cx} y={cy - 14} textAnchor="middle" fill="#10b981" fontSize={10} fontWeight="bold">⭐</text>
                       </g>
                     );
                   }
                   if (payload.highlight === "worst") {
                     return (
                       <g key={props.key}>
-                        <circle cx={cx} cy={cy} r={8} fill="hsl(var(--destructive))" opacity={0.2} />
-                        <circle cx={cx} cy={cy} r={5} fill="hsl(var(--destructive))" stroke="white" strokeWidth={2} />
-                        <text x={cx} y={cy - 14} textAnchor="middle" fill="hsl(var(--destructive))" fontSize={10} fontWeight="bold">⚠</text>
+                        <circle cx={cx} cy={cy} r={8} fill="#f59e0b" opacity={0.25} />
+                        <circle cx={cx} cy={cy} r={5} fill="#f59e0b" stroke="white" strokeWidth={2} />
+                        <text x={cx} y={cy - 14} textAnchor="middle" fill="#f59e0b" fontSize={10} fontWeight="bold">⚠</text>
                       </g>
                     );
                   }
