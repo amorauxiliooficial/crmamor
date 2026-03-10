@@ -303,14 +303,39 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
               />
               <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1} />
 
-              {/* Past saldo area — solid */}
+              {/* Past saldo area — solid with MoM % labels */}
               <Area
                 type="monotone"
                 dataKey="saldoPast"
                 stroke="hsl(var(--primary))"
                 strokeWidth={2.5}
                 fill="url(#gradSaldoPast)"
-                dot={false}
+                dot={(props: any) => {
+                  const { cx, cy, payload, index } = props;
+                  if (!cx || !cy) return <g key={props.key} />;
+                  const pct = payload.variacao;
+                  // Skip first month (no variation) and months with no activity
+                  if (pct === undefined || index === 0) {
+                    return <circle key={props.key} cx={cx} cy={cy} r={3} fill="hsl(var(--primary))" />;
+                  }
+                  const label = `${pct >= 0 ? "+" : ""}${pct.toFixed(0)}%`;
+                  const color = pct >= 0 ? "hsl(var(--primary))" : "hsl(var(--destructive))";
+                  return (
+                    <g key={props.key}>
+                      <circle cx={cx} cy={cy} r={3.5} fill={color} />
+                      <text
+                        x={cx}
+                        y={cy - 12}
+                        textAnchor="middle"
+                        fill={color}
+                        fontSize={9}
+                        fontWeight="700"
+                      >
+                        {label}
+                      </text>
+                    </g>
+                  );
+                }}
                 activeDot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
                 connectNulls={false}
               />
