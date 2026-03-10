@@ -225,6 +225,15 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
     worstMonth,
     trendPercent,
     avgLast3,
+    currentMonthName,
+    daysElapsed,
+    daysLeft,
+    receitaAtual,
+    despesaAtual,
+    receitaProjetada,
+    despesaProjetada,
+    resultadoProjetado,
+    projecaoVsPrev,
   } = useChartData(pagamentos, despesas);
 
   const TrendIcon = trendPercent > 0 ? ArrowUpRight : trendPercent < 0 ? ArrowDownRight : Minus;
