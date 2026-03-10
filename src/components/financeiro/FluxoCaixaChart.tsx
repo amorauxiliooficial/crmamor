@@ -242,18 +242,18 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                   if (payload.highlight === "best") {
                     return (
                       <g key={props.key}>
-                        <circle cx={cx} cy={cy} r={8} fill="hsl(var(--primary))" opacity={0.2} />
-                        <circle cx={cx} cy={cy} r={5} fill="hsl(var(--primary))" stroke="white" strokeWidth={2} />
-                        <text x={cx} y={cy - 14} textAnchor="middle" fill="hsl(var(--primary))" fontSize={10} fontWeight="bold">⭐</text>
+                        <circle cx={cx} cy={cy} r={8} fill="#10b981" opacity={0.25} />
+                        <circle cx={cx} cy={cy} r={5} fill="#10b981" stroke="white" strokeWidth={2} />
+                        <text x={cx} y={cy - 14} textAnchor="middle" fill="#10b981" fontSize={10} fontWeight="bold">⭐</text>
                       </g>
                     );
                   }
                   if (payload.highlight === "worst") {
                     return (
                       <g key={props.key}>
-                        <circle cx={cx} cy={cy} r={8} fill="hsl(var(--destructive))" opacity={0.2} />
-                        <circle cx={cx} cy={cy} r={5} fill="hsl(var(--destructive))" stroke="white" strokeWidth={2} />
-                        <text x={cx} y={cy - 14} textAnchor="middle" fill="hsl(var(--destructive))" fontSize={10} fontWeight="bold">⚠</text>
+                        <circle cx={cx} cy={cy} r={8} fill="#f59e0b" opacity={0.25} />
+                        <circle cx={cx} cy={cy} r={5} fill="#f59e0b" stroke="white" strokeWidth={2} />
+                        <text x={cx} y={cy - 14} textAnchor="middle" fill="#f59e0b" fontSize={10} fontWeight="bold">⚠</text>
                       </g>
                     );
                   }
