@@ -35,7 +35,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
     });
 
     const startDate = startOfMonth(earliest || subMonths(now, 11));
-    const endDate = endOfMonth(now);
+    const endDate = endOfMonth(addMonths(now, 3));
     
     const months = eachMonthOfInterval({ start: startDate, end: endDate });
 
