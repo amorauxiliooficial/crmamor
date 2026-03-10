@@ -140,6 +140,7 @@ const Financeiro = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-4 mt-4">
+            <FluxoCaixaChart pagamentos={pagamentos} despesas={despesas} />
             <FinanceiroInsights
               pagamentos={pagamentos}
               despesas={despesas}
@@ -155,7 +156,6 @@ const Financeiro = () => {
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
             />
-            <FluxoCaixaChart pagamentos={pagamentos} despesas={despesas} />
             <CustoPorFornecedorChart despesas={despesas} fornecedores={fornecedores} />
             <ReceitasMaesTable 
               pagamentos={pagamentos}
