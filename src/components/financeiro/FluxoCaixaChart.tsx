@@ -236,8 +236,30 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                 dataKey="resultado"
                 stroke="hsl(var(--accent-foreground))"
                 strokeWidth={2}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
+                dot={(props: any) => {
+                  const { cx, cy, payload } = props;
+                  if (!cx || !cy) return <circle key={props.key} />;
+                  if (payload.highlight === "best") {
+                    return (
+                      <g key={props.key}>
+                        <circle cx={cx} cy={cy} r={8} fill="hsl(var(--primary))" opacity={0.2} />
+                        <circle cx={cx} cy={cy} r={5} fill="hsl(var(--primary))" stroke="white" strokeWidth={2} />
+                        <text x={cx} y={cy - 14} textAnchor="middle" fill="hsl(var(--primary))" fontSize={10} fontWeight="bold">⭐</text>
+                      </g>
+                    );
+                  }
+                  if (payload.highlight === "worst") {
+                    return (
+                      <g key={props.key}>
+                        <circle cx={cx} cy={cy} r={8} fill="hsl(var(--destructive))" opacity={0.2} />
+                        <circle cx={cx} cy={cy} r={5} fill="hsl(var(--destructive))" stroke="white" strokeWidth={2} />
+                        <text x={cx} y={cy - 14} textAnchor="middle" fill="hsl(var(--destructive))" fontSize={10} fontWeight="bold">⚠</text>
+                      </g>
+                    );
+                  }
+                  return <circle key={props.key} cx={cx} cy={cy} r={3} fill="hsl(var(--accent-foreground))" />;
+                }}
+                activeDot={{ r: 6 }}
               />
               <Line
                 type="monotone"
