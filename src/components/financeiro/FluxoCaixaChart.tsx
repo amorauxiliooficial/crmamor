@@ -159,6 +159,25 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
     const totalReceitas = pastData.reduce((a, d) => a + d.receitas, 0);
     const totalDespesas = pastData.reduce((a, d) => a + d.despesas, 0);
 
+    // Current month projection
+    const currentMonthFullName = format(now, "MMMM/yyyy", { locale: ptBR });
+    const currentMonthData = pastData.find((d) => d.fullName === currentMonthFullName);
+    const receitaAtual = currentMonthData?.receitas ?? 0;
+    const despesaAtual = currentMonthData?.despesas ?? 0;
+    const projectionFactor = daysElapsed > 0 ? totalDaysInMonth / daysElapsed : 1;
+    const receitaProjetada = receitaAtual * projectionFactor;
+    const despesaProjetada = despesaAtual * projectionFactor;
+    const resultadoProjetado = receitaProjetada - despesaProjetada;
+
+    // Previous month for comparison
+    const prevMonthDate = subMonths(now, 1);
+    const prevMonthName = format(prevMonthDate, "MMMM/yyyy", { locale: ptBR });
+    const prevMonthData = pastData.find((d) => d.fullName === prevMonthName);
+    const resultadoMesAnterior = prevMonthData?.resultado ?? 0;
+    const projecaoVsPrev = resultadoMesAnterior !== 0
+      ? ((resultadoProjetado - resultadoMesAnterior) / Math.abs(resultadoMesAnterior)) * 100
+      : resultadoProjetado !== 0 ? 100 : 0;
+
     // Trend: last 3 PAST months vs previous 3
     const last3 = pastData.slice(-3);
     const avgLast3 = last3.length > 0 ? last3.reduce((a, d) => a + d.resultado, 0) / last3.length : 0;
@@ -175,6 +194,15 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
       worstMonth: worst,
       trendPercent,
       avgLast3,
+      currentMonthName: format(now, "MMMM", { locale: ptBR }),
+      daysElapsed,
+      daysLeft,
+      receitaAtual,
+      despesaAtual,
+      receitaProjetada,
+      despesaProjetada,
+      resultadoProjetado,
+      projecaoVsPrev,
     };
   }, [pagamentos, despesas]);
 }
