@@ -109,7 +109,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
       <CardContent>
         <div className="h-72 md:h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart 
+            <ComposedChart 
               data={chartData} 
               margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
               barCategoryGap="15%"
@@ -136,7 +136,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                   if (!active || !payload?.length) return null;
                   const data = payload[0].payload;
                   return (
-                    <div className="bg-popover border border-border rounded-lg p-3 shadow-lg min-w-[180px]">
+                    <div className="bg-popover border border-border rounded-lg p-3 shadow-lg min-w-[200px]">
                       <p className="font-semibold text-sm mb-2 capitalize">{data.fullName}</p>
                       <div className="space-y-1.5 text-xs">
                         <div className="flex justify-between">
@@ -148,10 +148,14 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                           <span className="font-semibold">{formatCurrency(data.despesas)}</span>
                         </div>
                         <div className="border-t pt-1.5 flex justify-between">
-                          <span className="font-medium">Saldo:</span>
-                          <span className={`font-bold ${data.saldo >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                            {formatCurrency(data.saldo)}
+                          <span className="font-medium">Resultado:</span>
+                          <span className={`font-bold ${data.resultado >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                            {formatCurrency(data.resultado)}
                           </span>
+                        </div>
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Média Móvel (3m):</span>
+                          <span className="font-medium">{formatCurrency(data.mediaMovel3)}</span>
                         </div>
                       </div>
                     </div>
@@ -162,7 +166,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                 wrapperStyle={{ paddingTop: '10px' }}
                 formatter={(value) => (
                   <span className="text-xs font-medium">
-                    {value === "receitas" ? "Receitas" : "Despesas"}
+                    {value === "receitas" ? "Receitas" : value === "despesas" ? "Despesas" : value === "resultado" ? "Resultado" : "Média Móvel 3m"}
                   </span>
                 )}
               />
@@ -171,15 +175,31 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                 dataKey="receitas" 
                 fill="hsl(var(--primary))"
                 radius={[4, 4, 0, 0]}
-                maxBarSize={35}
+                maxBarSize={30}
               />
               <Bar 
                 dataKey="despesas" 
                 fill="hsl(var(--destructive))"
                 radius={[4, 4, 0, 0]}
-                maxBarSize={35}
+                maxBarSize={30}
               />
-            </BarChart>
+              <Line
+                type="monotone"
+                dataKey="resultado"
+                stroke="hsl(var(--accent-foreground))"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="mediaMovel3"
+                stroke="hsl(var(--muted-foreground))"
+                strokeWidth={1.5}
+                strokeDasharray="5 5"
+                dot={false}
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
 
