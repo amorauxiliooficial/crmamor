@@ -37,6 +37,9 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
   return useMemo(() => {
     const now = new Date();
     const currentMonthStart = startOfMonth(now);
+    const currentMonthEnd = endOfMonth(now);
+    const daysLeft = Math.ceil((currentMonthEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const showProjection = daysLeft <= 5;
 
     let earliest: Date | null = null;
     pagamentos.forEach((pag) => {
@@ -56,7 +59,8 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
     });
 
     const startDate = startOfMonth(earliest || subMonths(now, 11));
-    const endDate = endOfMonth(addMonths(now, 3));
+    // Only show future months if ≤5 days left in current month
+    const endDate = showProjection ? endOfMonth(addMonths(now, 3)) : currentMonthEnd;
     const months = eachMonthOfInterval({ start: startDate, end: endDate });
 
     let saldoAcumulado = 0;
