@@ -99,10 +99,10 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         <div className="flex items-center justify-between">
           <CardTitle className="text-base md:text-lg flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
-            Fluxo de Caixa (12 meses)
+            Entrou x Saiu (12 meses)
           </CardTitle>
           <div className={`text-sm font-semibold ${saldoTotal >= 0 ? 'text-primary' : 'text-destructive'}`}>
-            Saldo: {formatCurrency(saldoTotal)}
+            Sobrou: {formatCurrency(saldoTotal)}
           </div>
         </div>
       </CardHeader>
@@ -140,15 +140,15 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                       <p className="font-semibold text-sm mb-2 capitalize">{data.fullName}</p>
                       <div className="space-y-1.5 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-primary font-medium">Receitas:</span>
+                          <span className="text-primary font-medium">Entrou:</span>
                           <span className="font-semibold">{formatCurrency(data.receitas)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-destructive font-medium">Despesas:</span>
+                          <span className="text-destructive font-medium">Saiu:</span>
                           <span className="font-semibold">{formatCurrency(data.despesas)}</span>
                         </div>
                         <div className="border-t pt-1.5 flex justify-between">
-                          <span className="font-medium">Resultado:</span>
+                          <span className="font-medium">Sobrou:</span>
                           <span className={`font-bold ${data.resultado >= 0 ? 'text-primary' : 'text-destructive'}`}>
                             {formatCurrency(data.resultado)}
                           </span>
@@ -166,7 +166,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                 wrapperStyle={{ paddingTop: '10px' }}
                 formatter={(value) => (
                   <span className="text-xs font-medium">
-                    {value === "receitas" ? "Receitas" : value === "despesas" ? "Despesas" : value === "resultado" ? "Resultado" : "Média Móvel 3m"}
+                    {value === "receitas" ? "Entrou" : value === "despesas" ? "Saiu" : value === "resultado" ? "Sobrou no mês" : "Média Móvel 3m"}
                   </span>
                 )}
               />
@@ -206,15 +206,15 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         {/* Summary cards */}
         <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t">
           <div className="text-center">
-            <p className="text-xs text-muted-foreground">Total Receitas</p>
+            <p className="text-xs text-muted-foreground">Total Entrou</p>
             <p className="text-sm font-semibold text-primary">{formatCurrency(totalReceitas)}</p>
           </div>
           <div className="text-center">
-            <p className="text-xs text-muted-foreground">Total Despesas</p>
+            <p className="text-xs text-muted-foreground">Total Saiu</p>
             <p className="text-sm font-semibold text-destructive">{formatCurrency(totalDespesas)}</p>
           </div>
           <div className="text-center">
-            <p className="text-xs text-muted-foreground">Saldo Período</p>
+            <p className="text-xs text-muted-foreground">Sobrou no Período</p>
             <p className={`text-sm font-semibold ${saldoTotal >= 0 ? 'text-primary' : 'text-destructive'}`}>
               {formatCurrency(saldoTotal)}
             </p>

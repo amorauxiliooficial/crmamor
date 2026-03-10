@@ -20,6 +20,7 @@ import {
 import { ResumoFinanceiroCards } from "@/components/financeiro/ResumoFinanceiroCards";
 import { CrescimentoMoM } from "@/components/financeiro/CrescimentoMoM";
 import { FluxoCaixaChart } from "@/components/financeiro/FluxoCaixaChart";
+import { SemaforoResumo } from "@/components/financeiro/SemaforoResumo";
 import { CustoPorFornecedorChart } from "@/components/financeiro/CustoPorFornecedorChart";
 import { DespesasTable } from "@/components/financeiro/DespesasTable";
 import { ReceitasMaesTable } from "@/components/financeiro/ReceitasMaesTable";
@@ -142,6 +143,14 @@ const Financeiro = () => {
             <CrescimentoMoM
               pagamentos={pagamentos}
               despesas={despesas}
+              period={period}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
+            <SemaforoResumo
+              pagamentos={pagamentos}
+              despesas={despesas}
+              fornecedores={fornecedores}
               period={period}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
