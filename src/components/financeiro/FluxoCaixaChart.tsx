@@ -231,13 +231,18 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
             </p>
             <div className="flex items-center gap-1.5 mt-1">
               <TrendIcon className={`h-4 w-4 ${trendColor}`} />
-              <span className={`text-lg font-bold tabular-nums ${trendColor}`}>
-                {Math.abs(trendPercent).toFixed(0)}%
+              <span className={`text-sm font-bold ${trendColor}`}>
+                {trendPercent > 0 ? "Crescendo" : trendPercent < 0 ? "Caindo" : "Estável"}
               </span>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              Média: {formatCurrency(avgLast3)}/mês
+            <p className={`text-xs font-semibold tabular-nums mt-0.5 ${trendColor}`}>
+              {formatCurrency(Math.abs(avgLast3))}/mês
             </p>
+            {trendPercent !== 0 && (
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {Math.abs(trendPercent).toFixed(0)}% vs trimestre anterior
+              </p>
+            )}
           </div>
         </div>
 
