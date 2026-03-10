@@ -140,7 +140,7 @@ const Financeiro = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-4 mt-4">
-            <CrescimentoMoM
+            <FinanceiroInsights
               pagamentos={pagamentos}
               despesas={despesas}
               period={period}
@@ -155,10 +155,8 @@ const Financeiro = () => {
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
             />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <FluxoCaixaChart pagamentos={pagamentos} despesas={despesas} />
-              <CustoPorFornecedorChart despesas={despesas} fornecedores={fornecedores} />
-            </div>
+            <FluxoCaixaChart pagamentos={pagamentos} despesas={despesas} />
+            <CustoPorFornecedorChart despesas={despesas} fornecedores={fornecedores} />
             <ReceitasMaesTable 
               pagamentos={pagamentos}
               period={period}
