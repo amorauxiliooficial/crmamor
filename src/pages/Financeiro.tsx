@@ -18,9 +18,9 @@ import {
   Building2,
 } from "lucide-react";
 import { ResumoFinanceiroCards } from "@/components/financeiro/ResumoFinanceiroCards";
-import { CrescimentoMoM } from "@/components/financeiro/CrescimentoMoM";
 import { FluxoCaixaChart } from "@/components/financeiro/FluxoCaixaChart";
 import { SemaforoResumo } from "@/components/financeiro/SemaforoResumo";
+import { FinanceiroInsights } from "@/components/financeiro/FinanceiroInsights";
 import { CustoPorFornecedorChart } from "@/components/financeiro/CustoPorFornecedorChart";
 import { DespesasTable } from "@/components/financeiro/DespesasTable";
 import { ReceitasMaesTable } from "@/components/financeiro/ReceitasMaesTable";
