@@ -147,6 +147,14 @@ const Financeiro = () => {
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
             />
+            <SemaforoResumo
+              pagamentos={pagamentos}
+              despesas={despesas}
+              fornecedores={fornecedores}
+              period={period}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <FluxoCaixaChart pagamentos={pagamentos} despesas={despesas} />
               <CustoPorFornecedorChart despesas={despesas} fornecedores={fornecedores} />
