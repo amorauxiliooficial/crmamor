@@ -15,9 +15,26 @@ interface FluxoCaixaChartProps {
 export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) {
   const { chartData, bestMonth, worstMonth } = useMemo(() => {
     const now = new Date();
-    // Empresa começou em outubro/2025
-    const companyStart = new Date(2025, 9, 1); // Oct 2025
-    const startDate = startOfMonth(companyStart);
+    
+    // Find earliest activity date
+    let earliest: Date | null = null;
+    pagamentos.forEach((pag) => {
+      pag.parcelas.forEach((p) => {
+        if (!p.data_pagamento) return;
+        try {
+          const d = parseISO(p.data_pagamento);
+          if (!earliest || d < earliest) earliest = d;
+        } catch { /* skip */ }
+      });
+    });
+    despesas.forEach((d) => {
+      try {
+        const dd = parseISO(d.data_vencimento);
+        if (!earliest || dd < earliest) earliest = dd;
+      } catch { /* skip */ }
+    });
+
+    const startDate = startOfMonth(earliest || subMonths(now, 11));
     const endDate = endOfMonth(now);
     
     const months = eachMonthOfInterval({ start: startDate, end: endDate });
