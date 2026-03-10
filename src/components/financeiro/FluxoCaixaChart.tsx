@@ -20,13 +20,12 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
     
     const months = eachMonthOfInterval({ start: startDate, end: endDate });
 
-    return months.map((month) => {
+    const raw = months.map((month) => {
       const monthStart = startOfMonth(month);
       const monthEnd = endOfMonth(month);
       const isCurrentMonth = format(month, "MM/yyyy") === format(now, "MM/yyyy");
       
       let receitas = 0;
-      
       pagamentos.forEach((pag) => {
         pag.parcelas.forEach((p) => {
           if (!p.data_pagamento || p.status === "inadimplente") return;
@@ -35,33 +34,43 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
             if (parcelaDate >= monthStart && parcelaDate <= monthEnd) {
               receitas += p.valor || 0;
             }
-          } catch {
-            // Skip invalid dates
-          }
+          } catch { /* skip */ }
         });
       });
 
       let despesasTotal = 0;
-      
       despesas.forEach((d) => {
         try {
           const despesaDate = parseISO(d.data_vencimento);
           if (despesaDate >= monthStart && despesaDate <= monthEnd) {
             despesasTotal += d.valor;
           }
-        } catch {
-          // Skip invalid dates
-        }
+        } catch { /* skip */ }
       });
 
+      const resultado = receitas - despesasTotal;
       return {
         name: format(month, "MMM", { locale: ptBR }),
         fullName: format(month, "MMMM/yyyy", { locale: ptBR }),
         receitas,
         despesas: despesasTotal,
-        saldo: receitas - despesasTotal,
+        saldo: resultado,
+        resultado,
         isCurrentMonth,
+        mediaMovel3: 0,
       };
+    });
+
+    // Compute 3-month moving average of resultado
+    return raw.map((item, i) => {
+      if (i >= 2) {
+        item.mediaMovel3 = (raw[i].resultado + raw[i - 1].resultado + raw[i - 2].resultado) / 3;
+      } else if (i === 1) {
+        item.mediaMovel3 = (raw[i].resultado + raw[i - 1].resultado) / 2;
+      } else {
+        item.mediaMovel3 = raw[i].resultado;
+      }
+      return item;
     });
   }, [pagamentos, despesas]);
 
