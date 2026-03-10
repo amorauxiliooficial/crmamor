@@ -74,6 +74,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         despesas: despesasTotal,
         resultado,
         mediaMovel3: 0,
+        highlight: "" as "" | "best" | "worst",
       };
     });
 
