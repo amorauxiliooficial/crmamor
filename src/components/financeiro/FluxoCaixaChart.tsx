@@ -206,15 +206,15 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         {/* Summary cards */}
         <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t">
           <div className="text-center">
-            <p className="text-xs text-muted-foreground">Total Receitas</p>
+            <p className="text-xs text-muted-foreground">Total Entrou</p>
             <p className="text-sm font-semibold text-primary">{formatCurrency(totalReceitas)}</p>
           </div>
           <div className="text-center">
-            <p className="text-xs text-muted-foreground">Total Despesas</p>
+            <p className="text-xs text-muted-foreground">Total Saiu</p>
             <p className="text-sm font-semibold text-destructive">{formatCurrency(totalDespesas)}</p>
           </div>
           <div className="text-center">
-            <p className="text-xs text-muted-foreground">Saldo Período</p>
+            <p className="text-xs text-muted-foreground">Sobrou no Período</p>
             <p className={`text-sm font-semibold ${saldoTotal >= 0 ? 'text-primary' : 'text-destructive'}`}>
               {formatCurrency(saldoTotal)}
             </p>
