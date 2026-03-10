@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  Line,
 } from "recharts";
 import {
   format,
@@ -20,6 +21,7 @@ import {
   addMonths,
   parseISO,
   isAfter,
+  isSameMonth,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
@@ -34,6 +36,7 @@ interface FluxoCaixaChartProps {
 function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
   return useMemo(() => {
     const now = new Date();
+    const currentMonthStart = startOfMonth(now);
 
     let earliest: Date | null = null;
     pagamentos.forEach((pag) => {
@@ -42,18 +45,14 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
         try {
           const d = parseISO(p.data_pagamento);
           if (!earliest || d < earliest) earliest = d;
-        } catch {
-          /* skip */
-        }
+        } catch { /* skip */ }
       });
     });
     despesas.forEach((d) => {
       try {
         const dd = parseISO(d.data_vencimento);
         if (!earliest || dd < earliest) earliest = dd;
-      } catch {
-        /* skip */
-      }
+      } catch { /* skip */ }
     });
 
     const startDate = startOfMonth(earliest || subMonths(now, 11));
@@ -65,7 +64,7 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
     const data = months.map((month) => {
       const monthStart = startOfMonth(month);
       const monthEnd = endOfMonth(month);
-      const isFuture = isAfter(monthStart, now);
+      const isFuture = isAfter(monthStart, currentMonthStart) && !isSameMonth(month, now);
 
       let receitas = 0;
       pagamentos.forEach((pag) => {
@@ -76,9 +75,7 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
             if (parcelaDate >= monthStart && parcelaDate <= monthEnd) {
               receitas += p.valor || 0;
             }
-          } catch {
-            /* skip */
-          }
+          } catch { /* skip */ }
         });
       });
 
@@ -89,9 +86,7 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
           if (despesaDate >= monthStart && despesaDate <= monthEnd) {
             despesasTotal += d.valor;
           }
-        } catch {
-          /* skip */
-        }
+        } catch { /* skip */ }
       });
 
       const resultado = receitas - despesasTotal;
@@ -105,22 +100,31 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
         resultado,
         saldoAcumulado,
         isFuture,
+        // Split data for past/future area rendering
+        saldoPast: isFuture ? undefined : saldoAcumulado,
+        saldoFuture: undefined as number | undefined,
       };
     });
 
-    // Moving average (3 months)
-    const dataWithMA = data.map((item, i) => {
-      let ma = item.resultado;
-      if (i >= 2) {
-        ma = (data[i].resultado + data[i - 1].resultado + data[i - 2].resultado) / 3;
-      } else if (i === 1) {
-        ma = (data[i].resultado + data[i - 1].resultado) / 2;
+    // Calculate MoM % variation and fill future projection line
+    const dataWithVariation = data.map((item, i) => {
+      let variacao: number | undefined;
+      if (i > 0 && data[i - 1].saldoAcumulado !== 0) {
+        variacao = ((item.saldoAcumulado - data[i - 1].saldoAcumulado) / Math.abs(data[i - 1].saldoAcumulado)) * 100;
       }
-      return { ...item, mediaMovel3: ma };
+
+      // For future months, set saldoFuture; also include last past month to connect the line
+      const isLastPast = !item.isFuture && i + 1 < data.length && data[i + 1]?.isFuture;
+      return {
+        ...item,
+        variacao,
+        saldoFuture: item.isFuture || isLastPast ? item.saldoAcumulado : undefined,
+        saldoPast: item.isFuture ? undefined : item.saldoAcumulado,
+      };
     });
 
-    // Stats
-    const pastData = dataWithMA.filter((d) => !d.isFuture);
+    // Stats — only past data (current month + before)
+    const pastData = dataWithVariation.filter((d) => !d.isFuture);
     const active = pastData.filter((d) => d.receitas > 0 || d.despesas > 0);
     let best = active[0] || null;
     let worst = active[0] || null;
@@ -132,7 +136,7 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
     const totalReceitas = pastData.reduce((a, d) => a + d.receitas, 0);
     const totalDespesas = pastData.reduce((a, d) => a + d.despesas, 0);
 
-    // Last 3 months trend
+    // Trend: last 3 PAST months vs previous 3
     const last3 = pastData.slice(-3);
     const avgLast3 = last3.length > 0 ? last3.reduce((a, d) => a + d.resultado, 0) / last3.length : 0;
     const prev3 = pastData.slice(-6, -3);
@@ -140,7 +144,7 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
     const trendPercent = avgPrev3 !== 0 ? ((avgLast3 - avgPrev3) / Math.abs(avgPrev3)) * 100 : 0;
 
     return {
-      chartData: dataWithMA,
+      chartData: dataWithVariation,
       totalReceitas,
       totalDespesas,
       saldoTotal: totalReceitas - totalDespesas,
@@ -153,11 +157,7 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
 }
 
 const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: 0,
-  }).format(value);
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 }).format(value);
 
 const formatCompact = (value: number) => {
   if (Math.abs(value) >= 1000) return `${(value / 1000).toFixed(0)}k`;
@@ -177,7 +177,11 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
   } = useChartData(pagamentos, despesas);
 
   const TrendIcon = trendPercent > 0 ? ArrowUpRight : trendPercent < 0 ? ArrowDownRight : Minus;
-  const trendColor = trendPercent > 0 ? "text-emerald-600" : trendPercent < 0 ? "text-red-500" : "text-muted-foreground";
+  const trendColor = trendPercent > 0
+    ? "text-primary"
+    : trendPercent < 0
+      ? "text-destructive"
+      : "text-muted-foreground";
 
   return (
     <Card className="lg:col-span-2 overflow-hidden">
@@ -193,23 +197,17 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
       <CardContent className="space-y-4">
         {/* KPI Strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiCard
-            label="Total Entrou"
-            value={formatCurrency(totalReceitas)}
-            className="text-emerald-600"
-          />
-          <KpiCard
-            label="Total Saiu"
-            value={formatCurrency(totalDespesas)}
-            className="text-red-500"
-          />
+          <KpiCard label="Total Entrou" value={formatCurrency(totalReceitas)} accent="primary" />
+          <KpiCard label="Total Saiu" value={formatCurrency(totalDespesas)} accent="destructive" />
           <KpiCard
             label="Saldo Acumulado"
             value={formatCurrency(saldoTotal)}
-            className={saldoTotal >= 0 ? "text-emerald-600" : "text-red-500"}
+            accent={saldoTotal >= 0 ? "primary" : "destructive"}
           />
           <div className="rounded-lg border bg-card p-3">
-            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Tendência 3m</p>
+            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
+              Tendência 3m
+            </p>
             <div className="flex items-center gap-1.5 mt-1">
               <TrendIcon className={`h-4 w-4 ${trendColor}`} />
               <span className={`text-lg font-bold tabular-nums ${trendColor}`}>
@@ -227,28 +225,20 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={chartData}
-              margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
+              margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
               barCategoryGap="20%"
             >
               <defs>
-                <linearGradient id="gradientPositive" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
+                <linearGradient id="gradSaldoPast" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.01} />
                 </linearGradient>
-                <linearGradient id="gradientNegative" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#ef4444" stopOpacity={0.02} />
-                  <stop offset="100%" stopColor="#ef4444" stopOpacity={0.3} />
-                </linearGradient>
-                <linearGradient id="gradientSaldo" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                <linearGradient id="gradSaldoFuture" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.1} />
+                  <stop offset="100%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.01} />
                 </linearGradient>
               </defs>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                className="stroke-muted/30"
-                vertical={false}
-              />
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" vertical={false} />
               <XAxis
                 dataKey="name"
                 tick={{ fontSize: 11 }}
@@ -271,38 +261,36 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                   const d = payload[0].payload;
                   return (
                     <div className="bg-popover border border-border rounded-xl p-3.5 shadow-xl min-w-[220px] backdrop-blur-sm">
-                      <p className="font-semibold text-sm capitalize mb-2.5">{d.fullName}</p>
+                      <div className="flex items-center gap-2 mb-2.5">
+                        <p className="font-semibold text-sm capitalize">{d.fullName}</p>
+                        {d.isFuture && (
+                          <span className="text-[9px] uppercase tracking-wider bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-semibold">
+                            Projeção
+                          </span>
+                        )}
+                      </div>
                       <div className="space-y-2 text-xs">
-                        <TooltipRow
-                          dot="bg-emerald-500"
-                          label="Entrou"
-                          value={formatCurrency(d.receitas)}
-                        />
-                        <TooltipRow
-                          dot="bg-red-500"
-                          label="Saiu"
-                          value={formatCurrency(d.despesas)}
-                        />
+                        <TooltipRow dot="bg-primary" label="Entrou" value={formatCurrency(d.receitas)} />
+                        <TooltipRow dot="bg-destructive" label="Saiu" value={formatCurrency(d.despesas)} />
                         <div className="border-t pt-2 flex justify-between items-center">
                           <span className="font-medium text-muted-foreground">Resultado</span>
-                          <span
-                            className={`font-bold ${d.resultado >= 0 ? "text-emerald-600" : "text-red-500"}`}
-                          >
+                          <span className={`font-bold ${d.resultado >= 0 ? "text-primary" : "text-destructive"}`}>
                             {formatCurrency(d.resultado)}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="font-medium text-muted-foreground">Saldo Acum.</span>
-                          <span
-                            className={`font-semibold ${d.saldoAcumulado >= 0 ? "text-emerald-600" : "text-red-500"}`}
-                          >
+                          <span className={`font-semibold ${d.saldoAcumulado >= 0 ? "text-primary" : "text-destructive"}`}>
                             {formatCurrency(d.saldoAcumulado)}
                           </span>
                         </div>
-                        {d.isFuture && (
-                          <p className="text-[10px] text-muted-foreground italic mt-1">
-                            * Projeção futura
-                          </p>
+                        {d.variacao !== undefined && (
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-muted-foreground">Variação MoM</span>
+                            <span className={`font-semibold ${d.variacao >= 0 ? "text-primary" : "text-destructive"}`}>
+                              {d.variacao >= 0 ? "+" : ""}{d.variacao.toFixed(1)}%
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -311,38 +299,68 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
               />
               <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1} />
 
-              {/* Area for accumulated balance */}
+              {/* Past saldo area — solid */}
               <Area
                 type="monotone"
-                dataKey="saldoAcumulado"
+                dataKey="saldoPast"
                 stroke="hsl(var(--primary))"
                 strokeWidth={2.5}
-                fill="url(#gradientSaldo)"
+                fill="url(#gradSaldoPast)"
                 dot={false}
-                activeDot={{
-                  r: 5,
-                  fill: "hsl(var(--primary))",
-                  stroke: "hsl(var(--background))",
-                  strokeWidth: 2,
+                activeDot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
+                connectNulls={false}
+              />
+
+              {/* Future saldo area — dashed projection */}
+              <Area
+                type="monotone"
+                dataKey="saldoFuture"
+                stroke="hsl(var(--muted-foreground))"
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                fill="url(#gradSaldoFuture)"
+                connectNulls={false}
+                dot={(props: any) => {
+                  const { cx, cy, payload } = props;
+                  if (!cx || !cy || !payload.isFuture) return <g key={props.key} />;
+                  const pct = payload.variacao;
+                  if (pct === undefined) return <g key={props.key} />;
+                  const label = `${pct >= 0 ? "+" : ""}${pct.toFixed(0)}%`;
+                  return (
+                    <g key={props.key}>
+                      <circle cx={cx} cy={cy} r={3} fill="hsl(var(--muted-foreground))" />
+                      <text
+                        x={cx}
+                        y={cy - 12}
+                        textAnchor="middle"
+                        fill="hsl(var(--muted-foreground))"
+                        fontSize={10}
+                        fontWeight="600"
+                      >
+                        {label}
+                      </text>
+                    </g>
+                  );
                 }}
+                activeDot={{ r: 4, fill: "hsl(var(--muted-foreground))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
               />
 
               {/* Revenue bars */}
               <Bar
                 dataKey="receitas"
-                fill="#10b981"
+                fill="hsl(var(--primary))"
                 radius={[3, 3, 0, 0]}
                 maxBarSize={22}
-                opacity={0.75}
+                opacity={0.7}
               />
 
               {/* Expense bars */}
               <Bar
                 dataKey="despesas"
-                fill="#ef4444"
+                fill="hsl(var(--destructive))"
                 radius={[3, 3, 0, 0]}
                 maxBarSize={22}
-                opacity={0.55}
+                opacity={0.5}
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -351,16 +369,20 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         {/* Legend */}
         <div className="flex items-center justify-center gap-5 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm bg-emerald-500 opacity-75" />
+            <span className="h-2.5 w-2.5 rounded-sm bg-primary opacity-70" />
             Entrou
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm bg-red-500 opacity-55" />
+            <span className="h-2.5 w-2.5 rounded-sm bg-destructive opacity-50" />
             Saiu
           </span>
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-6 rounded-sm bg-primary/20 border border-primary/40" />
-            Saldo Acumulado
+            Saldo Realizado
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-6 rounded-sm bg-muted-foreground/10 border border-muted-foreground/30 border-dashed" />
+            Projeção
           </span>
         </div>
 
@@ -368,13 +390,13 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         {(bestMonth || worstMonth) && (
           <div className="flex flex-wrap gap-2 pt-2 border-t">
             {bestMonth && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full px-3 py-1 font-medium">
+              <span className="inline-flex items-center gap-1.5 text-[11px] bg-primary/10 text-primary rounded-full px-3 py-1 font-medium">
                 <TrendingUp className="h-3 w-3" />
                 Melhor: {bestMonth.fullName} ({formatCurrency(bestMonth.resultado)})
               </span>
             )}
             {worstMonth && worstMonth !== bestMonth && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] bg-red-500/10 text-red-500 dark:text-red-400 rounded-full px-3 py-1 font-medium">
+              <span className="inline-flex items-center gap-1.5 text-[11px] bg-destructive/10 text-destructive rounded-full px-3 py-1 font-medium">
                 <TrendingDown className="h-3 w-3" />
                 Pior: {worstMonth.fullName} ({formatCurrency(worstMonth.resultado)})
               </span>
@@ -386,34 +408,18 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
   );
 }
 
-function KpiCard({
-  label,
-  value,
-  className,
-}: {
-  label: string;
-  value: string;
-  className?: string;
-}) {
+function KpiCard({ label, value, accent }: { label: string; value: string; accent: "primary" | "destructive" }) {
   return (
     <div className="rounded-lg border bg-card p-3">
-      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
-        {label}
+      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
+      <p className={`text-lg font-bold tabular-nums mt-1 ${accent === "primary" ? "text-primary" : "text-destructive"}`}>
+        {value}
       </p>
-      <p className={`text-lg font-bold tabular-nums mt-1 ${className ?? ""}`}>{value}</p>
     </div>
   );
 }
 
-function TooltipRow({
-  dot,
-  label,
-  value,
-}: {
-  dot: string;
-  label: string;
-  value: string;
-}) {
+function TooltipRow({ dot, label, value }: { dot: string; label: string; value: string }) {
   return (
     <div className="flex justify-between items-center">
       <span className="flex items-center gap-1.5">
