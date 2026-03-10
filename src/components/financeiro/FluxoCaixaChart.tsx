@@ -99,10 +99,10 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         <div className="flex items-center justify-between">
           <CardTitle className="text-base md:text-lg flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
-            Fluxo de Caixa (12 meses)
+            Entrou x Saiu (12 meses)
           </CardTitle>
           <div className={`text-sm font-semibold ${saldoTotal >= 0 ? 'text-primary' : 'text-destructive'}`}>
-            Saldo: {formatCurrency(saldoTotal)}
+            Sobrou: {formatCurrency(saldoTotal)}
           </div>
         </div>
       </CardHeader>
