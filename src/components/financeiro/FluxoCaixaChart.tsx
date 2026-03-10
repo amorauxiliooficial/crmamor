@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from "recharts";
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine, Cell, Label } from "recharts";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, Award, AlertOctagon } from "lucide-react";
 import type { PagamentoComMae } from "@/hooks/usePagamentos";
 import type { Despesa } from "@/types/despesa";
 
@@ -13,17 +13,16 @@ interface FluxoCaixaChartProps {
 }
 
 export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) {
-  const chartData = useMemo(() => {
+  const { chartData, bestMonth, worstMonth } = useMemo(() => {
     const now = new Date();
-    const startDate = startOfMonth(subMonths(now, 5));
-    const endDate = endOfMonth(addMonths(now, 6));
+    const startDate = startOfMonth(subMonths(now, 11));
+    const endDate = endOfMonth(now);
     
     const months = eachMonthOfInterval({ start: startDate, end: endDate });
 
     const raw = months.map((month) => {
       const monthStart = startOfMonth(month);
       const monthEnd = endOfMonth(month);
-      const isCurrentMonth = format(month, "MM/yyyy") === format(now, "MM/yyyy");
       
       let receitas = 0;
       pagamentos.forEach((pag) => {
@@ -54,15 +53,13 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         fullName: format(month, "MMMM/yyyy", { locale: ptBR }),
         receitas,
         despesas: despesasTotal,
-        saldo: resultado,
         resultado,
-        isCurrentMonth,
         mediaMovel3: 0,
       };
     });
 
-    // Compute 3-month moving average of resultado
-    return raw.map((item, i) => {
+    // Moving average
+    const data = raw.map((item, i) => {
       if (i >= 2) {
         item.mediaMovel3 = (raw[i].resultado + raw[i - 1].resultado + raw[i - 2].resultado) / 3;
       } else if (i === 1) {
@@ -72,20 +69,24 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
       }
       return item;
     });
+
+    // Find best/worst months (only months with any activity)
+    const active = data.filter((d) => d.receitas > 0 || d.despesas > 0);
+    let best = active[0] || null;
+    let worst = active[0] || null;
+    active.forEach((d) => {
+      if (d.resultado > (best?.resultado ?? -Infinity)) best = d;
+      if (d.resultado < (worst?.resultado ?? Infinity)) worst = d;
+    });
+
+    return { chartData: data, bestMonth: best, worstMonth: worst };
   }, [pagamentos, despesas]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 }).format(value);
 
   const formatCompact = (value: number) => {
-    if (Math.abs(value) >= 1000) {
-      return `${(value / 1000).toFixed(0)}k`;
-    }
+    if (Math.abs(value) >= 1000) return `${(value / 1000).toFixed(0)}k`;
     return value.toString();
   };
 
@@ -94,9 +95,9 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
   const saldoTotal = totalReceitas - totalDespesas;
 
   return (
-    <Card>
+    <Card className="lg:col-span-2">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="text-base md:text-lg flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
             Entrou x Saiu (12 meses)
@@ -105,6 +106,23 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
             Sobrou: {formatCurrency(saldoTotal)}
           </div>
         </div>
+        {/* Best / Worst month badges */}
+        {(bestMonth || worstMonth) && (
+          <div className="flex flex-wrap gap-2 mt-1">
+            {bestMonth && (
+              <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium">
+                <Award className="h-3 w-3" />
+                Melhor: {bestMonth.fullName} ({formatCurrency(bestMonth.resultado)})
+              </span>
+            )}
+            {worstMonth && worstMonth !== bestMonth && (
+              <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-destructive/10 text-destructive rounded-full px-2 py-0.5 font-medium">
+                <AlertOctagon className="h-3 w-3" />
+                Pior: {worstMonth.fullName} ({formatCurrency(worstMonth.resultado)})
+              </span>
+            )}
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <div className="h-72 md:h-80">
@@ -135,9 +153,15 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                 content={({ active, payload }) => {
                   if (!active || !payload?.length) return null;
                   const data = payload[0].payload;
+                  const isBest = bestMonth && data.name === bestMonth.name;
+                  const isWorst = worstMonth && data.name === worstMonth.name && worstMonth !== bestMonth;
                   return (
                     <div className="bg-popover border border-border rounded-lg p-3 shadow-lg min-w-[200px]">
-                      <p className="font-semibold text-sm mb-2 capitalize">{data.fullName}</p>
+                      <p className="font-semibold text-sm mb-2 capitalize">
+                        {data.fullName}
+                        {isBest && <span className="ml-1 text-primary">⭐ melhor</span>}
+                        {isWorst && <span className="ml-1 text-destructive">⚠ pior</span>}
+                      </p>
                       <div className="space-y-1.5 text-xs">
                         <div className="flex justify-between">
                           <span className="text-primary font-medium">Entrou:</span>
@@ -154,7 +178,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                           </span>
                         </div>
                         <div className="flex justify-between text-muted-foreground">
-                          <span>Média Móvel (3m):</span>
+                          <span>Tendência (3m):</span>
                           <span className="font-medium">{formatCurrency(data.mediaMovel3)}</span>
                         </div>
                       </div>
@@ -166,7 +190,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                 wrapperStyle={{ paddingTop: '10px' }}
                 formatter={(value) => (
                   <span className="text-xs font-medium">
-                    {value === "receitas" ? "Entrou" : value === "despesas" ? "Saiu" : value === "resultado" ? "Sobrou no mês" : "Média Móvel 3m"}
+                    {value === "receitas" ? "Entrou" : value === "despesas" ? "Saiu" : value === "resultado" ? "Sobrou no mês" : "Tendência (3m)"}
                   </span>
                 )}
               />
@@ -203,7 +227,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
           </ResponsiveContainer>
         </div>
 
-        {/* Summary cards */}
+        {/* Summary */}
         <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t">
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Total Entrou</p>
