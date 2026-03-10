@@ -38,7 +38,9 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
     const now = new Date();
     const currentMonthStart = startOfMonth(now);
     const currentMonthEnd = endOfMonth(now);
-    const daysLeft = Math.ceil((currentMonthEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const totalDaysInMonth = Math.ceil((currentMonthEnd.getTime() - currentMonthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const daysElapsed = Math.ceil((now.getTime() - currentMonthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const daysLeft = totalDaysInMonth - daysElapsed;
     const showProjection = daysLeft <= 5;
 
     let earliest: Date | null = null;
