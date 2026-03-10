@@ -307,9 +307,17 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                         </div>
                         {d.variacao !== undefined && (
                           <div className="flex justify-between items-center">
-                            <span className="font-medium text-muted-foreground">Variação MoM</span>
+                            <span className="font-medium text-muted-foreground">vs mês anterior</span>
                             <span className={`font-semibold ${d.variacao >= 0 ? "text-primary" : "text-destructive"}`}>
                               {d.variacao >= 0 ? "+" : ""}{d.variacao.toFixed(1)}%
+                            </span>
+                          </div>
+                        )}
+                        {d.crescimentoTotal !== undefined && (
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-muted-foreground">vs 1º mês</span>
+                            <span className={`font-semibold ${d.crescimentoTotal >= 0 ? "text-primary" : "text-destructive"}`}>
+                              {d.crescimentoTotal >= 0 ? "+" : ""}{d.crescimentoTotal.toFixed(1)}%
                             </span>
                           </div>
                         )}
