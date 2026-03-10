@@ -1,9 +1,28 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine, Cell, Label } from "recharts";
-import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, parseISO } from "date-fns";
+import {
+  ComposedChart,
+  Area,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+} from "recharts";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachMonthOfInterval,
+  subMonths,
+  addMonths,
+  parseISO,
+  isAfter,
+} from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { TrendingUp, Award, AlertOctagon } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import type { PagamentoComMae } from "@/hooks/usePagamentos";
 import type { Despesa } from "@/types/despesa";
 
@@ -12,11 +31,10 @@ interface FluxoCaixaChartProps {
   despesas: Despesa[];
 }
 
-export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) {
-  const { chartData, bestMonth, worstMonth } = useMemo(() => {
+function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
+  return useMemo(() => {
     const now = new Date();
-    
-    // Find earliest activity date
+
     let earliest: Date | null = null;
     pagamentos.forEach((pag) => {
       pag.parcelas.forEach((p) => {
@@ -24,25 +42,31 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         try {
           const d = parseISO(p.data_pagamento);
           if (!earliest || d < earliest) earliest = d;
-        } catch { /* skip */ }
+        } catch {
+          /* skip */
+        }
       });
     });
     despesas.forEach((d) => {
       try {
         const dd = parseISO(d.data_vencimento);
         if (!earliest || dd < earliest) earliest = dd;
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     });
 
     const startDate = startOfMonth(earliest || subMonths(now, 11));
     const endDate = endOfMonth(addMonths(now, 3));
-    
     const months = eachMonthOfInterval({ start: startDate, end: endDate });
 
-    const raw = months.map((month) => {
+    let saldoAcumulado = 0;
+
+    const data = months.map((month) => {
       const monthStart = startOfMonth(month);
       const monthEnd = endOfMonth(month);
-      
+      const isFuture = isAfter(monthStart, now);
+
       let receitas = 0;
       pagamentos.forEach((pag) => {
         pag.parcelas.forEach((p) => {
@@ -52,7 +76,9 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
             if (parcelaDate >= monthStart && parcelaDate <= monthEnd) {
               receitas += p.valor || 0;
             }
-          } catch { /* skip */ }
+          } catch {
+            /* skip */
+          }
         });
       });
 
@@ -63,35 +89,39 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
           if (despesaDate >= monthStart && despesaDate <= monthEnd) {
             despesasTotal += d.valor;
           }
-        } catch { /* skip */ }
+        } catch {
+          /* skip */
+        }
       });
 
       const resultado = receitas - despesasTotal;
+      saldoAcumulado += resultado;
+
       return {
         name: format(month, "MMM", { locale: ptBR }),
         fullName: format(month, "MMMM/yyyy", { locale: ptBR }),
         receitas,
         despesas: despesasTotal,
         resultado,
-        mediaMovel3: 0,
-        highlight: "" as "" | "best" | "worst",
+        saldoAcumulado,
+        isFuture,
       };
     });
 
-    // Moving average
-    const data = raw.map((item, i) => {
+    // Moving average (3 months)
+    const dataWithMA = data.map((item, i) => {
+      let ma = item.resultado;
       if (i >= 2) {
-        item.mediaMovel3 = (raw[i].resultado + raw[i - 1].resultado + raw[i - 2].resultado) / 3;
+        ma = (data[i].resultado + data[i - 1].resultado + data[i - 2].resultado) / 3;
       } else if (i === 1) {
-        item.mediaMovel3 = (raw[i].resultado + raw[i - 1].resultado) / 2;
-      } else {
-        item.mediaMovel3 = raw[i].resultado;
+        ma = (data[i].resultado + data[i - 1].resultado) / 2;
       }
-      return item;
+      return { ...item, mediaMovel3: ma };
     });
 
-    // Find best/worst months (only months with any activity)
-    const active = data.filter((d) => d.receitas > 0 || d.despesas > 0);
+    // Stats
+    const pastData = dataWithMA.filter((d) => !d.isFuture);
+    const active = pastData.filter((d) => d.receitas > 0 || d.despesas > 0);
     let best = active[0] || null;
     let worst = active[0] || null;
     active.forEach((d) => {
@@ -99,72 +129,134 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
       if (d.resultado < (worst?.resultado ?? Infinity)) worst = d;
     });
 
-    // Mark highlights on data
-    if (best) best.highlight = "best";
-    if (worst && worst !== best) worst.highlight = "worst";
+    const totalReceitas = pastData.reduce((a, d) => a + d.receitas, 0);
+    const totalDespesas = pastData.reduce((a, d) => a + d.despesas, 0);
 
-    return { chartData: data, bestMonth: best, worstMonth: worst };
+    // Last 3 months trend
+    const last3 = pastData.slice(-3);
+    const avgLast3 = last3.length > 0 ? last3.reduce((a, d) => a + d.resultado, 0) / last3.length : 0;
+    const prev3 = pastData.slice(-6, -3);
+    const avgPrev3 = prev3.length > 0 ? prev3.reduce((a, d) => a + d.resultado, 0) / prev3.length : 0;
+    const trendPercent = avgPrev3 !== 0 ? ((avgLast3 - avgPrev3) / Math.abs(avgPrev3)) * 100 : 0;
+
+    return {
+      chartData: dataWithMA,
+      totalReceitas,
+      totalDespesas,
+      saldoTotal: totalReceitas - totalDespesas,
+      bestMonth: best,
+      worstMonth: worst,
+      trendPercent,
+      avgLast3,
+    };
   }, [pagamentos, despesas]);
+}
 
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 }).format(value);
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 0,
+  }).format(value);
 
-  const formatCompact = (value: number) => {
-    if (Math.abs(value) >= 1000) return `${(value / 1000).toFixed(0)}k`;
-    return value.toString();
-  };
+const formatCompact = (value: number) => {
+  if (Math.abs(value) >= 1000) return `${(value / 1000).toFixed(0)}k`;
+  return value.toString();
+};
 
-  const totalReceitas = chartData.reduce((acc, d) => acc + d.receitas, 0);
-  const totalDespesas = chartData.reduce((acc, d) => acc + d.despesas, 0);
-  const saldoTotal = totalReceitas - totalDespesas;
+export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) {
+  const {
+    chartData,
+    totalReceitas,
+    totalDespesas,
+    saldoTotal,
+    bestMonth,
+    worstMonth,
+    trendPercent,
+    avgLast3,
+  } = useChartData(pagamentos, despesas);
+
+  const TrendIcon = trendPercent > 0 ? ArrowUpRight : trendPercent < 0 ? ArrowDownRight : Minus;
+  const trendColor = trendPercent > 0 ? "text-emerald-600" : trendPercent < 0 ? "text-red-500" : "text-muted-foreground";
 
   return (
-    <Card className="lg:col-span-2">
+    <Card className="lg:col-span-2 overflow-hidden">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="text-base md:text-lg flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
-            Entrou x Saiu (12 meses)
+            Fluxo de Caixa
           </CardTitle>
-          <div className={`text-sm font-semibold ${saldoTotal >= 0 ? 'text-primary' : 'text-destructive'}`}>
-            Sobrou: {formatCurrency(saldoTotal)}
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        {/* KPI Strip */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiCard
+            label="Total Entrou"
+            value={formatCurrency(totalReceitas)}
+            className="text-emerald-600"
+          />
+          <KpiCard
+            label="Total Saiu"
+            value={formatCurrency(totalDespesas)}
+            className="text-red-500"
+          />
+          <KpiCard
+            label="Saldo Acumulado"
+            value={formatCurrency(saldoTotal)}
+            className={saldoTotal >= 0 ? "text-emerald-600" : "text-red-500"}
+          />
+          <div className="rounded-lg border bg-card p-3">
+            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Tendência 3m</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <TrendIcon className={`h-4 w-4 ${trendColor}`} />
+              <span className={`text-lg font-bold tabular-nums ${trendColor}`}>
+                {Math.abs(trendPercent).toFixed(0)}%
+              </span>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Média: {formatCurrency(avgLast3)}/mês
+            </p>
           </div>
         </div>
-        {/* Best / Worst month badges */}
-        {(bestMonth || worstMonth) && (
-          <div className="flex flex-wrap gap-2 mt-1">
-            {bestMonth && (
-              <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full px-2 py-0.5 font-medium">
-                <Award className="h-3 w-3" />
-                Melhor: {bestMonth.fullName} ({formatCurrency(bestMonth.resultado)})
-              </span>
-            )}
-            {worstMonth && worstMonth !== bestMonth && (
-              <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full px-2 py-0.5 font-medium">
-                <AlertOctagon className="h-3 w-3" />
-                Pior: {worstMonth.fullName} ({formatCurrency(worstMonth.resultado)})
-              </span>
-            )}
-          </div>
-        )}
-      </CardHeader>
-      <CardContent>
-        <div className="h-72 md:h-80">
+
+        {/* Chart */}
+        <div className="h-72 md:h-80 -mx-2">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart 
-              data={chartData} 
-              margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
-              barCategoryGap="15%"
+            <ComposedChart
+              data={chartData}
+              margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
+              barCategoryGap="20%"
             >
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted/50" vertical={false} />
-              <XAxis 
-                dataKey="name" 
+              <defs>
+                <linearGradient id="gradientPositive" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
+                </linearGradient>
+                <linearGradient id="gradientNegative" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#ef4444" stopOpacity={0.02} />
+                  <stop offset="100%" stopColor="#ef4444" stopOpacity={0.3} />
+                </linearGradient>
+                <linearGradient id="gradientSaldo" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                className="stroke-muted/30"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="name"
                 tick={{ fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
                 className="text-muted-foreground"
               />
-              <YAxis 
+              <YAxis
                 tickFormatter={formatCompact}
                 tick={{ fontSize: 11 }}
                 axisLine={false}
@@ -172,125 +264,163 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                 className="text-muted-foreground"
                 width={45}
               />
-              <Tooltip 
-                cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
+              <Tooltip
+                cursor={{ fill: "hsl(var(--muted)/0.15)" }}
                 content={({ active, payload }) => {
                   if (!active || !payload?.length) return null;
-                  const data = payload[0].payload;
-                  const isBest = bestMonth && data.name === bestMonth.name;
-                  const isWorst = worstMonth && data.name === worstMonth.name && worstMonth !== bestMonth;
+                  const d = payload[0].payload;
                   return (
-                    <div className="bg-popover border border-border rounded-lg p-3 shadow-lg min-w-[200px]">
-                      <p className="font-semibold text-sm mb-2 capitalize">
-                        {data.fullName}
-                        {isBest && <span className="ml-1 text-primary">⭐ melhor</span>}
-                        {isWorst && <span className="ml-1 text-destructive">⚠ pior</span>}
-                      </p>
-                      <div className="space-y-1.5 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-primary font-medium">Entrou:</span>
-                          <span className="font-semibold">{formatCurrency(data.receitas)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-destructive font-medium">Saiu:</span>
-                          <span className="font-semibold">{formatCurrency(data.despesas)}</span>
-                        </div>
-                        <div className="border-t pt-1.5 flex justify-between">
-                          <span className="font-medium">Sobrou:</span>
-                          <span className={`font-bold ${data.resultado >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                            {formatCurrency(data.resultado)}
+                    <div className="bg-popover border border-border rounded-xl p-3.5 shadow-xl min-w-[220px] backdrop-blur-sm">
+                      <p className="font-semibold text-sm capitalize mb-2.5">{d.fullName}</p>
+                      <div className="space-y-2 text-xs">
+                        <TooltipRow
+                          dot="bg-emerald-500"
+                          label="Entrou"
+                          value={formatCurrency(d.receitas)}
+                        />
+                        <TooltipRow
+                          dot="bg-red-500"
+                          label="Saiu"
+                          value={formatCurrency(d.despesas)}
+                        />
+                        <div className="border-t pt-2 flex justify-between items-center">
+                          <span className="font-medium text-muted-foreground">Resultado</span>
+                          <span
+                            className={`font-bold ${d.resultado >= 0 ? "text-emerald-600" : "text-red-500"}`}
+                          >
+                            {formatCurrency(d.resultado)}
                           </span>
                         </div>
-                        <div className="flex justify-between text-muted-foreground">
-                          <span>Tendência (3m):</span>
-                          <span className="font-medium">{formatCurrency(data.mediaMovel3)}</span>
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-muted-foreground">Saldo Acum.</span>
+                          <span
+                            className={`font-semibold ${d.saldoAcumulado >= 0 ? "text-emerald-600" : "text-red-500"}`}
+                          >
+                            {formatCurrency(d.saldoAcumulado)}
+                          </span>
                         </div>
+                        {d.isFuture && (
+                          <p className="text-[10px] text-muted-foreground italic mt-1">
+                            * Projeção futura
+                          </p>
+                        )}
                       </div>
                     </div>
                   );
                 }}
               />
-              <Legend 
-                wrapperStyle={{ paddingTop: '10px' }}
-                formatter={(value) => (
-                  <span className="text-xs font-medium">
-                    {value === "receitas" ? "Entrou" : value === "despesas" ? "Saiu" : value === "resultado" ? "Sobrou no mês" : "Tendência (3m)"}
-                  </span>
-                )}
-              />
-              <ReferenceLine y={0} stroke="hsl(var(--border))" />
-              <Bar 
-                dataKey="receitas" 
-                fill="hsl(var(--primary))"
-                radius={[4, 4, 0, 0]}
-                maxBarSize={30}
-              />
-              <Bar 
-                dataKey="despesas" 
-                fill="hsl(var(--destructive))"
-                radius={[4, 4, 0, 0]}
-                maxBarSize={30}
-              />
-              <Line
+              <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1} />
+
+              {/* Area for accumulated balance */}
+              <Area
                 type="monotone"
-                dataKey="resultado"
-                stroke="hsl(var(--accent-foreground))"
-                strokeWidth={2}
-                dot={(props: any) => {
-                  const { cx, cy, payload } = props;
-                  if (!cx || !cy) return <circle key={props.key} />;
-                  if (payload.highlight === "best") {
-                    return (
-                      <g key={props.key}>
-                        <circle cx={cx} cy={cy} r={8} fill="#10b981" opacity={0.25} />
-                        <circle cx={cx} cy={cy} r={5} fill="#10b981" stroke="white" strokeWidth={2} />
-                        <text x={cx} y={cy - 14} textAnchor="middle" fill="#10b981" fontSize={10} fontWeight="bold">⭐</text>
-                      </g>
-                    );
-                  }
-                  if (payload.highlight === "worst") {
-                    return (
-                      <g key={props.key}>
-                        <circle cx={cx} cy={cy} r={8} fill="#f59e0b" opacity={0.25} />
-                        <circle cx={cx} cy={cy} r={5} fill="#f59e0b" stroke="white" strokeWidth={2} />
-                        <text x={cx} y={cy - 14} textAnchor="middle" fill="#f59e0b" fontSize={10} fontWeight="bold">⚠</text>
-                      </g>
-                    );
-                  }
-                  return <circle key={props.key} cx={cx} cy={cy} r={3} fill="hsl(var(--accent-foreground))" />;
-                }}
-                activeDot={{ r: 6 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="mediaMovel3"
-                stroke="hsl(var(--muted-foreground))"
-                strokeWidth={1.5}
-                strokeDasharray="5 5"
+                dataKey="saldoAcumulado"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2.5}
+                fill="url(#gradientSaldo)"
                 dot={false}
+                activeDot={{
+                  r: 5,
+                  fill: "hsl(var(--primary))",
+                  stroke: "hsl(var(--background))",
+                  strokeWidth: 2,
+                }}
+              />
+
+              {/* Revenue bars */}
+              <Bar
+                dataKey="receitas"
+                fill="#10b981"
+                radius={[3, 3, 0, 0]}
+                maxBarSize={22}
+                opacity={0.75}
+              />
+
+              {/* Expense bars */}
+              <Bar
+                dataKey="despesas"
+                fill="#ef4444"
+                radius={[3, 3, 0, 0]}
+                maxBarSize={22}
+                opacity={0.55}
               />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Summary */}
-        <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t">
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">Total Entrou</p>
-            <p className="text-sm font-semibold text-primary">{formatCurrency(totalReceitas)}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">Total Saiu</p>
-            <p className="text-sm font-semibold text-destructive">{formatCurrency(totalDespesas)}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">Sobrou no Período</p>
-            <p className={`text-sm font-semibold ${saldoTotal >= 0 ? 'text-primary' : 'text-destructive'}`}>
-              {formatCurrency(saldoTotal)}
-            </p>
-          </div>
+        {/* Legend */}
+        <div className="flex items-center justify-center gap-5 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-emerald-500 opacity-75" />
+            Entrou
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-red-500 opacity-55" />
+            Saiu
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-6 rounded-sm bg-primary/20 border border-primary/40" />
+            Saldo Acumulado
+          </span>
         </div>
+
+        {/* Best / Worst chips */}
+        {(bestMonth || worstMonth) && (
+          <div className="flex flex-wrap gap-2 pt-2 border-t">
+            {bestMonth && (
+              <span className="inline-flex items-center gap-1.5 text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full px-3 py-1 font-medium">
+                <TrendingUp className="h-3 w-3" />
+                Melhor: {bestMonth.fullName} ({formatCurrency(bestMonth.resultado)})
+              </span>
+            )}
+            {worstMonth && worstMonth !== bestMonth && (
+              <span className="inline-flex items-center gap-1.5 text-[11px] bg-red-500/10 text-red-500 dark:text-red-400 rounded-full px-3 py-1 font-medium">
+                <TrendingDown className="h-3 w-3" />
+                Pior: {worstMonth.fullName} ({formatCurrency(worstMonth.resultado)})
+              </span>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+function KpiCard({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: string;
+  className?: string;
+}) {
+  return (
+    <div className="rounded-lg border bg-card p-3">
+      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
+        {label}
+      </p>
+      <p className={`text-lg font-bold tabular-nums mt-1 ${className ?? ""}`}>{value}</p>
+    </div>
+  );
+}
+
+function TooltipRow({
+  dot,
+  label,
+  value,
+}: {
+  dot: string;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex justify-between items-center">
+      <span className="flex items-center gap-1.5">
+        <span className={`h-2 w-2 rounded-full ${dot}`} />
+        <span className="text-muted-foreground">{label}</span>
+      </span>
+      <span className="font-semibold">{value}</span>
+    </div>
   );
 }
