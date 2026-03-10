@@ -110,11 +110,27 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
       };
     });
 
-    // Calculate MoM % variation and fill future projection line
+    // Calculate MoM % variation on monthly resultado (receitas - despesas)
+    // and cumulative growth from the first month with activity
+    const firstActiveIdx = data.findIndex((d) => d.receitas > 0 || d.despesas > 0);
+    const firstResultado = firstActiveIdx >= 0 ? data[firstActiveIdx].resultado : 0;
+
     const dataWithVariation = data.map((item, i) => {
+      // MoM variation: how the monthly resultado changed vs previous month
       let variacao: number | undefined;
-      if (i > 0 && data[i - 1].saldoAcumulado !== 0) {
-        variacao = ((item.saldoAcumulado - data[i - 1].saldoAcumulado) / Math.abs(data[i - 1].saldoAcumulado)) * 100;
+      if (i > 0 && (data[i - 1].receitas > 0 || data[i - 1].despesas > 0)) {
+        const prev = data[i - 1].resultado;
+        if (prev !== 0) {
+          variacao = ((item.resultado - prev) / Math.abs(prev)) * 100;
+        } else if (item.resultado !== 0) {
+          variacao = 100; // went from 0 to something
+        }
+      }
+
+      // Cumulative growth from first active month
+      let crescimentoTotal: number | undefined;
+      if (i > firstActiveIdx && firstActiveIdx >= 0 && firstResultado !== 0) {
+        crescimentoTotal = ((item.resultado - firstResultado) / Math.abs(firstResultado)) * 100;
       }
 
       // For future months, set saldoFuture; also include last past month to connect the line
@@ -122,6 +138,7 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
       return {
         ...item,
         variacao,
+        crescimentoTotal,
         saldoFuture: item.isFuture || isLastPast ? item.saldoAcumulado : undefined,
         saldoPast: item.isFuture ? undefined : item.saldoAcumulado,
       };
@@ -290,9 +307,17 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                         </div>
                         {d.variacao !== undefined && (
                           <div className="flex justify-between items-center">
-                            <span className="font-medium text-muted-foreground">Variação MoM</span>
+                            <span className="font-medium text-muted-foreground">vs mês anterior</span>
                             <span className={`font-semibold ${d.variacao >= 0 ? "text-primary" : "text-destructive"}`}>
                               {d.variacao >= 0 ? "+" : ""}{d.variacao.toFixed(1)}%
+                            </span>
+                          </div>
+                        )}
+                        {d.crescimentoTotal !== undefined && (
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-muted-foreground">vs 1º mês</span>
+                            <span className={`font-semibold ${d.crescimentoTotal >= 0 ? "text-primary" : "text-destructive"}`}>
+                              {d.crescimentoTotal >= 0 ? "+" : ""}{d.crescimentoTotal.toFixed(1)}%
                             </span>
                           </div>
                         )}
