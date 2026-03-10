@@ -15,7 +15,9 @@ interface FluxoCaixaChartProps {
 export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) {
   const { chartData, bestMonth, worstMonth } = useMemo(() => {
     const now = new Date();
-    const startDate = startOfMonth(subMonths(now, 11));
+    // Empresa começou em outubro/2025
+    const companyStart = new Date(2025, 9, 1); // Oct 2025
+    const startDate = startOfMonth(companyStart);
     const endDate = endOfMonth(now);
     
     const months = eachMonthOfInterval({ start: startDate, end: endDate });
