@@ -38,7 +38,9 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
     const now = new Date();
     const currentMonthStart = startOfMonth(now);
     const currentMonthEnd = endOfMonth(now);
-    const daysLeft = Math.ceil((currentMonthEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const totalDaysInMonth = Math.ceil((currentMonthEnd.getTime() - currentMonthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const daysElapsed = Math.ceil((now.getTime() - currentMonthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const daysLeft = totalDaysInMonth - daysElapsed;
     const showProjection = daysLeft <= 5;
 
     let earliest: Date | null = null;
@@ -157,6 +159,25 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
     const totalReceitas = pastData.reduce((a, d) => a + d.receitas, 0);
     const totalDespesas = pastData.reduce((a, d) => a + d.despesas, 0);
 
+    // Current month projection
+    const currentMonthFullName = format(now, "MMMM/yyyy", { locale: ptBR });
+    const currentMonthData = pastData.find((d) => d.fullName === currentMonthFullName);
+    const receitaAtual = currentMonthData?.receitas ?? 0;
+    const despesaAtual = currentMonthData?.despesas ?? 0;
+    const projectionFactor = daysElapsed > 0 ? totalDaysInMonth / daysElapsed : 1;
+    const receitaProjetada = receitaAtual * projectionFactor;
+    const despesaProjetada = despesaAtual * projectionFactor;
+    const resultadoProjetado = receitaProjetada - despesaProjetada;
+
+    // Previous month for comparison
+    const prevMonthDate = subMonths(now, 1);
+    const prevMonthName = format(prevMonthDate, "MMMM/yyyy", { locale: ptBR });
+    const prevMonthData = pastData.find((d) => d.fullName === prevMonthName);
+    const resultadoMesAnterior = prevMonthData?.resultado ?? 0;
+    const projecaoVsPrev = resultadoMesAnterior !== 0
+      ? ((resultadoProjetado - resultadoMesAnterior) / Math.abs(resultadoMesAnterior)) * 100
+      : resultadoProjetado !== 0 ? 100 : 0;
+
     // Trend: last 3 PAST months vs previous 3
     const last3 = pastData.slice(-3);
     const avgLast3 = last3.length > 0 ? last3.reduce((a, d) => a + d.resultado, 0) / last3.length : 0;
@@ -173,6 +194,15 @@ function useChartData(pagamentos: PagamentoComMae[], despesas: Despesa[]) {
       worstMonth: worst,
       trendPercent,
       avgLast3,
+      currentMonthName: format(now, "MMMM", { locale: ptBR }),
+      daysElapsed,
+      daysLeft,
+      receitaAtual,
+      despesaAtual,
+      receitaProjetada,
+      despesaProjetada,
+      resultadoProjetado,
+      projecaoVsPrev,
     };
   }, [pagamentos, despesas]);
 }
@@ -195,6 +225,15 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
     worstMonth,
     trendPercent,
     avgLast3,
+    currentMonthName,
+    daysElapsed,
+    daysLeft,
+    receitaAtual,
+    despesaAtual,
+    receitaProjetada,
+    despesaProjetada,
+    resultadoProjetado,
+    projecaoVsPrev,
   } = useChartData(pagamentos, despesas);
 
   const TrendIcon = trendPercent > 0 ? ArrowUpRight : trendPercent < 0 ? ArrowDownRight : Minus;
@@ -243,6 +282,59 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                 {Math.abs(trendPercent).toFixed(0)}% vs trimestre anterior
               </p>
             )}
+          </div>
+        </div>
+
+        {/* Projeção do mês atual */}
+        <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold capitalize">
+                Projeção {currentMonthName}
+              </p>
+            </div>
+            <span className="text-[10px] uppercase tracking-wider bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-semibold">
+              {daysElapsed} dias passados · {daysLeft} restantes
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Entrou até agora</p>
+              <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(receitaAtual)}</p>
+              <p className="text-[10px] text-muted-foreground">→ proj: {formatCurrency(receitaProjetada)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Saiu até agora</p>
+              <p className="text-sm font-bold tabular-nums text-destructive">{formatCurrency(despesaAtual)}</p>
+              <p className="text-[10px] text-muted-foreground">→ proj: {formatCurrency(despesaProjetada)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Resultado projetado</p>
+              <p className={`text-sm font-bold tabular-nums ${resultadoProjetado >= 0 ? "text-primary" : "text-destructive"}`}>
+                {formatCurrency(resultadoProjetado)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                se manter o ritmo
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">vs mês anterior</p>
+              <div className="flex items-center gap-1 mt-0.5">
+                {projecaoVsPrev >= 0 ? (
+                  <ArrowUpRight className="h-3.5 w-3.5 text-primary" />
+                ) : (
+                  <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
+                )}
+                <p className={`text-sm font-bold tabular-nums ${projecaoVsPrev >= 0 ? "text-primary" : "text-destructive"}`}>
+                  {projecaoVsPrev >= 0 ? "+" : ""}{projecaoVsPrev.toFixed(0)}%
+                </p>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                na projeção
+              </p>
+            </div>
           </div>
         </div>
 
