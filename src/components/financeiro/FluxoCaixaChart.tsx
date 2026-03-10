@@ -99,6 +99,10 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
       if (d.resultado < (worst?.resultado ?? Infinity)) worst = d;
     });
 
+    // Mark highlights on data
+    if (best) best.highlight = "best";
+    if (worst && worst !== best) worst.highlight = "worst";
+
     return { chartData: data, bestMonth: best, worstMonth: worst };
   }, [pagamentos, despesas]);
 
