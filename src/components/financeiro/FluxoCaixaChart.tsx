@@ -285,6 +285,59 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
           </div>
         </div>
 
+        {/* Projeção do mês atual */}
+        <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold capitalize">
+                Projeção {currentMonthName}
+              </p>
+            </div>
+            <span className="text-[10px] uppercase tracking-wider bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-semibold">
+              {daysElapsed} dias passados · {daysLeft} restantes
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Entrou até agora</p>
+              <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(receitaAtual)}</p>
+              <p className="text-[10px] text-muted-foreground">→ proj: {formatCurrency(receitaProjetada)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Saiu até agora</p>
+              <p className="text-sm font-bold tabular-nums text-destructive">{formatCurrency(despesaAtual)}</p>
+              <p className="text-[10px] text-muted-foreground">→ proj: {formatCurrency(despesaProjetada)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Resultado projetado</p>
+              <p className={`text-sm font-bold tabular-nums ${resultadoProjetado >= 0 ? "text-primary" : "text-destructive"}`}>
+                {formatCurrency(resultadoProjetado)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                se manter o ritmo
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">vs mês anterior</p>
+              <div className="flex items-center gap-1 mt-0.5">
+                {projecaoVsPrev >= 0 ? (
+                  <ArrowUpRight className="h-3.5 w-3.5 text-primary" />
+                ) : (
+                  <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
+                )}
+                <p className={`text-sm font-bold tabular-nums ${projecaoVsPrev >= 0 ? "text-primary" : "text-destructive"}`}>
+                  {projecaoVsPrev >= 0 ? "+" : ""}{projecaoVsPrev.toFixed(0)}%
+                </p>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                na projeção
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Chart */}
         <div className="h-72 md:h-80 -mx-2">
           <ResponsiveContainer width="100%" height="100%">
