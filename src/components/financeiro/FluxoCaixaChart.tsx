@@ -140,15 +140,15 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                       <p className="font-semibold text-sm mb-2 capitalize">{data.fullName}</p>
                       <div className="space-y-1.5 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-primary font-medium">Receitas:</span>
+                          <span className="text-primary font-medium">Entrou:</span>
                           <span className="font-semibold">{formatCurrency(data.receitas)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-destructive font-medium">Despesas:</span>
+                          <span className="text-destructive font-medium">Saiu:</span>
                           <span className="font-semibold">{formatCurrency(data.despesas)}</span>
                         </div>
                         <div className="border-t pt-1.5 flex justify-between">
-                          <span className="font-medium">Resultado:</span>
+                          <span className="font-medium">Sobrou:</span>
                           <span className={`font-bold ${data.resultado >= 0 ? 'text-primary' : 'text-destructive'}`}>
                             {formatCurrency(data.resultado)}
                           </span>
@@ -166,7 +166,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                 wrapperStyle={{ paddingTop: '10px' }}
                 formatter={(value) => (
                   <span className="text-xs font-medium">
-                    {value === "receitas" ? "Receitas" : value === "despesas" ? "Despesas" : value === "resultado" ? "Resultado" : "Média Móvel 3m"}
+                    {value === "receitas" ? "Entrou" : value === "despesas" ? "Saiu" : value === "resultado" ? "Sobrou no mês" : "Média Móvel 3m"}
                   </span>
                 )}
               />
