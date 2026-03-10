@@ -134,13 +134,13 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         {(bestMonth || worstMonth) && (
           <div className="flex flex-wrap gap-2 mt-1">
             {bestMonth && (
-              <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium">
+              <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full px-2 py-0.5 font-medium">
                 <Award className="h-3 w-3" />
                 Melhor: {bestMonth.fullName} ({formatCurrency(bestMonth.resultado)})
               </span>
             )}
             {worstMonth && worstMonth !== bestMonth && (
-              <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-destructive/10 text-destructive rounded-full px-2 py-0.5 font-medium">
+              <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full px-2 py-0.5 font-medium">
                 <AlertOctagon className="h-3 w-3" />
                 Pior: {worstMonth.fullName} ({formatCurrency(worstMonth.resultado)})
               </span>
