@@ -18,6 +18,7 @@ import {
   Building2,
 } from "lucide-react";
 import { ResumoFinanceiroCards } from "@/components/financeiro/ResumoFinanceiroCards";
+import { CrescimentoMoM } from "@/components/financeiro/CrescimentoMoM";
 import { FluxoCaixaChart } from "@/components/financeiro/FluxoCaixaChart";
 import { CustoPorFornecedorChart } from "@/components/financeiro/CustoPorFornecedorChart";
 import { DespesasTable } from "@/components/financeiro/DespesasTable";
@@ -138,6 +139,13 @@ const Financeiro = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-4 mt-4">
+            <CrescimentoMoM
+              pagamentos={pagamentos}
+              despesas={despesas}
+              period={period}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <FluxoCaixaChart pagamentos={pagamentos} despesas={despesas} />
               <CustoPorFornecedorChart despesas={despesas} fornecedores={fornecedores} />
