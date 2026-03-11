@@ -767,6 +767,47 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_intake: {
+        Row: {
+          address: string | null
+          cpf: string | null
+          created_at: string
+          id: string
+          name: string | null
+          stage: string
+          updated_at: string
+          wa_conversation_id: string
+        }
+        Insert: {
+          address?: string | null
+          cpf?: string | null
+          created_at?: string
+          id?: string
+          name?: string | null
+          stage?: string
+          updated_at?: string
+          wa_conversation_id: string
+        }
+        Update: {
+          address?: string | null
+          cpf?: string | null
+          created_at?: string
+          id?: string
+          name?: string | null
+          stage?: string
+          updated_at?: string
+          wa_conversation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_intake_wa_conversation_id_fkey"
+            columns: ["wa_conversation_id"]
+            isOneToOne: true
+            referencedRelation: "wa_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mae_atendentes: {
         Row: {
           created_at: string
