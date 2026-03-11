@@ -3,193 +3,86 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-internal-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const DEFAULT_MODEL = "gpt-4o-mini";
-const MAX_HISTORY = 20;
-const DEBOUNCE_SECONDS = 10;
-const HUMAN_DELAY_MS = { min: 3000, max: 8000 };
-const HANDOFF_KEYWORDS = ["humano", "atendente", "pessoa real", "falar com alguém", "urgente", "emergência"];
+const GRAPH_API_VERSION = "v21.0";
+const DEFAULT_TEMPLATE_NAME = "retomar_atendimento";
+const DEFAULT_TEMPLATE_LANG = "pt_BR";
 
-const FALLBACK_SYSTEM_PROMPT = `Você é Emily, assistente virtual da equipe de salário-maternidade. Seu objetivo é qualificar a mãe de forma natural e empática via conversa.
+/**
+ * Upload a media file to Meta's servers and return the media_id.
+ */
+async function uploadMediaToMeta(
+  mediaUrl: string,
+  mediaMime: string,
+  metaToken: string,
+  phoneNumberId: string,
+): Promise<string> {
+  console.log(`⬇️ Downloading media from: ${mediaUrl.slice(0, 100)}...`);
+  const fileRes = await fetch(mediaUrl);
+  if (!fileRes.ok) {
+    throw new Error(`Failed to download media: ${fileRes.status} ${fileRes.statusText}`);
+  }
+  const fileBlob = await fileRes.blob();
 
-REGRAS:
-- Conduza a conversa de forma natural, como uma pessoa real. NÃO use listas, checklists ou bullet points.
-- Faça uma pergunta por vez, de forma casual e acolhedora.
-- Responda em português brasileiro informal e educado.
-- Nunca mencione que é uma IA ou assistente virtual.
-- Se a pessoa pedir para falar com um humano/atendente, responda EXATAMENTE: "HANDOFF_REQUEST" (só essa palavra).
-- Se não souber responder algo específico do processo, diga que vai verificar com a equipe.
-- Mantenha respostas curtas (1-3 frases no máximo).
-- Use emojis com moderação (máximo 1 por mensagem).
-- Informações que você precisa coletar naturalmente: nome, tipo de evento (parto/adoção), data do evento, situação trabalhista, se tem carteira assinada, se contribui para o INSS.
+  const form = new FormData();
+  const filename = mediaMime.includes("ogg")
+    ? "audio.ogg"
+    : mediaMime.includes("webm")
+      ? "audio.webm"
+      : mediaMime.includes("mpeg") || mediaMime.includes("mp3")
+        ? "audio.mp3"
+        : mediaMime.includes("aac")
+          ? "audio.aac"
+          : "media.bin";
 
-IMPORTANTE: Você está respondendo via WhatsApp. Seja concisa e direta.`;
+  form.append("file", new File([fileBlob], filename, { type: mediaMime }));
+  form.append("messaging_product", "whatsapp");
+  form.append("type", mediaMime);
 
-// ── Resolve which agent to use for a conversation ──
-async function resolveAgent(supabase: any, convo: any): Promise<any> {
-  // Priority 1: explicit agent on conversation
-  if (convo.ai_agent_id) {
-    const { data } = await supabase
-      .from("ai_agents")
-      .select("*")
-      .eq("id", convo.ai_agent_id)
-      .eq("is_active", true)
-      .single();
-    if (data) return data;
+  console.log(`⬆️ Uploading media to Meta (${mediaMime}, ${fileBlob.size} bytes)...`);
+
+  const uploadRes = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/${phoneNumberId}/media`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${metaToken}` },
+    body: form,
+  });
+
+  const uploadBody = await uploadRes.json();
+  console.log(`📤 Meta upload response (${uploadRes.status}):`, JSON.stringify(uploadBody).slice(0, 300));
+
+  if (!uploadRes.ok || !uploadBody.id) {
+    const errMsg = uploadBody?.error?.message || "Unknown upload error";
+    throw new Error(`Meta media upload failed (${uploadRes.status}): ${errMsg}`);
   }
 
-  // Priority 2: match by labels/departments
-  const convoLabels: string[] = convo.labels || [];
-  if (convoLabels.length > 0) {
-    const { data: agents } = await supabase.from("ai_agents").select("*").eq("is_active", true).eq("is_default", false);
-    if (agents) {
-      for (const agent of agents) {
-        const depts: string[] = agent.departments || [];
-        if (depts.some((d: string) => convoLabels.includes(d))) return agent;
-      }
-    }
-  }
-
-  // Priority 3: default agent
-  const { data: defaultAgent } = await supabase
-    .from("ai_agents")
-    .select("*")
-    .eq("is_default", true)
-    .eq("is_active", true)
-    .limit(1)
-    .single();
-  return defaultAgent || null;
+  return uploadBody.id;
 }
 
-// ── Get effective config (published or draft) ──
-function getEffectiveConfig(agent: any): any {
-  if (agent.published_config) return { ...agent, ...agent.published_config };
-  return agent;
+function firstNameFrom(input?: string | null): string {
+  const s = (input || "").trim();
+  if (!s) return "tudo bem";
+  return s.split(/\s+/)[0] || "tudo bem";
 }
 
-// ── Build system prompt from agent config ──
-function buildSystemPrompt(config: any): string {
-  let prompt = config.system_prompt || FALLBACK_SYSTEM_PROMPT;
-
-  if (config.knowledge_instructions) {
-    prompt += `\n\nINSTRUÇÕES ADICIONAIS DE CONHECIMENTO:\n${config.knowledge_instructions}`;
-  }
-
-  const faq = config.knowledge_faq;
-  if (faq && Array.isArray(faq) && faq.length > 0) {
-    prompt += "\n\nPERGUNTAS FREQUENTES (use como base para respostas):";
-    for (const item of faq) {
-      if (item.question && item.answer) {
-        prompt += `\nP: ${item.question}\nR: ${item.answer}`;
-      }
-    }
-  }
-
-  const tools = config.tools_config;
-  if (tools && typeof tools === "object") {
-    const enabledTools = Object.entries(tools)
-      .filter(([_, v]) => v)
-      .map(([k]) => k);
-    if (enabledTools.length > 0) {
-      prompt += `\n\nFERRAMENTAS HABILITADAS: ${enabledTools.join(", ")}`;
-      if (enabledTools.includes("handoff_human")) {
-        prompt += "\n- Se a pessoa insistir em falar com humano, responda EXATAMENTE: HANDOFF_REQUEST";
-      }
-      if (enabledTools.includes("qualify_lead")) {
-        prompt +=
-          "\n- Colete informações essenciais de forma natural (nome, tipo de evento, data, situação trabalhista)";
-        prompt +=
-          "\n- Quando coletar um dado, inclua no final da resposta uma linha oculta no formato: [DADOS: campo=valor]";
-        prompt +=
-          "\n- Campos possíveis: nome, tipo_evento, data_evento, situacao_trabalhista, carteira_assinada, contribui_inss, telefone";
-      }
-      if (enabledTools.includes("apply_tags")) {
-        prompt += "\n- Quando identificar o perfil do lead, inclua: [TAG: nome_da_tag]";
-      }
-      if (enabledTools.includes("schedule_followup")) {
-        prompt += "\n- Se combinar de retornar ou agendar contato, inclua: [FOLLOWUP: YYYY-MM-DD motivo]";
-      }
-    }
-  }
-
-  if (config.tone) {
-    prompt += `\n\nTOM DE CONVERSA: Seja ${config.tone}.`;
-  }
-
-  return prompt;
-}
-
-// ── Execute tool actions parsed from AI response ──
-async function executeToolActions(
-  supabase: any,
-  aiReply: string,
-  conversationId: string,
-  agentConfig: any,
-): Promise<{ cleanReply: string; actions: string[] }> {
-  const actions: string[] = [];
-  let cleanReply = aiReply;
-
-  // Extract and execute [DADOS: campo=valor]
-  const dataMatches = aiReply.matchAll(/\[DADOS:\s*(\w+)=([^\]]+)\]/gi);
-  for (const match of dataMatches) {
-    const field = match[1];
-    const value = match[2].trim();
-    cleanReply = cleanReply.replace(match[0], "").trim();
-
-    // Log the qualification data as event
-    await supabase.from("conversation_events").insert({
-      conversation_id: conversationId,
-      event_type: "ai_qualify_data",
-      meta: { field, value, agent_id: agentConfig?.id, agent_name: agentConfig?.name },
-    });
-    actions.push(`qualify:${field}=${value}`);
-  }
-
-  // Extract and execute [TAG: tag_name]
-  const tagMatches = aiReply.matchAll(/\[TAG:\s*([^\]]+)\]/gi);
-  for (const match of tagMatches) {
-    const tag = match[1].trim();
-    cleanReply = cleanReply.replace(match[0], "").trim();
-
-    const { data: convo } = await supabase.from("wa_conversations").select("labels").eq("id", conversationId).single();
-
-    const currentLabels: string[] = convo?.labels || [];
-    if (!currentLabels.includes(tag)) {
-      await supabase
-        .from("wa_conversations")
-        .update({ labels: [...currentLabels, tag] })
-        .eq("id", conversationId);
-    }
-
-    await supabase.from("conversation_events").insert({
-      conversation_id: conversationId,
-      event_type: "ai_apply_tag",
-      meta: { tag, agent_id: agentConfig?.id },
-    });
-    actions.push(`tag:${tag}`);
-  }
-
-  // Extract and execute [FOLLOWUP: date reason]
-  const followupMatches = aiReply.matchAll(/\[FOLLOWUP:\s*(\d{4}-\d{2}-\d{2})\s+([^\]]+)\]/gi);
-  for (const match of followupMatches) {
-    const date = match[1];
-    const reason = match[2].trim();
-    cleanReply = cleanReply.replace(match[0], "").trim();
-
-    await supabase.from("conversation_events").insert({
-      conversation_id: conversationId,
-      event_type: "ai_schedule_followup",
-      meta: { scheduled_date: date, reason, agent_id: agentConfig?.id },
-    });
-    actions.push(`followup:${date} ${reason}`);
-  }
-
-  // Clean up empty lines from removed markers
-  cleanReply = cleanReply.replace(/\n{3,}/g, "\n\n").trim();
-
-  return { cleanReply, actions };
+function buildRetomarTemplate(firstName: string, templateName = DEFAULT_TEMPLATE_NAME, lang = DEFAULT_TEMPLATE_LANG) {
+  return {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    type: "template",
+    template: {
+      name: templateName,
+      language: { code: lang },
+      components: [
+        {
+          type: "body",
+          parameters: [{ type: "text", text: firstName }],
+        },
+      ],
+    },
+  };
 }
 
 serve(async (req: Request): Promise<Response> => {
@@ -197,408 +90,465 @@ serve(async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const startTime = Date.now();
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const openaiKey = Deno.env.get("OPENAI_API_KEY");
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
-
-  if (!openaiKey) {
-    console.error("❌ OPENAI_API_KEY not configured");
-    return jsonError("OPENAI_API_KEY not configured", 500);
+  if (req.method !== "POST") {
+    return new Response("Method not allowed", { status: 405, headers: corsHeaders });
   }
 
-  // ✅ Helper to call whatsapp-send with proper auth headers
-  async function sendWhatsAppMessage(payload: any, context: string) {
-    const res = await fetch(`${supabaseUrl}/functions/v1/whatsapp-send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${serviceRoleKey}`,
-        apikey: serviceRoleKey, // ✅ added to avoid Unauthorized in some setups
-      },
-      body: JSON.stringify(payload),
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const INTERNAL_FUNCTION_TOKEN = Deno.env.get("INTERNAL_FUNCTION_TOKEN") || "";
+
+  const authHeader = req.headers.get("Authorization") || "";
+  const apikeyHeader = req.headers.get("apikey") || "";
+  const internalToken = req.headers.get("x-internal-token") || "";
+
+  // ✅ internal call bypass (service role OR internal token)
+  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.replace("Bearer ", "") : "";
+  const isInternalCall =
+    bearerToken === serviceRoleKey ||
+    apikeyHeader === serviceRoleKey ||
+    (INTERNAL_FUNCTION_TOKEN && internalToken === INTERNAL_FUNCTION_TOKEN);
+
+  console.log("🔐 auth check", {
+    hasAuth: !!authHeader,
+    hasApikey: !!apikeyHeader,
+    hasInternalToken: !!internalToken,
+    internal: isInternalCall,
+  });
+
+  if (!isInternalCall) {
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
+  }
+
+  let userId: string | null = null;
+
+  if (!isInternalCall) {
+    // validate user JWT
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
     });
 
-    let body: any = null;
-    try {
-      body = await res.json();
-    } catch {
-      /* ignore */
+    const token = bearerToken;
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
-
-    if (!res.ok) {
-      console.error(`❌ whatsapp-send failed (${context}):`, res.status, JSON.stringify(body).slice(0, 300));
-    }
-
-    return { res, body };
+    userId = claimsData.claims.sub;
+  } else {
+    userId = null; // system / AI
   }
+
+  const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
   try {
     const body = await req.json();
 
-    // ── Preview mode ──
-    if (body.preview_mode) {
-      return await handlePreview(body, openaiKey);
-    }
+    const {
+      to,
+      text,
+      conversation_id,
+      type,
+      media_url,
+      media_mime,
+      media_filename,
+      caption,
 
-    const { conversation_id, trigger_message_id } = body;
-    console.log(`🤖 AI Reply triggered: conv=${conversation_id}, trigger=${trigger_message_id}`);
+      // window fallback controls
+      window_fallback_template,
+      template_name,
+      template_language,
+      template_components,
 
-    if (!conversation_id) return jsonError("Missing conversation_id", 400);
+      // first name for retomar_atendimento {{1}}
+      first_name,
+    } = body;
 
-    // ── 1. Fetch conversation ──
-    const { data: convo, error: convoErr } = await supabase
-      .from("wa_conversations")
-      .select("*")
-      .eq("id", conversation_id)
-      .single();
-
-    if (convoErr || !convo) {
-      console.error("❌ Conversation not found:", convoErr);
-      return jsonError("Conversation not found", 404);
-    }
-
-    // ── 2. Idempotency: check if we already processed this trigger ──
-    if (trigger_message_id && convo.last_ai_trigger_msg_id === trigger_message_id) {
-      console.log("⏭️ Skipping: already processed this trigger_message_id (idempotency)");
-      return jsonOk({ skipped: true, reason: "idempotent_duplicate" });
-    }
-
-    // ── 3. Eligibility checks ──
-    const labels: string[] = convo.labels || [];
-    const aiEnabled = convo.ai_enabled === true || labels.includes("AI_ON");
-
-    if (!aiEnabled) {
-      console.log("⏭️ Skipping: AI not enabled");
-      return jsonOk({ skipped: true, reason: "ai_not_enabled" });
-    }
-
-    // Skip if conversation is on web_manual_team channel
-    const activeChannel = convo.active_channel_code || convo.channel || "official";
-    if (activeChannel === "web_manual_team") {
-      console.log("⏭️ Skipping: web_manual_team channel — manual mode");
-      return jsonOk({ skipped: true, reason: "web_manual_channel" });
-    }
-
-    if (convo.status === "closed") {
-      console.log("⏭️ Skipping: conversation is closed");
-      return jsonOk({ skipped: true, reason: "closed" });
-    }
-
-    if (labels.includes("HANDOFF_HUMAN")) {
-      console.log("⏭️ Skipping: HANDOFF_HUMAN active");
-      return jsonOk({ skipped: true, reason: "handoff_human" });
-    }
-
-    if (labels.includes("AI_PAUSED")) {
-      console.log("⏭️ Skipping: AI_PAUSED");
-      return jsonOk({ skipped: true, reason: "ai_paused" });
-    }
-
-    // If assigned to human without AI override
-    if (convo.assigned_to && !labels.includes("AI_PRIMARY") && !convo.ai_enabled) {
-      console.log("⏭️ Skipping: assigned to human without AI_PRIMARY");
-      return jsonOk({ skipped: true, reason: "assigned_to_human" });
-    }
-
-    // ── 4. Resolve agent ──
-    const rawAgent = await resolveAgent(supabase, convo);
-    const agentConfig = rawAgent ? getEffectiveConfig(rawAgent) : null;
-    const selectedModel = agentConfig?.model || DEFAULT_MODEL;
-    const maxTokens = agentConfig?.max_tokens || 300;
-    const agentName = agentConfig?.name || "Emily";
-
-    console.log(
-      `📋 Agent: ${agentName}, model=${selectedModel}, max_tokens=${maxTokens}, published=${!!rawAgent?.published_config}`,
-    );
-
-    // ── 5. Build system prompt ──
-    const systemPrompt = buildSystemPrompt(agentConfig || {});
-
-    // ── 6. Fetch last N messages ──
-    const { data: messages, error: msgErr } = await supabase
-      .from("wa_messages")
-      .select("*")
-      .eq("conversation_id", conversation_id)
-      .order("created_at", { ascending: false })
-      .limit(MAX_HISTORY);
-
-    if (msgErr) {
-      console.error("❌ Error fetching messages:", msgErr);
-      return jsonError("Error fetching messages", 500);
-    }
-
-    const sortedMessages = (messages || []).reverse();
-    const lastMsg = sortedMessages[sortedMessages.length - 1];
-
-    if (!lastMsg || lastMsg.direction !== "in") {
-      console.log("⏭️ Skipping: last message is not inbound");
-      return jsonOk({ skipped: true, reason: "last_msg_not_inbound" });
-    }
-
-    // ── 7. Debounce ──
-    const debounceThreshold = new Date(Date.now() - DEBOUNCE_SECONDS * 1000).toISOString();
-    const { data: recentAiMsgs } = await supabase
-      .from("wa_messages")
-      .select("id, created_at")
-      .eq("conversation_id", conversation_id)
-      .eq("direction", "out")
-      .is("sent_by", null)
-      .gte("created_at", debounceThreshold)
-      .limit(1);
-
-    if (recentAiMsgs && recentAiMsgs.length > 0) {
-      console.log("⏭️ Skipping: AI replied recently (debounce)");
-      return jsonOk({ skipped: true, reason: "debounce" });
-    }
-
-    // ── 8. Build OpenAI messages ──
-    const chatMessages: Array<{ role: string; content: string }> = [{ role: "system", content: systemPrompt }];
-    for (const msg of sortedMessages) {
-      if (!msg.body || msg.body.trim() === "") continue;
-      chatMessages.push({
-        role: msg.direction === "in" ? "user" : "assistant",
-        content: msg.body,
+    if (!to) {
+      return new Response(JSON.stringify({ error: 'Missing "to"' }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ── 9. Human delay ──
-    const delay = HUMAN_DELAY_MS.min + Math.random() * (HUMAN_DELAY_MS.max - HUMAN_DELAY_MS.min);
-    console.log(`⏳ Simulating human delay: ${Math.round(delay)}ms`);
-    await new Promise((resolve) => setTimeout(resolve, delay));
+    const META_WA_TOKEN = Deno.env.get("META_WA_TOKEN");
+    const META_PHONE_NUMBER_ID = Deno.env.get("META_PHONE_NUMBER_ID");
 
-    // ── 10. Call OpenAI ──
-    console.log(`🧠 Calling OpenAI (${selectedModel}) with ${chatMessages.length} messages...`);
-    const openaiStart = Date.now();
+    if (!META_WA_TOKEN || !META_PHONE_NUMBER_ID) {
+      return new Response(JSON.stringify({ error: "Server misconfigured: missing Meta credentials" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+    const cleanPhone = to.replace(/\D/g, "");
+    const msgType = type || "text";
+
+    console.log(`📤 Sending ${msgType} to +${cleanPhone} (internal=${isInternalCall})`);
+
+    // Build Meta API payload
+    let metaPayload: Record<string, unknown>;
+
+    if (msgType === "template") {
+      const tName = template_name || body.template_name;
+      const tLang = template_language || body.template_language || "pt_BR";
+      const tComponents = template_components || body.template_components || [];
+
+      if (!tName) {
+        return new Response(JSON.stringify({ error: "Missing template_name for template message" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      metaPayload = {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: cleanPhone,
+        type: "template",
+        template: {
+          name: tName,
+          language: { code: tLang },
+          components: tComponents,
+        },
+      };
+    } else if (msgType === "text") {
+      if (!text) {
+        return new Response(JSON.stringify({ error: 'Missing "text" for text message' }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      metaPayload = {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: cleanPhone,
+        type: "text",
+        text: { preview_url: false, body: text },
+      };
+    } else if (msgType === "audio") {
+      if (!media_url) {
+        return new Response(JSON.stringify({ error: "Missing media_url for audio" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      let effectiveMime = media_mime || "audio/ogg";
+
+      if (effectiveMime.includes("webm") && effectiveMime.includes("opus")) {
+        effectiveMime = "audio/ogg";
+        console.log("🔄 Re-labeling audio/webm;codecs=opus → audio/ogg for Meta compatibility");
+      } else if (effectiveMime.includes("webm")) {
+        console.error("❌ Unsupported audio format:", effectiveMime);
+
+        if (conversation_id) {
+          await adminClient.from("wa_messages").insert({
+            conversation_id,
+            direction: "out",
+            body: "[audio]",
+            msg_type: "audio",
+            status: "failed",
+            sent_by: userId,
+            sent_at: new Date().toISOString(),
+            media_url,
+            media_mime: effectiveMime,
+            error_code: "UNSUPPORTED_FORMAT",
+            error_message: "Formato de áudio não suportado pela Meta. Grave novamente (OGG/OPUS).",
+          });
+        }
+
+        return new Response(
+          JSON.stringify({
+            error: "Unsupported audio format",
+            error_message: "Formato de áudio não suportado. Grave novamente.",
+            error_code: "UNSUPPORTED_FORMAT",
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const mediaId = await uploadMediaToMeta(media_url, effectiveMime, META_WA_TOKEN, META_PHONE_NUMBER_ID);
+
+      metaPayload = {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: cleanPhone,
+        type: "audio",
+        audio: { id: mediaId },
+      };
+    } else if (msgType === "image") {
+      metaPayload = {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: cleanPhone,
+        type: "image",
+        image: { link: media_url, caption: caption || undefined },
+      };
+    } else if (msgType === "video") {
+      metaPayload = {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: cleanPhone,
+        type: "video",
+        video: { link: media_url, caption: caption || undefined },
+      };
+    } else if (msgType === "document") {
+      metaPayload = {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: cleanPhone,
+        type: "document",
+        document: { link: media_url, filename: media_filename || "document", caption: caption || undefined },
+      };
+    } else {
+      return new Response(JSON.stringify({ error: `Unsupported message type: ${msgType}` }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Send to Meta API
+    const metaRes = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/${META_PHONE_NUMBER_ID}/messages`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${openaiKey}`,
+        Authorization: `Bearer ${META_WA_TOKEN}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: chatMessages,
-        max_tokens: maxTokens,
-        temperature: 0.7,
-      }),
+      body: JSON.stringify(metaPayload),
     });
 
-    const openaiBody = await openaiRes.json();
-    const openaiLatency = Date.now() - openaiStart;
+    const metaBody = await metaRes.json();
+    console.log(`📡 Meta API response (${metaRes.status}):`, JSON.stringify(metaBody).slice(0, 300));
 
-    if (!openaiRes.ok) {
-      console.error(`❌ OpenAI error (${openaiRes.status}):`, JSON.stringify(openaiBody).slice(0, 500));
-      await supabase.from("conversation_events").insert({
-        conversation_id,
-        event_type: "ai_error",
-        meta: {
-          error: openaiBody?.error?.message || "Unknown",
-          model: selectedModel,
-          agent_name: agentName,
-          agent_id: agentConfig?.id,
-          status: openaiRes.status,
-          trigger_message_id,
+    // If error, handle window fallback
+    if (!metaRes.ok) {
+      const metaError = metaBody?.error;
+      const errorCode = metaError?.code || metaRes.status;
+
+      const isWindowError = errorCode === 131047 || metaError?.error_subcode === 131047;
+
+      // If window expired and caller allows fallback, send template retomar_atendimento
+      if (isWindowError && msgType === "text" && window_fallback_template) {
+        const fname = firstNameFrom(first_name);
+        const fallbackTemplateName = template_name || DEFAULT_TEMPLATE_NAME;
+        const fallbackLang = template_language || DEFAULT_TEMPLATE_LANG;
+
+        console.log(`🧩 Window expired. Falling back to template=${fallbackTemplateName} fname=${fname}`);
+
+        const templatePayload = buildRetomarTemplate(fname, fallbackTemplateName, fallbackLang);
+        (templatePayload as any).to = cleanPhone;
+
+        const fallbackRes = await fetch(
+          `https://graph.facebook.com/${GRAPH_API_VERSION}/${META_PHONE_NUMBER_ID}/messages`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${META_WA_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(templatePayload),
+          },
+        );
+
+        const fallbackBody = await fallbackRes.json();
+        console.log(
+          `📡 Meta API template fallback (${fallbackRes.status}):`,
+          JSON.stringify(fallbackBody).slice(0, 300),
+        );
+
+        if (fallbackRes.ok && fallbackBody.messages?.[0]?.id) {
+          const metaMsgId = fallbackBody.messages[0].id;
+
+          // Resolve conversation_id if needed
+          let convoId = conversation_id;
+          if (!convoId) {
+            const { data: existing } = await adminClient
+              .from("wa_conversations")
+              .select("id")
+              .eq("wa_phone", cleanPhone)
+              .maybeSingle();
+            if (existing) {
+              convoId = existing.id;
+            } else {
+              const { data: newConvo, error: newErr } = await adminClient
+                .from("wa_conversations")
+                .insert({ wa_phone: cleanPhone, status: "open" })
+                .select("id")
+                .single();
+              if (newErr) throw newErr;
+              convoId = newConvo.id;
+            }
+          }
+
+          await adminClient.from("wa_messages").insert({
+            conversation_id: convoId,
+            meta_message_id: metaMsgId,
+            direction: "out",
+            body: `[template: ${fallbackTemplateName}]`,
+            msg_type: "template",
+            status: "sent",
+            sent_by: userId,
+            sent_at: new Date().toISOString(),
+            template_name: fallbackTemplateName,
+            template_variables: [{ type: "body", parameters: [{ type: "text", text: fname }] }],
+          });
+
+          await adminClient
+            .from("wa_conversations")
+            .update({
+              last_message_at: new Date().toISOString(),
+              last_message_preview: `[template: ${fallbackTemplateName}]`.slice(0, 200),
+            })
+            .eq("id", convoId);
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              meta_message_id: metaMsgId,
+              conversation_id: convoId,
+              used_template_fallback: true,
+              template_name: fallbackTemplateName,
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
+        }
+
+        console.error("❌ Template fallback failed:", JSON.stringify(fallbackBody).slice(0, 300));
+      }
+
+      // Save failed message
+      let convoId = conversation_id;
+      if (convoId) {
+        const bodyText =
+          msgType === "text"
+            ? text
+            : msgType === "template"
+              ? `[template: ${body.template_name}]`
+              : caption || `[${msgType}]`;
+
+        await adminClient.from("wa_messages").insert({
+          conversation_id: convoId,
+          direction: "out",
+          body: bodyText,
+          msg_type: msgType,
+          status: "failed",
+          sent_by: userId,
+          sent_at: new Date().toISOString(),
+          media_url: msgType !== "text" && msgType !== "template" ? media_url : null,
+          media_mime: media_mime || null,
+          media_filename: media_filename || null,
+          error_code: String(errorCode),
+          error_message: isWindowError
+            ? "Janela de 24h expirada. Use um template aprovado para retomar a conversa."
+            : metaError?.message || "Erro desconhecido da Meta API",
+          template_name: msgType === "template" ? body.template_name : null,
+          template_variables: msgType === "template" ? body.template_components || null : null,
+        });
+
+        if (isWindowError) {
+          await adminClient.from("conversation_events").insert({
+            conversation_id: convoId,
+            event_type: "window_expired",
+            created_by_agent_id: userId,
+            meta: { error_code: errorCode },
+          });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          error: "Meta API error",
+          error_message: metaError?.message || "Unknown error",
+          error_code: errorCode,
+          is_window_error: isWindowError,
+          details: metaBody,
+        }),
+        {
+          status: metaRes.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
+      );
+    }
+
+    const metaMsgId = metaBody.messages?.[0]?.id ?? null;
+
+    if (!metaMsgId) {
+      console.error("❌ Meta did not return wamid");
+      return new Response(JSON.stringify({ error: "Meta did not return message ID", details: metaBody }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-      return jsonError(`OpenAI error: ${openaiBody?.error?.message}`, 502);
     }
 
-    const rawReply = openaiBody.choices?.[0]?.message?.content?.trim();
-    const tokensUsed = openaiBody.usage;
-
-    console.log(
-      `✅ OpenAI response (${openaiLatency}ms, ${tokensUsed?.total_tokens || "?"} tokens): "${rawReply?.slice(0, 100)}..."`,
-    );
-
-    if (!rawReply) {
-      console.error("❌ Empty AI response");
-      return jsonError("Empty AI response", 502);
-    }
-
-    // ── 11. Check for handoff ──
-    if (
-      rawReply.includes("HANDOFF_REQUEST") ||
-      HANDOFF_KEYWORDS.some((kw) => lastMsg.body?.toLowerCase().includes(kw))
-    ) {
-      console.log("🤝 Handoff detected — transferring to human");
-      const updatedLabels = [...labels.filter((l) => l !== "AI_ON"), "HANDOFF_HUMAN"];
-      await supabase
+    // Resolve or create conversation
+    let convoId = conversation_id;
+    if (!convoId) {
+      const { data: existing } = await adminClient
         .from("wa_conversations")
-        .update({ labels: updatedLabels, ai_enabled: false })
-        .eq("id", conversation_id);
-
-      await supabase.from("conversation_events").insert({
-        conversation_id,
-        event_type: "ai_handoff",
-        meta: {
-          reason: "user_requested",
-          trigger_message_id,
-          model: selectedModel,
-          agent_name: agentName,
-          agent_id: agentConfig?.id,
-          latency_ms: openaiLatency,
-          user_message: lastMsg.body?.slice(0, 200),
-        },
-      });
-
-      const handoffText =
-        "Entendi! Vou te encaminhar para um dos nossos atendentes. Alguém da equipe vai te responder em breve 😊";
-      await sendWhatsAppMessage({ to: convo.wa_phone, text: handoffText, conversation_id }, "handoff");
-
-      // Mark idempotency
-      await supabase
-        .from("wa_conversations")
-        .update({ last_ai_trigger_msg_id: trigger_message_id })
-        .eq("id", conversation_id);
-
-      return jsonOk({ action: "handoff", latency_ms: Date.now() - startTime });
+        .select("id")
+        .eq("wa_phone", cleanPhone)
+        .maybeSingle();
+      if (existing) {
+        convoId = existing.id;
+      } else {
+        const { data: newConvo, error: newErr } = await adminClient
+          .from("wa_conversations")
+          .insert({ wa_phone: cleanPhone, status: "open" })
+          .select("id")
+          .single();
+        if (newErr) throw newErr;
+        convoId = newConvo.id;
+      }
     }
 
-    // ── 12. Execute tool actions from reply ──
-    const { cleanReply, actions } = await executeToolActions(supabase, rawReply, conversation_id, agentConfig);
+    const bodyText =
+      msgType === "text"
+        ? text
+        : msgType === "template"
+          ? `[template: ${body.template_name}]`
+          : caption || `[${msgType}]`;
 
-    if (actions.length > 0) {
-      console.log(`🔧 Tool actions executed: ${actions.join(", ")}`);
-    }
+    await adminClient.from("wa_messages").insert({
+      conversation_id: convoId,
+      meta_message_id: metaMsgId,
+      direction: "out",
+      body: bodyText,
+      msg_type: msgType,
+      status: "sent",
+      sent_by: userId,
+      sent_at: new Date().toISOString(),
+      media_url: msgType !== "text" && msgType !== "template" ? media_url : null,
+      media_mime: media_mime || null,
+      media_filename: media_filename || null,
+      template_name: msgType === "template" ? body.template_name : null,
+      template_variables: msgType === "template" ? body.template_components || null : null,
+    });
 
-    // ── 13. Send AI reply ──
-    console.log(`📤 Sending AI reply to +${convo.wa_phone}`);
-    const { res: sendRes, body: sendBody } = await sendWhatsAppMessage(
-      { to: convo.wa_phone, text: cleanReply, conversation_id },
-      "ai_reply",
-    );
-
-    if (!sendRes.ok) {
-      await supabase.from("conversation_events").insert({
-        conversation_id,
-        event_type: "ai_error",
-        meta: {
-          error: "whatsapp-send failed",
-          send_status: sendRes.status,
-          model: selectedModel,
-          agent_id: agentConfig?.id,
-          trigger_message_id,
-        },
-      });
-      return jsonError("Failed to send message", 502);
-    }
-
-    // Mark as AI-authored
-    if (sendBody?.meta_message_id) {
-      await supabase.from("wa_messages").update({ sent_by: null }).eq("meta_message_id", sendBody.meta_message_id);
-    }
-
-    // ── 14. Mark idempotency ──
-    await supabase
+    await adminClient
       .from("wa_conversations")
-      .update({ last_ai_trigger_msg_id: trigger_message_id })
-      .eq("id", conversation_id);
+      .update({
+        last_message_at: new Date().toISOString(),
+        last_message_preview: bodyText.slice(0, 200),
+      })
+      .eq("id", convoId);
 
-    // ── 15. Log ai_replied event ──
-    await supabase.from("conversation_events").insert({
-      conversation_id,
-      event_type: "ai_replied",
-      meta: {
-        model: selectedModel,
-        agent_name: agentName,
-        agent_id: agentConfig?.id,
-        latency_ms: openaiLatency,
-        total_latency_ms: Date.now() - startTime,
-        tokens: tokensUsed || null,
-        trigger_message_id,
-        reply_preview: cleanReply.slice(0, 100),
-        tool_actions: actions.length > 0 ? actions : undefined,
-      },
-    });
+    console.log(`✅ Message sent. Meta ID: ${metaMsgId}, Conversation: ${convoId}`);
 
-    const totalLatency = Date.now() - startTime;
-    console.log(
-      `✅ AI reply sent successfully (${totalLatency}ms total, ${tokensUsed?.total_tokens || "?"} tokens, ${actions.length} tools)`,
-    );
-
-    return jsonOk({
-      success: true,
-      model: selectedModel,
-      agent: agentName,
-      latency_ms: totalLatency,
-      tokens: tokensUsed,
-      tool_actions: actions,
+    return new Response(JSON.stringify({ success: true, meta_message_id: metaMsgId, conversation_id: convoId }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("❌ wa-ai-reply error:", error);
-    return jsonError("Internal server error: " + String(error), 500);
+    console.error("❌ Send error:", error);
+    return new Response(JSON.stringify({ error: "Internal server error", error_message: String(error) }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
-
-// ── Preview handler ──
-async function handlePreview(body: any, openaiKey: string): Promise<Response> {
-  const { preview_message, agent_config } = body;
-
-  const systemPrompt = buildSystemPrompt(agent_config || {});
-  const model = agent_config?.model || DEFAULT_MODEL;
-  const maxTokens = agent_config?.max_tokens || 300;
-
-  const startTime = Date.now();
-
-  try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${openaiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: preview_message },
-        ],
-        max_tokens: maxTokens,
-        temperature: 0.7,
-      }),
-    });
-
-    const data = await res.json();
-    const latency = Date.now() - startTime;
-
-    if (!res.ok) return jsonOk({ reply: `Erro: ${data?.error?.message}`, model, latency_ms: latency });
-
-    const rawReply = data.choices?.[0]?.message?.content?.trim() || "Sem resposta";
-    const tokens = data.usage;
-
-    // Parse tool actions for preview (don't execute)
-    const toolActions: string[] = [];
-    const dataMatches = rawReply.matchAll(/\[DADOS:\s*(\w+)=([^\]]+)\]/gi);
-    for (const m of dataMatches) toolActions.push(`qualify:${m[1]}=${m[2].trim()}`);
-    const tagMatches = rawReply.matchAll(/\[TAG:\s*([^\]]+)\]/gi);
-    for (const m of tagMatches) toolActions.push(`tag:${m[1].trim()}`);
-    const followupMatches = rawReply.matchAll(/\[FOLLOWUP:\s*(\d{4}-\d{2}-\d{2})\s+([^\]]+)\]/gi);
-    for (const m of followupMatches) toolActions.push(`followup:${m[1]} ${m[2].trim()}`);
-
-    // Clean markers from reply for display
-    const cleanReply = rawReply
-      .replace(/\[DADOS:[^\]]+\]/gi, "")
-      .replace(/\[TAG:[^\]]+\]/gi, "")
-      .replace(/\[FOLLOWUP:[^\]]+\]/gi, "")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
-
-    return jsonOk({ reply: cleanReply, model, tokens, latency_ms: latency, tool_actions: toolActions });
-  } catch (err) {
-    return jsonOk({ reply: `Erro: ${String(err)}`, model, latency_ms: Date.now() - startTime });
-  }
-}
-
-function jsonOk(body: Record<string, unknown>) {
-  return new Response(JSON.stringify(body), {
-    status: 200,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
-function jsonError(msg: string, status: number) {
-  return new Response(JSON.stringify({ error: msg }), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
