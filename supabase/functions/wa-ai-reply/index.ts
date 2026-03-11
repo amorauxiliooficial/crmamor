@@ -2,8 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const DEFAULT_MODEL = "gpt-4o-mini";
@@ -43,11 +43,7 @@ async function resolveAgent(supabase: any, convo: any): Promise<any> {
   // Priority 2: match by labels/departments
   const convoLabels: string[] = convo.labels || [];
   if (convoLabels.length > 0) {
-    const { data: agents } = await supabase
-      .from("ai_agents")
-      .select("*")
-      .eq("is_active", true)
-      .eq("is_default", false);
+    const { data: agents } = await supabase.from("ai_agents").select("*").eq("is_active", true).eq("is_default", false);
     if (agents) {
       for (const agent of agents) {
         const depts: string[] = agent.departments || [];
@@ -93,16 +89,21 @@ function buildSystemPrompt(config: any): string {
 
   const tools = config.tools_config;
   if (tools && typeof tools === "object") {
-    const enabledTools = Object.entries(tools).filter(([_, v]) => v).map(([k]) => k);
+    const enabledTools = Object.entries(tools)
+      .filter(([_, v]) => v)
+      .map(([k]) => k);
     if (enabledTools.length > 0) {
       prompt += `\n\nFERRAMENTAS HABILITADAS: ${enabledTools.join(", ")}`;
       if (enabledTools.includes("handoff_human")) {
         prompt += "\n- Se a pessoa insistir em falar com humano, responda EXATAMENTE: HANDOFF_REQUEST";
       }
       if (enabledTools.includes("qualify_lead")) {
-        prompt += "\n- Colete informações essenciais de forma natural (nome, tipo de evento, data, situação trabalhista)";
-        prompt += "\n- Quando coletar um dado, inclua no final da resposta uma linha oculta no formato: [DADOS: campo=valor]";
-        prompt += "\n- Campos possíveis: nome, tipo_evento, data_evento, situacao_trabalhista, carteira_assinada, contribui_inss, telefone";
+        prompt +=
+          "\n- Colete informações essenciais de forma natural (nome, tipo de evento, data, situação trabalhista)";
+        prompt +=
+          "\n- Quando coletar um dado, inclua no final da resposta uma linha oculta no formato: [DADOS: campo=valor]";
+        prompt +=
+          "\n- Campos possíveis: nome, tipo_evento, data_evento, situacao_trabalhista, carteira_assinada, contribui_inss, telefone";
       }
       if (enabledTools.includes("apply_tags")) {
         prompt += "\n- Quando identificar o perfil do lead, inclua: [TAG: nome_da_tag]";
@@ -121,7 +122,12 @@ function buildSystemPrompt(config: any): string {
 }
 
 // ── Execute tool actions parsed from AI response ──
-async function executeToolActions(supabase: any, aiReply: string, conversationId: string, agentConfig: any): Promise<{ cleanReply: string; actions: string[] }> {
+async function executeToolActions(
+  supabase: any,
+  aiReply: string,
+  conversationId: string,
+  agentConfig: any,
+): Promise<{ cleanReply: string; actions: string[] }> {
   const actions: string[] = [];
   let cleanReply = aiReply;
 
@@ -147,11 +153,7 @@ async function executeToolActions(supabase: any, aiReply: string, conversationId
     const tag = match[1].trim();
     cleanReply = cleanReply.replace(match[0], "").trim();
 
-    const { data: convo } = await supabase
-      .from("wa_conversations")
-      .select("labels")
-      .eq("id", conversationId)
-      .single();
+    const { data: convo } = await supabase.from("wa_conversations").select("labels").eq("id", conversationId).single();
 
     const currentLabels: string[] = convo?.labels || [];
     if (!currentLabels.includes(tag)) {
@@ -191,7 +193,7 @@ async function executeToolActions(supabase: any, aiReply: string, conversationId
 }
 
 serve(async (req: Request): Promise<Response> => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -204,6 +206,32 @@ serve(async (req: Request): Promise<Response> => {
   if (!openaiKey) {
     console.error("❌ OPENAI_API_KEY not configured");
     return jsonError("OPENAI_API_KEY not configured", 500);
+  }
+
+  // ✅ Helper to call whatsapp-send with proper auth headers
+  async function sendWhatsAppMessage(payload: any, context: string) {
+    const res = await fetch(`${supabaseUrl}/functions/v1/whatsapp-send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${serviceRoleKey}`,
+        apikey: serviceRoleKey, // ✅ added to avoid Unauthorized in some setups
+      },
+      body: JSON.stringify(payload),
+    });
+
+    let body: any = null;
+    try {
+      body = await res.json();
+    } catch {
+      /* ignore */
+    }
+
+    if (!res.ok) {
+      console.error(`❌ whatsapp-send failed (${context}):`, res.status, JSON.stringify(body).slice(0, 300));
+    }
+
+    return { res, body };
   }
 
   try {
@@ -245,24 +273,29 @@ serve(async (req: Request): Promise<Response> => {
       console.log("⏭️ Skipping: AI not enabled");
       return jsonOk({ skipped: true, reason: "ai_not_enabled" });
     }
+
     // Skip if conversation is on web_manual_team channel
     const activeChannel = convo.active_channel_code || convo.channel || "official";
     if (activeChannel === "web_manual_team") {
       console.log("⏭️ Skipping: web_manual_team channel — manual mode");
       return jsonOk({ skipped: true, reason: "web_manual_channel" });
     }
+
     if (convo.status === "closed") {
       console.log("⏭️ Skipping: conversation is closed");
       return jsonOk({ skipped: true, reason: "closed" });
     }
+
     if (labels.includes("HANDOFF_HUMAN")) {
       console.log("⏭️ Skipping: HANDOFF_HUMAN active");
       return jsonOk({ skipped: true, reason: "handoff_human" });
     }
+
     if (labels.includes("AI_PAUSED")) {
       console.log("⏭️ Skipping: AI_PAUSED");
       return jsonOk({ skipped: true, reason: "ai_paused" });
     }
+
     // If assigned to human without AI override
     if (convo.assigned_to && !labels.includes("AI_PRIMARY") && !convo.ai_enabled) {
       console.log("⏭️ Skipping: assigned to human without AI_PRIMARY");
@@ -276,7 +309,9 @@ serve(async (req: Request): Promise<Response> => {
     const maxTokens = agentConfig?.max_tokens || 300;
     const agentName = agentConfig?.name || "Emily";
 
-    console.log(`📋 Agent: ${agentName}, model=${selectedModel}, max_tokens=${maxTokens}, published=${!!rawAgent?.published_config}`);
+    console.log(
+      `📋 Agent: ${agentName}, model=${selectedModel}, max_tokens=${maxTokens}, published=${!!rawAgent?.published_config}`,
+    );
 
     // ── 5. Build system prompt ──
     const systemPrompt = buildSystemPrompt(agentConfig || {});
@@ -319,9 +354,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ── 8. Build OpenAI messages ──
-    const chatMessages: Array<{ role: string; content: string }> = [
-      { role: "system", content: systemPrompt },
-    ];
+    const chatMessages: Array<{ role: string; content: string }> = [{ role: "system", content: systemPrompt }];
     for (const msg of sortedMessages) {
       if (!msg.body || msg.body.trim() === "") continue;
       chatMessages.push({
@@ -333,7 +366,7 @@ serve(async (req: Request): Promise<Response> => {
     // ── 9. Human delay ──
     const delay = HUMAN_DELAY_MS.min + Math.random() * (HUMAN_DELAY_MS.max - HUMAN_DELAY_MS.min);
     console.log(`⏳ Simulating human delay: ${Math.round(delay)}ms`);
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await new Promise((resolve) => setTimeout(resolve, delay));
 
     // ── 10. Call OpenAI ──
     console.log(`🧠 Calling OpenAI (${selectedModel}) with ${chatMessages.length} messages...`);
@@ -342,7 +375,7 @@ serve(async (req: Request): Promise<Response> => {
     const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${openaiKey}`,
+        Authorization: `Bearer ${openaiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -363,8 +396,11 @@ serve(async (req: Request): Promise<Response> => {
         event_type: "ai_error",
         meta: {
           error: openaiBody?.error?.message || "Unknown",
-          model: selectedModel, agent_name: agentName, agent_id: agentConfig?.id,
-          status: openaiRes.status, trigger_message_id,
+          model: selectedModel,
+          agent_name: agentName,
+          agent_id: agentConfig?.id,
+          status: openaiRes.status,
+          trigger_message_id,
         },
       });
       return jsonError(`OpenAI error: ${openaiBody?.error?.message}`, 502);
@@ -373,7 +409,9 @@ serve(async (req: Request): Promise<Response> => {
     const rawReply = openaiBody.choices?.[0]?.message?.content?.trim();
     const tokensUsed = openaiBody.usage;
 
-    console.log(`✅ OpenAI response (${openaiLatency}ms, ${tokensUsed?.total_tokens || "?"} tokens): "${rawReply?.slice(0, 100)}..."`);
+    console.log(
+      `✅ OpenAI response (${openaiLatency}ms, ${tokensUsed?.total_tokens || "?"} tokens): "${rawReply?.slice(0, 100)}..."`,
+    );
 
     if (!rawReply) {
       console.error("❌ Empty AI response");
@@ -381,25 +419,40 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // ── 11. Check for handoff ──
-    if (rawReply.includes("HANDOFF_REQUEST") || HANDOFF_KEYWORDS.some(kw => lastMsg.body?.toLowerCase().includes(kw))) {
+    if (
+      rawReply.includes("HANDOFF_REQUEST") ||
+      HANDOFF_KEYWORDS.some((kw) => lastMsg.body?.toLowerCase().includes(kw))
+    ) {
       console.log("🤝 Handoff detected — transferring to human");
-      const updatedLabels = [...labels.filter(l => l !== "AI_ON"), "HANDOFF_HUMAN"];
-      await supabase.from("wa_conversations").update({ labels: updatedLabels, ai_enabled: false }).eq("id", conversation_id);
+      const updatedLabels = [...labels.filter((l) => l !== "AI_ON"), "HANDOFF_HUMAN"];
+      await supabase
+        .from("wa_conversations")
+        .update({ labels: updatedLabels, ai_enabled: false })
+        .eq("id", conversation_id);
 
       await supabase.from("conversation_events").insert({
-        conversation_id, event_type: "ai_handoff",
-        meta: { reason: "user_requested", trigger_message_id, model: selectedModel, agent_name: agentName, agent_id: agentConfig?.id, latency_ms: openaiLatency, user_message: lastMsg.body?.slice(0, 200) },
+        conversation_id,
+        event_type: "ai_handoff",
+        meta: {
+          reason: "user_requested",
+          trigger_message_id,
+          model: selectedModel,
+          agent_name: agentName,
+          agent_id: agentConfig?.id,
+          latency_ms: openaiLatency,
+          user_message: lastMsg.body?.slice(0, 200),
+        },
       });
 
-      const handoffText = "Entendi! Vou te encaminhar para um dos nossos atendentes. Alguém da equipe vai te responder em breve 😊";
-      await fetch(`${supabaseUrl}/functions/v1/whatsapp-send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${serviceRoleKey}` },
-        body: JSON.stringify({ to: convo.wa_phone, text: handoffText, conversation_id }),
-      });
+      const handoffText =
+        "Entendi! Vou te encaminhar para um dos nossos atendentes. Alguém da equipe vai te responder em breve 😊";
+      await sendWhatsAppMessage({ to: convo.wa_phone, text: handoffText, conversation_id }, "handoff");
 
       // Mark idempotency
-      await supabase.from("wa_conversations").update({ last_ai_trigger_msg_id: trigger_message_id }).eq("id", conversation_id);
+      await supabase
+        .from("wa_conversations")
+        .update({ last_ai_trigger_msg_id: trigger_message_id })
+        .eq("id", conversation_id);
 
       return jsonOk({ action: "handoff", latency_ms: Date.now() - startTime });
     }
@@ -413,47 +466,67 @@ serve(async (req: Request): Promise<Response> => {
 
     // ── 13. Send AI reply ──
     console.log(`📤 Sending AI reply to +${convo.wa_phone}`);
-    const sendRes = await fetch(`${supabaseUrl}/functions/v1/whatsapp-send`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${serviceRoleKey}` },
-      body: JSON.stringify({ to: convo.wa_phone, text: cleanReply, conversation_id }),
-    });
+    const { res: sendRes, body: sendBody } = await sendWhatsAppMessage(
+      { to: convo.wa_phone, text: cleanReply, conversation_id },
+      "ai_reply",
+    );
 
-    const sendBody = await sendRes.json();
     if (!sendRes.ok) {
-      console.error("❌ whatsapp-send failed:", JSON.stringify(sendBody).slice(0, 300));
       await supabase.from("conversation_events").insert({
-        conversation_id, event_type: "ai_error",
-        meta: { error: "whatsapp-send failed", send_status: sendRes.status, model: selectedModel, agent_id: agentConfig?.id, trigger_message_id },
+        conversation_id,
+        event_type: "ai_error",
+        meta: {
+          error: "whatsapp-send failed",
+          send_status: sendRes.status,
+          model: selectedModel,
+          agent_id: agentConfig?.id,
+          trigger_message_id,
+        },
       });
       return jsonError("Failed to send message", 502);
     }
 
     // Mark as AI-authored
-    if (sendBody.meta_message_id) {
+    if (sendBody?.meta_message_id) {
       await supabase.from("wa_messages").update({ sent_by: null }).eq("meta_message_id", sendBody.meta_message_id);
     }
 
     // ── 14. Mark idempotency ──
-    await supabase.from("wa_conversations").update({ last_ai_trigger_msg_id: trigger_message_id }).eq("id", conversation_id);
+    await supabase
+      .from("wa_conversations")
+      .update({ last_ai_trigger_msg_id: trigger_message_id })
+      .eq("id", conversation_id);
 
     // ── 15. Log ai_replied event ──
     await supabase.from("conversation_events").insert({
-      conversation_id, event_type: "ai_replied",
+      conversation_id,
+      event_type: "ai_replied",
       meta: {
-        model: selectedModel, agent_name: agentName, agent_id: agentConfig?.id,
-        latency_ms: openaiLatency, total_latency_ms: Date.now() - startTime,
-        tokens: tokensUsed || null, trigger_message_id,
+        model: selectedModel,
+        agent_name: agentName,
+        agent_id: agentConfig?.id,
+        latency_ms: openaiLatency,
+        total_latency_ms: Date.now() - startTime,
+        tokens: tokensUsed || null,
+        trigger_message_id,
         reply_preview: cleanReply.slice(0, 100),
         tool_actions: actions.length > 0 ? actions : undefined,
       },
     });
 
     const totalLatency = Date.now() - startTime;
-    console.log(`✅ AI reply sent successfully (${totalLatency}ms total, ${tokensUsed?.total_tokens || "?"} tokens, ${actions.length} tools)`);
+    console.log(
+      `✅ AI reply sent successfully (${totalLatency}ms total, ${tokensUsed?.total_tokens || "?"} tokens, ${actions.length} tools)`,
+    );
 
-    return jsonOk({ success: true, model: selectedModel, agent: agentName, latency_ms: totalLatency, tokens: tokensUsed, tool_actions: actions });
-
+    return jsonOk({
+      success: true,
+      model: selectedModel,
+      agent: agentName,
+      latency_ms: totalLatency,
+      tokens: tokensUsed,
+      tool_actions: actions,
+    });
   } catch (error) {
     console.error("❌ wa-ai-reply error:", error);
     return jsonError("Internal server error: " + String(error), 500);
@@ -473,7 +546,7 @@ async function handlePreview(body: any, openaiKey: string): Promise<Response> {
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { "Authorization": `Bearer ${openaiKey}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${openaiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model,
         messages: [
@@ -503,7 +576,12 @@ async function handlePreview(body: any, openaiKey: string): Promise<Response> {
     for (const m of followupMatches) toolActions.push(`followup:${m[1]} ${m[2].trim()}`);
 
     // Clean markers from reply for display
-    const cleanReply = rawReply.replace(/\[DADOS:[^\]]+\]/gi, "").replace(/\[TAG:[^\]]+\]/gi, "").replace(/\[FOLLOWUP:[^\]]+\]/gi, "").replace(/\n{3,}/g, "\n\n").trim();
+    const cleanReply = rawReply
+      .replace(/\[DADOS:[^\]]+\]/gi, "")
+      .replace(/\[TAG:[^\]]+\]/gi, "")
+      .replace(/\[FOLLOWUP:[^\]]+\]/gi, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
 
     return jsonOk({ reply: cleanReply, model, tokens, latency_ms: latency, tool_actions: toolActions });
   } catch (err) {
@@ -513,12 +591,14 @@ async function handlePreview(body: any, openaiKey: string): Promise<Response> {
 
 function jsonOk(body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), {
-    status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
 
 function jsonError(msg: string, status: number) {
   return new Response(JSON.stringify({ error: msg }), {
-    status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
