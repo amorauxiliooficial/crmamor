@@ -8,6 +8,8 @@ const corsHeaders = {
 };
 
 const GRAPH_API_VERSION = "v21.0";
+const DEFAULT_TEMPLATE_NAME = "retomar_atendimento";
+const DEFAULT_TEMPLATE_LANG = "pt_BR";
 
 /**
  * Upload a media file to Meta's servers and return the media_id.
@@ -59,6 +61,30 @@ async function uploadMediaToMeta(
   return uploadBody.id;
 }
 
+function firstNameFrom(input?: string | null): string {
+  const s = (input || "").trim();
+  if (!s) return "tudo bem";
+  return s.split(/\s+/)[0] || "tudo bem";
+}
+
+function buildRetomarTemplate(firstName: string, templateName = DEFAULT_TEMPLATE_NAME, lang = DEFAULT_TEMPLATE_LANG) {
+  return {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    type: "template",
+    template: {
+      name: templateName,
+      language: { code: lang },
+      components: [
+        {
+          type: "body",
+          parameters: [{ type: "text", text: firstName }],
+        },
+      ],
+    },
+  };
+}
+
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -75,12 +101,10 @@ serve(async (req: Request): Promise<Response> => {
   const authHeader = req.headers.get("Authorization") || "";
   const apikeyHeader = req.headers.get("apikey") || "";
 
-  // ✅ NEW: internal call bypass (service role)
-  // If called from another Edge Function (e.g., wa-ai-reply / webhook) using service role:
+  // ✅ internal call bypass (service role)
   const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.replace("Bearer ", "") : "";
   const isInternalCall = bearerToken === serviceRoleKey || apikeyHeader === serviceRoleKey;
 
-  // If not internal, must have Bearer JWT
   if (!isInternalCall) {
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
@@ -90,7 +114,7 @@ serve(async (req: Request): Promise<Response> => {
   let userId: string | null = null;
 
   if (!isInternalCall) {
-    // ✅ existing behavior: validate user JWT
+    // validate user JWT
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -102,15 +126,34 @@ serve(async (req: Request): Promise<Response> => {
     }
     userId = claimsData.claims.sub;
   } else {
-    // internal/system sender (AI or system automation)
-    userId = null;
+    userId = null; // system / AI
   }
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
   try {
     const body = await req.json();
-    const { to, text, conversation_id, type, media_url, media_mime, media_filename, caption } = body;
+
+    // ✅ NEW inputs for window fallback
+    const {
+      to,
+      text,
+      conversation_id,
+      type,
+      media_url,
+      media_mime,
+      media_filename,
+      caption,
+
+      // NEW: window fallback controls
+      window_fallback_template, // boolean
+      template_name, // for msgType=template OR fallback override
+      template_language,
+      template_components,
+
+      // NEW: first name for retomar_atendimento {{1}}
+      first_name,
+    } = body;
 
     if (!to) {
       return new Response(JSON.stringify({ error: 'Missing "to"' }), {
@@ -137,24 +180,27 @@ serve(async (req: Request): Promise<Response> => {
     // Build Meta API payload
     let metaPayload: Record<string, unknown>;
 
-    // ── TEMPLATE MESSAGE ──
     if (msgType === "template") {
-      const { template_name, template_language, template_components } = body;
-      if (!template_name) {
+      const tName = template_name || body.template_name;
+      const tLang = template_language || body.template_language || "pt_BR";
+      const tComponents = template_components || body.template_components || [];
+
+      if (!tName) {
         return new Response(JSON.stringify({ error: "Missing template_name for template message" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
       metaPayload = {
         messaging_product: "whatsapp",
         recipient_type: "individual",
         to: cleanPhone,
         type: "template",
         template: {
-          name: template_name,
-          language: { code: template_language || "pt_BR" },
-          components: template_components || [],
+          name: tName,
+          language: { code: tLang },
+          components: tComponents,
         },
       };
     } else if (msgType === "text") {
@@ -253,6 +299,7 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
+    // Send to Meta API
     const metaRes = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/${META_PHONE_NUMBER_ID}/messages`, {
       method: "POST",
       headers: {
@@ -265,16 +312,111 @@ serve(async (req: Request): Promise<Response> => {
     const metaBody = await metaRes.json();
     console.log(`📡 Meta API response (${metaRes.status}):`, JSON.stringify(metaBody).slice(0, 300));
 
+    // If error, handle window fallback
     if (!metaRes.ok) {
       const metaError = metaBody?.error;
       const errorCode = metaError?.code || metaRes.status;
-      const errorDetail = `code=${metaError?.code}, msg=${metaError?.message}, type=${metaError?.type}`;
-      console.error(`❌ Meta API error ${metaRes.status}: ${errorDetail}`);
 
-      // Check for 24h window error (code 131047)
+      // 24h window error (131047)
       const isWindowError = errorCode === 131047 || metaError?.error_subcode === 131047;
 
-      // Save failed message in DB so UI shows the error
+      // ✅ NEW: if window expired and caller allows fallback, send template retomar_atendimento
+      if (isWindowError && msgType === "text" && window_fallback_template) {
+        const fname = firstNameFrom(first_name);
+        const fallbackTemplateName = template_name || DEFAULT_TEMPLATE_NAME;
+        const fallbackLang = template_language || DEFAULT_TEMPLATE_LANG;
+
+        console.log(`🧩 Window expired. Falling back to template=${fallbackTemplateName} fname=${fname}`);
+
+        const templatePayload = buildRetomarTemplate(fname, fallbackTemplateName, fallbackLang);
+
+        // inject required 'to'
+        (templatePayload as any).to = cleanPhone;
+
+        const fallbackRes = await fetch(
+          `https://graph.facebook.com/${GRAPH_API_VERSION}/${META_PHONE_NUMBER_ID}/messages`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${META_WA_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(templatePayload),
+          },
+        );
+
+        const fallbackBody = await fallbackRes.json();
+        console.log(
+          `📡 Meta API template fallback (${fallbackRes.status}):`,
+          JSON.stringify(fallbackBody).slice(0, 300),
+        );
+
+        if (fallbackRes.ok && fallbackBody.messages?.[0]?.id) {
+          const metaMsgId = fallbackBody.messages[0].id;
+
+          // Resolve conversation_id if needed
+          let convoId = conversation_id;
+          if (!convoId) {
+            const { data: existing } = await adminClient
+              .from("wa_conversations")
+              .select("id")
+              .eq("wa_phone", cleanPhone)
+              .maybeSingle();
+            if (existing) {
+              convoId = existing.id;
+            } else {
+              const { data: newConvo, error: newErr } = await adminClient
+                .from("wa_conversations")
+                .insert({ wa_phone: cleanPhone, status: "open" })
+                .select("id")
+                .single();
+              if (newErr) throw newErr;
+              convoId = newConvo.id;
+            }
+          }
+
+          // Save outbound template message
+          await adminClient.from("wa_messages").insert({
+            conversation_id: convoId,
+            meta_message_id: metaMsgId,
+            direction: "out",
+            body: `[template: ${fallbackTemplateName}]`,
+            msg_type: "template",
+            status: "sent",
+            sent_by: userId,
+            sent_at: new Date().toISOString(),
+            template_name: fallbackTemplateName,
+            template_variables: [{ type: "body", parameters: [{ type: "text", text: fname }] }],
+          });
+
+          await adminClient
+            .from("wa_conversations")
+            .update({
+              last_message_at: new Date().toISOString(),
+              last_message_preview: `[template: ${fallbackTemplateName}]`.slice(0, 200),
+            })
+            .eq("id", convoId);
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              meta_message_id: metaMsgId,
+              conversation_id: convoId,
+              used_template_fallback: true,
+              template_name: fallbackTemplateName,
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
+        }
+
+        // fallback failed - continue to normal error handling
+        console.error("❌ Template fallback failed:", JSON.stringify(fallbackBody).slice(0, 300));
+      }
+
+      // Save failed message
       let convoId = conversation_id;
       if (convoId) {
         const bodyText =
@@ -283,6 +425,7 @@ serve(async (req: Request): Promise<Response> => {
             : msgType === "template"
               ? `[template: ${body.template_name}]`
               : caption || `[${msgType}]`;
+
         await adminClient.from("wa_messages").insert({
           conversation_id: convoId,
           direction: "out",
@@ -302,7 +445,6 @@ serve(async (req: Request): Promise<Response> => {
           template_variables: msgType === "template" ? body.template_components || null : null,
         });
 
-        // Log window error as conversation event
         if (isWindowError) {
           await adminClient.from("conversation_events").insert({
             conversation_id: convoId,
@@ -328,6 +470,7 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
+    // Success
     const metaMsgId = metaBody.messages?.[0]?.id ?? null;
 
     if (!metaMsgId) {
@@ -366,6 +509,7 @@ serve(async (req: Request): Promise<Response> => {
         : msgType === "template"
           ? `[template: ${body.template_name}]`
           : caption || `[${msgType}]`;
+
     await adminClient.from("wa_messages").insert({
       conversation_id: convoId,
       meta_message_id: metaMsgId,
@@ -373,7 +517,7 @@ serve(async (req: Request): Promise<Response> => {
       body: bodyText,
       msg_type: msgType,
       status: "sent",
-      sent_by: userId, // ✅ will be null for internal/AI
+      sent_by: userId,
       sent_at: new Date().toISOString(),
       media_url: msgType !== "text" && msgType !== "template" ? media_url : null,
       media_mime: media_mime || null,
