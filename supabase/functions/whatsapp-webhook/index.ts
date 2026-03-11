@@ -121,7 +121,6 @@ serve(async (req: Request): Promise<Response> => {
 
           if (leadErr) {
             console.error("❌ Lead intake upsert error:", leadErr);
-            // do not block message processing
           } else {
             console.log(`✅ lead_intake upsert ok for convo_id=${convo.id}`);
           }
@@ -157,7 +156,7 @@ serve(async (req: Request): Promise<Response> => {
             .select("id")
             .single();
 
-          if (msgErr) {
+          if (msgErr || !insertedMsg?.id) {
             console.error("❌ Message insert error:", msgErr);
             continue;
           }
@@ -221,9 +220,11 @@ serve(async (req: Request): Promise<Response> => {
             // (media download still happens below)
           }
 
-          // Trigger AI auto-reply if eligible (check both ai_enabled column and legacy AI_ON label)
+          // ✅ Trigger AI auto-reply only if eligible
+          // IMPORTANT: always send UUID (insertedMsg.id). Never send metaMsgId fallback.
           const convoLabels: string[] = convo.labels || [];
           const aiActive = convo.ai_enabled === true || convoLabels.includes("AI_ON");
+
           if (
             aiActive &&
             !isDocLike &&
@@ -241,7 +242,7 @@ serve(async (req: Request): Promise<Response> => {
               },
               body: JSON.stringify({
                 conversation_id: convo.id,
-                trigger_message_id: insertedMsg?.id || metaMsgId,
+                trigger_message_id: insertedMsg.id, // ✅ always UUID
               }),
             }).catch((err) => console.error("❌ AI reply trigger error:", err));
           }
