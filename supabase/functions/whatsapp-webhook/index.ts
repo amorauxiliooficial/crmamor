@@ -2,45 +2,45 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req: Request): Promise<Response> => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   const VERIFY_TOKEN = Deno.env.get("META_WA_VERIFY_TOKEN");
 
   // GET = Meta webhook verification (challenge)
-  if (req.method === 'GET') {
+  if (req.method === "GET") {
     const url = new URL(req.url);
-    const mode = url.searchParams.get('hub.mode');
-    const token = url.searchParams.get('hub.verify_token');
-    const challenge = url.searchParams.get('hub.challenge');
+    const mode = url.searchParams.get("hub.mode");
+    const token = url.searchParams.get("hub.verify_token");
+    const challenge = url.searchParams.get("hub.challenge");
     const tokenMatch = token === VERIFY_TOKEN;
 
     console.log(`🔍 GET verification: mode=${mode}, token_match=${tokenMatch}`);
 
-    if (mode === 'subscribe' && tokenMatch) {
-      console.log('✅ Webhook verified! Returning challenge as plain text');
-      return new Response(challenge, { status: 200, headers: { 'Content-Type': 'text/plain' } });
+    if (mode === "subscribe" && tokenMatch) {
+      console.log("✅ Webhook verified! Returning challenge as plain text");
+      return new Response(challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
     }
 
     console.warn(`❌ Verification failed`);
-    return new Response('Forbidden', { status: 403 });
+    return new Response("Forbidden", { status: 403 });
   }
 
   // POST = incoming messages & status updates
-  if (req.method === 'POST') {
+  if (req.method === "POST") {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     try {
       const body = await req.json();
-      console.log('📩 Webhook payload:', JSON.stringify(body).slice(0, 500));
+      console.log("📩 Webhook payload:", JSON.stringify(body).slice(0, 500));
 
       const entry = body?.entry?.[0];
       const changes = entry?.changes?.[0];
@@ -52,12 +52,12 @@ serve(async (req: Request): Promise<Response> => {
           const phone = message.from;
           const metaMsgId = message.id;
           const contactName = value.contacts?.[0]?.profile?.name ?? null;
-          const msgType = message.type ?? 'text';
+          const msgType = message.type ?? "text";
 
           // Extract text body or caption
           let textBody: string;
-          if (msgType === 'text') {
-            textBody = message.text?.body ?? '';
+          if (msgType === "text") {
+            textBody = message.text?.body ?? "";
           } else if (message[msgType]?.caption) {
             textBody = message[msgType].caption;
           } else {
@@ -69,36 +69,50 @@ serve(async (req: Request): Promise<Response> => {
           const metaMediaId = mediaObj?.id ?? null;
           const mediaMime = mediaObj?.mime_type ?? null;
           const mediaFilename = mediaObj?.filename ?? null;
-          const mediaDuration = msgType === 'audio' || msgType === 'video' ? (mediaObj?.duration ?? null) : null;
+          const mediaDuration = msgType === "audio" || msgType === "video" ? (mediaObj?.duration ?? null) : null;
 
-          console.log(`📨 Message from +${phone} (${contactName}): type=${msgType}, media_id=${metaMediaId?.slice(0, 20)}`);
+          console.log(
+            `📨 Message from +${phone} (${contactName}): type=${msgType}, media_id=${metaMediaId?.slice(0, 20)}`,
+          );
 
           // Upsert conversation
           const now = new Date().toISOString();
           const { data: convo, error: convoErr } = await supabase
-            .from('wa_conversations')
-            .upsert({
-              wa_phone: phone,
-              wa_name: contactName,
-              last_message_at: now,
-              last_inbound_at: now,
-              last_message_preview: textBody.slice(0, 200),
-              status: 'open',
-            }, { onConflict: 'wa_phone' })
-            .select('id, unread_count, labels, status, ai_enabled, ai_agent_id')
+            .from("wa_conversations")
+            .upsert(
+              {
+                wa_phone: phone,
+                wa_name: contactName,
+                last_message_at: now,
+                last_inbound_at: now,
+                last_message_preview: textBody.slice(0, 200),
+                status: "open",
+              },
+              { onConflict: "wa_phone" },
+            )
+            .select("id, unread_count, labels, status, ai_enabled, ai_agent_id")
             .single();
 
           if (convoErr) {
-            console.error('❌ Conversation upsert error:', convoErr);
+            console.error("❌ Conversation upsert error:", convoErr);
             continue;
+          }
+
+          // ✅ Ensure Lead Intake exists for this WhatsApp conversation
+          const { error: leadErr } = await supabase
+            .from("lead_intake")
+            .upsert({ wa_conversation_id: convo.id }, { onConflict: "wa_conversation_id" });
+          if (leadErr) {
+            console.error("❌ Lead intake upsert error:", leadErr);
+            // do not block message processing
           }
 
           // Dedup check
           if (metaMsgId) {
             const { data: existingMsg } = await supabase
-              .from('wa_messages')
-              .select('id')
-              .eq('meta_message_id', metaMsgId)
+              .from("wa_messages")
+              .select("id")
+              .eq("meta_message_id", metaMsgId)
               .maybeSingle();
             if (existingMsg) {
               console.log(`⏭️ Duplicate message ${metaMsgId}, skipping`);
@@ -108,57 +122,57 @@ serve(async (req: Request): Promise<Response> => {
 
           // Insert message with media metadata
           const { data: insertedMsg, error: msgErr } = await supabase
-            .from('wa_messages')
+            .from("wa_messages")
             .insert({
               conversation_id: convo.id,
               meta_message_id: metaMsgId,
-              direction: 'in',
+              direction: "in",
               body: textBody,
               msg_type: msgType,
-              status: 'delivered',
+              status: "delivered",
               meta_media_id: metaMediaId,
               media_mime: mediaMime,
               media_filename: mediaFilename,
               media_duration: mediaDuration,
             })
-            .select('id')
+            .select("id")
             .single();
 
           if (msgErr) {
-            console.error('❌ Message insert error:', msgErr);
+            console.error("❌ Message insert error:", msgErr);
             continue;
           }
 
           // Update unread count
           await supabase
-            .from('wa_conversations')
+            .from("wa_conversations")
             .update({ unread_count: (convo.unread_count ?? 0) + 1 })
-            .eq('id', convo.id);
+            .eq("id", convo.id);
 
           console.log(`✅ Saved message ${metaMsgId} in conversation ${convo.id}`);
 
           // Trigger AI auto-reply if eligible (check both ai_enabled column and legacy AI_ON label)
           const convoLabels: string[] = convo.labels || [];
-          const aiActive = convo.ai_enabled === true || convoLabels.includes('AI_ON');
+          const aiActive = convo.ai_enabled === true || convoLabels.includes("AI_ON");
           if (
             aiActive &&
-            !convoLabels.includes('HANDOFF_HUMAN') &&
-            !convoLabels.includes('AI_PAUSED') &&
-            convo.status !== 'closed'
+            !convoLabels.includes("HANDOFF_HUMAN") &&
+            !convoLabels.includes("AI_PAUSED") &&
+            convo.status !== "closed"
           ) {
             const aiUrl = `${supabaseUrl}/functions/v1/wa-ai-reply`;
             console.log(`🤖 Triggering AI reply for conversation ${convo.id}`);
             fetch(aiUrl, {
-              method: 'POST',
+              method: "POST",
               headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${serviceRoleKey}`,
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${serviceRoleKey}`,
               },
               body: JSON.stringify({
                 conversation_id: convo.id,
                 trigger_message_id: insertedMsg?.id || metaMsgId,
               }),
-            }).catch(err => console.error('❌ AI reply trigger error:', err));
+            }).catch((err) => console.error("❌ AI reply trigger error:", err));
           }
 
           // Trigger async media download if it's a media message
@@ -166,16 +180,16 @@ serve(async (req: Request): Promise<Response> => {
             const fnUrl = `${supabaseUrl}/functions/v1/whatsapp-media-download`;
             console.log(`📥 Triggering media download for ${metaMediaId}`);
             fetch(fnUrl, {
-              method: 'POST',
+              method: "POST",
               headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${serviceRoleKey}`,
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${serviceRoleKey}`,
               },
               body: JSON.stringify({
                 message_id: insertedMsg.id,
                 meta_media_id: metaMediaId,
               }),
-            }).catch(err => console.error('❌ Media download trigger error:', err));
+            }).catch((err) => console.error("❌ Media download trigger error:", err));
           }
         }
       }
@@ -190,51 +204,50 @@ serve(async (req: Request): Promise<Response> => {
           const updatePayload: Record<string, unknown> = { status: newStatus };
 
           // Add timestamp for each status
-          if (newStatus === 'sent') updatePayload.sent_at = new Date().toISOString();
-          if (newStatus === 'delivered') updatePayload.delivered_at = new Date().toISOString();
-          if (newStatus === 'read') updatePayload.read_at = new Date().toISOString();
+          if (newStatus === "sent") updatePayload.sent_at = new Date().toISOString();
+          if (newStatus === "delivered") updatePayload.delivered_at = new Date().toISOString();
+          if (newStatus === "read") updatePayload.read_at = new Date().toISOString();
 
           // Capture error details on failure
-          if (newStatus === 'failed') {
+          if (newStatus === "failed") {
             const errors = st.errors;
             if (errors && errors.length > 0) {
-              updatePayload.error_code = String(errors[0].code ?? '');
-              updatePayload.error_message = errors[0].title ?? errors[0].message ?? 'Unknown error';
+              updatePayload.error_code = String(errors[0].code ?? "");
+              updatePayload.error_message = errors[0].title ?? errors[0].message ?? "Unknown error";
             }
           }
 
-          const { error } = await supabase
-            .from('wa_messages')
-            .update(updatePayload)
-            .eq('meta_message_id', metaMsgId);
-          if (error) console.error('❌ Status update error:', error);
+          const { error } = await supabase.from("wa_messages").update(updatePayload).eq("meta_message_id", metaMsgId);
+          if (error) console.error("❌ Status update error:", error);
 
           // Capture pricing data from webhook (sent status includes pricing)
-          if (st.pricing && newStatus === 'sent') {
+          if (st.pricing && newStatus === "sent") {
             const pricing = st.pricing;
-            console.log(`💰 Pricing data: billable=${pricing.billable}, model=${pricing.pricing_model}, category=${pricing.category}`);
+            console.log(
+              `💰 Pricing data: billable=${pricing.billable}, model=${pricing.pricing_model}, category=${pricing.category}`,
+            );
 
             // Find the message to get conversation_id
             const { data: msgRow } = await supabase
-              .from('wa_messages')
-              .select('id, conversation_id')
-              .eq('meta_message_id', metaMsgId)
+              .from("wa_messages")
+              .select("id, conversation_id")
+              .eq("meta_message_id", metaMsgId)
               .maybeSingle();
 
             if (msgRow) {
               // Lookup rate card for cost estimation
               let estimatedCost = 0;
-              const category = pricing.category || 'service';
+              const category = pricing.category || "service";
               const { data: rateCard } = await supabase
-                .from('wa_rate_cards')
-                .select('cost_per_message')
-                .eq('market', 'brazil')
-                .eq('category', category)
+                .from("wa_rate_cards")
+                .select("cost_per_message")
+                .eq("market", "brazil")
+                .eq("category", category)
                 .limit(1)
                 .maybeSingle();
               if (rateCard) estimatedCost = rateCard.cost_per_message;
 
-              await supabase.from('wa_billing_events').insert({
+              await supabase.from("wa_billing_events").insert({
                 message_id: msgRow.id,
                 conversation_id: msgRow.conversation_id,
                 meta_message_id: metaMsgId,
@@ -250,15 +263,17 @@ serve(async (req: Request): Promise<Response> => {
       }
 
       return new Response(JSON.stringify({ success: true }), {
-        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (error) {
-      console.error('❌ Webhook processing error:', error);
-      return new Response(JSON.stringify({ error: 'Internal server error' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      console.error("❌ Webhook processing error:", error);
+      return new Response(JSON.stringify({ error: "Internal server error" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
   }
 
-  return new Response('Method not allowed', { status: 405, headers: corsHeaders });
+  return new Response("Method not allowed", { status: 405, headers: corsHeaders });
 });
