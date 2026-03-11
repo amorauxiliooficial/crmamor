@@ -25,10 +25,13 @@ serve(async (req: Request): Promise<Response> => {
 
     if (mode === "subscribe" && tokenMatch) {
       console.log("✅ Webhook verified! Returning challenge as plain text");
-      return new Response(challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
+      return new Response(challenge, {
+        status: 200,
+        headers: { "Content-Type": "text/plain" },
+      });
     }
 
-    console.warn(`❌ Verification failed`);
+    console.warn("❌ Verification failed");
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -36,7 +39,15 @@ serve(async (req: Request): Promise<Response> => {
   if (req.method === "POST") {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    // ✅ More reliable: ensure service role is sent as Authorization header
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${serviceRoleKey}`,
+        },
+      },
+    });
 
     try {
       const body = await req.json();
@@ -93,18 +104,22 @@ serve(async (req: Request): Promise<Response> => {
             .select("id, unread_count, labels, status, ai_enabled, ai_agent_id")
             .single();
 
-          if (convoErr) {
+          if (convoErr || !convo?.id) {
             console.error("❌ Conversation upsert error:", convoErr);
             continue;
           }
 
-          // ✅ Ensure Lead Intake exists for this WhatsApp conversation
+          // ✅ Ensure Lead Intake exists for this WhatsApp conversation (with proof logs)
+          console.log(`🧩 lead_intake block reached. convo_id=${convo.id}`);
           const { error: leadErr } = await supabase
             .from("lead_intake")
             .upsert({ wa_conversation_id: convo.id }, { onConflict: "wa_conversation_id" });
+
           if (leadErr) {
             console.error("❌ Lead intake upsert error:", leadErr);
             // do not block message processing
+          } else {
+            console.log(`✅ lead_intake upsert ok for convo_id=${convo.id}`);
           }
 
           // Dedup check
@@ -218,6 +233,7 @@ serve(async (req: Request): Promise<Response> => {
           }
 
           const { error } = await supabase.from("wa_messages").update(updatePayload).eq("meta_message_id", metaMsgId);
+
           if (error) console.error("❌ Status update error:", error);
 
           // Capture pricing data from webhook (sent status includes pricing)
@@ -245,6 +261,7 @@ serve(async (req: Request): Promise<Response> => {
                 .eq("category", category)
                 .limit(1)
                 .maybeSingle();
+
               if (rateCard) estimatedCost = rateCard.cost_per_message;
 
               await supabase.from("wa_billing_events").insert({
@@ -256,6 +273,7 @@ serve(async (req: Request): Promise<Response> => {
                 category: category,
                 estimated_cost: pricing.billable !== false ? estimatedCost : 0,
               });
+
               console.log(`✅ Billing event saved for ${metaMsgId}: ${category} $${estimatedCost}`);
             }
           }
