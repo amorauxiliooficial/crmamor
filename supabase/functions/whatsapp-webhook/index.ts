@@ -40,7 +40,7 @@ serve(async (req: Request): Promise<Response> => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // ✅ More reliable: ensure service role is sent as Authorization header
+    // ✅ Ensure service role is sent as Authorization header
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       global: {
         headers: {
@@ -64,6 +64,10 @@ serve(async (req: Request): Promise<Response> => {
           const metaMsgId = message.id;
           const contactName = value.contacts?.[0]?.profile?.name ?? null;
           const msgType = message.type ?? "text";
+
+          // Flags for routing rules
+          const isDocLike = msgType === "document" || msgType === "image";
+          const isAudio = msgType === "audio";
 
           // Extract text body or caption
           let textBody: string;
@@ -166,11 +170,63 @@ serve(async (req: Request): Promise<Response> => {
 
           console.log(`✅ Saved message ${metaMsgId} in conversation ${convo.id}`);
 
+          // ✅ Routing rules:
+          // - audio: ask user to type, do NOT trigger AI
+          // - document/image: pause AI and handoff to human
+          if (isAudio) {
+            const sendUrl = `${supabaseUrl}/functions/v1/whatsapp-send`;
+            fetch(sendUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${serviceRoleKey}`,
+              },
+              body: JSON.stringify({
+                to: phone,
+                type: "text",
+                text: "Recebi seu áudio 😊 No momento eu não consigo ouvir aqui. Você pode me enviar por texto o que precisa? Assim eu te ajudo mais rápido.",
+                conversation_id: convo.id,
+              }),
+            }).catch((err) => console.error("❌ Audio auto-reply send error:", err));
+
+            // Stop here: no AI reply for audio
+            continue;
+          }
+
+          if (isDocLike) {
+            const labels: string[] = Array.isArray(convo.labels) ? convo.labels : [];
+            const nextLabels = Array.from(new Set([...labels, "HANDOFF_HUMAN"]));
+
+            await supabase
+              .from("wa_conversations")
+              .update({ ai_enabled: false, labels: nextLabels })
+              .eq("id", convo.id);
+
+            const sendUrl = `${supabaseUrl}/functions/v1/whatsapp-send`;
+            fetch(sendUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${serviceRoleKey}`,
+              },
+              body: JSON.stringify({
+                to: phone,
+                type: "text",
+                text: "Perfeito — recebi seu documento ✅ Vou encaminhar para análise do time e já te retorno aqui.",
+                conversation_id: convo.id,
+              }),
+            }).catch((err) => console.error("❌ Doc/image auto-reply send error:", err));
+
+            // Do not trigger AI when handing off
+            // (media download still happens below)
+          }
+
           // Trigger AI auto-reply if eligible (check both ai_enabled column and legacy AI_ON label)
           const convoLabels: string[] = convo.labels || [];
           const aiActive = convo.ai_enabled === true || convoLabels.includes("AI_ON");
           if (
             aiActive &&
+            !isDocLike &&
             !convoLabels.includes("HANDOFF_HUMAN") &&
             !convoLabels.includes("AI_PAUSED") &&
             convo.status !== "closed"
