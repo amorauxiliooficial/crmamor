@@ -20,44 +20,109 @@ const GRAPH_API_VERSION = "v21.0";
 const DEFAULT_TEMPLATE_NAME = "retomar_atendimento";
 const DEFAULT_TEMPLATE_LANG = "pt_BR";
 
-function firstNameFrom(input?: string | null): string {
-  const s = (input || "").trim();
-  if (!s) return "tudo bem";
-  return s.split(/\s+/)[0] || "tudo bem";
+/** ---------- helpers ---------- */
+
+function firstNameFrom(name?: string | null) {
+  const s = (name || "").trim();
+  return s ? s.split(/\s+/)[0] : "tudo bem";
 }
 
-function buildRetomarTemplate(firstName: string, templateName = DEFAULT_TEMPLATE_NAME, lang = DEFAULT_TEMPLATE_LANG) {
+function normalizePhone(to: string) {
+  return String(to).replace(/\D/g, "");
+}
+
+function toJson(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+/**
+ * Build Meta template components from:
+ * - template_components (Meta native format)
+ * - OR variables: ["Bruno","auxílio-maternidade"]
+ * - OR variables: { "1": "Bruno", "2": "auxílio-maternidade" }
+ */
+function resolveTemplateComponents(input: any): any[] {
+  if (Array.isArray(input?.template_components)) return input.template_components;
+
+  const v = input?.variables ?? input?.template_variables;
+  if (!v) return [];
+
+  let arr: string[] = [];
+
+  if (Array.isArray(v)) {
+    arr = v.map((x) => String(x));
+  } else if (typeof v === "object") {
+    // { "1": "...", "2": "..." }
+    arr = Object.keys(v)
+      .sort((a, b) => Number(a) - Number(b))
+      .map((k) => String(v[k]));
+  } else {
+    arr = [String(v)];
+  }
+
+  return [
+    {
+      type: "body",
+      parameters: arr.map((text) => ({ type: "text", text })),
+    },
+  ];
+}
+
+function buildRetomarTemplatePayload(args: {
+  to: string;
+  template_name?: string;
+  template_language?: string;
+  first_name?: string;
+  variables?: any;
+}) {
+  const tName = args.template_name || DEFAULT_TEMPLATE_NAME;
+  const tLang = args.template_language || DEFAULT_TEMPLATE_LANG;
+
+  // Se vier variables (por exemplo do modal com {{1}} e {{2}}), usa isso.
+  // Senão, usa first_name como {{1}}
+  let components: any[] = [];
+  if (args.variables) {
+    components = resolveTemplateComponents({ variables: args.variables });
+  } else {
+    const fname = firstNameFrom(args.first_name);
+    components = [{ type: "body", parameters: [{ type: "text", text: fname }] }];
+  }
+
   return {
     messaging_product: "whatsapp",
     recipient_type: "individual",
+    to: normalizePhone(args.to),
     type: "template",
     template: {
-      name: templateName,
-      language: { code: lang },
-      components: [
-        {
-          type: "body",
-          parameters: [{ type: "text", text: firstName }],
-        },
-      ],
+      name: tName,
+      language: { code: tLang },
+      components,
     },
   };
 }
 
-async function uploadMediaToMeta(
-  mediaUrl: string,
-  mediaMime: string,
-  metaToken: string,
-  phoneNumberId: string,
-): Promise<string> {
-  console.log(`⬇️ Downloading media from: ${mediaUrl.slice(0, 100)}...`);
+/**
+ * Upload media file to Meta and return media_id
+ */
+async function uploadMediaToMeta(params: {
+  mediaUrl: string;
+  mediaMime: string;
+  metaToken: string;
+  phoneNumberId: string;
+}) {
+  const { mediaUrl, mediaMime, metaToken, phoneNumberId } = params;
+
+  console.log(`⬇️ Downloading media: ${String(mediaUrl).slice(0, 120)}...`);
   const fileRes = await fetch(mediaUrl);
   if (!fileRes.ok) {
     throw new Error(`Failed to download media: ${fileRes.status} ${fileRes.statusText}`);
   }
-  const fileBlob = await fileRes.blob();
 
-  const form = new FormData();
+  const blob = await fileRes.blob();
+
   const filename = mediaMime.includes("ogg")
     ? "audio.ogg"
     : mediaMime.includes("webm")
@@ -66,13 +131,16 @@ async function uploadMediaToMeta(
         ? "audio.mp3"
         : mediaMime.includes("aac")
           ? "audio.aac"
-          : "media.bin";
+          : mediaMime.includes("png")
+            ? "image.png"
+            : mediaMime.includes("jpeg")
+              ? "image.jpg"
+              : "media.bin";
 
-  form.append("file", new File([fileBlob], filename, { type: mediaMime }));
+  const form = new FormData();
+  form.append("file", new File([blob], filename, { type: mediaMime }));
   form.append("messaging_product", "whatsapp");
   form.append("type", mediaMime);
-
-  console.log(`⬆️ Uploading media to Meta (${mediaMime}, ${fileBlob.size} bytes)...`);
 
   const uploadRes = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/${phoneNumberId}/media`, {
     method: "POST",
@@ -81,56 +149,66 @@ async function uploadMediaToMeta(
   });
 
   const uploadBody = await uploadRes.json();
-  console.log(`📤 Meta upload response (${uploadRes.status}):`, JSON.stringify(uploadBody).slice(0, 300));
+  console.log(`📤 Meta upload (${uploadRes.status}):`, JSON.stringify(uploadBody).slice(0, 300));
 
   if (!uploadRes.ok || !uploadBody?.id) {
     const errMsg = uploadBody?.error?.message || "Unknown upload error";
     throw new Error(`Meta media upload failed (${uploadRes.status}): ${errMsg}`);
   }
 
-  return uploadBody.id;
+  return uploadBody.id as string;
 }
+
+/** ---------- handler ---------- */
 
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: corsHeaders });
 
+  // ENV
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const INTERNAL_FUNCTION_TOKEN = Deno.env.get("INTERNAL_FUNCTION_TOKEN") || "";
+  const internalSecret = Deno.env.get("INTERNAL_FUNCTION_TOKEN") || "";
 
+  const META_WA_TOKEN = Deno.env.get("META_WA_TOKEN");
+  const META_PHONE_NUMBER_ID = Deno.env.get("META_PHONE_NUMBER_ID");
+
+  if (!META_WA_TOKEN || !META_PHONE_NUMBER_ID) {
+    return toJson({ error: "Server misconfigured: missing Meta credentials" }, 500);
+  }
+
+  // AUTH
   const authHeader = req.headers.get("Authorization") || "";
   const apikeyHeader = req.headers.get("apikey") || "";
   const internalToken = req.headers.get("x-internal-token") || "";
 
   const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  const isInternalCall =
+  const isInternal =
     bearerToken === serviceRoleKey ||
     apikeyHeader === serviceRoleKey ||
-    (INTERNAL_FUNCTION_TOKEN && internalToken === INTERNAL_FUNCTION_TOKEN);
+    (internalSecret && internalToken === internalSecret);
 
   console.log("🔐 auth check", {
     hasAuth: !!authHeader,
     hasApikey: !!apikeyHeader,
     hasInternalToken: !!internalToken,
-    internal: isInternalCall,
+    internal: isInternal,
   });
-
-  if (!isInternalCall && !authHeader.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-  }
 
   let userId: string | null = null;
 
-  if (!isInternalCall) {
+  if (!isInternal) {
+    if (!authHeader.startsWith("Bearer ")) {
+      return toJson({ error: "Unauthorized" }, 401);
+    }
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
     const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(bearerToken);
     if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+      return toJson({ error: "Unauthorized" }, 401);
     }
     userId = claimsData.claims.sub;
   }
@@ -142,73 +220,42 @@ serve(async (req: Request): Promise<Response> => {
 
     const {
       to,
-      text,
       conversation_id,
-      type,
-      media_url,
-      media_mime,
-      media_filename,
-      caption,
+      type = "text",
+
+      // text
+      text,
 
       // template
       template_name,
       template_language,
       template_components,
+      variables, // UI-friendly
+      template_variables, // UI-friendly alias
+
+      // media
+      media_url,
+      media_mime,
+      media_filename,
+      caption,
 
       // window fallback
       window_fallback_template,
       first_name,
     } = body;
 
-    if (!to) {
-      return new Response(JSON.stringify({ error: 'Missing "to"' }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!to) return toJson({ error: 'Missing "to"' }, 400);
 
-    const META_WA_TOKEN = Deno.env.get("META_WA_TOKEN");
-    const META_PHONE_NUMBER_ID = Deno.env.get("META_PHONE_NUMBER_ID");
-    if (!META_WA_TOKEN || !META_PHONE_NUMBER_ID) {
-      return new Response(JSON.stringify({ error: "Server misconfigured: missing Meta credentials" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const cleanPhone = normalizePhone(to);
+    const msgType = String(type || "text");
 
-    const cleanPhone = String(to).replace(/\D/g, "");
-    const msgType = type || "text";
-
-    console.log(`📤 Sending ${msgType} to +${cleanPhone} (internal=${isInternalCall})`);
+    console.log(`📤 Sending ${msgType} to +${cleanPhone} (internal=${isInternal})`);
 
     // Build Meta payload
-    let metaPayload: Record<string, unknown>;
+    let metaPayload: any = null;
 
-    if (msgType === "template") {
-      if (!template_name) {
-        return new Response(JSON.stringify({ error: "Missing template_name for template message" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      metaPayload = {
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
-        to: cleanPhone,
-        type: "template",
-        template: {
-          name: template_name,
-          language: { code: template_language || "pt_BR" },
-          components: template_components || [],
-        },
-      };
-    } else if (msgType === "text") {
-      if (!text) {
-        return new Response(JSON.stringify({ error: 'Missing "text" for text message' }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    if (msgType === "text") {
+      if (!text) return toJson({ error: 'Missing "text" for text message' }, 400);
       metaPayload = {
         messaging_product: "whatsapp",
         recipient_type: "individual",
@@ -216,17 +263,66 @@ serve(async (req: Request): Promise<Response> => {
         type: "text",
         text: { preview_url: false, body: text },
       };
-    } else if (msgType === "audio") {
-      if (!media_url)
-        return new Response(JSON.stringify({ error: "Missing media_url for audio" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+    }
+
+    if (msgType === "template") {
+      if (!template_name) return toJson({ error: "Missing template_name for template message" }, 400);
+
+      const components = Array.isArray(template_components)
+        ? template_components
+        : resolveTemplateComponents({ variables: variables ?? template_variables });
+
+      metaPayload = {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: cleanPhone,
+        type: "template",
+        template: {
+          name: template_name,
+          language: { code: template_language || DEFAULT_TEMPLATE_LANG },
+          components: components || [],
+        },
+      };
+    }
+
+    if (msgType === "audio") {
+      if (!media_url) return toJson({ error: "Missing media_url for audio" }, 400);
 
       let effectiveMime = media_mime || "audio/ogg";
-      if (effectiveMime.includes("webm") && effectiveMime.includes("opus")) effectiveMime = "audio/ogg";
 
-      const mediaId = await uploadMediaToMeta(media_url, effectiveMime, META_WA_TOKEN, META_PHONE_NUMBER_ID);
+      // compat hack
+      if (String(effectiveMime).includes("webm") && String(effectiveMime).includes("opus")) {
+        effectiveMime = "audio/ogg";
+        console.log("🔄 Re-labeling audio/webm;codecs=opus → audio/ogg");
+      }
+
+      // Meta não aceita vários webm. Se for webm puro, falha com mensagem clara.
+      if (String(effectiveMime).includes("webm") && !String(effectiveMime).includes("opus")) {
+        if (conversation_id) {
+          await adminClient.from("wa_messages").insert({
+            conversation_id,
+            direction: "out",
+            body: "[audio]",
+            msg_type: "audio",
+            status: "failed",
+            sent_by: userId,
+            sent_at: new Date().toISOString(),
+            media_url,
+            media_mime: effectiveMime,
+            error_code: "UNSUPPORTED_FORMAT",
+            error_message: "Formato de áudio não suportado pela Meta. Grave novamente (OGG/OPUS).",
+          });
+        }
+        return toJson({ error: "Unsupported audio format", error_code: "UNSUPPORTED_FORMAT" }, 400);
+      }
+
+      const mediaId = await uploadMediaToMeta({
+        mediaUrl: media_url,
+        mediaMime: effectiveMime,
+        metaToken: META_WA_TOKEN,
+        phoneNumberId: META_PHONE_NUMBER_ID,
+      });
+
       metaPayload = {
         messaging_product: "whatsapp",
         recipient_type: "individual",
@@ -234,7 +330,10 @@ serve(async (req: Request): Promise<Response> => {
         type: "audio",
         audio: { id: mediaId },
       };
-    } else if (msgType === "image") {
+    }
+
+    if (msgType === "image") {
+      if (!media_url) return toJson({ error: "Missing media_url for image" }, 400);
       metaPayload = {
         messaging_product: "whatsapp",
         recipient_type: "individual",
@@ -242,7 +341,10 @@ serve(async (req: Request): Promise<Response> => {
         type: "image",
         image: { link: media_url, caption: caption || undefined },
       };
-    } else if (msgType === "video") {
+    }
+
+    if (msgType === "video") {
+      if (!media_url) return toJson({ error: "Missing media_url for video" }, 400);
       metaPayload = {
         messaging_product: "whatsapp",
         recipient_type: "individual",
@@ -250,7 +352,10 @@ serve(async (req: Request): Promise<Response> => {
         type: "video",
         video: { link: media_url, caption: caption || undefined },
       };
-    } else if (msgType === "document") {
+    }
+
+    if (msgType === "document") {
+      if (!media_url) return toJson({ error: "Missing media_url for document" }, 400);
       metaPayload = {
         messaging_product: "whatsapp",
         recipient_type: "individual",
@@ -258,43 +363,55 @@ serve(async (req: Request): Promise<Response> => {
         type: "document",
         document: { link: media_url, filename: media_filename || "document", caption: caption || undefined },
       };
-    } else {
-      return new Response(JSON.stringify({ error: `Unsupported message type: ${msgType}` }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    }
+
+    if (!metaPayload) {
+      return toJson({ error: `Unsupported message type: ${msgType}` }, 400);
     }
 
     // Send to Meta
     const metaRes = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/${META_PHONE_NUMBER_ID}/messages`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${META_WA_TOKEN}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${META_WA_TOKEN}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(metaPayload),
     });
 
     const metaBody = await metaRes.json();
     console.log(`📡 Meta API response (${metaRes.status}):`, JSON.stringify(metaBody).slice(0, 300));
 
+    // Handle error (including window fallback)
     if (!metaRes.ok) {
       const metaError = metaBody?.error;
       const errorCode = metaError?.code || metaRes.status;
       const isWindowError = errorCode === 131047 || metaError?.error_subcode === 131047;
 
-      // window fallback for text
+      // Window fallback: if text failed and requested fallback
       if (isWindowError && msgType === "text" && window_fallback_template) {
-        const fname = firstNameFrom(first_name);
-        const fallbackTemplateName = template_name || DEFAULT_TEMPLATE_NAME;
-        const fallbackLang = template_language || DEFAULT_TEMPLATE_LANG;
+        // Se o caller mandar `variables`, usamos elas.
+        // Senão, usamos first_name como {{1}}.
+        const fallbackPayload = buildRetomarTemplatePayload({
+          to,
+          template_name: DEFAULT_TEMPLATE_NAME,
+          template_language: DEFAULT_TEMPLATE_LANG,
+          first_name: first_name,
+          variables: variables ?? template_variables,
+        });
 
-        console.log(`🧩 Window expired. Falling back to template=${fallbackTemplateName} fname=${fname}`);
-
-        const templatePayload = buildRetomarTemplate(fname, fallbackTemplateName, fallbackLang) as any;
-        templatePayload.to = cleanPhone;
+        console.log(
+          "🧩 Window expired → sending template fallback:",
+          JSON.stringify(fallbackPayload.template).slice(0, 250),
+        );
 
         const fbRes = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/${META_PHONE_NUMBER_ID}/messages`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${META_WA_TOKEN}`, "Content-Type": "application/json" },
-          body: JSON.stringify(templatePayload),
+          headers: {
+            Authorization: `Bearer ${META_WA_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(fallbackPayload),
         });
 
         const fbBody = await fbRes.json();
@@ -303,57 +420,44 @@ serve(async (req: Request): Promise<Response> => {
         if (fbRes.ok && fbBody?.messages?.[0]?.id) {
           const metaMsgId = fbBody.messages[0].id;
 
-          let convoId = conversation_id;
-          if (!convoId) {
-            const { data: existing } = await adminClient
-              .from("wa_conversations")
-              .select("id")
-              .eq("wa_phone", cleanPhone)
-              .maybeSingle();
-            if (existing?.id) convoId = existing.id;
-          }
-
-          if (convoId) {
+          if (conversation_id) {
             await adminClient.from("wa_messages").insert({
-              conversation_id: convoId,
+              conversation_id,
               meta_message_id: metaMsgId,
               direction: "out",
-              body: `[template: ${fallbackTemplateName}]`,
+              body: `[template: ${DEFAULT_TEMPLATE_NAME}]`,
               msg_type: "template",
               status: "sent",
               sent_by: userId,
               sent_at: new Date().toISOString(),
-              template_name: fallbackTemplateName,
-              template_variables: [{ type: "body", parameters: [{ type: "text", text: fname }] }],
+              template_name: DEFAULT_TEMPLATE_NAME,
+              template_variables: fallbackPayload.template.components,
             });
 
             await adminClient
               .from("wa_conversations")
               .update({
                 last_message_at: new Date().toISOString(),
-                last_message_preview: `[template: ${fallbackTemplateName}]`.slice(0, 200),
+                last_message_preview: `[template: ${DEFAULT_TEMPLATE_NAME}]`.slice(0, 200),
               })
-              .eq("id", convoId);
+              .eq("id", conversation_id);
           }
 
-          return new Response(
-            JSON.stringify({
-              success: true,
-              meta_message_id: metaMsgId,
-              conversation_id: convoId,
-              used_template_fallback: true,
-              template_name: fallbackTemplateName,
-            }),
-            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          );
+          return toJson({
+            success: true,
+            used_template_fallback: true,
+            template_name: DEFAULT_TEMPLATE_NAME,
+            meta_message_id: metaMsgId,
+            conversation_id,
+          });
         }
       }
 
-      // store failed message if possible
+      // Store failed message in DB (best effort)
       if (conversation_id) {
         const bodyText =
           msgType === "text"
-            ? text
+            ? String(text || "")
             : msgType === "template"
               ? `[template: ${template_name}]`
               : caption || `[${msgType}]`;
@@ -371,38 +475,44 @@ serve(async (req: Request): Promise<Response> => {
             ? "Janela de 24h expirada. Use um template aprovado para retomar a conversa."
             : metaError?.message || "Erro desconhecido da Meta API",
           template_name: msgType === "template" ? template_name : null,
-          template_variables: msgType === "template" ? template_components || null : null,
+          template_variables:
+            msgType === "template"
+              ? Array.isArray(template_components)
+                ? template_components
+                : resolveTemplateComponents({ variables: variables ?? template_variables })
+              : null,
         });
       }
 
-      return new Response(
-        JSON.stringify({
+      return toJson(
+        {
           error: "Meta API error",
           error_message: metaError?.message || "Unknown error",
           error_code: errorCode,
           is_window_error: isWindowError,
           details: metaBody,
-        }),
-        { status: metaRes.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        },
+        metaRes.status,
       );
     }
 
+    // Success
     const metaMsgId = metaBody?.messages?.[0]?.id ?? null;
     if (!metaMsgId) {
-      return new Response(JSON.stringify({ error: "Meta did not return message ID", details: metaBody }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return toJson({ error: "Meta did not return message ID", details: metaBody }, 502);
     }
 
-    // store outbound message (best effort)
-    let convoId = conversation_id;
-    if (convoId) {
+    // Store outbound message
+    if (conversation_id) {
       const bodyText =
-        msgType === "text" ? text : msgType === "template" ? `[template: ${template_name}]` : caption || `[${msgType}]`;
+        msgType === "text"
+          ? String(text || "")
+          : msgType === "template"
+            ? `[template: ${template_name}]`
+            : caption || `[${msgType}]`;
 
       await adminClient.from("wa_messages").insert({
-        conversation_id: convoId,
+        conversation_id,
         meta_message_id: metaMsgId,
         direction: "out",
         body: bodyText,
@@ -411,27 +521,26 @@ serve(async (req: Request): Promise<Response> => {
         sent_by: userId,
         sent_at: new Date().toISOString(),
         template_name: msgType === "template" ? template_name : null,
-        template_variables: msgType === "template" ? template_components || null : null,
+        template_variables:
+          msgType === "template"
+            ? Array.isArray(template_components)
+              ? template_components
+              : resolveTemplateComponents({ variables: variables ?? template_variables })
+            : null,
       });
 
       await adminClient
         .from("wa_conversations")
         .update({
           last_message_at: new Date().toISOString(),
-          last_message_preview: String(bodyText || "").slice(0, 200),
+          last_message_preview: bodyText.slice(0, 200),
         })
-        .eq("id", convoId);
+        .eq("id", conversation_id);
     }
 
-    return new Response(JSON.stringify({ success: true, meta_message_id: metaMsgId, conversation_id: convoId }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    console.error("❌ Send error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error", error_message: String(error) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return toJson({ success: true, meta_message_id: metaMsgId, conversation_id });
+  } catch (err) {
+    console.error("❌ whatsapp-send error:", err);
+    return toJson({ error: "Internal server error", error_message: String(err) }, 500);
   }
 });
