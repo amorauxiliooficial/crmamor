@@ -67,17 +67,23 @@ export function useSendTemplate() {
       conversation_id: string;
       template_name: string;
       template_language: string;
-      template_components: any[];
+      template_components?: any[];
+      variables?: string[];
     }) => {
+      const body: Record<string, any> = {
+        to: params.to,
+        conversation_id: params.conversation_id,
+        type: "template",
+        template_name: params.template_name,
+        template_language: params.template_language,
+      };
+      if (params.variables) {
+        body.variables = params.variables;
+      } else if (params.template_components) {
+        body.template_components = params.template_components;
+      }
       const { data, error } = await supabase.functions.invoke("whatsapp-send", {
-        body: {
-          to: params.to,
-          conversation_id: params.conversation_id,
-          type: "template",
-          template_name: params.template_name,
-          template_language: params.template_language,
-          template_components: params.template_components,
-        },
+        body,
       });
       if (error) throw error;
       return data;

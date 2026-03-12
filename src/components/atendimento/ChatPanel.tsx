@@ -1353,6 +1353,7 @@ export function ChatPanel({
           onOpenChange={setTemplateDialogOpen}
           conversationId={conversa.id}
           phone={conversationPhone}
+          waName={conversa.waName}
         />
       )}
     </div>
