@@ -1,0 +1,1 @@
+ALTER TABLE public.mae_processo ADD COLUMN das_concluido boolean NOT NULL DEFAULT false;
