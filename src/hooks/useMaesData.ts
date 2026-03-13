@@ -54,6 +54,7 @@ const mapDbToMae = (item: Record<string, unknown>): MaeProcessoComAtividade => (
   data_ultima_atualizacao: item.data_ultima_atualizacao as string,
   link_documentos: (item.link_documentos as string) || null,
   ultima_atividade_em: (item.ultima_atividade_em as string) || null,
+  precisa_das: (item.precisa_das as boolean) ?? false,
 });
 
 interface MaesDataResult {
