@@ -47,6 +47,7 @@ export interface MaeProcesso {
   data_ultima_atualizacao: string;
   link_documentos?: string | null;
   cep?: string | null;
+  precisa_das: boolean;
 }
 
 export interface ChecklistMae {

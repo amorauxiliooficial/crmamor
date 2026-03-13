@@ -866,6 +866,7 @@ export type Database = {
           origem: string | null
           parcelas: string | null
           percentual_comissao: number | null
+          precisa_das: boolean
           precisa_gps: string | null
           protocolo_inss: string | null
           segurada: string | null
@@ -907,6 +908,7 @@ export type Database = {
           origem?: string | null
           parcelas?: string | null
           percentual_comissao?: number | null
+          precisa_das?: boolean
           precisa_gps?: string | null
           protocolo_inss?: string | null
           segurada?: string | null
@@ -948,6 +950,7 @@ export type Database = {
           origem?: string | null
           parcelas?: string | null
           percentual_comissao?: number | null
+          precisa_das?: boolean
           precisa_gps?: string | null
           protocolo_inss?: string | null
           segurada?: string | null

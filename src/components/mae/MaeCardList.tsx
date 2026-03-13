@@ -80,7 +80,7 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
     <div className="space-y-2 px-1">
       {maes.map((mae) => {
         const mesGestacao = calcularMesGravidez(mae);
-        const precisaDAS = verificarDAS(mae);
+        const precisaDAS = verificarDAS(mae) || mae.precisa_das;
         const statusLabel = mae.status_processo.split(" ").slice(1).join(" ") || mae.status_processo;
         const emoji = mae.status_processo.split(" ")[0];
 
