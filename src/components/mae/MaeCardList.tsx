@@ -11,9 +11,10 @@ import {
   ChevronRight,
   MoreVertical,
   Copy,
+  FileWarning,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
-import { format, parseISO, differenceInMonths } from "date-fns";
+import { format, parseISO, differenceInMonths, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   DropdownMenu,
