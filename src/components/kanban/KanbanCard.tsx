@@ -44,6 +44,7 @@ export function KanbanCard({
   hasUnreadAlert = false,
 }: KanbanCardProps) {
   const mesGestacao = calcularMesGravidez(mae);
+  const precisaDAS = verificarDAS(mae);
   const { getFollowUpStatus, getDaysSinceLastActivity, configLoading } = useFollowUpStatus();
   
   const isActiveStatus = !mae.status_processo.toLowerCase().includes("aprovada") &&
