@@ -93,7 +93,7 @@ export function KanbanCard({
   return (
     <Card
       className={cn(
-        "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-1 md:hover:ring-primary/20 relative",
+        "group cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-1 md:hover:ring-primary/20 relative",
         isDragging && "shadow-lg ring-1 ring-primary/40 rotate-2",
         followUpStatus === "overdue" && !hasUnreadAlert && "ring-1 ring-destructive/30",
         hasUnreadAlert && "ring-1 ring-primary/40"
