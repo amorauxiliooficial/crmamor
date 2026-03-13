@@ -86,7 +86,7 @@ export function KanbanCard({
       toast.error("Erro ao atualizar DAS");
       return;
     }
-    toast.success(newValue ? "✅ DAS marcado como pendente" : "DAS desmarcado", {
+    toast.success(newValue ? "✅ DAS marcado como pendente" : "✅ DAS finalizado com sucesso", {
       duration: 3000,
       position: "top-center",
     });
@@ -135,7 +135,7 @@ export function KanbanCard({
                     dasAuto && "animate-pulse"
                   )}
                   onClick={toggleDAS}
-                  title={mae.precisa_das ? "Clique para desmarcar DAS" : "Clique para desmarcar DAS (automático)"}
+                  title={mae.precisa_das ? "Clique para finalizar DAS" : "Clique para finalizar DAS (automático)"}
                 >
                   <FileWarning className="h-2.5 w-2.5" />
                   DAS
