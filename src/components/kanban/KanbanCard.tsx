@@ -86,7 +86,7 @@ export function KanbanCard({
       toast.error("Erro ao atualizar DAS");
       return;
     }
-    toast.success(newValue ? "✅ DAS marcado como pendente" : "DAS desmarcado", {
+    toast.success(newValue ? "✅ DAS marcado como pendente" : "✅ DAS finalizado com sucesso", {
       duration: 3000,
       position: "top-center",
     });
