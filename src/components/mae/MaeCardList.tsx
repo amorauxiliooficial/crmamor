@@ -175,6 +175,12 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
                     DAS
                   </Badge>
                 )}
+                {dasConcluido && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 gap-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                    <FileWarning className="h-2.5 w-2.5" />
+                    DAS ✓
+                  </Badge>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-3 mt-2 text-[11px] text-muted-foreground">
