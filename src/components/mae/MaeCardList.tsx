@@ -51,6 +51,14 @@ function calcularMesGravidez(mae: MaeProcesso): number | null {
   return Math.max(1, Math.min(9, 9 - mesesAteParto));
 }
 
+function verificarDAS(mae: MaeProcesso): boolean {
+  if (!mae.is_gestante || !mae.data_evento || mae.data_evento_tipo !== "DPP") return false;
+  const dpp = parseISO(mae.data_evento);
+  const hoje = new Date();
+  if (dpp < hoje) return false;
+  return differenceInDays(dpp, hoje) <= 30;
+}
+
 const getStatusBadgeVariant = (status: string) => {
   if (status.includes("Aprovada")) return "default";
   if (status.includes("Indeferida")) return "destructive";
