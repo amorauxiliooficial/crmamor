@@ -297,6 +297,7 @@ export default function PreAnalises() {
       contrato_assinado: analise.mae_processo.contrato_assinado,
       verificacao_duas_etapas: analise.mae_processo.verificacao_duas_etapas,
       data_ultima_atualizacao: analise.mae_processo.data_ultima_atualizacao,
+      precisa_das: (analise.mae_processo as any).precisa_das ?? false,
     };
     setSelectedMaeHistorico(mae);
     setHistoricoDialogOpen(true);

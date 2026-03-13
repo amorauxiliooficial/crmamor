@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 import { differenceInDays, differenceInMonths, parseISO } from "date-fns";
 import { FollowUpBadge } from "@/components/atividades/FollowUpBadge";
 import { useFollowUpStatus } from "@/hooks/useAtividades";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface KanbanCardProps {
   mae: MaeProcesso & { ultima_atividade_em?: string | null };
@@ -37,11 +40,11 @@ function calcularMesGravidez(mae: MaeProcesso): number | null {
 }
 
 /** Retorna true se a gestante está a ≤30 dias do parto (DPP) — hora de gerar o DAS */
-function verificarDAS(mae: MaeProcesso): boolean {
+function verificarDASAuto(mae: MaeProcesso): boolean {
   if (!mae.is_gestante || !mae.data_evento || mae.data_evento_tipo !== "DPP") return false;
   const dpp = parseISO(mae.data_evento);
   const hoje = new Date();
-  if (dpp < hoje) return false; // já nasceu
+  if (dpp < hoje) return false;
   const dias = differenceInDays(dpp, hoje);
   return dias <= 30;
 }
@@ -54,8 +57,10 @@ export function KanbanCard({
   hasUnreadAlert = false,
 }: KanbanCardProps) {
   const mesGestacao = calcularMesGravidez(mae);
-  const precisaDAS = verificarDAS(mae);
+  const dasAuto = verificarDASAuto(mae);
+  const mostrarDAS = dasAuto || mae.precisa_das;
   const { getFollowUpStatus, getDaysSinceLastActivity, configLoading } = useFollowUpStatus();
+  const queryClient = useQueryClient();
   
   const isActiveStatus = !mae.status_processo.toLowerCase().includes("aprovada") &&
     !mae.status_processo.toLowerCase().includes("indeferida") &&
@@ -69,6 +74,21 @@ export function KanbanCard({
     mae.ultima_atividade_em,
     mae.data_ultima_atualizacao
   );
+
+  const toggleDAS = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newValue = !mae.precisa_das;
+    const { error } = await supabase
+      .from("mae_processo")
+      .update({ precisa_das: newValue } as any)
+      .eq("id", mae.id);
+    if (error) {
+      toast.error("Erro ao atualizar DAS");
+      return;
+    }
+    toast.success(newValue ? "DAS marcado como pendente" : "DAS desmarcado");
+    queryClient.invalidateQueries({ queryKey: ["maes_data"] });
+  };
   
   return (
     <Card
@@ -104,10 +124,28 @@ export function KanbanCard({
                   compact
                 />
               )}
-              {precisaDAS && (
-                <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 gap-0.5 animate-pulse">
+              {mostrarDAS && (
+                <Badge
+                  variant="destructive"
+                  className={cn(
+                    "text-[10px] px-1.5 py-0 h-5 gap-0.5 cursor-pointer hover:opacity-80",
+                    dasAuto && "animate-pulse"
+                  )}
+                  onClick={toggleDAS}
+                  title={mae.precisa_das ? "Clique para desmarcar DAS" : "Clique para desmarcar DAS (automático)"}
+                >
                   <FileWarning className="h-2.5 w-2.5" />
                   DAS
+                </Badge>
+              )}
+              {!mostrarDAS && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 h-5 gap-0.5 cursor-pointer hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={toggleDAS}
+                  title="Marcar DAS como pendente"
+                >
+                  <FileWarning className="h-2.5 w-2.5" />
                 </Badge>
               )}
               {mae.is_gestante && mesGestacao && (

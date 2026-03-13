@@ -627,6 +627,7 @@ const Index = () => {
             const mappedMae = {
               ...createdMae,
               status_processo: mapDbStatusToDisplay(createdMae.status_processo) as MaeProcesso["status_processo"],
+              precisa_das: (createdMae as any).precisa_das ?? false,
             };
             setSelectedMae(mappedMae);
             setEditDialogOpen(true);
