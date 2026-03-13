@@ -1,10 +1,10 @@
 import { MaeProcesso } from "@/types/mae";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Baby, FolderOpen, AlertTriangle } from "lucide-react";
+import { Calendar, FileText, Baby, FolderOpen, AlertTriangle, FileWarning } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
-import { differenceInMonths, parseISO } from "date-fns";
+import { differenceInDays, differenceInMonths, parseISO } from "date-fns";
 import { FollowUpBadge } from "@/components/atividades/FollowUpBadge";
 import { useFollowUpStatus } from "@/hooks/useAtividades";
 
@@ -36,7 +36,17 @@ function calcularMesGravidez(mae: MaeProcesso): number | null {
   return Math.max(1, Math.min(9, 9 - mesesAteParto));
 }
 
-export function KanbanCard({ 
+/** Retorna true se a gestante está a ≤30 dias do parto (DPP) — hora de gerar o DAS */
+function verificarDAS(mae: MaeProcesso): boolean {
+  if (!mae.is_gestante || !mae.data_evento || mae.data_evento_tipo !== "DPP") return false;
+  const dpp = parseISO(mae.data_evento);
+  const hoje = new Date();
+  if (dpp < hoje) return false; // já nasceu
+  const dias = differenceInDays(dpp, hoje);
+  return dias <= 30;
+}
+
+export function KanbanCard({
   mae, 
   onClick, 
   isDragging, 
@@ -44,6 +54,7 @@ export function KanbanCard({
   hasUnreadAlert = false,
 }: KanbanCardProps) {
   const mesGestacao = calcularMesGravidez(mae);
+  const precisaDAS = verificarDAS(mae);
   const { getFollowUpStatus, getDaysSinceLastActivity, configLoading } = useFollowUpStatus();
   
   const isActiveStatus = !mae.status_processo.toLowerCase().includes("aprovada") &&
@@ -92,6 +103,12 @@ export function KanbanCard({
                   daysSinceActivity={daysSinceActivity}
                   compact
                 />
+              )}
+              {precisaDAS && (
+                <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 gap-0.5 animate-pulse">
+                  <FileWarning className="h-2.5 w-2.5" />
+                  DAS
+                </Badge>
               )}
               {mae.is_gestante && mesGestacao && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-accent text-accent-foreground">

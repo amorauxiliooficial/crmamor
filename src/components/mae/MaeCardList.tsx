@@ -11,9 +11,10 @@ import {
   ChevronRight,
   MoreVertical,
   Copy,
+  FileWarning,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
-import { format, parseISO, differenceInMonths } from "date-fns";
+import { format, parseISO, differenceInMonths, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   DropdownMenu,
@@ -50,6 +51,14 @@ function calcularMesGravidez(mae: MaeProcesso): number | null {
   return Math.max(1, Math.min(9, 9 - mesesAteParto));
 }
 
+function verificarDAS(mae: MaeProcesso): boolean {
+  if (!mae.is_gestante || !mae.data_evento || mae.data_evento_tipo !== "DPP") return false;
+  const dpp = parseISO(mae.data_evento);
+  const hoje = new Date();
+  if (dpp < hoje) return false;
+  return differenceInDays(dpp, hoje) <= 30;
+}
+
 const getStatusBadgeVariant = (status: string) => {
   if (status.includes("Aprovada")) return "default";
   if (status.includes("Indeferida")) return "destructive";
@@ -71,6 +80,7 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
     <div className="space-y-2 px-1">
       {maes.map((mae) => {
         const mesGestacao = calcularMesGravidez(mae);
+        const precisaDAS = verificarDAS(mae);
         const statusLabel = mae.status_processo.split(" ").slice(1).join(" ") || mae.status_processo;
         const emoji = mae.status_processo.split(" ")[0];
 
@@ -156,6 +166,12 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
                 {mae.contrato_assinado && (
                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
                     Contrato ✓
+                  </Badge>
+                )}
+                {precisaDAS && (
+                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 gap-0.5 animate-pulse">
+                    <FileWarning className="h-2.5 w-2.5" />
+                    DAS
                   </Badge>
                 )}
               </div>
