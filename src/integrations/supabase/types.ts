@@ -850,6 +850,7 @@ export type Database = {
           contrato_assinado: boolean
           cpf: string
           created_at: string
+          das_concluido: boolean
           data_evento: string | null
           data_evento_tipo:
             | Database["public"]["Enums"]["data_evento_tipo"]
@@ -892,6 +893,7 @@ export type Database = {
           contrato_assinado?: boolean
           cpf: string
           created_at?: string
+          das_concluido?: boolean
           data_evento?: string | null
           data_evento_tipo?:
             | Database["public"]["Enums"]["data_evento_tipo"]
@@ -934,6 +936,7 @@ export type Database = {
           contrato_assinado?: boolean
           cpf?: string
           created_at?: string
+          das_concluido?: boolean
           data_evento?: string | null
           data_evento_tipo?:
             | Database["public"]["Enums"]["data_evento_tipo"]

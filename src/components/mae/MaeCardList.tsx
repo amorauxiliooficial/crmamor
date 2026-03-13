@@ -80,7 +80,8 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
     <div className="space-y-2 px-1">
       {maes.map((mae) => {
         const mesGestacao = calcularMesGravidez(mae);
-        const precisaDAS = verificarDAS(mae) || mae.precisa_das;
+        const precisaDAS = (verificarDAS(mae) || mae.precisa_das) && !mae.das_concluido;
+        const dasConcluido = mae.das_concluido;
         const statusLabel = mae.status_processo.split(" ").slice(1).join(" ") || mae.status_processo;
         const emoji = mae.status_processo.split(" ")[0];
 
@@ -172,6 +173,12 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
                   <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 gap-0.5 animate-pulse">
                     <FileWarning className="h-2.5 w-2.5" />
                     DAS
+                  </Badge>
+                )}
+                {dasConcluido && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 gap-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                    <FileWarning className="h-2.5 w-2.5" />
+                    DAS ✓
                   </Badge>
                 )}
               </div>

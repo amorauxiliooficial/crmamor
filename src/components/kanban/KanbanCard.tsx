@@ -59,6 +59,7 @@ export function KanbanCard({
   const mesGestacao = calcularMesGravidez(mae);
   const dasAuto = verificarDASAuto(mae);
   const mostrarDAS = dasAuto || mae.precisa_das;
+  const dasEstado = mae.das_concluido ? "concluido" : mostrarDAS ? "pendente" : "oculto";
   const { getFollowUpStatus, getDaysSinceLastActivity, configLoading } = useFollowUpStatus();
   const queryClient = useQueryClient();
   
@@ -77,19 +78,32 @@ export function KanbanCard({
 
   const toggleDAS = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const newValue = !mae.precisa_das;
-    const { error } = await supabase
-      .from("mae_processo")
-      .update({ precisa_das: newValue } as any)
-      .eq("id", mae.id);
-    if (error) {
-      toast.error("Erro ao atualizar DAS");
-      return;
+    
+    if (dasEstado === "oculto") {
+      // Marcar como pendente
+      const { error } = await supabase
+        .from("mae_processo")
+        .update({ precisa_das: true, das_concluido: false } as any)
+        .eq("id", mae.id);
+      if (error) { toast.error("Erro ao atualizar DAS"); return; }
+      toast.success("✅ DAS marcado como pendente", { duration: 3000, position: "top-center" });
+    } else if (dasEstado === "pendente") {
+      // Finalizar
+      const { error } = await supabase
+        .from("mae_processo")
+        .update({ das_concluido: true } as any)
+        .eq("id", mae.id);
+      if (error) { toast.error("Erro ao atualizar DAS"); return; }
+      toast.success("✅ DAS finalizado com sucesso", { duration: 3000, position: "top-center" });
+    } else {
+      // Já concluído → voltar a oculto
+      const { error } = await supabase
+        .from("mae_processo")
+        .update({ precisa_das: false, das_concluido: false } as any)
+        .eq("id", mae.id);
+      if (error) { toast.error("Erro ao atualizar DAS"); return; }
+      toast.success("DAS removido", { duration: 3000, position: "top-center" });
     }
-    toast.success(newValue ? "✅ DAS marcado como pendente" : "✅ DAS finalizado com sucesso", {
-      duration: 3000,
-      position: "top-center",
-    });
     queryClient.invalidateQueries({ queryKey: ["maes_data"] });
   };
   
@@ -127,21 +141,32 @@ export function KanbanCard({
                   compact
                 />
               )}
-              {mostrarDAS && (
+              {dasEstado === "pendente" && (
                 <Badge
                   variant="destructive"
                   className={cn(
                     "text-[10px] px-1.5 py-0 h-5 gap-0.5 cursor-pointer hover:opacity-80",
-                    dasAuto && "animate-pulse"
+                    dasAuto && !mae.precisa_das && "animate-pulse"
                   )}
                   onClick={toggleDAS}
-                  title={mae.precisa_das ? "Clique para finalizar DAS" : "Clique para finalizar DAS (automático)"}
+                  title="Clique para finalizar DAS"
                 >
                   <FileWarning className="h-2.5 w-2.5" />
                   DAS
                 </Badge>
               )}
-              {!mostrarDAS && (
+              {dasEstado === "concluido" && (
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] px-1.5 py-0 h-5 gap-0.5 cursor-pointer hover:opacity-80 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  onClick={toggleDAS}
+                  title="DAS concluído — clique para remover"
+                >
+                  <FileWarning className="h-2.5 w-2.5" />
+                  DAS ✓
+                </Badge>
+              )}
+              {dasEstado === "oculto" && (
                 <Badge
                   variant="outline"
                   className="text-[10px] px-1.5 py-0 h-5 gap-0.5 cursor-pointer hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"

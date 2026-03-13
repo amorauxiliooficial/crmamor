@@ -298,6 +298,7 @@ export default function PreAnalises() {
       verificacao_duas_etapas: analise.mae_processo.verificacao_duas_etapas,
       data_ultima_atualizacao: analise.mae_processo.data_ultima_atualizacao,
       precisa_das: (analise.mae_processo as any).precisa_das ?? false,
+      das_concluido: (analise.mae_processo as any).das_concluido ?? false,
     };
     setSelectedMaeHistorico(mae);
     setHistoricoDialogOpen(true);
