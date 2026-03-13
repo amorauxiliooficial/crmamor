@@ -141,21 +141,32 @@ export function KanbanCard({
                   compact
                 />
               )}
-              {mostrarDAS && (
+              {dasEstado === "pendente" && (
                 <Badge
                   variant="destructive"
                   className={cn(
                     "text-[10px] px-1.5 py-0 h-5 gap-0.5 cursor-pointer hover:opacity-80",
-                    dasAuto && "animate-pulse"
+                    dasAuto && !mae.precisa_das && "animate-pulse"
                   )}
                   onClick={toggleDAS}
-                  title={mae.precisa_das ? "Clique para finalizar DAS" : "Clique para finalizar DAS (automático)"}
+                  title="Clique para finalizar DAS"
                 >
                   <FileWarning className="h-2.5 w-2.5" />
                   DAS
                 </Badge>
               )}
-              {!mostrarDAS && (
+              {dasEstado === "concluido" && (
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] px-1.5 py-0 h-5 gap-0.5 cursor-pointer hover:opacity-80 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  onClick={toggleDAS}
+                  title="DAS concluído — clique para remover"
+                >
+                  <FileWarning className="h-2.5 w-2.5" />
+                  DAS ✓
+                </Badge>
+              )}
+              {dasEstado === "oculto" && (
                 <Badge
                   variant="outline"
                   className="text-[10px] px-1.5 py-0 h-5 gap-0.5 cursor-pointer hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"

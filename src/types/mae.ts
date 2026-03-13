@@ -48,6 +48,7 @@ export interface MaeProcesso {
   link_documentos?: string | null;
   cep?: string | null;
   precisa_das: boolean;
+  das_concluido: boolean;
 }
 
 export interface ChecklistMae {
