@@ -36,7 +36,17 @@ function calcularMesGravidez(mae: MaeProcesso): number | null {
   return Math.max(1, Math.min(9, 9 - mesesAteParto));
 }
 
-export function KanbanCard({ 
+/** Retorna true se a gestante está a ≤30 dias do parto (DPP) — hora de gerar o DAS */
+function verificarDAS(mae: MaeProcesso): boolean {
+  if (!mae.is_gestante || !mae.data_evento || mae.data_evento_tipo !== "DPP") return false;
+  const dpp = parseISO(mae.data_evento);
+  const hoje = new Date();
+  if (dpp < hoje) return false; // já nasceu
+  const dias = differenceInDays(dpp, hoje);
+  return dias <= 30;
+}
+
+export function KanbanCard({
   mae, 
   onClick, 
   isDragging, 
