@@ -1,10 +1,10 @@
 import { MaeProcesso } from "@/types/mae";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Baby, FolderOpen, AlertTriangle } from "lucide-react";
+import { Calendar, FileText, Baby, FolderOpen, AlertTriangle, FileWarning } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
-import { differenceInMonths, parseISO } from "date-fns";
+import { differenceInDays, differenceInMonths, parseISO } from "date-fns";
 import { FollowUpBadge } from "@/components/atividades/FollowUpBadge";
 import { useFollowUpStatus } from "@/hooks/useAtividades";
 
