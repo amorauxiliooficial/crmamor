@@ -104,6 +104,12 @@ export function KanbanCard({
                   compact
                 />
               )}
+              {precisaDAS && (
+                <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 gap-0.5 animate-pulse">
+                  <FileWarning className="h-2.5 w-2.5" />
+                  DAS
+                </Badge>
+              )}
               {mae.is_gestante && mesGestacao && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-accent text-accent-foreground">
                   <Baby className="h-2.5 w-2.5 mr-0.5" />
