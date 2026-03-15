@@ -433,6 +433,14 @@ export default function RelatorioSemanal() {
                                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{item.description}</p>
                               )}
                             </TableCell>
+                            <TableCell className="hidden md:table-cell text-xs font-mono">
+                              {item.duration ? (
+                                <Badge variant="outline" className="text-xs font-mono">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  {item.duration}
+                                </Badge>
+                              ) : "—"}
+                            </TableCell>
                             <TableCell className="hidden md:table-cell text-xs">
                               {item.categoria ? (
                                 <span>{CATEGORIA_CONFIG[item.categoria]?.emoji || "📌"} {CATEGORIA_CONFIG[item.categoria]?.label || item.categoria}</span>
