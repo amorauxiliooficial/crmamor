@@ -300,6 +300,10 @@ export function Header({
                 <Key className="mr-2 h-4 w-4" />
                 Senhas de Sistemas
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/relatorio-semanal")}>
+                <FileBarChart className="mr-2 h-4 w-4" />
+                Relatório Semanal
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
