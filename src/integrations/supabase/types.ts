@@ -2111,6 +2111,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_migrations_in_period: {
+        Args: { p_end: string; p_start: string }
+        Returns: {
+          name: string
+          statements: string[]
+          version: string
+        }[]
+      }
       get_next_analise_version: { Args: { p_mae_id: string }; Returns: number }
       has_role: {
         Args: {
