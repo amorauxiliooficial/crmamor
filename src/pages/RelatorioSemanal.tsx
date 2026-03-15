@@ -64,6 +64,7 @@ function summarizeMigration(statements: string[]): string {
 interface ReportItem {
   id: string;
   date: Date;
+  dateEnd?: Date;
   type: "roadmap" | "migration";
   title: string;
   description: string | null;
@@ -71,6 +72,20 @@ interface ReportItem {
   categoria?: string;
   actionLabel: string;
   responsaveis?: string[];
+  duration?: string;
+}
+
+function formatDurationBetween(start: Date, end: Date): string {
+  const diffMs = end.getTime() - start.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "<1min";
+  if (mins < 60) return `${mins}min`;
+  const hours = Math.floor(mins / 60);
+  const remMins = mins % 60;
+  if (hours < 24) return remMins > 0 ? `${hours}h ${remMins}min` : `${hours}h`;
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
 }
 
 export default function RelatorioSemanal() {
