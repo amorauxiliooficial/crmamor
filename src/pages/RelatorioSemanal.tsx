@@ -151,22 +151,37 @@ export default function RelatorioSemanal() {
       // Add roadmap tasks
       tasks.forEach((t: any) => {
         let date: Date;
+        let dateEnd: Date | undefined;
         let actionLabel: string;
+        let duration: string | undefined;
+
         if (t.concluido_at && new Date(t.concluido_at) >= weekStart) {
-          date = new Date(t.concluido_at); actionLabel = "Concluída";
+          date = t.em_progresso_at ? new Date(t.em_progresso_at) : new Date(t.created_at);
+          dateEnd = new Date(t.concluido_at);
+          actionLabel = "Concluída";
+          duration = formatDurationBetween(date, dateEnd);
         } else if (t.em_progresso_at && new Date(t.em_progresso_at) >= weekStart) {
-          date = new Date(t.em_progresso_at); actionLabel = "Iniciada";
+          date = new Date(t.em_progresso_at);
+          dateEnd = t.concluido_at ? new Date(t.concluido_at) : new Date();
+          actionLabel = "Em Progresso";
+          duration = formatDurationBetween(date, dateEnd);
         } else if (t.priorizado_at && new Date(t.priorizado_at) >= weekStart) {
-          date = new Date(t.priorizado_at); actionLabel = "Priorizada";
+          date = new Date(t.priorizado_at);
+          dateEnd = t.em_progresso_at ? new Date(t.em_progresso_at) : undefined;
+          actionLabel = "Priorizada";
+          if (dateEnd) duration = formatDurationBetween(date, dateEnd);
         } else if (new Date(t.created_at) >= weekStart && new Date(t.created_at) <= weekEnd) {
-          date = new Date(t.created_at); actionLabel = "Criada";
+          date = new Date(t.created_at);
+          actionLabel = "Criada";
         } else {
-          date = new Date(t.updated_at); actionLabel = "Atualizada";
+          date = new Date(t.updated_at);
+          actionLabel = "Atualizada";
         }
 
         reportItems.push({
           id: t.id,
           date,
+          dateEnd,
           type: "roadmap",
           title: t.titulo,
           description: t.descricao,
@@ -174,6 +189,7 @@ export default function RelatorioSemanal() {
           categoria: t.categoria,
           actionLabel,
           responsaveis: respMap.get(t.id) || [],
+          duration,
         });
       });
 
