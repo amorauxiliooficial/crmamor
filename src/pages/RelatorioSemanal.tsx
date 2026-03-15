@@ -64,6 +64,7 @@ function summarizeMigration(statements: string[]): string {
 interface ReportItem {
   id: string;
   date: Date;
+  dateEnd?: Date;
   type: "roadmap" | "migration";
   title: string;
   description: string | null;
@@ -71,6 +72,20 @@ interface ReportItem {
   categoria?: string;
   actionLabel: string;
   responsaveis?: string[];
+  duration?: string;
+}
+
+function formatDurationBetween(start: Date, end: Date): string {
+  const diffMs = end.getTime() - start.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "<1min";
+  if (mins < 60) return `${mins}min`;
+  const hours = Math.floor(mins / 60);
+  const remMins = mins % 60;
+  if (hours < 24) return remMins > 0 ? `${hours}h ${remMins}min` : `${hours}h`;
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
 }
 
 export default function RelatorioSemanal() {
@@ -136,22 +151,37 @@ export default function RelatorioSemanal() {
       // Add roadmap tasks
       tasks.forEach((t: any) => {
         let date: Date;
+        let dateEnd: Date | undefined;
         let actionLabel: string;
+        let duration: string | undefined;
+
         if (t.concluido_at && new Date(t.concluido_at) >= weekStart) {
-          date = new Date(t.concluido_at); actionLabel = "Concluída";
+          date = t.em_progresso_at ? new Date(t.em_progresso_at) : new Date(t.created_at);
+          dateEnd = new Date(t.concluido_at);
+          actionLabel = "Concluída";
+          duration = formatDurationBetween(date, dateEnd);
         } else if (t.em_progresso_at && new Date(t.em_progresso_at) >= weekStart) {
-          date = new Date(t.em_progresso_at); actionLabel = "Iniciada";
+          date = new Date(t.em_progresso_at);
+          dateEnd = t.concluido_at ? new Date(t.concluido_at) : new Date();
+          actionLabel = "Em Progresso";
+          duration = formatDurationBetween(date, dateEnd);
         } else if (t.priorizado_at && new Date(t.priorizado_at) >= weekStart) {
-          date = new Date(t.priorizado_at); actionLabel = "Priorizada";
+          date = new Date(t.priorizado_at);
+          dateEnd = t.em_progresso_at ? new Date(t.em_progresso_at) : undefined;
+          actionLabel = "Priorizada";
+          if (dateEnd) duration = formatDurationBetween(date, dateEnd);
         } else if (new Date(t.created_at) >= weekStart && new Date(t.created_at) <= weekEnd) {
-          date = new Date(t.created_at); actionLabel = "Criada";
+          date = new Date(t.created_at);
+          actionLabel = "Criada";
         } else {
-          date = new Date(t.updated_at); actionLabel = "Atualizada";
+          date = new Date(t.updated_at);
+          actionLabel = "Atualizada";
         }
 
         reportItems.push({
           id: t.id,
           date,
+          dateEnd,
           type: "roadmap",
           title: t.titulo,
           description: t.descricao,
@@ -159,6 +189,7 @@ export default function RelatorioSemanal() {
           categoria: t.categoria,
           actionLabel,
           responsaveis: respMap.get(t.id) || [],
+          duration,
         });
       });
 
@@ -207,10 +238,12 @@ export default function RelatorioSemanal() {
   const handlePrint = () => window.print();
 
   const handleExportCSV = () => {
-    const headers = ["Data", "Hora", "Origem", "Ação", "Título", "Categoria", "Responsáveis", "Descrição"];
+    const headers = ["Data", "Início", "Fim", "Duração", "Origem", "Ação", "Título", "Categoria", "Responsáveis", "Descrição"];
     const rows = items.map((i) => [
       format(i.date, "dd/MM/yyyy"),
       format(i.date, "HH:mm"),
+      i.dateEnd ? format(i.dateEnd, "HH:mm") : "",
+      i.duration || "",
       i.type === "migration" ? "Banco de Dados" : "Roadmap",
       i.actionLabel,
       i.title,
@@ -355,11 +388,12 @@ export default function RelatorioSemanal() {
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-16">Hora</TableHead>
-                        <TableHead className="w-24">Origem</TableHead>
-                        <TableHead className="w-24">Ação</TableHead>
+                    <TableRow>
+                        <TableHead className="w-20">Período</TableHead>
+                        <TableHead className="w-20">Origem</TableHead>
+                        <TableHead className="w-20">Ação</TableHead>
                         <TableHead>Descrição</TableHead>
+                        <TableHead className="w-20 hidden md:table-cell">Duração</TableHead>
                         <TableHead className="w-28 hidden md:table-cell">Categoria</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -374,8 +408,11 @@ export default function RelatorioSemanal() {
 
                         return (
                           <TableRow key={item.id}>
-                            <TableCell className="text-xs font-mono">
+                            <TableCell className="text-xs font-mono whitespace-nowrap">
                               {format(item.date, "HH:mm")}
+                              {item.dateEnd && (
+                                <span className="text-muted-foreground"> → {format(item.dateEnd, "HH:mm")}</span>
+                              )}
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className={`text-xs ${isMigration ? "border-violet-300 text-violet-700 dark:text-violet-300" : "border-blue-300 text-blue-700 dark:text-blue-300"} border`}>
@@ -397,6 +434,14 @@ export default function RelatorioSemanal() {
                               {item.description && !isMigration && (
                                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{item.description}</p>
                               )}
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell text-xs font-mono">
+                              {item.duration ? (
+                                <Badge variant="outline" className="text-xs font-mono">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  {item.duration}
+                                </Badge>
+                              ) : "—"}
                             </TableCell>
                             <TableCell className="hidden md:table-cell text-xs">
                               {item.categoria ? (
