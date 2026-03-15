@@ -21,6 +21,7 @@ import AgentesIA from "./pages/AgentesIA";
 import PreAnalises from "./pages/PreAnalises";
 import NotFound from "./pages/NotFound";
 import WaTemplatesConfig from "./pages/WaTemplatesConfig";
+import RelatorioSemanal from "./pages/RelatorioSemanal";
 
 const queryClient = new QueryClient({
   defaultOptions: {
