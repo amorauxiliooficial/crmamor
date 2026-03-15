@@ -596,6 +596,44 @@ export type Database = {
           },
         ]
       }
+      desenvolvimento_log: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          tarefa_roadmap_id: string | null
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          tarefa_roadmap_id?: string | null
+          tipo?: string
+          titulo: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          tarefa_roadmap_id?: string | null
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "desenvolvimento_log_tarefa_roadmap_id_fkey"
+            columns: ["tarefa_roadmap_id"]
+            isOneToOne: false
+            referencedRelation: "tarefas_internas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       despesas: {
         Row: {
           categoria: Database["public"]["Enums"]["categoria_despesa"]
