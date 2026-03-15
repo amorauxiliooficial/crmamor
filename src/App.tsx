@@ -58,6 +58,7 @@ const App = () => (
               <Route path="/atendimento/templates" element={<WaTemplatesConfig />} />
               <Route path="/pre-analises" element={<PreAnalises />} />
               <Route path="/roadmap" element={<Roadmap />} />
+              <Route path="/relatorio-semanal" element={<RelatorioSemanal />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
