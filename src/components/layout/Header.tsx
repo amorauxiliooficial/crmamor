@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Search, LogOut, UserPlus, Settings, X, Key, Map, Wallet } from "lucide-react";
+import { Search, LogOut, UserPlus, Settings, X, Key, Map, Wallet, FileBarChart } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -299,6 +299,10 @@ export function Header({
               <DropdownMenuItem onClick={() => navigate("/senhas")}>
                 <Key className="mr-2 h-4 w-4" />
                 Senhas de Sistemas
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/relatorio-semanal")}>
+                <FileBarChart className="mr-2 h-4 w-4" />
+                Relatório Semanal
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
