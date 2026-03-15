@@ -1830,6 +1830,7 @@ export type Database = {
           ai_enabled: boolean
           assigned_to: string | null
           channel: string
+          channel_code: string
           created_at: string
           id: string
           labels: string[] | null
@@ -1852,6 +1853,7 @@ export type Database = {
           ai_enabled?: boolean
           assigned_to?: string | null
           channel?: string
+          channel_code?: string
           created_at?: string
           id?: string
           labels?: string[] | null
@@ -1874,6 +1876,7 @@ export type Database = {
           ai_enabled?: boolean
           assigned_to?: string | null
           channel?: string
+          channel_code?: string
           created_at?: string
           id?: string
           labels?: string[] | null
