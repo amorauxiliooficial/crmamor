@@ -386,11 +386,12 @@ export default function RelatorioSemanal() {
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-16">Hora</TableHead>
-                        <TableHead className="w-24">Origem</TableHead>
-                        <TableHead className="w-24">Ação</TableHead>
+                    <TableRow>
+                        <TableHead className="w-20">Período</TableHead>
+                        <TableHead className="w-20">Origem</TableHead>
+                        <TableHead className="w-20">Ação</TableHead>
                         <TableHead>Descrição</TableHead>
+                        <TableHead className="w-20 hidden md:table-cell">Duração</TableHead>
                         <TableHead className="w-28 hidden md:table-cell">Categoria</TableHead>
                       </TableRow>
                     </TableHeader>
