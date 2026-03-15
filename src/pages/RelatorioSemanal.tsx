@@ -406,8 +406,11 @@ export default function RelatorioSemanal() {
 
                         return (
                           <TableRow key={item.id}>
-                            <TableCell className="text-xs font-mono">
+                            <TableCell className="text-xs font-mono whitespace-nowrap">
                               {format(item.date, "HH:mm")}
+                              {item.dateEnd && (
+                                <span className="text-muted-foreground"> → {format(item.dateEnd, "HH:mm")}</span>
+                              )}
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className={`text-xs ${isMigration ? "border-violet-300 text-violet-700 dark:text-violet-300" : "border-blue-300 text-blue-700 dark:text-blue-300"} border`}>
