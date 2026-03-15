@@ -8,42 +8,45 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, ChevronLeft, ChevronRight, Printer, Download, Phone, MessageCircle, FileText, StickyNote, Calendar } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Printer, Download, Calendar, CheckCircle2, Clock, ArrowUpCircle, Layers } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 
-const TIPO_ICONS: Record<string, typeof Phone> = {
-  ligacao: Phone,
-  whatsapp: MessageCircle,
-  documento: FileText,
-  anotacao: StickyNote,
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof CheckCircle2 }> = {
+  backlog: { label: "Backlog", color: "bg-muted text-muted-foreground", icon: Layers },
+  priorizado: { label: "Priorizado", color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300", icon: ArrowUpCircle },
+  em_progresso: { label: "Em Progresso", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300", icon: Clock },
+  concluido: { label: "Concluído", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300", icon: CheckCircle2 },
 };
 
-const TIPO_LABELS: Record<string, string> = {
-  ligacao: "Ligação",
-  whatsapp: "WhatsApp",
-  documento: "Documento",
-  anotacao: "Anotação",
+const PRIORIDADE_CONFIG: Record<string, { label: string; color: string }> = {
+  baixa: { label: "Baixa", color: "bg-muted text-muted-foreground" },
+  media: { label: "Média", color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" },
+  alta: { label: "Alta", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300" },
+  urgente: { label: "Urgente", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" },
 };
 
-const RESULTADO_LABELS: Record<string, string> = {
-  conseguiu_falar: "✅ Conseguiu falar",
-  nao_atendeu: "📵 Não atendeu",
-  ocupado: "⏳ Ocupada/Indisponível",
-  deixou_recado: "💬 Deixou recado",
-  avancou: "🚀 Avançou no processo",
-  aguardando: "⏸️ Aguardando retorno",
-  pendencia: "⚠️ Pendência identificada",
-  finalizado: "🏁 Caso finalizado",
+const CATEGORIA_LABELS: Record<string, string> = {
+  bug: "🐛 Bug",
+  melhoria: "✨ Melhoria",
+  nova_feature: "🚀 Nova Feature",
+  infra: "⚙️ Infra",
+  design: "🎨 Design",
 };
 
-interface AtividadeRelatorio {
+interface TarefaRelatorio {
   id: string;
-  tipo_atividade: string;
+  titulo: string;
   descricao: string | null;
-  data_atividade: string;
-  resultado_contato: string | null;
-  mae_nome: string;
+  status: string;
+  prioridade: string;
+  categoria: string;
+  created_at: string;
+  concluido_at: string | null;
+  em_progresso_at: string | null;
+  priorizado_at: string | null;
+  updated_at: string;
+  responsaveis: string[];
 }
 
 export default function RelatorioSemanal() {
@@ -58,76 +61,103 @@ export default function RelatorioSemanal() {
   const weekEnd = endOfWeek(refDate, { weekStartsOn: 1 });
   const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const { data: atividades = [], isLoading } = useQuery({
-    queryKey: ["relatorio_semanal", user?.id, weekStart.toISOString()],
+  const { data: tarefas = [], isLoading } = useQuery({
+    queryKey: ["relatorio_semanal_dev", weekStart.toISOString()],
     queryFn: async () => {
-      if (!user) return [];
-
-      // Fetch activities with mae names
+      // Fetch tasks that were updated/created/completed during this week
       const { data, error } = await supabase
-        .from("atividades_mae")
-        .select("id, tipo_atividade, descricao, data_atividade, resultado_contato, mae_id")
-        .eq("user_id", user.id)
-        .gte("data_atividade", weekStart.toISOString())
-        .lte("data_atividade", weekEnd.toISOString())
-        .order("data_atividade", { ascending: true });
+        .from("tarefas_internas")
+        .select("id, titulo, descricao, status, prioridade, categoria, created_at, concluido_at, em_progresso_at, priorizado_at, updated_at")
+        .or(`updated_at.gte.${weekStart.toISOString()},created_at.gte.${weekStart.toISOString()}`)
+        .lte("created_at", weekEnd.toISOString())
+        .order("updated_at", { ascending: true });
 
       if (error) throw error;
 
-      // Fetch mae names
-      const maeIds = [...new Set((data || []).map((a: any) => a.mae_id))];
-      const { data: maes } = await supabase
-        .from("mae_processo")
-        .select("id, nome_mae")
-        .in("id", maeIds.length > 0 ? maeIds : ["00000000-0000-0000-0000-000000000000"]);
+      // Fetch responsaveis
+      const tarefaIds = (data || []).map((t: any) => t.id);
+      const { data: responsaveis } = await supabase
+        .from("tarefa_responsaveis")
+        .select("tarefa_id, user_id")
+        .in("tarefa_id", tarefaIds.length > 0 ? tarefaIds : ["00000000-0000-0000-0000-000000000000"]);
 
-      const maeMap = new Map((maes || []).map((m: any) => [m.id, m.nome_mae]));
+      // Fetch profiles for names
+      const userIds = [...new Set((responsaveis || []).map((r: any) => r.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", userIds.length > 0 ? userIds : ["00000000-0000-0000-0000-000000000000"]);
 
-      return (data || []).map((a: any) => ({
-        id: a.id,
-        tipo_atividade: a.tipo_atividade,
-        descricao: a.descricao,
-        data_atividade: a.data_atividade,
-        resultado_contato: a.resultado_contato,
-        mae_nome: maeMap.get(a.mae_id) || "—",
-      })) as AtividadeRelatorio[];
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p.full_name || p.email || "—"]));
+      const respMap = new Map<string, string[]>();
+      (responsaveis || []).forEach((r: any) => {
+        const list = respMap.get(r.tarefa_id) || [];
+        list.push(profileMap.get(r.user_id) || "—");
+        respMap.set(r.tarefa_id, list);
+      });
+
+      // Filter to only tasks that had activity within the week
+      return (data || [])
+        .filter((t: any) => {
+          const updated = new Date(t.updated_at);
+          const created = new Date(t.created_at);
+          const concluded = t.concluido_at ? new Date(t.concluido_at) : null;
+          const inProgress = t.em_progresso_at ? new Date(t.em_progresso_at) : null;
+
+          return (
+            (updated >= weekStart && updated <= weekEnd) ||
+            (created >= weekStart && created <= weekEnd) ||
+            (concluded && concluded >= weekStart && concluded <= weekEnd) ||
+            (inProgress && inProgress >= weekStart && inProgress <= weekEnd)
+          );
+        })
+        .map((t: any) => ({
+          ...t,
+          responsaveis: respMap.get(t.id) || [],
+        })) as TarefaRelatorio[];
     },
-    enabled: !!user,
   });
+
+  // Get the most relevant date for a task in the week
+  const getActivityDate = (t: TarefaRelatorio): Date => {
+    if (t.concluido_at && new Date(t.concluido_at) >= weekStart) return new Date(t.concluido_at);
+    if (t.em_progresso_at && new Date(t.em_progresso_at) >= weekStart) return new Date(t.em_progresso_at);
+    if (new Date(t.updated_at) >= weekStart) return new Date(t.updated_at);
+    return new Date(t.created_at);
+  };
 
   // Group by day
   const byDay = daysOfWeek.map((day) => ({
     day,
-    items: atividades.filter((a) => isSameDay(new Date(a.data_atividade), day)),
+    items: tarefas.filter((t) => isSameDay(getActivityDate(t), day)),
   }));
 
-  // Summary by type
-  const summaryByType = atividades.reduce<Record<string, number>>((acc, a) => {
-    acc[a.tipo_atividade] = (acc[a.tipo_atividade] || 0) + 1;
+  // Summary by status
+  const summaryByStatus = tarefas.reduce<Record<string, number>>((acc, t) => {
+    acc[t.status] = (acc[t.status] || 0) + 1;
     return acc;
   }, {});
 
-  // Summary by resultado
-  const summaryByResultado = atividades.reduce<Record<string, number>>((acc, a) => {
-    if (a.resultado_contato) {
-      acc[a.resultado_contato] = (acc[a.resultado_contato] || 0) + 1;
-    }
+  // Summary by categoria
+  const summaryByCategoria = tarefas.reduce<Record<string, number>>((acc, t) => {
+    acc[t.categoria] = (acc[t.categoria] || 0) + 1;
     return acc;
   }, {});
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const concluidas = tarefas.filter((t) => t.status === "concluido").length;
+
+  const handlePrint = () => window.print();
 
   const handleExportCSV = () => {
-    const headers = ["Data", "Horário", "Tipo", "Mãe", "Resultado", "Descrição"];
-    const rows = atividades.map((a) => [
-      format(new Date(a.data_atividade), "dd/MM/yyyy"),
-      format(new Date(a.data_atividade), "HH:mm"),
-      TIPO_LABELS[a.tipo_atividade] || a.tipo_atividade,
-      a.mae_nome,
-      a.resultado_contato ? (RESULTADO_LABELS[a.resultado_contato] || a.resultado_contato) : "",
-      (a.descricao || "").replace(/[\n\r]/g, " "),
+    const headers = ["Data", "Título", "Status", "Prioridade", "Categoria", "Responsáveis", "Descrição"];
+    const rows = tarefas.map((t) => [
+      format(getActivityDate(t), "dd/MM/yyyy"),
+      t.titulo,
+      STATUS_CONFIG[t.status]?.label || t.status,
+      PRIORIDADE_CONFIG[t.prioridade]?.label || t.prioridade,
+      CATEGORIA_LABELS[t.categoria] || t.categoria,
+      t.responsaveis.join(", "),
+      (t.descricao || "").replace(/[\n\r]/g, " "),
     ]);
 
     const csvContent = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
@@ -135,19 +165,19 @@ export default function RelatorioSemanal() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `relatorio-semanal-${format(weekStart, "dd-MM-yyyy")}.csv`;
+    a.download = `relatorio-desenvolvimento-${format(weekStart, "dd-MM-yyyy")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header - hidden on print */}
+      {/* Header */}
       <div className="print:hidden border-b bg-card px-4 py-3 flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-lg font-bold text-foreground">Relatório Semanal</h1>
+        <h1 className="text-lg font-bold text-foreground">Relatório de Desenvolvimento</h1>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleExportCSV}>
             <Download className="h-4 w-4 mr-1" /> CSV
@@ -159,7 +189,7 @@ export default function RelatorioSemanal() {
       </div>
 
       <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6" ref={printRef}>
-        {/* Week selector - hidden on print */}
+        {/* Week selector */}
         <div className="print:hidden flex items-center justify-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => setWeekOffset((p) => p - 1)}>
             <ChevronLeft className="h-5 w-5" />
@@ -175,12 +205,9 @@ export default function RelatorioSemanal() {
 
         {/* Print header */}
         <div className="hidden print:block text-center mb-6">
-          <h1 className="text-xl font-bold">Relatório de Atividades Semanal</h1>
+          <h1 className="text-xl font-bold">Relatório de Desenvolvimento Semanal</h1>
           <p className="text-sm text-muted-foreground">
             Período: {format(weekStart, "dd/MM/yyyy")} a {format(weekEnd, "dd/MM/yyyy")}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Atendente: {user?.email}
           </p>
         </div>
 
@@ -188,36 +215,40 @@ export default function RelatorioSemanal() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Card>
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-primary">{atividades.length}</p>
-              <p className="text-xs text-muted-foreground">Total Atividades</p>
+              <p className="text-2xl font-bold text-primary">{tarefas.length}</p>
+              <p className="text-xs text-muted-foreground">Tarefas Movimentadas</p>
             </CardContent>
           </Card>
-          {Object.entries(summaryByType).map(([tipo, count]) => {
-            const Icon = TIPO_ICONS[tipo] || StickyNote;
-            return (
-              <Card key={tipo}>
-                <CardContent className="p-4 text-center">
-                  <div className="flex items-center justify-center gap-1.5 mb-1">
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-2xl font-bold">{count}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{TIPO_LABELS[tipo] || tipo}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-emerald-600">{concluidas}</p>
+              <p className="text-xs text-muted-foreground">Concluídas</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-blue-600">{summaryByStatus["em_progresso"] || 0}</p>
+              <p className="text-xs text-muted-foreground">Em Progresso</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-amber-600">{summaryByStatus["priorizado"] || 0}</p>
+              <p className="text-xs text-muted-foreground">Priorizadas</p>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Resultado summary */}
-        {Object.keys(summaryByResultado).length > 0 && (
+        {/* Category breakdown */}
+        {Object.keys(summaryByCategoria).length > 0 && (
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Resultados dos Contatos</CardTitle>
+              <CardTitle className="text-sm font-medium">Por Categoria</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">
-              {Object.entries(summaryByResultado).map(([resultado, count]) => (
-                <Badge key={resultado} variant="secondary" className="text-xs">
-                  {RESULTADO_LABELS[resultado] || resultado}: {count}
+              {Object.entries(summaryByCategoria).map(([cat, count]) => (
+                <Badge key={cat} variant="secondary" className="text-xs">
+                  {CATEGORIA_LABELS[cat] || cat}: {count}
                 </Badge>
               ))}
             </CardContent>
@@ -237,7 +268,7 @@ export default function RelatorioSemanal() {
                   {format(day, "EEEE, dd/MM", { locale: ptBR })}
                 </h3>
                 <Badge variant={items.length > 0 ? "default" : "outline"} className="text-xs">
-                  {items.length} {items.length === 1 ? "atividade" : "atividades"}
+                  {items.length} {items.length === 1 ? "tarefa" : "tarefas"}
                 </Badge>
               </div>
 
@@ -246,33 +277,42 @@ export default function RelatorioSemanal() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-16">Hora</TableHead>
-                        <TableHead className="w-24">Tipo</TableHead>
-                        <TableHead>Mãe</TableHead>
-                        <TableHead className="hidden md:table-cell">Resultado</TableHead>
-                        <TableHead className="hidden md:table-cell">Descrição</TableHead>
+                        <TableHead>Tarefa</TableHead>
+                        <TableHead className="w-28">Status</TableHead>
+                        <TableHead className="w-24 hidden md:table-cell">Prioridade</TableHead>
+                        <TableHead className="w-28 hidden md:table-cell">Categoria</TableHead>
+                        <TableHead className="w-32 hidden lg:table-cell">Responsáveis</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {items.map((a) => {
-                        const Icon = TIPO_ICONS[a.tipo_atividade] || StickyNote;
+                      {items.map((t) => {
+                        const statusCfg = STATUS_CONFIG[t.status] || STATUS_CONFIG.backlog;
+                        const prioCfg = PRIORIDADE_CONFIG[t.prioridade] || PRIORIDADE_CONFIG.media;
+                        const StatusIcon = statusCfg.icon;
                         return (
-                          <TableRow key={a.id}>
-                            <TableCell className="text-xs font-mono">
-                              {format(new Date(a.data_atividade), "HH:mm")}
+                          <TableRow key={t.id}>
+                            <TableCell>
+                              <p className="text-sm font-medium">{t.titulo}</p>
+                              {t.descricao && (
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{t.descricao}</p>
+                              )}
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-1.5 text-xs">
-                                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                                {TIPO_LABELS[a.tipo_atividade] || a.tipo_atividade}
-                              </div>
+                              <Badge variant="outline" className={`text-xs ${statusCfg.color} border-0`}>
+                                <StatusIcon className="h-3 w-3 mr-1" />
+                                {statusCfg.label}
+                              </Badge>
                             </TableCell>
-                            <TableCell className="text-xs font-medium">{a.mae_nome}</TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              <Badge variant="outline" className={`text-xs ${prioCfg.color} border-0`}>
+                                {prioCfg.label}
+                              </Badge>
+                            </TableCell>
                             <TableCell className="hidden md:table-cell text-xs">
-                              {a.resultado_contato ? (RESULTADO_LABELS[a.resultado_contato] || a.resultado_contato) : "—"}
+                              {CATEGORIA_LABELS[t.categoria] || t.categoria}
                             </TableCell>
-                            <TableCell className="hidden md:table-cell text-xs text-muted-foreground max-w-[200px] truncate">
-                              {a.descricao || "—"}
+                            <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
+                              {t.responsaveis.length > 0 ? t.responsaveis.join(", ") : "—"}
                             </TableCell>
                           </TableRow>
                         );
@@ -281,20 +321,20 @@ export default function RelatorioSemanal() {
                   </Table>
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground italic pl-2">Nenhuma atividade registrada</p>
+                <p className="text-xs text-muted-foreground italic pl-2">Nenhuma movimentação</p>
               )}
             </div>
           ))
         )}
       </div>
 
-      {/* Print styles */}
       <style>{`
         @media print {
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print\\:hidden { display: none !important; }
           .hidden.print\\:block { display: block !important; }
           .hidden.md\\:table-cell { display: table-cell !important; }
+          .hidden.lg\\:table-cell { display: table-cell !important; }
         }
       `}</style>
     </div>
