@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, ChevronLeft, ChevronRight, Printer, Download, Calendar, CheckCircle2, Clock, ArrowUpCircle, Layers, Sparkles, Bug, Wrench, Database, Paintbrush } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Printer, Download, Calendar, CheckCircle2, Clock, ArrowUpCircle, Layers, Sparkles, Bug, Wrench, Database, Paintbrush, Code2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 
@@ -19,34 +19,58 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
   concluido: { label: "Concluído", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300", icon: CheckCircle2 },
 };
 
-const CATEGORIA_CONFIG: Record<string, { label: string; icon: typeof Sparkles; emoji: string }> = {
-  nova_feature: { label: "Nova Feature", icon: Sparkles, emoji: "🚀" },
-  melhoria: { label: "Melhoria", icon: Wrench, emoji: "✨" },
-  bug: { label: "Correção de Bug", icon: Bug, emoji: "🐛" },
-  infra: { label: "Infra / Banco", icon: Database, emoji: "⚙️" },
-  design: { label: "Design", icon: Paintbrush, emoji: "🎨" },
+const CATEGORIA_CONFIG: Record<string, { label: string; emoji: string }> = {
+  nova_feature: { label: "Nova Feature", emoji: "🚀" },
+  melhoria: { label: "Melhoria", emoji: "✨" },
+  bug: { label: "Correção de Bug", emoji: "🐛" },
+  infra: { label: "Infra / Banco", emoji: "⚙️" },
+  design: { label: "Design", emoji: "🎨" },
 };
 
-const PRIORIDADE_LABELS: Record<string, string> = {
-  baixa: "Baixa",
-  media: "Média",
-  alta: "Alta",
-  urgente: "Urgente",
-};
+// Parse migration version (YYYYMMDDHHmmss) to Date
+function versionToDate(version: string): Date {
+  const y = version.slice(0, 4);
+  const mo = version.slice(4, 6);
+  const d = version.slice(6, 8);
+  const h = version.slice(8, 10);
+  const mi = version.slice(10, 12);
+  const s = version.slice(12, 14);
+  return new Date(`${y}-${mo}-${d}T${h}:${mi}:${s}Z`);
+}
 
-interface TarefaRelatorio {
+// Summarize SQL statements into a readable title
+function summarizeMigration(statements: string[]): string {
+  const sql = (statements || []).join(" ").trim();
+  
+  const createTable = sql.match(/CREATE TABLE\s+(?:public\.)?(\w+)/i);
+  if (createTable) return `Criação da tabela ${createTable[1]}`;
+
+  const alterAdd = sql.match(/ALTER TABLE\s+(?:public\.)?(\w+)\s+ADD COLUMN\s+(?:IF NOT EXISTS\s+)?(\w+)/i);
+  if (alterAdd) return `Nova coluna ${alterAdd[2]} em ${alterAdd[1]}`;
+
+  const createFunc = sql.match(/CREATE\s+(?:OR REPLACE\s+)?FUNCTION\s+(?:public\.)?(\w+)/i);
+  if (createFunc) return `Função ${createFunc[1]}`;
+
+  const createTrigger = sql.match(/CREATE TRIGGER\s+(\w+)/i);
+  if (createTrigger) return `Trigger ${createTrigger[1]}`;
+
+  const alterTable = sql.match(/ALTER TABLE\s+(?:public\.)?(\w+)/i);
+  if (alterTable) return `Alteração na tabela ${alterTable[1]}`;
+
+  if (sql.length > 80) return sql.slice(0, 80) + "...";
+  return sql || "Migration";
+}
+
+interface ReportItem {
   id: string;
-  titulo: string;
-  descricao: string | null;
-  status: string;
-  prioridade: string;
-  categoria: string;
-  created_at: string;
-  concluido_at: string | null;
-  em_progresso_at: string | null;
-  priorizado_at: string | null;
-  updated_at: string;
-  responsaveis: string[];
+  date: Date;
+  type: "roadmap" | "migration";
+  title: string;
+  description: string | null;
+  status?: string;
+  categoria?: string;
+  actionLabel: string;
+  responsaveis?: string[];
 }
 
 export default function RelatorioSemanal() {
@@ -61,120 +85,139 @@ export default function RelatorioSemanal() {
   const weekEnd = endOfWeek(refDate, { weekStartsOn: 1 });
   const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const { data: tarefas = [], isLoading } = useQuery({
-    queryKey: ["relatorio_dev_semanal", weekStart.toISOString()],
+  // Format version strings for the RPC
+  const vStart = format(weekStart, "yyyyMMddHHmmss");
+  const vEnd = format(weekEnd, "yyyyMMddHHmmss");
+
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["relatorio_dev_completo", weekStart.toISOString()],
     queryFn: async () => {
-      // Fetch all tasks - we'll filter client-side for flexibility
-      const { data, error } = await supabase
-        .from("tarefas_internas")
-        .select("id, titulo, descricao, status, prioridade, categoria, created_at, concluido_at, em_progresso_at, priorizado_at, updated_at")
-        .order("updated_at", { ascending: true });
+      // Fetch roadmap tasks and migrations in parallel
+      const [tasksRes, migrationsRes] = await Promise.all([
+        supabase
+          .from("tarefas_internas")
+          .select("id, titulo, descricao, status, prioridade, categoria, created_at, concluido_at, em_progresso_at, priorizado_at, updated_at")
+          .order("updated_at", { ascending: true }),
+        supabase.rpc("get_migrations_in_period", { p_start: vStart, p_end: vEnd }),
+      ]);
 
-      if (error) throw error;
-
-      // Filter tasks that had any activity during the week
-      const filtered = (data || []).filter((t: any) => {
-        const dates = [
-          t.updated_at,
-          t.created_at,
-          t.concluido_at,
-          t.em_progresso_at,
-          t.priorizado_at,
-        ].filter(Boolean).map((d: string) => new Date(d));
-
+      // Process roadmap tasks
+      const tasks = (tasksRes.data || []).filter((t: any) => {
+        const dates = [t.updated_at, t.created_at, t.concluido_at, t.em_progresso_at, t.priorizado_at]
+          .filter(Boolean)
+          .map((d: string) => new Date(d));
         return dates.some((d) => d >= weekStart && d <= weekEnd);
       });
 
-      // Fetch responsaveis for filtered tasks
-      const tarefaIds = filtered.map((t: any) => t.id);
-      if (tarefaIds.length === 0) return [];
+      // Fetch responsaveis
+      const tarefaIds = tasks.map((t: any) => t.id);
+      let respMap = new Map<string, string[]>();
+      if (tarefaIds.length > 0) {
+        const { data: responsaveis } = await supabase
+          .from("tarefa_responsaveis")
+          .select("tarefa_id, user_id")
+          .in("tarefa_id", tarefaIds);
 
-      const { data: responsaveis } = await supabase
-        .from("tarefa_responsaveis")
-        .select("tarefa_id, user_id")
-        .in("tarefa_id", tarefaIds);
+        const userIds = [...new Set((responsaveis || []).map((r: any) => r.user_id))];
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase.from("profiles").select("id, full_name, email").in("id", userIds);
+          const profileMap = new Map((profiles || []).map((p: any) => [p.id, p.full_name || p.email?.split("@")[0] || "—"]));
+          (responsaveis || []).forEach((r: any) => {
+            const list = respMap.get(r.tarefa_id) || [];
+            list.push(profileMap.get(r.user_id) || "—");
+            respMap.set(r.tarefa_id, list);
+          });
+        }
+      }
 
-      const userIds = [...new Set((responsaveis || []).map((r: any) => r.user_id))];
-      const { data: profiles } = userIds.length > 0
-        ? await supabase.from("profiles").select("id, full_name, email").in("id", userIds)
-        : { data: [] };
+      // Build unified items
+      const reportItems: ReportItem[] = [];
 
-      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p.full_name || p.email?.split("@")[0] || "—"]));
-      const respMap = new Map<string, string[]>();
-      (responsaveis || []).forEach((r: any) => {
-        const list = respMap.get(r.tarefa_id) || [];
-        list.push(profileMap.get(r.user_id) || "—");
-        respMap.set(r.tarefa_id, list);
+      // Add roadmap tasks
+      tasks.forEach((t: any) => {
+        let date: Date;
+        let actionLabel: string;
+        if (t.concluido_at && new Date(t.concluido_at) >= weekStart) {
+          date = new Date(t.concluido_at); actionLabel = "Concluída";
+        } else if (t.em_progresso_at && new Date(t.em_progresso_at) >= weekStart) {
+          date = new Date(t.em_progresso_at); actionLabel = "Iniciada";
+        } else if (t.priorizado_at && new Date(t.priorizado_at) >= weekStart) {
+          date = new Date(t.priorizado_at); actionLabel = "Priorizada";
+        } else if (new Date(t.created_at) >= weekStart && new Date(t.created_at) <= weekEnd) {
+          date = new Date(t.created_at); actionLabel = "Criada";
+        } else {
+          date = new Date(t.updated_at); actionLabel = "Atualizada";
+        }
+
+        reportItems.push({
+          id: t.id,
+          date,
+          type: "roadmap",
+          title: t.titulo,
+          description: t.descricao,
+          status: t.status,
+          categoria: t.categoria,
+          actionLabel,
+          responsaveis: respMap.get(t.id) || [],
+        });
       });
 
-      return filtered.map((t: any) => ({
-        ...t,
-        responsaveis: respMap.get(t.id) || [],
-      })) as TarefaRelatorio[];
+      // Add migrations
+      (migrationsRes.data || []).forEach((m: any) => {
+        const date = versionToDate(m.version);
+        const stmts: string[] = m.statements || [];
+        
+        // Skip the migration that created this function itself
+        if (stmts.some((s: string) => s.includes("get_migrations_in_period"))) return;
+
+        reportItems.push({
+          id: `mig-${m.version}`,
+          date,
+          type: "migration",
+          title: summarizeMigration(stmts),
+          description: stmts.join("\n").slice(0, 200),
+          actionLabel: "Migration",
+          categoria: "infra",
+        });
+      });
+
+      // Sort by date
+      reportItems.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+      return reportItems;
     },
   });
-
-  // Get the most relevant date for a task in the week
-  const getActivityDate = (t: TarefaRelatorio): Date => {
-    // Priority: concluido > em_progresso > priorizado > updated > created
-    const candidates = [
-      { date: t.concluido_at, priority: 5 },
-      { date: t.em_progresso_at, priority: 4 },
-      { date: t.priorizado_at, priority: 3 },
-      { date: t.updated_at, priority: 2 },
-      { date: t.created_at, priority: 1 },
-    ]
-      .filter((c) => c.date && new Date(c.date) >= weekStart && new Date(c.date) <= weekEnd)
-      .sort((a, b) => b.priority - a.priority);
-
-    return candidates.length > 0 ? new Date(candidates[0].date!) : new Date(t.updated_at);
-  };
-
-  // Determine what happened to the task during the week
-  const getActivityLabel = (t: TarefaRelatorio): string => {
-    if (t.concluido_at && new Date(t.concluido_at) >= weekStart && new Date(t.concluido_at) <= weekEnd) return "Concluída";
-    if (t.em_progresso_at && new Date(t.em_progresso_at) >= weekStart && new Date(t.em_progresso_at) <= weekEnd) return "Iniciada";
-    if (t.priorizado_at && new Date(t.priorizado_at) >= weekStart && new Date(t.priorizado_at) <= weekEnd) return "Priorizada";
-    if (new Date(t.created_at) >= weekStart && new Date(t.created_at) <= weekEnd) return "Criada";
-    return "Atualizada";
-  };
 
   // Group by day
   const byDay = daysOfWeek.map((day) => ({
     day,
-    items: tarefas
-      .filter((t) => isSameDay(getActivityDate(t), day))
-      .sort((a, b) => getActivityDate(a).getTime() - getActivityDate(b).getTime()),
+    items: items.filter((i) => isSameDay(i.date, day)),
   }));
 
   // Summaries
-  const concluidas = tarefas.filter((t) => t.concluido_at && new Date(t.concluido_at) >= weekStart).length;
-  const iniciadas = tarefas.filter((t) => t.em_progresso_at && new Date(t.em_progresso_at) >= weekStart).length;
-  const criadas = tarefas.filter((t) => new Date(t.created_at) >= weekStart && new Date(t.created_at) <= weekEnd).length;
+  const roadmapItems = items.filter((i) => i.type === "roadmap");
+  const migrationItems = items.filter((i) => i.type === "migration");
+  const concluidas = roadmapItems.filter((i) => i.actionLabel === "Concluída").length;
 
-  const summaryByCategoria = tarefas.reduce<Record<string, number>>((acc, t) => {
-    acc[t.categoria] = (acc[t.categoria] || 0) + 1;
+  const summaryByCategoria = items.reduce<Record<string, number>>((acc, i) => {
+    if (i.categoria) acc[i.categoria] = (acc[i.categoria] || 0) + 1;
     return acc;
   }, {});
 
   const handlePrint = () => window.print();
 
   const handleExportCSV = () => {
-    const headers = ["Data", "Hora", "Ação", "Título", "Status", "Prioridade", "Categoria", "Responsáveis", "Descrição"];
-    const rows = tarefas.map((t) => {
-      const actDate = getActivityDate(t);
-      return [
-        format(actDate, "dd/MM/yyyy"),
-        format(actDate, "HH:mm"),
-        getActivityLabel(t),
-        t.titulo,
-        STATUS_CONFIG[t.status]?.label || t.status,
-        PRIORIDADE_LABELS[t.prioridade] || t.prioridade,
-        CATEGORIA_CONFIG[t.categoria]?.label || t.categoria,
-        t.responsaveis.join(", "),
-        (t.descricao || "").replace(/[\n\r]/g, " "),
-      ];
-    });
+    const headers = ["Data", "Hora", "Origem", "Ação", "Título", "Categoria", "Responsáveis", "Descrição"];
+    const rows = items.map((i) => [
+      format(i.date, "dd/MM/yyyy"),
+      format(i.date, "HH:mm"),
+      i.type === "migration" ? "Banco de Dados" : "Roadmap",
+      i.actionLabel,
+      i.title,
+      i.categoria ? (CATEGORIA_CONFIG[i.categoria]?.label || i.categoria) : "",
+      (i.responsaveis || []).join(", "),
+      (i.description || "").replace(/[\n\r]/g, " ").slice(0, 200),
+    ]);
 
     const csvContent = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
@@ -195,10 +238,10 @@ export default function RelatorioSemanal() {
         </Button>
         <h1 className="text-lg font-bold text-foreground">Relatório de Desenvolvimento</h1>
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={tarefas.length === 0}>
+          <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={items.length === 0}>
             <Download className="h-4 w-4 mr-1" /> CSV
           </Button>
-          <Button variant="default" size="sm" onClick={handlePrint} disabled={tarefas.length === 0}>
+          <Button variant="default" size="sm" onClick={handlePrint} disabled={items.length === 0}>
             <Printer className="h-4 w-4 mr-1" /> Imprimir
           </Button>
         </div>
@@ -225,15 +268,15 @@ export default function RelatorioSemanal() {
           <p className="text-sm text-muted-foreground">
             Período: {format(weekStart, "dd/MM/yyyy")} a {format(weekEnd, "dd/MM/yyyy")}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">Gerado automaticamente a partir do Roadmap</p>
+          <p className="text-xs text-muted-foreground mt-1">Dados do Roadmap + Alterações no Banco de Dados</p>
         </div>
 
         {/* Summary cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Card>
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-primary">{tarefas.length}</p>
-              <p className="text-xs text-muted-foreground">Movimentações</p>
+              <p className="text-2xl font-bold text-primary">{items.length}</p>
+              <p className="text-xs text-muted-foreground">Total Atividades</p>
             </CardContent>
           </Card>
           <Card>
@@ -242,25 +285,25 @@ export default function RelatorioSemanal() {
                 <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                 <span className="text-2xl font-bold">{concluidas}</span>
               </div>
-              <p className="text-xs text-muted-foreground">Concluídas</p>
+              <p className="text-xs text-muted-foreground">Tarefas Concluídas</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-1">
-                <Clock className="h-5 w-5 text-blue-600" />
-                <span className="text-2xl font-bold">{iniciadas}</span>
+                <Database className="h-5 w-5 text-blue-600" />
+                <span className="text-2xl font-bold">{migrationItems.length}</span>
               </div>
-              <p className="text-xs text-muted-foreground">Iniciadas</p>
+              <p className="text-xs text-muted-foreground">Alterações no Banco</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-1">
-                <Sparkles className="h-5 w-5 text-amber-600" />
-                <span className="text-2xl font-bold">{criadas}</span>
+                <Layers className="h-5 w-5 text-amber-600" />
+                <span className="text-2xl font-bold">{roadmapItems.length}</span>
               </div>
-              <p className="text-xs text-muted-foreground">Novas</p>
+              <p className="text-xs text-muted-foreground">Tarefas Roadmap</p>
             </CardContent>
           </Card>
         </div>
@@ -289,15 +332,15 @@ export default function RelatorioSemanal() {
         {/* Daily breakdown */}
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">Carregando...</div>
-        ) : tarefas.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <Layers className="h-10 w-10 mx-auto mb-3 opacity-40" />
-            <p className="text-sm">Nenhuma movimentação no Roadmap nesta semana</p>
-            <p className="text-xs mt-1">As tarefas criadas, iniciadas ou concluídas no Roadmap aparecem aqui automaticamente</p>
+            <p className="text-sm">Nenhuma movimentação nesta semana</p>
+            <p className="text-xs mt-1">Tarefas do Roadmap e alterações no banco aparecem aqui automaticamente</p>
           </div>
         ) : (
-          byDay.map(({ day, items }) => {
-            if (items.length === 0) return null;
+          byDay.map(({ day, items: dayItems }) => {
+            if (dayItems.length === 0) return null;
             return (
               <div key={day.toISOString()} className="space-y-2 break-inside-avoid">
                 <div className="flex items-center gap-2">
@@ -305,7 +348,7 @@ export default function RelatorioSemanal() {
                     {format(day, "EEEE, dd/MM", { locale: ptBR })}
                   </h3>
                   <Badge variant="default" className="text-xs">
-                    {items.length} {items.length === 1 ? "tarefa" : "tarefas"}
+                    {dayItems.length} {dayItems.length === 1 ? "item" : "itens"}
                   </Badge>
                 </div>
 
@@ -314,41 +357,51 @@ export default function RelatorioSemanal() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-16">Hora</TableHead>
+                        <TableHead className="w-24">Origem</TableHead>
                         <TableHead className="w-24">Ação</TableHead>
-                        <TableHead>Tarefa</TableHead>
+                        <TableHead>Descrição</TableHead>
                         <TableHead className="w-28 hidden md:table-cell">Categoria</TableHead>
-                        <TableHead className="w-32 hidden lg:table-cell">Responsáveis</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {items.map((t) => {
-                        const actDate = getActivityDate(t);
-                        const actLabel = getActivityLabel(t);
-                        const statusCfg = STATUS_CONFIG[t.status] || STATUS_CONFIG.backlog;
-                        const catCfg = CATEGORIA_CONFIG[t.categoria];
-                        const StatusIcon = statusCfg.icon;
+                      {dayItems.map((item) => {
+                        const isMigration = item.type === "migration";
+                        const statusCfg = item.status ? STATUS_CONFIG[item.status] : null;
+                        const StatusIcon = statusCfg?.icon || (isMigration ? Code2 : Layers);
+                        const badgeColor = isMigration
+                          ? "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+                          : (statusCfg?.color || "bg-muted text-muted-foreground");
+
                         return (
-                          <TableRow key={t.id}>
+                          <TableRow key={item.id}>
                             <TableCell className="text-xs font-mono">
-                              {format(actDate, "HH:mm")}
+                              {format(item.date, "HH:mm")}
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline" className={`text-xs ${statusCfg.color} border-0`}>
-                                <StatusIcon className="h-3 w-3 mr-1" />
-                                {actLabel}
+                              <Badge variant="outline" className={`text-xs ${isMigration ? "border-violet-300 text-violet-700 dark:text-violet-300" : "border-blue-300 text-blue-700 dark:text-blue-300"} border`}>
+                                {isMigration ? (
+                                  <><Database className="h-3 w-3 mr-1" />Banco</>
+                                ) : (
+                                  <><Layers className="h-3 w-3 mr-1" />Roadmap</>
+                                )}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <p className="text-sm font-medium">{t.titulo}</p>
-                              {t.descricao && (
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{t.descricao}</p>
+                              <Badge variant="outline" className={`text-xs ${badgeColor} border-0`}>
+                                <StatusIcon className="h-3 w-3 mr-1" />
+                                {item.actionLabel}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <p className="text-sm font-medium">{item.title}</p>
+                              {item.description && !isMigration && (
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{item.description}</p>
                               )}
                             </TableCell>
                             <TableCell className="hidden md:table-cell text-xs">
-                              {catCfg ? `${catCfg.emoji} ${catCfg.label}` : t.categoria}
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
-                              {t.responsaveis.length > 0 ? t.responsaveis.join(", ") : "—"}
+                              {item.categoria ? (
+                                <span>{CATEGORIA_CONFIG[item.categoria]?.emoji || "📌"} {CATEGORIA_CONFIG[item.categoria]?.label || item.categoria}</span>
+                              ) : "—"}
                             </TableCell>
                           </TableRow>
                         );
@@ -368,7 +421,6 @@ export default function RelatorioSemanal() {
           .print\\:hidden { display: none !important; }
           .hidden.print\\:block { display: block !important; }
           .hidden.md\\:table-cell { display: table-cell !important; }
-          .hidden.lg\\:table-cell { display: table-cell !important; }
         }
       `}</style>
     </div>
