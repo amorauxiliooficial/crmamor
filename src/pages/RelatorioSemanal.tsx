@@ -238,10 +238,12 @@ export default function RelatorioSemanal() {
   const handlePrint = () => window.print();
 
   const handleExportCSV = () => {
-    const headers = ["Data", "Hora", "Origem", "Ação", "Título", "Categoria", "Responsáveis", "Descrição"];
+    const headers = ["Data", "Início", "Fim", "Duração", "Origem", "Ação", "Título", "Categoria", "Responsáveis", "Descrição"];
     const rows = items.map((i) => [
       format(i.date, "dd/MM/yyyy"),
       format(i.date, "HH:mm"),
+      i.dateEnd ? format(i.dateEnd, "HH:mm") : "",
+      i.duration || "",
       i.type === "migration" ? "Banco de Dados" : "Roadmap",
       i.actionLabel,
       i.title,
