@@ -128,13 +128,13 @@ export default function WhatsappInstances() {
       await createInstance(evolutionName);
       const { qrcode } = await getQRCode(evolutionName);
 
-      const { error } = await supabase.from("whatsapp_instances").insert({
+      const { error } = await supabase.from("whatsapp_instances").insert([{
         name: values.name,
         status: "qr_pending",
         qr_code: qrcode,
         evolution_instance_name: evolutionName,
         created_by: user.id,
-      } as Record<string, unknown>);
+      }]);
       if (error) throw error;
 
       setQrData(qrcode);
