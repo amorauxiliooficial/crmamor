@@ -1871,6 +1871,7 @@ export type Database = {
           channel_code: string
           created_at: string
           id: string
+          instance_id: string | null
           labels: string[] | null
           last_ai_trigger_msg_id: string | null
           last_inbound_at: string | null
@@ -1879,6 +1880,7 @@ export type Database = {
           lead_data: Json | null
           lead_stage: string | null
           mae_id: string | null
+          preferred_channel: string
           status: string
           unread_count: number
           updated_at: string
@@ -1894,6 +1896,7 @@ export type Database = {
           channel_code?: string
           created_at?: string
           id?: string
+          instance_id?: string | null
           labels?: string[] | null
           last_ai_trigger_msg_id?: string | null
           last_inbound_at?: string | null
@@ -1902,6 +1905,7 @@ export type Database = {
           lead_data?: Json | null
           lead_stage?: string | null
           mae_id?: string | null
+          preferred_channel?: string
           status?: string
           unread_count?: number
           updated_at?: string
@@ -1917,6 +1921,7 @@ export type Database = {
           channel_code?: string
           created_at?: string
           id?: string
+          instance_id?: string | null
           labels?: string[] | null
           last_ai_trigger_msg_id?: string | null
           last_inbound_at?: string | null
@@ -1925,6 +1930,7 @@ export type Database = {
           lead_data?: Json | null
           lead_stage?: string | null
           mae_id?: string | null
+          preferred_channel?: string
           status?: string
           unread_count?: number
           updated_at?: string
@@ -1940,6 +1946,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "wa_conversations_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_instances"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "wa_conversations_mae_id_fkey"
             columns: ["mae_id"]
             isOneToOne: false
@@ -1951,6 +1964,7 @@ export type Database = {
       wa_messages: {
         Row: {
           body: string | null
+          channel: string
           conversation_id: string
           created_at: string
           delivered_at: string | null
@@ -1960,6 +1974,7 @@ export type Database = {
           error_code: string | null
           error_message: string | null
           id: string
+          instance_id: string | null
           media_duration: number | null
           media_filename: string | null
           media_mime: string | null
@@ -1977,6 +1992,7 @@ export type Database = {
         }
         Insert: {
           body?: string | null
+          channel?: string
           conversation_id: string
           created_at?: string
           delivered_at?: string | null
@@ -1986,6 +2002,7 @@ export type Database = {
           error_code?: string | null
           error_message?: string | null
           id?: string
+          instance_id?: string | null
           media_duration?: number | null
           media_filename?: string | null
           media_mime?: string | null
@@ -2003,6 +2020,7 @@ export type Database = {
         }
         Update: {
           body?: string | null
+          channel?: string
           conversation_id?: string
           created_at?: string
           delivered_at?: string | null
@@ -2012,6 +2030,7 @@ export type Database = {
           error_code?: string | null
           error_message?: string | null
           id?: string
+          instance_id?: string | null
           media_duration?: number | null
           media_filename?: string | null
           media_mime?: string | null
@@ -2033,6 +2052,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "wa_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wa_messages_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_instances"
             referencedColumns: ["id"]
           },
         ]
@@ -2101,6 +2127,42 @@ export type Database = {
           id?: string
           language_code?: string
           name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_instances: {
+        Row: {
+          created_at: string
+          created_by: string
+          evolution_instance_name: string
+          id: string
+          name: string
+          phone: string | null
+          qr_code: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          evolution_instance_name: string
+          id?: string
+          name: string
+          phone?: string | null
+          qr_code?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          evolution_instance_name?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          qr_code?: string | null
           status?: string
           updated_at?: string
         }
