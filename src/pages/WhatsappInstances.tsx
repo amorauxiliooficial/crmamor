@@ -158,7 +158,7 @@ export default function WhatsappInstances() {
 
           await supabase
             .from("whatsapp_instances")
-            .update({ status: "connected", qr_code: null } as Record<string, unknown>)
+            .update({ status: "connected", qr_code: null })
             .eq("evolution_instance_name", evolutionName);
 
           setDialogOpen(false);
