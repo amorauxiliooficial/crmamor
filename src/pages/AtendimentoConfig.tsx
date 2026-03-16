@@ -227,6 +227,9 @@ export default function AtendimentoConfig() {
           </CardContent>
         </Card>
 
+        {/* Instâncias WhatsApp Web */}
+        <WhatsappInstancesManager />
+
         {/* Templates WhatsApp */}
         <Card className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => navigate("/atendimento/templates")}>
           <CardContent className="p-4 flex items-center gap-4">
