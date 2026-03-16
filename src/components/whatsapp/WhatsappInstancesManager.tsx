@@ -5,6 +5,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { MissingEvolutionEnvError } from "@/config/evolutionEnv";
 import {
   createInstance,
   getQRCode,
@@ -18,8 +19,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import QrPreview from "@/components/whatsapp/QrPreview";
 
 interface WaInstance {
   id: string;
@@ -57,6 +58,19 @@ function statusBadge(status: string) {
   }
 }
 
+function handleEvolutionError(err: unknown, fallbackMsg: string) {
+  if (err instanceof MissingEvolutionEnvError) {
+    toast.error("Integração com Evolution não configurada.", {
+      description:
+        "No Lovable: Settings → Workspace → Build secrets. Adicione VITE_EVOLUTION_API_URL e VITE_EVOLUTION_API_KEY e depois faça Rebuild/Restart do Preview.",
+      duration: 10000,
+    });
+    return;
+  }
+  const msg = err instanceof Error ? err.message : fallbackMsg;
+  toast.error(msg);
+}
+
 export default function WhatsappInstancesManager() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -79,7 +93,6 @@ export default function WhatsappInstancesManager() {
     pollingNameRef.current = null;
   }, []);
 
-  // Cleanup on unmount
   useEffect(() => stopPolling, [stopPolling]);
 
   const { data: instances = [], isLoading } = useQuery<WaInstance[]>({
@@ -98,7 +111,8 @@ export default function WhatsappInstancesManager() {
     mutationFn: async (instance: WaInstance) => {
       try {
         await deleteInstance(instance.evolution_instance_name);
-      } catch {
+      } catch (err) {
+        if (err instanceof MissingEvolutionEnvError) throw err;
         // instance may already be gone on Evolution side
       }
       const { error } = await supabase
@@ -111,7 +125,7 @@ export default function WhatsappInstancesManager() {
       queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
       toast.success("Instância removida");
     },
-    onError: () => toast.error("Erro ao remover instância"),
+    onError: (err) => handleEvolutionError(err, "Erro ao remover instância"),
   });
 
   async function onSubmit(values: FormValues) {
@@ -134,7 +148,6 @@ export default function WhatsappInstancesManager() {
 
       queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
 
-      // Start polling
       pollingNameRef.current = evolutionName;
       pollingRef.current = setInterval(async () => {
         if (pollingNameRef.current !== evolutionName) return;
@@ -157,8 +170,7 @@ export default function WhatsappInstancesManager() {
         }
       }, 3000);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erro desconhecido";
-      toast.error(`Falha ao criar instância: ${msg}`);
+      handleEvolutionError(err, "Falha ao criar instância");
     } finally {
       setCreating(false);
     }
@@ -251,13 +263,7 @@ export default function WhatsappInstancesManager() {
                 <p className="text-sm text-muted-foreground text-center">
                   Escaneie o QR Code com o WhatsApp no celular
                 </p>
-                {qrData.startsWith("data:image") ? (
-                  <img src={qrData} alt="QR Code" className="w-64 h-64 rounded-lg border" />
-                ) : (
-                  <div className="bg-muted p-4 rounded-lg text-xs font-mono break-all max-w-full max-h-64 overflow-auto">
-                    {qrData}
-                  </div>
-                )}
+                <QrPreview value={qrData} size={256} />
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Aguardando conexão…
