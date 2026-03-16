@@ -9,7 +9,6 @@ import { MissingEvolutionEnvError } from "@/config/evolutionEnv";
 import {
   createInstance,
   getQRCode,
-  getInstanceStatus,
   deleteInstance,
 } from "@/services/evolutionApi";
 import { toast } from "sonner";
@@ -75,25 +74,13 @@ export default function WhatsappInstancesManager() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [qrData, setQrData] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pollingNameRef = useRef<string | null>(null);
+  const [pendingInstanceName, setPendingInstanceName] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: { name: "" },
   });
-
-  const stopPolling = useCallback(() => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-    pollingNameRef.current = null;
-  }, []);
-
-  useEffect(() => stopPolling, [stopPolling]);
 
   const { data: instances = [], isLoading } = useQuery<WaInstance[]>({
     queryKey: ["whatsapp_instances"],
@@ -107,13 +94,42 @@ export default function WhatsappInstancesManager() {
     },
   });
 
+  // Realtime subscription — replaces polling
+  useEffect(() => {
+    const channel = supabase
+      .channel("whatsapp_instances_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "whatsapp_instances" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  // Auto-close dialog when pending instance becomes connected
+  useEffect(() => {
+    if (!pendingInstanceName || !open) return;
+    const inst = instances.find((i) => i.evolution_instance_name === pendingInstanceName);
+    if (inst?.status === "connected") {
+      toast.success("WhatsApp conectado com sucesso!");
+      setOpen(false);
+      setPendingInstanceName(null);
+      form.reset();
+    }
+  }, [instances, pendingInstanceName, open, form]);
+
   const deleteMutation = useMutation({
     mutationFn: async (instance: WaInstance) => {
       try {
         await deleteInstance(instance.evolution_instance_name);
       } catch (err) {
         if (err instanceof MissingEvolutionEnvError) throw err;
-        // instance may already be gone on Evolution side
       }
       const { error } = await supabase
         .from("whatsapp_instances")
@@ -135,40 +151,26 @@ export default function WhatsappInstancesManager() {
 
     try {
       await createInstance(evolutionName);
-      const { qrcode } = await getQRCode(evolutionName);
-      setQrData(qrcode);
+
+      // Try to get initial QR from Evolution API
+      let qrCode: string | null = null;
+      try {
+        const { qrcode } = await getQRCode(evolutionName);
+        qrCode = qrcode;
+      } catch {
+        // QR will arrive via webhook instead
+      }
 
       await supabase.from("whatsapp_instances").insert({
         name: values.name,
         status: "qr_pending",
-        qr_code: qrcode,
+        qr_code: qrCode,
         evolution_instance_name: evolutionName,
         created_by: user.id,
       });
 
       queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
-
-      pollingNameRef.current = evolutionName;
-      pollingRef.current = setInterval(async () => {
-        if (pollingNameRef.current !== evolutionName) return;
-        try {
-          const { status } = await getInstanceStatus(evolutionName);
-          if (status === "open") {
-            stopPolling();
-            await supabase
-              .from("whatsapp_instances")
-              .update({ status: "connected", qr_code: null })
-              .eq("evolution_instance_name", evolutionName);
-            queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
-            toast.success("WhatsApp conectado com sucesso!");
-            setOpen(false);
-            setQrData(null);
-            form.reset();
-          }
-        } catch {
-          // silently retry
-        }
-      }, 3000);
+      setPendingInstanceName(evolutionName);
     } catch (err) {
       handleEvolutionError(err, "Falha ao criar instância");
     } finally {
@@ -179,12 +181,18 @@ export default function WhatsappInstancesManager() {
   function handleDialogChange(v: boolean) {
     setOpen(v);
     if (!v) {
-      stopPolling();
-      setQrData(null);
+      setPendingInstanceName(null);
       setCreating(false);
       form.reset();
     }
   }
+
+  // Find the QR for the pending instance
+  const pendingInstance = pendingInstanceName
+    ? instances.find((i) => i.evolution_instance_name === pendingInstanceName)
+    : null;
+  const qrData = pendingInstance?.qr_code ?? null;
+  const showQr = !!pendingInstanceName;
 
   return (
     <Card>
@@ -236,7 +244,7 @@ export default function WhatsappInstancesManager() {
               <DialogTitle>Nova Instância WhatsApp</DialogTitle>
             </DialogHeader>
 
-            {!qrData ? (
+            {!showQr ? (
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
@@ -263,7 +271,14 @@ export default function WhatsappInstancesManager() {
                 <p className="text-sm text-muted-foreground text-center">
                   Escaneie o QR Code com o WhatsApp no celular
                 </p>
-                <QrPreview value={qrData} size={256} />
+                {qrData ? (
+                  <QrPreview value={qrData} size={256} />
+                ) : (
+                  <div className="flex flex-col items-center gap-2" style={{ width: 256, height: 256 }}>
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">Aguardando QR Code do servidor…</p>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Aguardando conexão…
