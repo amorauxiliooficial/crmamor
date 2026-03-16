@@ -77,9 +77,9 @@ function slugify(text: string): string {
 function statusBadge(status: string) {
   switch (status) {
     case "connected":
-      return <Badge className="bg-green-600 text-white">🟢 Conectado</Badge>;
+      return <Badge className="bg-primary text-primary-foreground">🟢 Conectado</Badge>;
     case "qr_pending":
-      return <Badge className="bg-yellow-500 text-white">🟡 Aguardando QR</Badge>;
+      return <Badge className="bg-accent text-accent-foreground">🟡 Aguardando QR</Badge>;
     default:
       return <Badge variant="destructive">🔴 Desconectado</Badge>;
   }
