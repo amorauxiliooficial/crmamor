@@ -83,8 +83,9 @@ serve(async (req: Request): Promise<Response> => {
         console.log(`✅ QR updated for ${instanceName}`);
       }
     } else if (eventType === "CONNECTION_UPDATE") {
-      const state: string | undefined =
+      const rawState: string | undefined =
         body.data?.state ?? body.state ?? body.data?.status;
+      const state = rawState?.toLowerCase();
 
       console.log(`🔌 Connection state for ${instanceName}: ${state}`);
 
