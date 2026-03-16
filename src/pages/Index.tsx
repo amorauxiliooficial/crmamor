@@ -1,684 +1,344 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { Header } from "@/components/layout/Header";
-import { KanbanBoard } from "@/components/kanban/KanbanBoard";
-import { KanbanMobileList } from "@/components/kanban/KanbanMobileList";
-import { GestantesBoard } from "@/components/kanban/GestantesBoard";
-import { MaeTable } from "@/components/mae/MaeTable";
-import { MaeCardList } from "@/components/mae/MaeCardList";
-import { MaeFormDialog } from "@/components/mae/MaeFormDialog";
-import { MaeEditDialog } from "@/components/mae/MaeEditDialog";
-import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
-import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
-import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
-import { LeadsMarketingTab } from "@/components/indicacoes/LeadsMarketingTab";
-import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
-import { GuidedTour } from "@/components/tour/GuidedTour";
-import { MobileViewSelector } from "@/components/layout/MobileViewSelector";
-import { ViewTransition } from "@/components/layout/ViewTransition";
-import { OperationsPanel } from "@/components/dashboard/OperationsPanel";
+// src/pages/WhatsappInstances.tsx
+import { useEffect, useMemo, useRef, useState } from "react";
+import { z } from "zod";
+import { toast } from "sonner";
+import { Loader2, Plus, Smartphone, Trash2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import { AtividadeDialog } from "@/components/atividades/AtividadeDialog";
-import { CrmTab } from "@/components/atividades/CrmTab";
-import { MaeAtividadesDialog } from "@/components/atividades/MaeAtividadesDialog";
-import { Indicacao } from "@/types/indicacao";
-import { useAuth } from "@/hooks/useAuth";
-import { useTour } from "@/hooks/useTour";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { useMaesData, MaeProcessoComAtividade, mapDbStatusToDisplay } from "@/hooks/useMaesData";
 import { supabase } from "@/integrations/supabase/client";
-import { MaeProcesso, StatusProcesso } from "@/types/mae";
-import {
-  Baby,
-  Loader2,
-  LayoutGrid,
-  List,
-  ClipboardCheck,
-  DollarSign,
-  UserPlus,
-  HelpCircle,
-  Megaphone,
-  BookOpen,
-  ClipboardList,
-  Brain,
-  Activity,
-  MessageSquare,
-} from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { logError, getUserFriendlyError } from "@/lib/errorHandler";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { createInstance, deleteInstance, getInstanceStatus, getQRCode } from "@/services/evolutionApi";
+
 import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { parseISO } from "date-fns";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
-const Index = () => {
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { run: tourRun, stepIndex, setStepIndex, stopTour, startTour } = useTour();
-  const isMobile = useIsMobile();
-  const { isAdmin } = useIsAdmin();
-  
-  // Use optimized hook for data fetching with caching
-  const { 
-    maes, 
-    allMaesRaw, 
-    users, 
-    alertasNaoLidos, 
-    loading, 
-    refetch: fetchMaes,
-    refetchAlertas,
-    refreshSingleMae 
-  } = useMaesData();
-  
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMae, setSelectedMae] = useState<MaeProcessoComAtividade | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [formDialogOpen, setFormDialogOpen] = useState(false);
-  const [atividadeDialogOpen, setAtividadeDialogOpen] = useState(false);
-  const [maeAtividadesDialogOpen, setMaeAtividadesDialogOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all" | "gestantes">("all");
-  const [viewMode, setViewMode] = useState<"kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes" | "atividades">("kanban");
-  const [selectedIndicacaoFromNotification, setSelectedIndicacaoFromNotification] = useState<Indicacao | null>(null);
-  const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+type InstanceStatus = "disconnected" | "qr_pending" | "connected";
 
+type WaInstance = {
+  id: string;
+  name: string;
+  phone: string | null;
+  status: InstanceStatus;
+  qr_code: string | null;
+  evolution_instance_name: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
 
+const formSchema = z.object({
+  name: z.string().min(2, "Informe um nome com pelo menos 2 caracteres."),
+});
+type FormValues = z.infer<typeof formSchema>;
 
-  const handleNotificationClick = (indicacao: Indicacao) => {
-    setViewMode("indicacoes");
-    setSelectedIndicacaoFromNotification(indicacao);
-  };
+function slugify(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
 
-  // Redirect to /indicar if accessing from indicar subdomain without auth
-  // Redirect to auth if not logged in (only on main domain)
+function StatusBadge({ status }: { status: InstanceStatus }) {
+  switch (status) {
+    case "connected":
+      return <Badge className="bg-green-600/15 text-green-700 border border-green-600/20">🟢 Conectado</Badge>;
+    case "qr_pending":
+      return <Badge className="bg-yellow-500/15 text-yellow-800 border border-yellow-500/20">🟡 Aguardando QR</Badge>;
+    default:
+      return <Badge className="bg-red-600/15 text-red-700 border border-red-600/20">🔴 Desconectado</Badge>;
+  }
+}
+
+export default function WhatsappInstances() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [creatingEvolutionName, setCreatingEvolutionName] = useState<string | null>(null);
+
+  const pollingRef = useRef<number | null>(null);
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { name: "" },
+  });
+
+  const instancesQuery = useQuery({
+    queryKey: ["whatsapp_instances"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("whatsapp_instances")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return (data ?? []) as WaInstance[];
+    },
+  });
+
+  const currentCreatingInstance = useMemo(() => {
+    if (!creatingEvolutionName) return null;
+    return instancesQuery.data?.find((i) => i.evolution_instance_name === creatingEvolutionName) ?? null;
+  }, [creatingEvolutionName, instancesQuery.data]);
+
   useEffect(() => {
-    if (!authLoading && !user) {
-      const hostname = window.location.hostname;
-      if (hostname.startsWith("indicar.")) {
-        navigate("/indicar");
-      } else {
-        navigate("/auth");
-      }
-    }
-  }, [user, authLoading, navigate]);
+    return () => {
+      if (pollingRef.current) window.clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    };
+  }, []);
 
-  // Set default user filter - all users see everything by default
-  useEffect(() => {
-    if (user && selectedUserId === null) {
-      setSelectedUserId("all");
-    }
-  }, [user, selectedUserId]);
-
-  // Helper to get display name for user
-  const getUserDisplayName = (u: { id: string; full_name: string | null; email: string | null }) => {
-    if (u.full_name) return u.full_name;
-    if (u.email) return u.email.split("@")[0];
-    return "Sem nome";
-  };
-
-  // Função para remover acentos
-  const removeAccents = (str: string) => {
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  };
-
-  const isDppAtiva = (dpp: Date) => {
-    const hoje = new Date();
-    const diasDesdeDpp = Math.floor(
-      (hoje.getTime() - dpp.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    // Inclui gestantes com DPP no futuro e até 30 dias após a DPP
-    return diasDesdeDpp <= 30;
-  };
-
-  // Filter by user first
-  const maesFilteredByUser = useMemo(() => {
-    if (!selectedUserId || selectedUserId === "all") return maes;
-    return maes.filter((mae) => mae.user_id === selectedUserId);
-  }, [maes, selectedUserId]);
-
-  const filteredMaes = useMemo(() => {
-    let filtered = maesFilteredByUser;
-    
-    // Apply gestantes filter
-    if (statusFilter === "gestantes") {
-      filtered = filtered.filter((mae) => {
-        if (!mae.is_gestante) return false;
-        if (mae.data_evento_tipo !== "DPP" || !mae.data_evento) return false;
-        const dpp = parseISO(mae.data_evento);
-        return isDppAtiva(dpp);
-      });
-    }
-    // Apply status filter
-    else if (statusFilter !== "all") {
-      filtered = filtered.filter((mae) => mae.status_processo === statusFilter);
-    }
-    
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = removeAccents(searchQuery.toLowerCase().trim());
-      const queryDigits = query.replace(/\D/g, "");
-      
-      filtered = filtered.filter((mae) => {
-        const normalizedName = removeAccents(mae.nome_mae?.toLowerCase() || "");
-        const nameMatch = normalizedName.includes(query);
-        const cpfMatch = queryDigits.length > 0 && mae.cpf?.replace(/\D/g, "").includes(queryDigits);
-        const phoneMatch = queryDigits.length > 0 && mae.telefone?.replace(/\D/g, "").includes(queryDigits);
-        const statusMatch = removeAccents((mae.status_processo || "").toLowerCase()).includes(query);
-        return nameMatch || cpfMatch || phoneMatch || statusMatch;
-      });
-    }
-    
-    return filtered;
-  }, [searchQuery, maesFilteredByUser, statusFilter]);
-
-  // Filter only gestantes (is_gestante = true, DPP no futuro ou até 30 dias após a DPP)
-  const gestantes = useMemo(() => {
-    return maesFilteredByUser.filter((m) => {
-      if (!m.is_gestante) return false;
-      if (m.data_evento_tipo !== "DPP" || !m.data_evento) return false;
-      const dpp = parseISO(m.data_evento);
-      return isDppAtiva(dpp);
-    });
-  }, [maesFilteredByUser]);
-
-  const gestantesCount = gestantes.length;
-
-  const handleCardClick = (mae: MaeProcessoComAtividade) => {
-    setSelectedMae(mae);
-    setMaeAtividadesDialogOpen(true);
-  };
-
-  const handleOpenAtividades = (mae: MaeProcessoComAtividade) => {
-    setSelectedMae(mae);
-    setAtividadeDialogOpen(true);
-  };
-
-  // Map display status (with emoji) to db enum value
-  const DISPLAY_TO_DB_STATUS: Record<StatusProcesso, string> = {
-    "⚠️ Pendência Documental": "Pendência Documental",
-    "🟡 Elegível (Análise Positiva)": "Elegível (Análise Positiva)",
-    "⏳ Aguardando Análise INSS": "Aguardando Análise INSS",
-    "✅ Aprovada": "Aprovada",
-    "❌ Indeferida": "Indeferida",
-    "⚖️ Recurso / Judicial": "Recurso / Judicial",
-    "💳 Inadimplência": "Inadimplência",
-    "📄 Rescisão de Contrato": "📄 Rescisão de Contrato",
-    "📦 Processo Encerrado": "Processo Encerrado",
-  };
-
-  const handleStatusChange = async (maeId: string, newStatus: StatusProcesso) => {
-    const dbStatus = DISPLAY_TO_DB_STATUS[newStatus] as 
-      "Pendência Documental" | "Elegível (Análise Positiva)" | 
-      "Aguardando Análise INSS" | "Aprovada" | "Indeferida" | 
-      "Recurso / Judicial" | "Inadimplência" | "📄 Rescisão de Contrato" | "Processo Encerrado";
-
-    const { error } = await supabase
-      .from("mae_processo")
-      .update({ status_processo: dbStatus })
-      .eq("id", maeId);
-
-    if (error) {
-      logError('update_status', error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar status",
-        description: getUserFriendlyError(error),
-      });
-      // Revert on error - refresh from server
-      fetchMaes();
-    } else {
-      // Refresh single mae to update UI
-      refreshSingleMae(maeId);
-      toast({
-        title: "Status atualizado",
-        description: `Processo movido para ${newStatus}`,
-      });
-    }
-  };
-
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+  function stopPolling() {
+    if (pollingRef.current) window.clearInterval(pollingRef.current);
+    pollingRef.current = null;
   }
 
-  if (!user) {
-    return null;
+  async function startPolling(evolutionName: string) {
+    stopPolling();
+
+    pollingRef.current = window.setInterval(async () => {
+      try {
+        const { status } = await getInstanceStatus(evolutionName);
+
+        // na Evolution, "open" costuma indicar conectado
+        if (status === "open") {
+          stopPolling();
+
+          const { error } = await supabase
+            .from("whatsapp_instances")
+            .update({ status: "connected", qr_code: null })
+            .eq("evolution_instance_name", evolutionName);
+
+          if (error) {
+            toast.error("Erro ao atualizar status no Supabase.");
+            return;
+          }
+
+          toast.success("WhatsApp conectado com sucesso ✅");
+          setDialogOpen(false);
+          setCreatingEvolutionName(null);
+          form.reset({ name: "" });
+          queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
+        }
+      } catch {
+        // continua tentando
+      }
+    }, 3000);
+  }
+
+  const createMutation = useMutation({
+    mutationFn: async (values: FormValues) => {
+      if (!user?.id) throw new Error("Usuário não autenticado.");
+
+      const evolutionName = `${slugify(values.name)}-${Date.now().toString(36)}`;
+
+      await createInstance(evolutionName);
+      const { qrcode } = await getQRCode(evolutionName);
+
+      const { data, error } = await supabase
+        .from("whatsapp_instances")
+        .insert([
+          {
+            name: values.name,
+            status: "qr_pending",
+            qr_code: qrcode,
+            evolution_instance_name: evolutionName,
+            created_by: user.id,
+          },
+        ])
+        .select("*")
+        .single();
+
+      if (error) throw error;
+
+      setCreatingEvolutionName(evolutionName);
+      await startPolling(evolutionName);
+
+      return data as WaInstance;
+    },
+    onSuccess: () => {
+      toast.success("Instância criada! Escaneie o QR Code 📲");
+      queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error("Erro ao criar instância na Evolution API.");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (instance: WaInstance) => {
+      await deleteInstance(instance.evolution_instance_name);
+      const { error } = await supabase.from("whatsapp_instances").delete().eq("id", instance.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Instância removida 🗑️");
+      queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error("Erro ao deletar instância.");
+    },
+  });
+
+  function handleOpenDialog() {
+    setDialogOpen(true);
+    setCreatingEvolutionName(null);
+    form.reset({ name: "" });
+  }
+
+  function handleCloseDialog() {
+    stopPolling();
+    setDialogOpen(false);
+    setCreatingEvolutionName(null);
+    form.reset({ name: "" });
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <GuidedTour
-        run={tourRun}
-        stepIndex={stepIndex}
-        onStepChange={setStepIndex}
-        onFinish={stopTour}
-      />
-      
-      <Header 
-        searchQuery={searchQuery} 
-        onSearchChange={setSearchQuery} 
-        onAddMae={() => setFormDialogOpen(true)}
-        onSelectIndicacao={handleNotificationClick}
-        onOpenOnboarding={() => setOnboardingOpen(true)}
-        onViewChange={(view) => setViewMode(view as typeof viewMode)}
-        currentView={viewMode}
-      />
+    <div className="p-4 md:p-8 space-y-4">
+      <div className="flex items-center gap-2">
+        <Smartphone className="h-5 w-5" />
+        <div>
+          <h1 className="text-lg font-semibold">WhatsApp Instâncias</h1>
+          <p className="text-sm text-muted-foreground">Conecte números via QR Code (Evolution API)</p>
+        </div>
 
-      <main className="p-3 md:p-6 space-y-3 md:space-y-6 overflow-x-hidden">
+        <div className="ml-auto">
+          <Button onClick={handleOpenDialog}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Instância
+          </Button>
+        </div>
+      </div>
 
-        {/* Operations Panel - Chat stats + Filters */}
-        <section className="tour-stats">
-          <OperationsPanel
-            totalMaes={maes.length}
-            filteredCount={filteredMaes.length}
-            selectedUserId={selectedUserId}
-            onUserChange={setSelectedUserId}
-            statusFilter={statusFilter}
-            onStatusFilterChange={setStatusFilter}
-            users={users}
-            getUserDisplayName={getUserDisplayName}
-          />
-        </section>
-
-
-        {/* View Toggle and Content */}
-        <section>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-2 md:gap-3">
-              <h2 className="text-base md:text-lg font-semibold">
-                {viewMode === "kanban" && "Kanban"}
-                {viewMode === "table" && "Tabela"}
-                {viewMode === "atividades" && "Atividades CRM"}
-                {viewMode === "gestantes" && "Gestantes"}
-                {viewMode === "conferencia" && "Conferência INSS"}
-                {viewMode === "pagamentos" && "Pagamentos"}
-                {viewMode === "indicacoes" && "Indicações"}
-              </h2>
-              {searchQuery.trim() && (
-                <Badge variant="secondary" className="gap-1 text-xs">
-                  "{searchQuery}" ({filteredMaes.length})
-                </Badge>
-              )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Instâncias cadastradas</CardTitle>
+          <CardDescription>Somente instâncias conectadas aparecem no seletor do chat.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {instancesQuery.isLoading && (
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Carregando...
             </div>
-            
-            {/* Mobile View Selector */}
-            <div className="md:hidden">
-              <MobileViewSelector
-                value={viewMode}
-                onValueChange={(value) => setViewMode(value as typeof viewMode)}
-              />
-            </div>
-            
-            {/* Desktop Navigation Menu */}
-            <nav className="hidden md:flex items-center gap-1 tour-view-toggle flex-wrap">
-              <ToggleGroup
-                type="single"
-                value={viewMode}
-                onValueChange={(value) => value && setViewMode(value as "kanban" | "table" | "gestantes" | "conferencia" | "pagamentos" | "indicacoes" | "atividades")}
-                className="bg-muted/50 rounded-lg p-1 gap-0.5"
-              >
-                <ToggleGroupItem 
-                  value="kanban" 
-                  aria-label="Kanban" 
-                  className="tour-view-kanban data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-2 py-1.5 text-sm"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </ToggleGroupItem>
-                <ToggleGroupItem 
-                  value="table" 
-                  aria-label="Tabela" 
-                  className="tour-view-table data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-2 py-1.5 text-sm"
-                >
-                  <List className="h-4 w-4" />
-                </ToggleGroupItem>
-                <ToggleGroupItem 
-                  value="atividades" 
-                  aria-label="Atividades CRM" 
-                  className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-2 py-1.5 text-sm"
-                >
-                  <Activity className="h-4 w-4" />
-                </ToggleGroupItem>
-                <ToggleGroupItem 
-                  value="gestantes" 
-                  aria-label="Gestantes" 
-                  className="tour-view-gestantes data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-2 py-1.5 text-sm"
-                >
-                  <Baby className="h-4 w-4" />
-                </ToggleGroupItem>
-                <ToggleGroupItem 
-                  value="conferencia" 
-                  aria-label="Conferência" 
-                  className="tour-view-conferencia data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-2 py-1.5 text-sm"
-                >
-                  <ClipboardCheck className="h-4 w-4" />
-                </ToggleGroupItem>
-                <ToggleGroupItem 
-                  value="pagamentos" 
-                  aria-label="Pagamentos" 
-                  className="tour-view-pagamentos data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-2 py-1.5 text-sm"
-                >
-                  <DollarSign className="h-4 w-4" />
-                </ToggleGroupItem>
-                <ToggleGroupItem 
-                  value="indicacoes" 
-                  aria-label="Indicações" 
-                  className="tour-view-indicacoes data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md px-2 py-1.5 text-sm"
-                >
-                  <UserPlus className="h-4 w-4" />
-                </ToggleGroupItem>
-              </ToggleGroup>
+          )}
 
-              <Separator orientation="vertical" className="h-6 mx-1" />
+          {!instancesQuery.isLoading && (instancesQuery.data?.length ?? 0) === 0 && (
+            <div className="text-sm text-muted-foreground">Nenhuma instância cadastrada.</div>
+          )}
 
-              <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 tour-playbook"
-                  onClick={() => navigate("/playbook")}
-                  title="Playbook"
-                >
-                  <BookOpen className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 tour-onboarding"
-                  onClick={() => setOnboardingOpen(true)}
-                  title="Onboarding"
-                >
-                  <ClipboardList className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => navigate("/marketing")}
-                  title="Marketing"
-                >
-                  <Megaphone className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => navigate("/pre-analises")}
-                  title="Pré-Análises"
-                >
-                  <Brain className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => navigate("/atendimento")}
-                  title="Atendimento"
-                >
-                  <MessageSquare className="h-4 w-4" />
-                </Button>
+          {(instancesQuery.data ?? []).map((inst) => (
+            <div key={inst.id} className="flex items-center gap-3 rounded-lg border p-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium truncate">{inst.name}</p>
+                  <StatusBadge status={inst.status} />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Telefone: {inst.phone ?? "—"} • Evolution:{" "}
+                  <span className="font-mono">{inst.evolution_instance_name}</span>
+                </p>
               </div>
 
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={startTour}
-                className="h-8 w-8"
-                title="Iniciar tour guiado"
+                className="text-destructive"
+                onClick={() => deleteMutation.mutate(inst)}
+                disabled={deleteMutation.isPending}
+                title="Deletar instância"
               >
-                <HelpCircle className="h-4 w-4" />
+                {deleteMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
               </Button>
-            </nav>
-          </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
-          <ViewTransition viewKey={viewMode}>
-            {viewMode === "indicacoes" ? (
-              <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-                <Tabs defaultValue="indicacoes" className="w-full">
-                  <TabsList className="mb-4">
-                    <TabsTrigger value="indicacoes" className="gap-2">
-                      <UserPlus className="h-4 w-4" />
-                      Indicações
-                    </TabsTrigger>
-                    <TabsTrigger value="leads" className="gap-2">
-                      <Megaphone className="h-4 w-4" />
-                      Leads Marketing
-                    </TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="indicacoes">
-                    <IndicacoesTab 
-                      searchQuery={searchQuery} 
-                      externalSelectedIndicacao={selectedIndicacaoFromNotification}
-                      onClearExternalSelection={() => setSelectedIndicacaoFromNotification(null)}
-                      selectedUserId={selectedUserId || undefined}
-                    />
-                  </TabsContent>
-                  <TabsContent value="leads">
-                    <LeadsMarketingTab searchQuery={searchQuery} />
-                  </TabsContent>
-                </Tabs>
-              </div>
-            ) : viewMode === "conferencia" ? (
-              <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-                <ConferenciaTab searchQuery={searchQuery} selectedUserId={selectedUserId || undefined} />
-              </div>
-            ) : viewMode === "pagamentos" ? (
-              <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-                <PagamentosTab searchQuery={searchQuery} selectedUserId={selectedUserId || undefined} />
-              </div>
-            ) : viewMode === "gestantes" ? (
-              <div className="rounded-lg border bg-muted/30 min-h-[500px]">
-                <GestantesBoard
-                  maes={statusFilter === "gestantes" ? filteredMaes : gestantes}
-                  onCardClick={handleCardClick}
-                  onRefresh={fetchMaes}
+      <Dialog open={dialogOpen} onOpenChange={(o) => (o ? setDialogOpen(true) : handleCloseDialog())}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Nova Instância WhatsApp</DialogTitle>
+            <DialogDescription>Informe um nome, gere o QR Code e escaneie com o WhatsApp.</DialogDescription>
+          </DialogHeader>
+
+          {!creatingEvolutionName ? (
+            <Form {...form}>
+              <form className="space-y-4" onSubmit={form.handleSubmit((v) => createMutation.mutate(v))}>
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Label>Nome da instância</Label>
+                      <FormControl>
+                        <Input placeholder="Ex: Vendas João" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
+
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="ghost" onClick={handleCloseDialog}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={createMutation.isPending}>
+                    {createMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Criando...
+                      </>
+                    ) : (
+                      "Criar e gerar QR"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          ) : (
+            <div className="space-y-4">
+              <div className="text-sm">
+                <p className="font-medium">Escaneie o QR Code abaixo</p>
+                <p className="text-xs text-muted-foreground">Aguardando o WhatsApp conectar… (checando a cada 3s)</p>
               </div>
-            ) : viewMode === "atividades" ? (
-              <div className="rounded-lg border bg-muted/30 min-h-[500px] p-4">
-                <CrmTab
-                  maes={maesFilteredByUser}
-                  onRefresh={fetchMaes}
-                />
-              </div>
-            ) : viewMode === "table" ? (
-              isMobile ? (
-                <MaeCardList maes={filteredMaes} onCardClick={handleCardClick} />
+
+              {currentCreatingInstance?.qr_code ? (
+                <div className="rounded-lg border p-3 w-full">
+                  <p className="text-xs text-muted-foreground mb-2">QR (code/base64)</p>
+                  <div className="bg-muted/30 rounded-md p-2 break-all font-mono text-[10px]">
+                    {currentCreatingInstance.qr_code}
+                  </div>
+                </div>
               ) : (
-                <MaeTable maes={filteredMaes} onRowClick={handleCardClick} />
-              )
-            ) : (
-            <Tabs defaultValue="all" className="w-full">
-              <ScrollArea className="w-full">
-                <TabsList className="mb-4 w-max md:w-auto">
-                  <TabsTrigger value="all">Todos</TabsTrigger>
-                  <TabsTrigger value="active">Andamento</TabsTrigger>
-                  <TabsTrigger value="pending">Pendências</TabsTrigger>
-                  <TabsTrigger value="completed">Finalizados</TabsTrigger>
-                </TabsList>
-                <ScrollBar orientation="horizontal" className="md:hidden" />
-              </ScrollArea>
+                <div className="text-sm text-muted-foreground">QR Code não disponível. Tente recriar a instância.</div>
+              )}
 
-              <TabsContent value="all" className="mt-0">
-                <div className="rounded-lg border bg-muted/30 min-h-[400px] md:min-h-[500px] tour-kanban">
-                  {isMobile ? (
-                    <KanbanMobileList maes={filteredMaes} onCardClick={handleCardClick} />
-                  ) : (
-                    <KanbanBoard 
-                      maes={filteredMaes} 
-                      onCardClick={handleCardClick} 
-                      onStatusChange={handleStatusChange}
-                      onOpenAtividades={handleOpenAtividades}
-                      alertasNaoLidos={alertasNaoLidos}
-                    />
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="active" className="mt-0">
-                <div className="rounded-lg border bg-muted/30 min-h-[500px]">
-                  {isMobile ? (
-                    <KanbanMobileList
-                      maes={filteredMaes}
-                      onCardClick={handleCardClick}
-                      visibleStatuses={[
-                        "🟡 Elegível (Análise Positiva)",
-                        "⏳ Aguardando Análise INSS",
-                      ]}
-                    />
-                  ) : (
-                    <KanbanBoard
-                      maes={filteredMaes}
-                      onCardClick={handleCardClick}
-                      onStatusChange={handleStatusChange}
-                      onOpenAtividades={handleOpenAtividades}
-                      alertasNaoLidos={alertasNaoLidos}
-                      visibleStatuses={[
-                        "🟡 Elegível (Análise Positiva)",
-                        "⏳ Aguardando Análise INSS",
-                      ]}
-                    />
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="pending" className="mt-0">
-                <div className="rounded-lg border bg-muted/30 min-h-[500px]">
-                  {isMobile ? (
-                    <KanbanMobileList
-                      maes={filteredMaes}
-                      onCardClick={handleCardClick}
-                      visibleStatuses={["⚠️ Pendência Documental"]}
-                    />
-                  ) : (
-                    <KanbanBoard
-                      maes={filteredMaes}
-                      onCardClick={handleCardClick}
-                      onStatusChange={handleStatusChange}
-                      onOpenAtividades={handleOpenAtividades}
-                      alertasNaoLidos={alertasNaoLidos}
-                      visibleStatuses={["⚠️ Pendência Documental"]}
-                    />
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="completed" className="mt-0">
-                <div className="rounded-lg border bg-muted/30 min-h-[500px]">
-                  {isMobile ? (
-                    <KanbanMobileList
-                      maes={filteredMaes}
-                      onCardClick={handleCardClick}
-                      visibleStatuses={[
-                        "✅ Aprovada",
-                        "❌ Indeferida",
-                        "⚖️ Recurso / Judicial",
-                        "📦 Processo Encerrado",
-                      ]}
-                    />
-                  ) : (
-                    <KanbanBoard
-                      maes={filteredMaes}
-                      onCardClick={handleCardClick}
-                      onStatusChange={handleStatusChange}
-                      onOpenAtividades={handleOpenAtividades}
-                      alertasNaoLidos={alertasNaoLidos}
-                      visibleStatuses={[
-                        "✅ Aprovada",
-                        "❌ Indeferida",
-                        "⚖️ Recurso / Judicial",
-                        "📦 Processo Encerrado",
-                      ]}
-                    />
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
-            )}
-          </ViewTransition>
-        </section>
-      </main>
-
-      <MaeEditDialog
-        mae={selectedMae}
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        onSuccess={() => {
-          if (selectedMae?.id) {
-            refreshSingleMae(selectedMae.id);
-          }
-        }}
-      />
-
-      <MaeFormDialog
-        open={formDialogOpen}
-        onOpenChange={setFormDialogOpen}
-        onSuccess={(createdMae) => {
-          fetchMaes();
-          if (createdMae) {
-            // Map the status to display format
-            const mappedMae = {
-              ...createdMae,
-              status_processo: mapDbStatusToDisplay(createdMae.status_processo) as MaeProcesso["status_processo"],
-              precisa_das: (createdMae as any).precisa_das ?? false,
-              das_concluido: (createdMae as any).das_concluido ?? false,
-            };
-            setSelectedMae(mappedMae);
-            setEditDialogOpen(true);
-          }
-        }}
-      />
-
-      {selectedMae && (
-        <AtividadeDialog
-          mae={selectedMae}
-          open={atividadeDialogOpen}
-          onOpenChange={setAtividadeDialogOpen}
-          onActivityAdded={() => {
-            if (selectedMae?.id) {
-              refreshSingleMae(selectedMae.id);
-            }
-          }}
-        />
-      )}
-
-      {selectedMae && (
-        <MaeAtividadesDialog
-          mae={selectedMae}
-          open={maeAtividadesDialogOpen}
-          onOpenChange={(open) => {
-            setMaeAtividadesDialogOpen(open);
-            // Refresh alerts when dialog closes (user may have marked alerts as read)
-            if (!open) {
-              refetchAlertas();
-            }
-          }}
-          onRefresh={() => {
-            if (selectedMae?.id) {
-              refreshSingleMae(selectedMae.id);
-            }
-            refetchAlertas();
-          }}
-          onOpenEdit={(mae) => {
-            setSelectedMae(mae);
-            setEditDialogOpen(true);
-          }}
-        />
-      )}
-
-      <OnboardingModal
-        open={onboardingOpen}
-        onOpenChange={setOnboardingOpen}
-      />
+              <div className="flex justify-end">
+                <Button variant="ghost" onClick={handleCloseDialog}>
+                  Fechar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
-};
-
-export default Index;
+}
