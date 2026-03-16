@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useChannels, useUpdateChannel } from "@/hooks/useChannels";
+import WhatsappInstancesManager from "@/components/whatsapp/WhatsappInstancesManager";
 
 const initialAtendentes = [
   { nome: "Maria Silva", email: "maria@aam.com", ativo: true },
