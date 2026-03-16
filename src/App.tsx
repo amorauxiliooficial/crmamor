@@ -23,6 +23,9 @@ import NotFound from "./pages/NotFound";
 import WaTemplatesConfig from "./pages/WaTemplatesConfig";
 import RelatorioSemanal from "./pages/RelatorioSemanal";
 
+// ✅ NOVO: página de instâncias WhatsApp (Evolution)
+import WhatsappInstances from "./pages/WhatsappInstances";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -50,15 +53,20 @@ const App = () => (
               <Route path="/senhas" element={<Senhas />} />
               <Route path="/marketing" element={<Marketing />} />
               <Route path="/indicar" element={<Indicar />} />
-              
+
               <Route path="/atendimento" element={<Atendimento />} />
               <Route path="/atendimento/chat/:id" element={<Atendimento />} />
               <Route path="/atendimento/config" element={<AtendimentoConfig />} />
               <Route path="/atendimento/agentes-ia" element={<AgentesIA />} />
               <Route path="/atendimento/templates" element={<WaTemplatesConfig />} />
+
               <Route path="/pre-analises" element={<PreAnalises />} />
               <Route path="/roadmap" element={<Roadmap />} />
               <Route path="/relatorio-semanal" element={<RelatorioSemanal />} />
+
+              {/* ✅ NOVO: Configurações -> WhatsApp Instâncias */}
+              <Route path="/settings/whatsapp-instances" element={<WhatsappInstances />} />
+
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
