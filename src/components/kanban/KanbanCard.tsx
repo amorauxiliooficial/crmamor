@@ -227,6 +227,14 @@ export function KanbanCard({
                 </span>
               </span>
             )}
+            {mae.senha_gov && (
+              <span className="flex items-center gap-1 font-mono text-[10px] bg-muted/50 px-1.5 py-0.5 rounded w-fit">
+                <KeyRound className="h-3 w-3 shrink-0" />
+                <span className="truncate max-w-[120px]" title={mae.senha_gov}>
+                  {mae.senha_gov}
+                </span>
+              </span>
+            )}
           </div>
 
           {mae.observacoes && (
