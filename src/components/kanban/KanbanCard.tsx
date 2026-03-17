@@ -1,7 +1,7 @@
 import { MaeProcesso } from "@/types/mae";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Baby, FolderOpen, AlertTriangle, FileWarning } from "lucide-react";
+import { Calendar, FileText, Baby, FolderOpen, AlertTriangle, FileWarning, KeyRound } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { differenceInDays, differenceInMonths, parseISO } from "date-fns";
@@ -224,6 +224,14 @@ export function KanbanCard({
                 <FileText className="h-3 w-3 shrink-0" />
                 <span className="truncate max-w-[120px]" title={mae.protocolo_inss}>
                   {mae.protocolo_inss}
+                </span>
+              </span>
+            )}
+            {mae.senha_gov && (
+              <span className="flex items-center gap-1 font-mono text-[10px] bg-muted/50 px-1.5 py-0.5 rounded w-fit">
+                <KeyRound className="h-3 w-3 shrink-0" />
+                <span className="truncate max-w-[120px]" title={mae.senha_gov}>
+                  {mae.senha_gov}
                 </span>
               </span>
             )}
