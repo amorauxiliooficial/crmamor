@@ -218,7 +218,6 @@ export default function Index() {
             getUserDisplayName={getUserDisplayName}
           />
         )}
-        )}
 
         {/* Content area with view transition */}
         <ViewTransition viewKey={currentView}>
