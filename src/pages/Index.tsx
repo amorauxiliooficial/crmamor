@@ -327,12 +327,6 @@ export default function Index() {
           refetch();
         }}
       />
-
-      <MetasConfigDialog
-        open={metasConfigOpen}
-        onOpenChange={setMetasConfigOpen}
-      />
-
       <OnboardingModal
         open={onboardingOpen}
         onOpenChange={setOnboardingOpen}
