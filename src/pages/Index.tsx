@@ -17,8 +17,6 @@ import { ViewTransition } from "@/components/layout/ViewTransition";
 
 // Dashboard
 import { OperationsPanel } from "@/components/dashboard/OperationsPanel";
-import { MetasDashboard } from "@/components/metas/MetasDashboard";
-import { MetasConfigDialog } from "@/components/metas/MetasConfigDialog";
 
 // Kanban / Table
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
