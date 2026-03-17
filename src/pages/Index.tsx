@@ -1,344 +1,358 @@
-// src/pages/WhatsappInstances.tsx
-import { useEffect, useMemo, useRef, useState } from "react";
-import { z } from "zod";
-import { toast } from "sonner";
-import { Loader2, Plus, Smartphone, Trash2 } from "lucide-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { createInstance, deleteInstance, getInstanceStatus, getQRCode } from "@/services/evolutionApi";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useMaesData, MaeProcessoComAtividade } from "@/hooks/useMaesData";
+import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
+import { Loader2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
+import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+// Layout
+import { Header } from "@/components/layout/Header";
+import { MobileViewSelector } from "@/components/layout/MobileViewSelector";
+import { ViewTransition } from "@/components/layout/ViewTransition";
 
-type InstanceStatus = "disconnected" | "qr_pending" | "connected";
+// Dashboard
+import { OperationsPanel } from "@/components/dashboard/OperationsPanel";
+import { MetasDashboard } from "@/components/metas/MetasDashboard";
+import { MetasConfigDialog } from "@/components/metas/MetasConfigDialog";
 
-type WaInstance = {
-  id: string;
-  name: string;
-  phone: string | null;
-  status: InstanceStatus;
-  qr_code: string | null;
-  evolution_instance_name: string;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-};
+// Kanban / Table
+import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import { KanbanMobileList } from "@/components/kanban/KanbanMobileList";
+import { GestantesBoard } from "@/components/kanban/GestantesBoard";
+import { MaeTable } from "@/components/mae/MaeTable";
 
-const formSchema = z.object({
-  name: z.string().min(2, "Informe um nome com pelo menos 2 caracteres."),
-});
-type FormValues = z.infer<typeof formSchema>;
+// Mae dialogs
+import { MaeFormDialog } from "@/components/mae/MaeFormDialog";
+import { MaeDetailDialog } from "@/components/mae/MaeDetailDialog";
+import { MaeEditDialog } from "@/components/mae/MaeEditDialog";
 
-function slugify(text: string): string {
-  return text
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
+// Tabs
+import { AtividadesTab } from "@/components/atividades/AtividadesTab";
+import { CrmTab } from "@/components/atividades/CrmTab";
+import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
+import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
+import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
 
-function StatusBadge({ status }: { status: InstanceStatus }) {
-  switch (status) {
-    case "connected":
-      return <Badge className="bg-green-600/15 text-green-700 border border-green-600/20">🟢 Conectado</Badge>;
-    case "qr_pending":
-      return <Badge className="bg-yellow-500/15 text-yellow-800 border border-yellow-500/20">🟡 Aguardando QR</Badge>;
-    default:
-      return <Badge className="bg-red-600/15 text-red-700 border border-red-600/20">🔴 Desconectado</Badge>;
-  }
-}
+// Onboarding / Tour
+import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
+import { GuidedTour } from "@/components/tour/GuidedTour";
 
-export default function WhatsappInstances() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+// Types
+import { Indicacao } from "@/types/indicacao";
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [creatingEvolutionName, setCreatingEvolutionName] = useState<string | null>(null);
+const VIEW_ORDER = ["kanban", "table", "atividades", "gestantes", "conferencia", "pagamentos", "indicacoes"];
 
-  const pollingRef = useRef<number | null>(null);
+export default function Index() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const { isAdmin } = useIsAdmin();
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { name: "" },
-  });
+  const {
+    maes,
+    users,
+    alertasNaoLidos,
+    loading: dataLoading,
+    refetch,
+    refreshSingleMae,
+  } = useMaesData();
 
-  const instancesQuery = useQuery({
-    queryKey: ["whatsapp_instances"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("whatsapp_instances")
-        .select("*")
-        .order("created_at", { ascending: false });
+  // View state
+  const [currentView, setCurrentView] = useState("kanban");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all" | "gestantes">("all");
 
-      if (error) throw error;
-      return (data ?? []) as WaInstance[];
+  // Dialog state
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [detailMae, setDetailMae] = useState<MaeProcesso | null>(null);
+  const [editMae, setEditMae] = useState<MaeProcesso | null>(null);
+  const [selectedIndicacao, setSelectedIndicacao] = useState<Indicacao | null>(null);
+  const [metasConfigOpen, setMetasConfigOpen] = useState(false);
+
+  // Onboarding / Tour
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [tourRunning, setTourRunning] = useState(false);
+  const [tourStepIndex, setTourStepIndex] = useState(0);
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth");
+    }
+  }, [user, authLoading, navigate]);
+
+  // Set default user filter to current user
+  useEffect(() => {
+    if (user && selectedUserId === null) {
+      setSelectedUserId(user.id);
+    }
+  }, [user, selectedUserId]);
+
+  // Swipe navigation for mobile
+  const swipeHandlers = useSwipeNavigation({
+    onSwipeLeft: () => {
+      const idx = VIEW_ORDER.indexOf(currentView);
+      if (idx < VIEW_ORDER.length - 1) setCurrentView(VIEW_ORDER[idx + 1]);
+    },
+    onSwipeRight: () => {
+      const idx = VIEW_ORDER.indexOf(currentView);
+      if (idx > 0) setCurrentView(VIEW_ORDER[idx - 1]);
     },
   });
 
-  const currentCreatingInstance = useMemo(() => {
-    if (!creatingEvolutionName) return null;
-    return instancesQuery.data?.find((i) => i.evolution_instance_name === creatingEvolutionName) ?? null;
-  }, [creatingEvolutionName, instancesQuery.data]);
+  // Filter maes
+  const filteredMaes = useMemo(() => {
+    let result = maes;
 
-  useEffect(() => {
-    return () => {
-      if (pollingRef.current) window.clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    };
+    // Filter by user
+    if (selectedUserId && selectedUserId !== "all") {
+      result = result.filter((m) => m.user_id === selectedUserId);
+    }
+
+    // Filter by status
+    if (statusFilter === "gestantes") {
+      result = result.filter((m) => m.is_gestante);
+    } else if (statusFilter !== "all") {
+      result = result.filter((m) => m.status_processo === statusFilter);
+    }
+
+    // Filter by search
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (m) =>
+          m.nome_mae.toLowerCase().includes(q) ||
+          m.cpf.includes(q) ||
+          m.telefone?.includes(q) ||
+          m.email?.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [maes, selectedUserId, statusFilter, searchQuery]);
+
+  const getUserDisplayName = useCallback(
+    (u: { id: string; full_name: string | null; email: string | null }) => {
+      return u.full_name || u.email || u.id.slice(0, 8);
+    },
+    []
+  );
+
+  const handleCardClick = useCallback((mae: MaeProcesso) => {
+    setDetailMae(mae);
   }, []);
 
-  function stopPolling() {
-    if (pollingRef.current) window.clearInterval(pollingRef.current);
-    pollingRef.current = null;
-  }
+  const handleStatusChange = useCallback(
+    async (maeId: string, newStatus: StatusProcesso) => {
+      // Map display status to db status (remove emoji prefix)
+      const parts = newStatus.split(" ");
+      const dbStatus = parts.length > 1 ? parts.slice(1).join(" ") : newStatus;
+      const updatePayload = {
+        status_processo: dbStatus,
+        data_ultima_atualizacao: new Date().toISOString(),
+      };
+      const { error } = await supabase
+        .from("mae_processo")
+        .update(updatePayload as Record<string, unknown>)
+        .eq("id", maeId);
 
-  async function startPolling(evolutionName: string) {
-    stopPolling();
-
-    pollingRef.current = window.setInterval(async () => {
-      try {
-        const { status } = await getInstanceStatus(evolutionName);
-
-        // na Evolution, "open" costuma indicar conectado
-        if (status === "open") {
-          stopPolling();
-
-          const { error } = await supabase
-            .from("whatsapp_instances")
-            .update({ status: "connected", qr_code: null })
-            .eq("evolution_instance_name", evolutionName);
-
-          if (error) {
-            toast.error("Erro ao atualizar status no Supabase.");
-            return;
-          }
-
-          toast.success("WhatsApp conectado com sucesso ✅");
-          setDialogOpen(false);
-          setCreatingEvolutionName(null);
-          form.reset({ name: "" });
-          queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
-        }
-      } catch {
-        // continua tentando
+      if (error) {
+        toast.error("Erro ao atualizar status");
+        return;
       }
-    }, 3000);
-  }
 
-  const createMutation = useMutation({
-    mutationFn: async (values: FormValues) => {
-      if (!user?.id) throw new Error("Usuário não autenticado.");
-
-      const evolutionName = `${slugify(values.name)}-${Date.now().toString(36)}`;
-
-      await createInstance(evolutionName);
-      const { qrcode } = await getQRCode(evolutionName);
-
-      const { data, error } = await supabase
-        .from("whatsapp_instances")
-        .insert([
-          {
-            name: values.name,
-            status: "qr_pending",
-            qr_code: qrcode,
-            evolution_instance_name: evolutionName,
-            created_by: user.id,
-          },
-        ])
-        .select("*")
-        .single();
-
-      if (error) throw error;
-
-      setCreatingEvolutionName(evolutionName);
-      await startPolling(evolutionName);
-
-      return data as WaInstance;
+      refreshSingleMae(maeId);
     },
-    onSuccess: () => {
-      toast.success("Instância criada! Escaneie o QR Code 📲");
-      queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
-    },
-    onError: (err) => {
-      console.error(err);
-      toast.error("Erro ao criar instância na Evolution API.");
-    },
-  });
+    [refreshSingleMae]
+  );
 
-  const deleteMutation = useMutation({
-    mutationFn: async (instance: WaInstance) => {
-      await deleteInstance(instance.evolution_instance_name);
-      const { error } = await supabase.from("whatsapp_instances").delete().eq("id", instance.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Instância removida 🗑️");
-      queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
-    },
-    onError: (err) => {
-      console.error(err);
-      toast.error("Erro ao deletar instância.");
-    },
-  });
+  const handleViewChange = useCallback((view: string) => {
+    setCurrentView(view);
+  }, []);
 
-  function handleOpenDialog() {
-    setDialogOpen(true);
-    setCreatingEvolutionName(null);
-    form.reset({ name: "" });
-  }
-
-  function handleCloseDialog() {
-    stopPolling();
-    setDialogOpen(false);
-    setCreatingEvolutionName(null);
-    form.reset({ name: "" });
+  if (authLoading || (!user && !authLoading)) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-4">
-      <div className="flex items-center gap-2">
-        <Smartphone className="h-5 w-5" />
-        <div>
-          <h1 className="text-lg font-semibold">WhatsApp Instâncias</h1>
-          <p className="text-sm text-muted-foreground">Conecte números via QR Code (Evolution API)</p>
-        </div>
+    <div className="min-h-screen bg-background" {...swipeHandlers}>
+      <Header
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onAddMae={() => setAddDialogOpen(true)}
+        onSelectIndicacao={(indicacao) => {
+          setSelectedIndicacao(indicacao);
+          setCurrentView("indicacoes");
+        }}
+        onOpenOnboarding={() => setOnboardingOpen(true)}
+        onViewChange={handleViewChange}
+        currentView={currentView}
+      />
 
-        <div className="ml-auto">
-          <Button onClick={handleOpenDialog}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Instância
-          </Button>
-        </div>
-      </div>
+      <main className="p-3 md:p-6 space-y-4">
+        {/* Mobile view selector */}
+        {isMobile && (
+          <MobileViewSelector value={currentView} onValueChange={setCurrentView} />
+        )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Instâncias cadastradas</CardTitle>
-          <CardDescription>Somente instâncias conectadas aparecem no seletor do chat.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {instancesQuery.isLoading && (
-            <div className="text-sm text-muted-foreground flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Carregando...
+        {/* Operations Panel + Metas */}
+        {(currentView === "kanban" || currentView === "table") && (
+          <div className="space-y-4">
+            <OperationsPanel
+              totalMaes={maes.length}
+              filteredCount={filteredMaes.length}
+              selectedUserId={selectedUserId}
+              onUserChange={(userId) => setSelectedUserId(userId)}
+              statusFilter={statusFilter}
+              onStatusFilterChange={setStatusFilter}
+              users={users}
+              getUserDisplayName={getUserDisplayName}
+            />
+            <MetasDashboard
+              userId={selectedUserId}
+              onConfigClick={() => setMetasConfigOpen(true)}
+              isAdmin={isAdmin}
+            />
+          </div>
+        )}
+
+        {/* Content area with view transition */}
+        <ViewTransition viewKey={currentView}>
+          {dataLoading ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          )}
-
-          {!instancesQuery.isLoading && (instancesQuery.data?.length ?? 0) === 0 && (
-            <div className="text-sm text-muted-foreground">Nenhuma instância cadastrada.</div>
-          )}
-
-          {(instancesQuery.data ?? []).map((inst) => (
-            <div key={inst.id} className="flex items-center gap-3 rounded-lg border p-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium truncate">{inst.name}</p>
-                  <StatusBadge status={inst.status} />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Telefone: {inst.phone ?? "—"} • Evolution:{" "}
-                  <span className="font-mono">{inst.evolution_instance_name}</span>
-                </p>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-destructive"
-                onClick={() => deleteMutation.mutate(inst)}
-                disabled={deleteMutation.isPending}
-                title="Deletar instância"
-              >
-                {deleteMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Dialog open={dialogOpen} onOpenChange={(o) => (o ? setDialogOpen(true) : handleCloseDialog())}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Nova Instância WhatsApp</DialogTitle>
-            <DialogDescription>Informe um nome, gere o QR Code e escaneie com o WhatsApp.</DialogDescription>
-          </DialogHeader>
-
-          {!creatingEvolutionName ? (
-            <Form {...form}>
-              <form className="space-y-4" onSubmit={form.handleSubmit((v) => createMutation.mutate(v))}>
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Label>Nome da instância</Label>
-                      <FormControl>
-                        <Input placeholder="Ex: Vendas João" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="ghost" onClick={handleCloseDialog}>
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={createMutation.isPending}>
-                    {createMutation.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Criando...
-                      </>
-                    ) : (
-                      "Criar e gerar QR"
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </Form>
           ) : (
-            <div className="space-y-4">
-              <div className="text-sm">
-                <p className="font-medium">Escaneie o QR Code abaixo</p>
-                <p className="text-xs text-muted-foreground">Aguardando o WhatsApp conectar… (checando a cada 3s)</p>
-              </div>
-
-              {currentCreatingInstance?.qr_code ? (
-                <div className="rounded-lg border p-3 w-full">
-                  <p className="text-xs text-muted-foreground mb-2">QR (code/base64)</p>
-                  <div className="bg-muted/30 rounded-md p-2 break-all font-mono text-[10px]">
-                    {currentCreatingInstance.qr_code}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">QR Code não disponível. Tente recriar a instância.</div>
+            <>
+              {currentView === "kanban" && (
+                isMobile ? (
+                  <KanbanMobileList
+                    maes={filteredMaes}
+                    onCardClick={handleCardClick}
+                  />
+                ) : (
+                  <KanbanBoard
+                    maes={filteredMaes}
+                    onCardClick={handleCardClick}
+                    onStatusChange={handleStatusChange}
+                    alertasNaoLidos={alertasNaoLidos}
+                  />
+                )
               )}
 
-              <div className="flex justify-end">
-                <Button variant="ghost" onClick={handleCloseDialog}>
-                  Fechar
-                </Button>
-              </div>
-            </div>
+              {currentView === "table" && (
+                <MaeTable
+                  maes={filteredMaes}
+                  onRowClick={handleCardClick}
+                />
+              )}
+
+              {currentView === "atividades" && (
+                <AtividadesTab
+                  maes={filteredMaes as MaeProcessoComAtividade[]}
+                  onRefresh={refetch}
+                  selectedUserId={selectedUserId}
+                />
+              )}
+
+              {currentView === "crm" && (
+                <CrmTab
+                  maes={filteredMaes}
+                  onRefresh={refetch}
+                />
+              )}
+
+              {currentView === "gestantes" && (
+                <GestantesBoard
+                  maes={filteredMaes.filter((m) => m.is_gestante)}
+                  onCardClick={handleCardClick}
+                  onRefresh={refetch}
+                />
+              )}
+
+              {currentView === "conferencia" && (
+                <ConferenciaTab
+                  searchQuery={searchQuery}
+                  selectedUserId={selectedUserId ?? undefined}
+                />
+              )}
+
+              {currentView === "pagamentos" && (
+                <PagamentosTab
+                  searchQuery={searchQuery}
+                  selectedUserId={selectedUserId ?? undefined}
+                />
+              )}
+
+              {currentView === "indicacoes" && (
+                <IndicacoesTab
+                  searchQuery={searchQuery}
+                  externalSelectedIndicacao={selectedIndicacao}
+                  onClearExternalSelection={() => setSelectedIndicacao(null)}
+                  selectedUserId={selectedUserId ?? undefined}
+                />
+              )}
+            </>
           )}
-        </DialogContent>
-      </Dialog>
+        </ViewTransition>
+      </main>
+
+      {/* Dialogs */}
+      <MaeFormDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onSuccess={() => {
+          setAddDialogOpen(false);
+          refetch();
+        }}
+      />
+
+      <MaeDetailDialog
+        mae={detailMae}
+        open={!!detailMae}
+        onOpenChange={(open) => {
+          if (!open) setDetailMae(null);
+        }}
+      />
+
+      <MaeEditDialog
+        mae={editMae}
+        open={!!editMae}
+        onOpenChange={(open) => {
+          if (!open) setEditMae(null);
+        }}
+        onSuccess={() => {
+          setEditMae(null);
+          refetch();
+        }}
+      />
+
+      <MetasConfigDialog
+        open={metasConfigOpen}
+        onOpenChange={setMetasConfigOpen}
+      />
+
+      <OnboardingModal
+        open={onboardingOpen}
+        onOpenChange={setOnboardingOpen}
+      />
+
+      <GuidedTour
+        run={tourRunning}
+        stepIndex={tourStepIndex}
+        onStepChange={setTourStepIndex}
+        onFinish={() => setTourRunning(false)}
+      />
     </div>
   );
 }
