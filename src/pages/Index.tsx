@@ -205,25 +205,19 @@ export default function Index() {
           <MobileViewSelector value={currentView} onValueChange={setCurrentView} />
         )}
 
-        {/* Operations Panel + Metas */}
+        {/* Operations Panel */}
         {(currentView === "kanban" || currentView === "table") && (
-          <div className="space-y-4">
-            <OperationsPanel
-              totalMaes={maes.length}
-              filteredCount={filteredMaes.length}
-              selectedUserId={selectedUserId}
-              onUserChange={(userId) => setSelectedUserId(userId)}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-              users={users}
-              getUserDisplayName={getUserDisplayName}
-            />
-            <MetasDashboard
-              userId={selectedUserId}
-              onConfigClick={() => setMetasConfigOpen(true)}
-              isAdmin={isAdmin}
-            />
-          </div>
+          <OperationsPanel
+            totalMaes={maes.length}
+            filteredCount={filteredMaes.length}
+            selectedUserId={selectedUserId}
+            onUserChange={(userId) => setSelectedUserId(userId)}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            users={users}
+            getUserDisplayName={getUserDisplayName}
+          />
+        )}
         )}
 
         {/* Content area with view transition */}
