@@ -150,12 +150,13 @@ export default function Index() {
 
   const handleStatusChange = useCallback(
     async (maeId: string, newStatus: StatusProcesso) => {
-      // Map display status to db status (remove emoji)
-      const dbStatus = newStatus.split(" ").slice(1).join(" ") || newStatus;
+      // Map display status to db status (remove emoji prefix)
+      const parts = newStatus.split(" ");
+      const dbStatus = parts.length > 1 ? parts.slice(1).join(" ") : newStatus;
       const { error } = await supabase
         .from("mae_processo")
         .update({
-          status_processo: dbStatus,
+          status_processo: dbStatus as string,
           data_ultima_atualizacao: new Date().toISOString(),
         })
         .eq("id", maeId);
