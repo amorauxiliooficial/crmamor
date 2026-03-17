@@ -156,7 +156,7 @@ export default function Index() {
       const { error } = await supabase
         .from("mae_processo")
         .update({
-          status_processo: dbStatus as string,
+          status_processo: dbStatus as unknown as typeof newStatus,
           data_ultima_atualizacao: new Date().toISOString(),
         })
         .eq("id", maeId);
