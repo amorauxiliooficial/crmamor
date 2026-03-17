@@ -153,12 +153,13 @@ export default function Index() {
       // Map display status to db status (remove emoji prefix)
       const parts = newStatus.split(" ");
       const dbStatus = parts.length > 1 ? parts.slice(1).join(" ") : newStatus;
+      const updatePayload = {
+        status_processo: dbStatus,
+        data_ultima_atualizacao: new Date().toISOString(),
+      };
       const { error } = await supabase
         .from("mae_processo")
-        .update({
-          status_processo: dbStatus as unknown as typeof newStatus,
-          data_ultima_atualizacao: new Date().toISOString(),
-        })
+        .update(updatePayload as Record<string, unknown>)
         .eq("id", maeId);
 
       if (error) {
