@@ -71,7 +71,7 @@ export default function Index() {
   const [detailMae, setDetailMae] = useState<MaeProcesso | null>(null);
   const [editMae, setEditMae] = useState<MaeProcesso | null>(null);
   const [selectedIndicacao, setSelectedIndicacao] = useState<Indicacao | null>(null);
-  const [metasConfigOpen, setMetasConfigOpen] = useState(false);
+  
 
   // Onboarding / Tour
   const [onboardingOpen, setOnboardingOpen] = useState(false);
