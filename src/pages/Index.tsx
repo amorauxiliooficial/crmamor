@@ -17,8 +17,6 @@ import { ViewTransition } from "@/components/layout/ViewTransition";
 
 // Dashboard
 import { OperationsPanel } from "@/components/dashboard/OperationsPanel";
-import { MetasDashboard } from "@/components/metas/MetasDashboard";
-import { MetasConfigDialog } from "@/components/metas/MetasConfigDialog";
 
 // Kanban / Table
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
@@ -73,7 +71,7 @@ export default function Index() {
   const [detailMae, setDetailMae] = useState<MaeProcesso | null>(null);
   const [editMae, setEditMae] = useState<MaeProcesso | null>(null);
   const [selectedIndicacao, setSelectedIndicacao] = useState<Indicacao | null>(null);
-  const [metasConfigOpen, setMetasConfigOpen] = useState(false);
+  
 
   // Onboarding / Tour
   const [onboardingOpen, setOnboardingOpen] = useState(false);
@@ -205,25 +203,18 @@ export default function Index() {
           <MobileViewSelector value={currentView} onValueChange={setCurrentView} />
         )}
 
-        {/* Operations Panel + Metas */}
+        {/* Operations Panel */}
         {(currentView === "kanban" || currentView === "table") && (
-          <div className="space-y-4">
-            <OperationsPanel
-              totalMaes={maes.length}
-              filteredCount={filteredMaes.length}
-              selectedUserId={selectedUserId}
-              onUserChange={(userId) => setSelectedUserId(userId)}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-              users={users}
-              getUserDisplayName={getUserDisplayName}
-            />
-            <MetasDashboard
-              userId={selectedUserId}
-              onConfigClick={() => setMetasConfigOpen(true)}
-              isAdmin={isAdmin}
-            />
-          </div>
+          <OperationsPanel
+            totalMaes={maes.length}
+            filteredCount={filteredMaes.length}
+            selectedUserId={selectedUserId}
+            onUserChange={(userId) => setSelectedUserId(userId)}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            users={users}
+            getUserDisplayName={getUserDisplayName}
+          />
         )}
 
         {/* Content area with view transition */}
@@ -336,12 +327,6 @@ export default function Index() {
           refetch();
         }}
       />
-
-      <MetasConfigDialog
-        open={metasConfigOpen}
-        onOpenChange={setMetasConfigOpen}
-      />
-
       <OnboardingModal
         open={onboardingOpen}
         onOpenChange={setOnboardingOpen}
