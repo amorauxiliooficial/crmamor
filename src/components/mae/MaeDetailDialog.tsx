@@ -80,6 +80,22 @@ export function MaeDetailDialog({
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
+              {mae.senha_gov && (
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground font-mono">
+                    <Key className="h-3 w-3 inline mr-1" />
+                    Senha Gov: {mae.senha_gov}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => copyToClipboard(mae.senha_gov!, "Senha Gov")}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </DialogHeader>
