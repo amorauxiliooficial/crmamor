@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { MaeProcesso, STATUS_COLORS } from "@/types/mae";
 import { formatCpf, formatDate } from "@/lib/formatters";
 import {
+  Pencil,
   Calendar,
   FileText,
   MapPin,
