@@ -88,6 +88,20 @@ export function MaeDetailDialog({
         <div className="space-y-6">
           {/* Status Badge and Actions */}
           <div className="flex items-center justify-between flex-wrap gap-2">
+            {onEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => {
+                  onOpenChange(false);
+                  onEdit(mae);
+                }}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Editar
+              </Button>
+            )}
             <div className="flex items-center gap-2">
               <Badge
                 className={cn(
