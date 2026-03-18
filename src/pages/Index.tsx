@@ -314,6 +314,10 @@ export default function Index() {
         onOpenChange={(open) => {
           if (!open) setDetailMae(null);
         }}
+        onEdit={(mae) => {
+          setDetailMae(null);
+          setEditMae(mae);
+        }}
       />
 
       <MaeEditDialog
