@@ -35,6 +35,7 @@ interface MaeDetailDialogProps {
   mae: MaeProcesso | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onEdit?: (mae: MaeProcesso) => void;
 }
 
 const copyToClipboard = async (text: string, label: string) => {
