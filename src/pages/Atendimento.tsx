@@ -793,7 +793,7 @@ export default function Atendimento() {
           contactPhone={selectedWa.wa_phone}
           contactName={selectedWa.wa_name}
           onTransferred={() => {
-            // Transfer service handles everything, conversations will auto-refetch via realtime
+            queryClient.invalidateQueries({ queryKey: ["wa-conversations"] });
           }}
         />
       )}
