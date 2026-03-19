@@ -91,14 +91,6 @@ function getStatusConfig(status: string) {
 }
 
 function handleEvolutionError(err: unknown, fallbackMsg: string) {
-  if (err instanceof MissingEvolutionEnvError) {
-    toast.error("Integração com Evolution não configurada.", {
-      description:
-        "No Lovable: Settings → Workspace → Build secrets. Adicione VITE_EVOLUTION_API_URL e VITE_EVOLUTION_API_KEY e depois faça Rebuild/Restart do Preview.",
-      duration: 10000,
-    });
-    return;
-  }
   const msg = err instanceof Error ? err.message : fallbackMsg;
   toast.error(msg);
 }
