@@ -628,7 +628,9 @@ export default function Atendimento() {
                   conversationId={selectedId!}
                   contactPhone={selectedWa.wa_phone}
                   contactName={selectedWa.wa_name}
-                  onTransferred={() => handleChangeChannel("web_manual_team")}
+                  onTransferred={() => {
+                    // Force refetch conversations after transfer
+                  }}
                 />
               )}
             </>
