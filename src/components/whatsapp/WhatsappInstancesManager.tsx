@@ -348,6 +348,7 @@ export default function WhatsappInstancesManager() {
         .eq("id", instance.id);
       queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
       startPolling(instance.evolution_instance_name, instance.id);
+    } catch (err) {
       handleEvolutionError(err, "Erro ao reconectar");
       setReconnectingId(null);
     }
