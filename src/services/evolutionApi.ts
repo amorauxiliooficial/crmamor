@@ -29,6 +29,11 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return json as T;
 }
 
+export async function fetchInstances(): Promise<any[]> {
+  const data = await request<any[]>("/instance/fetchInstances");
+  return Array.isArray(data) ? data : [];
+}
+
 export async function createInstance(instanceName: string): Promise<void> {
   await request<unknown>("/instance/create", {
     method: "POST",
