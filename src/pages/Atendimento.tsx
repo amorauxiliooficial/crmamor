@@ -401,8 +401,25 @@ export default function Atendimento() {
     return (selectedWa as any)?.active_channel_code ?? (selectedWa as any)?.channel ?? "official";
   }, [selectedWa]);
 
+  const currentInstanceId = useMemo(() => {
+    return (selectedWa as any)?.instance_id ?? null;
+  }, [selectedWa]);
+
   const handleChangeChannel = useCallback(async (newChannel: string) => {
     if (!selectedId) return;
+
+    // If switching back to official from evolution, use the transfer service
+    if (newChannel === "official" && currentChannel === "evolution") {
+      const { transferConversationToOfficial } = await import("@/services/conversationTransfer");
+      const result = await transferConversationToOfficial(selectedId);
+      if (result.success) {
+        toast({ title: "Voltou para canal Meta Oficial 📱" });
+      } else {
+        toast({ title: "Erro ao retornar", description: result.error, variant: "destructive" });
+      }
+      return;
+    }
+
     const { error } = await supabase
       .from("wa_conversations")
       .update({ active_channel_code: newChannel, channel: newChannel } as any)
@@ -424,7 +441,7 @@ export default function Atendimento() {
           .eq("id", selectedId);
       }
     }
-  }, [selectedId, selectedWa, aiEnabled, toast, createEvent]);
+  }, [selectedId, selectedWa, aiEnabled, toast, createEvent, currentChannel]);
 
   const handleSend = useCallback(() => {
     if (!selectedId || !msgText.trim() || !selectedWa) return;
