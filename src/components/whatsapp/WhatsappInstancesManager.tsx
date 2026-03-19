@@ -347,7 +347,7 @@ export default function WhatsappInstancesManager() {
         .update({ status: "qr_pending", qr_code: qrcode || null })
         .eq("id", instance.id);
       queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
-    } catch (err) {
+      startPolling(instance.evolution_instance_name, instance.id);
       handleEvolutionError(err, "Erro ao reconectar");
       setReconnectingId(null);
     }
