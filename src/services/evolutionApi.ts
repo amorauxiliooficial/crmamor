@@ -1,76 +1,63 @@
-import { getEvolutionEnv } from "@/config/evolutionEnv";
+import { supabase } from "@/integrations/supabase/client";
 
-function headers(apiKey: string): HeadersInit {
-  return {
-    "Content-Type": "application/json",
-    apikey: apiKey,
-    Authorization: `Bearer ${apiKey}`,
-  };
-}
-
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const { baseUrl, apiKey } = getEvolutionEnv();
-  const res = await fetch(`${baseUrl}${url}`, {
-    ...init,
-    headers: { ...headers(apiKey), ...(init?.headers ?? {}) },
+/**
+ * All Evolution API calls go through the evolution-proxy Edge Function
+ * to avoid CORS issues. The Edge Function holds the API credentials.
+ */
+async function proxyRequest<T = unknown>(payload: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke("evolution-proxy", {
+    body: payload,
   });
 
-  const text = await res.text().catch(() => "");
-  const json = text ? (JSON.parse(text) as unknown) : null;
-
-  if (!res.ok) {
+  if (error) {
+    // supabase.functions.invoke wraps non-2xx as FunctionsHttpError
     const msg =
-      typeof json === "object" && json && "message" in json
-        ? String((json as { message?: unknown }).message)
-        : text || res.statusText;
-    throw new Error(`Evolution API erro ${res.status}: ${msg}`);
+      typeof data === "object" && data?.error
+        ? String(data.error)
+        : error.message || "Erro na Evolution API";
+    throw new Error(msg);
   }
 
-  return json as T;
+  return data as T;
 }
 
 export async function fetchInstances(): Promise<any[]> {
-  const data = await request<any[]>("/instance/fetchInstances");
+  const data = await proxyRequest<any[]>({ action: "fetchInstances" });
   return Array.isArray(data) ? data : [];
 }
 
 export async function createInstance(instanceName: string): Promise<void> {
-  await request<unknown>("/instance/create", {
-    method: "POST",
-    body: JSON.stringify({
-      instanceName,
-      qrcode: true,
-      integration: "WHATSAPP-BAILEYS",
-    }),
-  });
+  await proxyRequest({ action: "createInstance", instanceName });
 }
 
 export async function getQRCode(instanceName: string): Promise<{ qrcode: string }> {
-  const data = await request<{ qrcode?: string; code?: string; pairingCode?: string }>(
-    `/instance/connect/${encodeURIComponent(instanceName)}`,
-  );
-  return { qrcode: data.qrcode ?? data.code ?? data.pairingCode ?? "" };
+  const data = await proxyRequest<{
+    qrcode?: string;
+    code?: string;
+    pairingCode?: string;
+    base64?: string;
+  }>({ action: "connect", instanceName });
+
+  return { qrcode: data.qrcode ?? data.base64 ?? data.code ?? data.pairingCode ?? "" };
 }
 
 export async function getInstanceStatus(instanceName: string): Promise<{ status: string }> {
-  const data = await request<{ instance?: { state?: string }; state?: string }>(
-    `/instance/connectionState/${encodeURIComponent(instanceName)}`,
-  );
+  const data = await proxyRequest<{
+    instance?: { state?: string };
+    state?: string;
+  }>({ action: "connectionState", instanceName });
+
   return { status: data.instance?.state ?? data.state ?? "unknown" };
 }
 
-export async function sendTextMessage(instanceName: string, phone: string, message: string): Promise<void> {
-  await request<unknown>(`/message/sendText/${encodeURIComponent(instanceName)}`, {
-    method: "POST",
-    body: JSON.stringify({
-      number: phone.replace(/^\+/, ""),
-      textMessage: { text: message },
-    }),
-  });
+export async function sendTextMessage(
+  instanceName: string,
+  phone: string,
+  message: string,
+): Promise<void> {
+  await proxyRequest({ action: "sendText", instanceName, phone, text: message });
 }
 
 export async function deleteInstance(instanceName: string): Promise<void> {
-  await request<unknown>(`/instance/delete/${encodeURIComponent(instanceName)}`, {
-    method: "DELETE",
-  });
+  await proxyRequest({ action: "deleteInstance", instanceName });
 }
