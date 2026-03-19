@@ -380,7 +380,9 @@ serve(async (req: Request): Promise<Response> => {
         const bodyText = msgType === "text" ? String(text || "") : caption || `[${msgType}]`;
         const evoMsgId = evoJson?.key?.id ?? null;
 
-        await adminClient.from("wa_messages").insert({
+        console.log(`✅ Evolution sent OK. Saving to DB... msgId=${evoMsgId}, userId=${userId}`);
+
+        const { error: insertErr } = await adminClient.from("wa_messages").insert({
           conversation_id,
           meta_message_id: evoMsgId,
           direction: "out",
@@ -394,13 +396,25 @@ serve(async (req: Request): Promise<Response> => {
           ...(media_url ? { media_url, media_mime, media_filename } : {}),
         });
 
-        await adminClient
+        if (insertErr) {
+          console.error("❌ DB insert wa_messages error:", JSON.stringify(insertErr));
+        } else {
+          console.log("✅ wa_messages insert OK");
+        }
+
+        const { error: updateErr } = await adminClient
           .from("wa_conversations")
           .update({
             last_message_at: new Date().toISOString(),
             last_message_preview: bodyText.slice(0, 200),
           })
           .eq("id", conversation_id);
+
+        if (updateErr) {
+          console.error("❌ DB update wa_conversations error:", JSON.stringify(updateErr));
+        } else {
+          console.log("✅ wa_conversations update OK");
+        }
 
         return toJson({
           success: true,
