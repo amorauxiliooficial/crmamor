@@ -235,8 +235,8 @@ export default function WhatsappInstancesManager() {
     mutationFn: async (instance: WaInstance) => {
       try {
         await deleteInstance(instance.evolution_instance_name);
-      } catch (err) {
-        if (err instanceof MissingEvolutionEnvError) throw err;
+      } catch {
+        // Instance may already be deleted on Evolution side
       }
       const { error } = await supabase
         .from("whatsapp_instances")
