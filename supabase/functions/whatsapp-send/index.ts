@@ -342,7 +342,13 @@ serve(async (req: Request): Promise<Response> => {
         });
 
         const evoText = await evoRes.text().catch(() => "");
-        const evoJson = evoText ? JSON.parse(evoText) : null;
+        console.log(`📡 Evolution response (${evoRes.status}): ${evoText.slice(0, 500)}`);
+        let evoJson: any = null;
+        try {
+          evoJson = evoText ? JSON.parse(evoText) : null;
+        } catch {
+          console.warn("⚠️ Evolution response is not JSON, treating as raw text");
+        }
 
         if (!evoRes.ok) {
           const errMsg = typeof evoJson === "object" && evoJson?.message
