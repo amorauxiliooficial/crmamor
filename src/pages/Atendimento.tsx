@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { useDebouncedCallback } from "use-debounce";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useInboundNotification } from "@/hooks/useInboundNotification";
 import { useWaConversations, useWaMessages, useSendWhatsApp, useRetryWhatsApp, useMarkConversationRead, useUpdateConversationStatus, useEditMessage, useAssumeConversation, useTransferConversation, useCloseConversation, useReopenConversation, type WaConversation } from "@/hooks/useWhatsApp";
 import { useConversationEvents, useCreateConversationEvent } from "@/hooks/useConversationEvents";
@@ -77,6 +77,7 @@ export default function Atendimento() {
   const { addEvent } = useTimelineActions();
 
   // Real WhatsApp data
+  const queryClient = useQueryClient();
   const { data: waConversations, isLoading: loadingConvos } = useWaConversations();
   const [selectedId, setSelectedId] = useState<string | null>(routeId ?? null);
   const { data: waMessages, isLoading: loadingMsgs } = useWaMessages(selectedId);
@@ -629,7 +630,7 @@ export default function Atendimento() {
                   contactPhone={selectedWa.wa_phone}
                   contactName={selectedWa.wa_name}
                   onTransferred={() => {
-                    // Force refetch conversations after transfer
+                    queryClient.invalidateQueries({ queryKey: ["wa-conversations"] });
                   }}
                 />
               )}
@@ -792,7 +793,7 @@ export default function Atendimento() {
           contactPhone={selectedWa.wa_phone}
           contactName={selectedWa.wa_name}
           onTransferred={() => {
-            // Transfer service handles everything, conversations will auto-refetch via realtime
+            queryClient.invalidateQueries({ queryKey: ["wa-conversations"] });
           }}
         />
       )}
