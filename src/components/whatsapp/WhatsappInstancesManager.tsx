@@ -175,6 +175,7 @@ export default function WhatsappInstancesManager() {
   const [creating, setCreating] = useState(false);
   const [pendingInstanceName, setPendingInstanceName] = useState<string | null>(null);
   const [reconnectingId, setReconnectingId] = useState<string | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -209,11 +210,62 @@ export default function WhatsappInstancesManager() {
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
-  // Auto-close dialog when pending instance becomes connected
+  // Stop polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
+
+  // Start polling Evolution API for connection status
+  const startPolling = useCallback((evolutionName: string, instanceId?: string) => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    let attempts = 0;
+    const maxAttempts = 60; // ~3 min (every 3s)
+
+    pollingRef.current = setInterval(async () => {
+      attempts++;
+      if (attempts > maxAttempts) {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        pollingRef.current = null;
+        toast.error("Tempo esgotado aguardando conexão. Tente reconectar.");
+        setPendingInstanceName(null);
+        setReconnectingId(null);
+        return;
+      }
+
+      try {
+        const { status } = await getInstanceStatus(evolutionName);
+        if (status === "open") {
+          if (pollingRef.current) clearInterval(pollingRef.current);
+          pollingRef.current = null;
+
+          // Update DB
+          const updateFilter = instanceId
+            ? supabase.from("whatsapp_instances").update({ status: "connected", qr_code: null }).eq("id", instanceId)
+            : supabase.from("whatsapp_instances").update({ status: "connected", qr_code: null }).eq("evolution_instance_name", evolutionName);
+          await updateFilter;
+
+          queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
+          toast.success("WhatsApp conectado com sucesso! 🎉");
+          setOpen(false);
+          setPendingInstanceName(null);
+          setReconnectingId(null);
+          form.reset();
+        }
+      } catch {
+        // keep polling
+      }
+    }, 3000);
+  }, [queryClient, form]);
+
+  // Auto-close dialog when pending instance becomes connected (via Realtime)
   useEffect(() => {
     if (!pendingInstanceName || !open) return;
     const inst = instances.find((i) => i.evolution_instance_name === pendingInstanceName);
     if (inst?.status === "connected") {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      pollingRef.current = null;
       toast.success("WhatsApp conectado com sucesso! 🎉");
       setOpen(false);
       setPendingInstanceName(null);
@@ -226,11 +278,12 @@ export default function WhatsappInstancesManager() {
     if (!reconnectingId) return;
     const inst = instances.find((i) => i.id === reconnectingId);
     if (inst?.status === "connected") {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      pollingRef.current = null;
       toast.success("Reconectado com sucesso! 🎉");
       setReconnectingId(null);
     }
   }, [instances, reconnectingId]);
-
   const deleteMutation = useMutation({
     mutationFn: async (instance: WaInstance) => {
       try {
@@ -277,6 +330,7 @@ export default function WhatsappInstancesManager() {
 
       queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
       setPendingInstanceName(evolutionName);
+      startPolling(evolutionName);
     } catch (err) {
       handleEvolutionError(err, "Falha ao criar instância");
     } finally {
@@ -293,6 +347,7 @@ export default function WhatsappInstancesManager() {
         .update({ status: "qr_pending", qr_code: qrcode || null })
         .eq("id", instance.id);
       queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
+      startPolling(instance.evolution_instance_name, instance.id);
     } catch (err) {
       handleEvolutionError(err, "Erro ao reconectar");
       setReconnectingId(null);
@@ -302,6 +357,8 @@ export default function WhatsappInstancesManager() {
   function handleDialogChange(v: boolean) {
     setOpen(v);
     if (!v) {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      pollingRef.current = null;
       setPendingInstanceName(null);
       setCreating(false);
       form.reset();
