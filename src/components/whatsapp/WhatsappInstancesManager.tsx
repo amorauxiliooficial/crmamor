@@ -357,6 +357,8 @@ export default function WhatsappInstancesManager() {
   function handleDialogChange(v: boolean) {
     setOpen(v);
     if (!v) {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      pollingRef.current = null;
       setPendingInstanceName(null);
       setCreating(false);
       form.reset();
