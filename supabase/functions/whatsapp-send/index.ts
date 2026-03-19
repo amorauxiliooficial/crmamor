@@ -290,7 +290,7 @@ serve(async (req: Request): Promise<Response> => {
           evoEndpoint = `/message/sendText/${instanceName}`;
           evoPayload = {
             number: cleanPhone,
-            textMessage: { text },
+            text: text,
           };
         } else if (msgType === "image" && media_url) {
           evoEndpoint = `/message/sendMedia/${instanceName}`;

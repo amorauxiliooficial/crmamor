@@ -100,7 +100,7 @@ serve(async (req: Request): Promise<Response> => {
         method = "POST";
         evoBody = JSON.stringify({
           number: phone.replace(/^\+/, ""),
-          textMessage: { text },
+          text: text,
         });
         break;
 
