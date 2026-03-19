@@ -77,6 +77,7 @@ export default function Atendimento() {
   const { addEvent } = useTimelineActions();
 
   // Real WhatsApp data
+  const queryClient = useQueryClient();
   const { data: waConversations, isLoading: loadingConvos } = useWaConversations();
   const [selectedId, setSelectedId] = useState<string | null>(routeId ?? null);
   const { data: waMessages, isLoading: loadingMsgs } = useWaMessages(selectedId);
