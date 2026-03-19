@@ -391,7 +391,7 @@ serve(async (req: Request): Promise<Response> => {
           status: "sent",
           sent_by: userId,
           sent_at: new Date().toISOString(),
-          channel: "evolution",
+          channel: "whatsapp_web",
           instance_id: conv.instance_id,
           ...(media_url ? { media_url, media_mime, media_filename } : {}),
         });
