@@ -251,6 +251,162 @@ serve(async (req: Request): Promise<Response> => {
 
     console.log(`📤 Sending ${msgType} to +${cleanPhone} (internal=${isInternal})`);
 
+    // ====== EVOLUTION API ROUTING ======
+    // Check if conversation uses Evolution channel
+    if (conversation_id) {
+      const { data: conv } = await adminClient
+        .from("wa_conversations")
+        .select("active_channel_code, instance_id")
+        .eq("id", conversation_id)
+        .single();
+
+      if (conv?.active_channel_code === "evolution" && conv?.instance_id) {
+        const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL");
+        const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
+
+        if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
+          return toJson({ error: "Evolution API not configured" }, 500);
+        }
+
+        // Get instance name
+        const { data: instance } = await adminClient
+          .from("whatsapp_instances")
+          .select("evolution_instance_name, name")
+          .eq("id", conv.instance_id)
+          .single();
+
+        if (!instance) {
+          return toJson({ error: "WhatsApp instance not found" }, 404);
+        }
+
+        const evoBaseUrl = EVOLUTION_API_URL.replace(/\/+$/, "");
+        const instanceName = encodeURIComponent(instance.evolution_instance_name);
+
+        let evoPayload: any = null;
+        let evoEndpoint = "";
+
+        if (msgType === "text") {
+          if (!text) return toJson({ error: 'Missing "text"' }, 400);
+          evoEndpoint = `/message/sendText/${instanceName}`;
+          evoPayload = {
+            number: cleanPhone,
+            textMessage: { text },
+          };
+        } else if (msgType === "image" && media_url) {
+          evoEndpoint = `/message/sendMedia/${instanceName}`;
+          evoPayload = {
+            number: cleanPhone,
+            mediatype: "image",
+            media: media_url,
+            caption: caption || undefined,
+          };
+        } else if (msgType === "audio" && media_url) {
+          evoEndpoint = `/message/sendWhatsAppAudio/${instanceName}`;
+          evoPayload = {
+            number: cleanPhone,
+            audio: media_url,
+          };
+        } else if (msgType === "document" && media_url) {
+          evoEndpoint = `/message/sendMedia/${instanceName}`;
+          evoPayload = {
+            number: cleanPhone,
+            mediatype: "document",
+            media: media_url,
+            fileName: media_filename || "document",
+            caption: caption || undefined,
+          };
+        } else if (msgType === "video" && media_url) {
+          evoEndpoint = `/message/sendMedia/${instanceName}`;
+          evoPayload = {
+            number: cleanPhone,
+            mediatype: "video",
+            media: media_url,
+            caption: caption || undefined,
+          };
+        }
+
+        if (!evoPayload || !evoEndpoint) {
+          return toJson({ error: `Unsupported message type for Evolution: ${msgType}` }, 400);
+        }
+
+        console.log(`📤 Evolution: ${evoEndpoint} to ${cleanPhone} via ${instance.name}`);
+
+        const evoRes = await fetch(`${evoBaseUrl}${evoEndpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: EVOLUTION_API_KEY,
+            Authorization: `Bearer ${EVOLUTION_API_KEY}`,
+          },
+          body: JSON.stringify(evoPayload),
+        });
+
+        const evoText = await evoRes.text().catch(() => "");
+        const evoJson = evoText ? JSON.parse(evoText) : null;
+
+        if (!evoRes.ok) {
+          const errMsg = typeof evoJson === "object" && evoJson?.message
+            ? String(evoJson.message)
+            : evoText || evoRes.statusText;
+
+          console.error(`❌ Evolution error ${evoRes.status}: ${errMsg}`);
+
+          // Store failed message
+          const bodyText = msgType === "text" ? String(text || "") : caption || `[${msgType}]`;
+          await adminClient.from("wa_messages").insert({
+            conversation_id,
+            direction: "out",
+            body: bodyText,
+            msg_type: msgType,
+            status: "failed",
+            sent_by: userId,
+            sent_at: new Date().toISOString(),
+            channel: "evolution",
+            instance_id: conv.instance_id,
+            error_code: String(evoRes.status),
+            error_message: errMsg,
+          });
+
+          return toJson({ error: `Evolution API error: ${errMsg}` }, evoRes.status);
+        }
+
+        // Store success message
+        const bodyText = msgType === "text" ? String(text || "") : caption || `[${msgType}]`;
+        const evoMsgId = evoJson?.key?.id ?? null;
+
+        await adminClient.from("wa_messages").insert({
+          conversation_id,
+          meta_message_id: evoMsgId,
+          direction: "out",
+          body: bodyText,
+          msg_type: msgType,
+          status: "sent",
+          sent_by: userId,
+          sent_at: new Date().toISOString(),
+          channel: "evolution",
+          instance_id: conv.instance_id,
+          ...(media_url ? { media_url, media_mime, media_filename } : {}),
+        });
+
+        await adminClient
+          .from("wa_conversations")
+          .update({
+            last_message_at: new Date().toISOString(),
+            last_message_preview: bodyText.slice(0, 200),
+          })
+          .eq("id", conversation_id);
+
+        return toJson({
+          success: true,
+          channel: "evolution",
+          instance: instance.name,
+          meta_message_id: evoMsgId,
+          conversation_id,
+        });
+      }
+    }
+    // ====== END EVOLUTION ROUTING ======
+
     // Build Meta payload
     let metaPayload: any = null;
 
