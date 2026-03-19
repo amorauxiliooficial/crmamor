@@ -17,8 +17,12 @@ export class MissingEvolutionEnvError extends Error {
 }
 
 export function getEvolutionEnv(): EvolutionEnv {
-  const rawUrl = import.meta.env.VITE_EVOLUTION_API_URL as string | undefined;
-  const rawKey = import.meta.env.VITE_EVOLUTION_API_KEY as string | undefined;
+  const rawUrl =
+    (import.meta.env.VITE_EVOLUTION_API_URL as string | undefined) ||
+    (import.meta.env.EVOLUTION_API_URL as string | undefined);
+  const rawKey =
+    (import.meta.env.VITE_EVOLUTION_API_KEY as string | undefined) ||
+    (import.meta.env.EVOLUTION_API_KEY as string | undefined);
 
   const missing: string[] = [];
   if (!rawUrl) missing.push("VITE_EVOLUTION_API_URL");

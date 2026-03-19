@@ -41,7 +41,6 @@ serve(async (req: Request): Promise<Response> => {
     // Normalize event: path segment or body.event
     let eventType: string;
     if (lastSegment && lastSegment !== "evolution-webhook") {
-      // Path-based routing: /evolution-webhook/qrcode-updated
       eventType = lastSegment.toUpperCase().replace(/-/g, "_");
     } else {
       eventType = (body.event ?? "UNKNOWN").toUpperCase().replace(/\./g, "_");
@@ -112,6 +111,9 @@ serve(async (req: Request): Promise<Response> => {
           console.log(`⚠️ ${instanceName} disconnected`);
         }
       }
+    } else if (eventType === "MESSAGES_UPSERT" || eventType === "MESSAGES_UPDATE") {
+      // ====== INBOUND MESSAGE HANDLING ======
+      await handleInboundMessage(supabase, body, instanceName);
     } else {
       console.log(`ℹ️ Unhandled event: ${eventType}`);
     }
@@ -128,3 +130,226 @@ serve(async (req: Request): Promise<Response> => {
     });
   }
 });
+
+// ====== Inbound message processor ======
+async function handleInboundMessage(
+  supabase: any,
+  body: any,
+  instanceName: string,
+) {
+  // Evolution v2 sends messages as body.data or body.data[0]
+  const msgData = Array.isArray(body.data) ? body.data[0] : body.data;
+  if (!msgData) {
+    console.warn("⚠️ MESSAGES_UPSERT but no message data");
+    return;
+  }
+
+  const key = msgData.key ?? {};
+  const fromMe = key.fromMe === true;
+  const remoteJid: string = key.remoteJid ?? "";
+  const messageId: string = key.id ?? "";
+
+  // Skip outgoing messages (we already saved those from whatsapp-send)
+  if (fromMe) {
+    console.log(`⏭️ Skipping outgoing message ${messageId}`);
+    return;
+  }
+
+  // Skip group messages
+  if (remoteJid.includes("@g.us")) {
+    console.log(`⏭️ Skipping group message from ${remoteJid}`);
+    return;
+  }
+
+  // Extract phone number from remoteJid (format: 5511999999999@s.whatsapp.net)
+  const phone = remoteJid.replace(/@.*$/, "");
+  if (!phone || phone.length < 8) {
+    console.warn(`⚠️ Invalid phone from remoteJid: ${remoteJid}`);
+    return;
+  }
+
+  // Extract message content
+  const message = msgData.message ?? {};
+  const pushName: string = msgData.pushName ?? "";
+
+  let bodyText = "";
+  let msgType = "text";
+  let mediaUrl: string | null = null;
+  let mediaMime: string | null = null;
+  let mediaFilename: string | null = null;
+
+  if (message.conversation) {
+    bodyText = message.conversation;
+  } else if (message.extendedTextMessage?.text) {
+    bodyText = message.extendedTextMessage.text;
+  } else if (message.imageMessage) {
+    msgType = "image";
+    bodyText = message.imageMessage.caption || "[image]";
+    mediaMime = message.imageMessage.mimetype || "image/jpeg";
+  } else if (message.audioMessage) {
+    msgType = "audio";
+    bodyText = "[audio]";
+    mediaMime = message.audioMessage.mimetype || "audio/ogg";
+  } else if (message.videoMessage) {
+    msgType = "video";
+    bodyText = message.videoMessage.caption || "[video]";
+    mediaMime = message.videoMessage.mimetype || "video/mp4";
+  } else if (message.documentMessage) {
+    msgType = "document";
+    bodyText = message.documentMessage.fileName || "[document]";
+    mediaMime = message.documentMessage.mimetype || "application/octet-stream";
+    mediaFilename = message.documentMessage.fileName || null;
+  } else if (message.stickerMessage) {
+    msgType = "sticker";
+    bodyText = "[sticker]";
+    mediaMime = message.stickerMessage.mimetype || "image/webp";
+  } else if (message.reactionMessage) {
+    msgType = "reaction";
+    bodyText = message.reactionMessage.text || "❤️";
+  } else {
+    bodyText = "[unsupported]";
+    msgType = "unsupported";
+  }
+
+  console.log(`📨 Inbound from +${phone} via ${instanceName}: ${msgType} — "${bodyText.slice(0, 60)}"`);
+
+  // Look up the whatsapp_instances record to get instance_id
+  const { data: instance } = await supabase
+    .from("whatsapp_instances")
+    .select("id")
+    .eq("evolution_instance_name", instanceName)
+    .single();
+
+  const instanceId: string | null = instance?.id ?? null;
+
+  // Find existing conversation by phone (try with and without +)
+  const phoneVariants = [phone, `+${phone}`];
+  let conversation: any = null;
+
+  for (const pv of phoneVariants) {
+    const { data } = await supabase
+      .from("wa_conversations")
+      .select("id, status, wa_name, active_channel_code, instance_id")
+      .eq("wa_phone", pv)
+      .order("last_message_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (data) {
+      conversation = data;
+      break;
+    }
+  }
+
+  if (!conversation) {
+    // Create new conversation for this Evolution inbound
+    const { data: newConv, error: convErr } = await supabase
+      .from("wa_conversations")
+      .insert({
+        wa_phone: phone,
+        wa_name: pushName || null,
+        status: "open",
+        channel: "evolution",
+        active_channel_code: "evolution",
+        preferred_channel: "evolution",
+        instance_id: instanceId,
+        unread_count: 1,
+        last_message_at: new Date().toISOString(),
+        last_message_preview: bodyText.slice(0, 200),
+        last_inbound_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+
+    if (convErr) {
+      console.error("❌ Error creating conversation:", convErr.message);
+      return;
+    }
+    conversation = { id: newConv.id };
+    console.log(`🆕 Created conversation ${newConv.id} for +${phone}`);
+  } else {
+    // Update existing conversation
+    const updatePayload: any = {
+      last_message_at: new Date().toISOString(),
+      last_message_preview: bodyText.slice(0, 200),
+      last_inbound_at: new Date().toISOString(),
+      unread_count: (await supabase.rpc("", {}).then(() => 0).catch(() => 0)) || 0,
+    };
+
+    // Update wa_name if we got a pushName and it was empty
+    if (pushName && !conversation.wa_name) {
+      updatePayload.wa_name = pushName;
+    }
+
+    // If conversation is closed, reopen it
+    if (conversation.status === "closed") {
+      updatePayload.status = "open";
+    }
+
+    // Increment unread_count via raw update
+    const { error: updateErr } = await supabase
+      .from("wa_conversations")
+      .update({
+        ...updatePayload,
+        unread_count: supabase.rpc ? 1 : 1, // simplified — just set to 1+ 
+      })
+      .eq("id", conversation.id);
+
+    // Actually increment unread
+    await supabase.rpc("", {}).catch(() => null); // no-op, we'll use SQL below
+
+    // Simple increment via update
+    const { data: currentConv } = await supabase
+      .from("wa_conversations")
+      .select("unread_count")
+      .eq("id", conversation.id)
+      .single();
+
+    await supabase
+      .from("wa_conversations")
+      .update({
+        last_message_at: new Date().toISOString(),
+        last_message_preview: bodyText.slice(0, 200),
+        last_inbound_at: new Date().toISOString(),
+        unread_count: (currentConv?.unread_count ?? 0) + 1,
+        ...(pushName && !conversation.wa_name ? { wa_name: pushName } : {}),
+        ...(conversation.status === "closed" ? { status: "open" } : {}),
+      })
+      .eq("id", conversation.id);
+
+    console.log(`📝 Updated conversation ${conversation.id}`);
+  }
+
+  // Check for duplicate message
+  const { data: existing } = await supabase
+    .from("wa_messages")
+    .select("id")
+    .eq("meta_message_id", messageId)
+    .maybeSingle();
+
+  if (existing) {
+    console.log(`⏭️ Duplicate message ${messageId}, skipping`);
+    return;
+  }
+
+  // Insert the message
+  const { error: msgErr } = await supabase.from("wa_messages").insert({
+    conversation_id: conversation.id,
+    meta_message_id: messageId,
+    direction: "in",
+    body: bodyText,
+    msg_type: msgType,
+    status: "received",
+    channel: "evolution",
+    instance_id: instanceId,
+    ...(mediaUrl ? { media_url: mediaUrl } : {}),
+    ...(mediaMime ? { media_mime: mediaMime } : {}),
+    ...(mediaFilename ? { media_filename: mediaFilename } : {}),
+  });
+
+  if (msgErr) {
+    console.error("❌ Error inserting message:", msgErr.message);
+  } else {
+    console.log(`✅ Saved inbound message ${messageId} to conversation ${conversation.id}`);
+  }
+}
