@@ -10,15 +10,26 @@ import {
   createInstance,
   getQRCode,
   deleteInstance,
+  getInstanceStatus,
 } from "@/services/evolutionApi";
 import { toast } from "sonner";
-import { Smartphone, Plus, Trash2, Loader2 } from "lucide-react";
+import {
+  Smartphone, Plus, Trash2, Loader2, Wifi, WifiOff,
+  Radio, RefreshCw, MoreVertical, QrCode,
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import QrPreview from "@/components/whatsapp/QrPreview";
 
 interface WaInstance {
@@ -30,6 +41,7 @@ interface WaInstance {
   evolution_instance_name: string;
   created_by: string;
   created_at: string;
+  updated_at: string;
 }
 
 const formSchema = z.object({
@@ -46,15 +58,36 @@ function slugify(text: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-function statusBadge(status: string) {
-  switch (status) {
-    case "connected":
-      return <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0">🟢 Conectado</Badge>;
-    case "qr_pending":
-      return <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-0">🟡 Aguardando QR</Badge>;
-    default:
-      return <Badge variant="outline" className="text-destructive">🔴 Desconectado</Badge>;
-  }
+const STATUS_MAP: Record<string, {
+  label: string;
+  color: string;
+  bgColor: string;
+  icon: typeof Wifi;
+  pulse?: boolean;
+}> = {
+  connected: {
+    label: "Conectado",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-500/10 border-emerald-500/20",
+    icon: Wifi,
+  },
+  qr_pending: {
+    label: "Aguardando QR",
+    color: "text-amber-600 dark:text-amber-400",
+    bgColor: "bg-amber-500/10 border-amber-500/20",
+    icon: Radio,
+    pulse: true,
+  },
+  disconnected: {
+    label: "Desconectado",
+    color: "text-destructive",
+    bgColor: "bg-destructive/5 border-destructive/20",
+    icon: WifiOff,
+  },
+};
+
+function getStatusConfig(status: string) {
+  return STATUS_MAP[status] ?? STATUS_MAP.disconnected;
 }
 
 function handleEvolutionError(err: unknown, fallbackMsg: string) {
@@ -70,12 +103,86 @@ function handleEvolutionError(err: unknown, fallbackMsg: string) {
   toast.error(msg);
 }
 
+function InstanceCard({
+  instance,
+  onDelete,
+  onReconnect,
+  deleting,
+}: {
+  instance: WaInstance;
+  onDelete: () => void;
+  onReconnect: () => void;
+  deleting: boolean;
+}) {
+  const cfg = getStatusConfig(instance.status);
+  const Icon = cfg.icon;
+  const createdAt = new Date(instance.created_at);
+
+  return (
+    <div className="group relative flex items-center gap-3 p-3 rounded-xl border border-border/40 bg-card hover:bg-accent/5 transition-colors">
+      {/* Status indicator dot */}
+      <div className={`relative flex items-center justify-center h-10 w-10 rounded-lg border ${cfg.bgColor}`}>
+        <Icon className={`h-4.5 w-4.5 ${cfg.color} ${cfg.pulse ? "animate-pulse" : ""}`} />
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-semibold truncate">{instance.name}</p>
+          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 border ${cfg.color} ${cfg.bgColor}`}>
+            {cfg.label}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2 mt-0.5">
+          {instance.phone && (
+            <span className="text-xs text-muted-foreground font-mono">{instance.phone}</span>
+          )}
+          <span className="text-[10px] text-muted-foreground/40">
+            {createdAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+          </span>
+          <span className="text-[10px] text-muted-foreground/30 font-mono truncate max-w-[120px]">
+            {instance.evolution_instance_name}
+          </span>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          {instance.status !== "connected" && (
+            <DropdownMenuItem onClick={onReconnect} className="gap-2">
+              <QrCode className="h-3.5 w-3.5" /> Reconectar (QR)
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem
+            onClick={onDelete}
+            disabled={deleting}
+            className="gap-2 text-destructive focus:text-destructive"
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Remover instância
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
 export default function WhatsappInstancesManager() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [pendingInstanceName, setPendingInstanceName] = useState<string | null>(null);
+  const [reconnectingId, setReconnectingId] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -94,7 +201,7 @@ export default function WhatsappInstancesManager() {
     },
   });
 
-  // Realtime subscription — replaces polling
+  // Realtime subscription
   useEffect(() => {
     const channel = supabase
       .channel("whatsapp_instances_changes")
@@ -107,9 +214,7 @@ export default function WhatsappInstancesManager() {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
   // Auto-close dialog when pending instance becomes connected
@@ -117,12 +222,22 @@ export default function WhatsappInstancesManager() {
     if (!pendingInstanceName || !open) return;
     const inst = instances.find((i) => i.evolution_instance_name === pendingInstanceName);
     if (inst?.status === "connected") {
-      toast.success("WhatsApp conectado com sucesso!");
+      toast.success("WhatsApp conectado com sucesso! 🎉");
       setOpen(false);
       setPendingInstanceName(null);
       form.reset();
     }
   }, [instances, pendingInstanceName, open, form]);
+
+  // Auto-close reconnect dialog
+  useEffect(() => {
+    if (!reconnectingId) return;
+    const inst = instances.find((i) => i.id === reconnectingId);
+    if (inst?.status === "connected") {
+      toast.success("Reconectado com sucesso! 🎉");
+      setReconnectingId(null);
+    }
+  }, [instances, reconnectingId]);
 
   const deleteMutation = useMutation({
     mutationFn: async (instance: WaInstance) => {
@@ -152,13 +267,12 @@ export default function WhatsappInstancesManager() {
     try {
       await createInstance(evolutionName);
 
-      // Try to get initial QR from Evolution API
       let qrCode: string | null = null;
       try {
         const { qrcode } = await getQRCode(evolutionName);
         qrCode = qrcode;
       } catch {
-        // QR will arrive via webhook instead
+        // QR will arrive via webhook
       }
 
       await supabase.from("whatsapp_instances").insert({
@@ -178,6 +292,21 @@ export default function WhatsappInstancesManager() {
     }
   }
 
+  async function handleReconnect(instance: WaInstance) {
+    setReconnectingId(instance.id);
+    try {
+      const { qrcode } = await getQRCode(instance.evolution_instance_name);
+      await supabase
+        .from("whatsapp_instances")
+        .update({ status: "qr_pending", qr_code: qrcode || null })
+        .eq("id", instance.id);
+      queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
+    } catch (err) {
+      handleEvolutionError(err, "Erro ao reconectar");
+      setReconnectingId(null);
+    }
+  }
+
   function handleDialogChange(v: boolean) {
     setOpen(v);
     if (!v) {
@@ -187,61 +316,122 @@ export default function WhatsappInstancesManager() {
     }
   }
 
-  // Find the QR for the pending instance
   const pendingInstance = pendingInstanceName
     ? instances.find((i) => i.evolution_instance_name === pendingInstanceName)
     : null;
   const qrData = pendingInstance?.qr_code ?? null;
   const showQr = !!pendingInstanceName;
 
+  const reconnectInstance = reconnectingId
+    ? instances.find((i) => i.id === reconnectingId)
+    : null;
+
+  const connectedCount = instances.filter((i) => i.status === "connected").length;
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Smartphone className="h-5 w-5" />
-          Instâncias WhatsApp (Web)
-        </CardTitle>
-        <CardDescription>Gerencie conexões via Evolution API</CardDescription>
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Smartphone className="h-4.5 w-4.5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Instâncias WhatsApp Web</CardTitle>
+              <CardDescription className="text-xs mt-0.5">
+                {instances.length === 0
+                  ? "Nenhuma instância configurada"
+                  : `${connectedCount}/${instances.length} conectada${connectedCount !== 1 ? "s" : ""}`
+                }
+              </CardDescription>
+            </div>
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] })}
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Atualizar lista</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+
+      <CardContent className="space-y-3 pt-0">
         {isLoading && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
+          <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Carregando instâncias…
+          </div>
+        )}
+
+        {!isLoading && instances.length === 0 && (
+          <div className="flex flex-col items-center gap-2 py-8 text-center">
+            <div className="h-12 w-12 rounded-full bg-muted/30 flex items-center justify-center">
+              <Smartphone className="h-5 w-5 text-muted-foreground/40" />
+            </div>
+            <p className="text-sm text-muted-foreground/60">Nenhuma instância cadastrada</p>
+            <p className="text-xs text-muted-foreground/40">Crie uma para conectar via QR Code</p>
           </div>
         )}
 
         {instances.map((inst) => (
-          <div key={inst.id} className="flex items-center gap-3 py-2">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{inst.name}</p>
-              <p className="text-xs text-muted-foreground">{inst.phone ?? "—"}</p>
-            </div>
-            {statusBadge(inst.status)}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-destructive hover:text-destructive"
-              onClick={() => deleteMutation.mutate(inst)}
-              disabled={deleteMutation.isPending}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+          <InstanceCard
+            key={inst.id}
+            instance={inst}
+            onDelete={() => deleteMutation.mutate(inst)}
+            onReconnect={() => handleReconnect(inst)}
+            deleting={deleteMutation.isPending}
+          />
         ))}
 
-        {!isLoading && instances.length === 0 && (
-          <p className="text-sm text-muted-foreground">Nenhuma instância cadastrada.</p>
+        {/* Reconnect QR dialog */}
+        {reconnectInstance && reconnectInstance.status !== "connected" && (
+          <Dialog open={!!reconnectingId} onOpenChange={(v) => !v && setReconnectingId(null)}>
+            <DialogContent className="sm:max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Reconectar: {reconnectInstance.name}</DialogTitle>
+                <DialogDescription>
+                  Escaneie o QR Code para reconectar esta instância.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col items-center gap-4 py-4">
+                {reconnectInstance.qr_code ? (
+                  <QrPreview value={reconnectInstance.qr_code} size={240} />
+                ) : (
+                  <div className="flex flex-col items-center gap-2" style={{ width: 240, height: 240 }}>
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">Aguardando QR Code…</p>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Aguardando leitura do QR…
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
 
+        {/* New instance dialog */}
         <Dialog open={open} onOpenChange={handleDialogChange}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="w-full">
-              <Plus className="h-4 w-4 mr-2" /> Nova Instância
+            <Button variant="outline" size="sm" className="w-full gap-2">
+              <Plus className="h-4 w-4" /> Nova Instância
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Nova Instância WhatsApp</DialogTitle>
+              <DialogDescription>
+                Informe um nome e escaneie o QR Code para conectar.
+              </DialogDescription>
             </DialogHeader>
 
             {!showQr ? (
@@ -260,8 +450,9 @@ export default function WhatsappInstancesManager() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full" disabled={creating}>
-                    {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  <Button type="submit" className="w-full gap-2" disabled={creating}>
+                    {creating && <Loader2 className="h-4 w-4 animate-spin" />}
+                    <QrCode className="h-4 w-4" />
                     Criar e gerar QR Code
                   </Button>
                 </form>
@@ -269,7 +460,7 @@ export default function WhatsappInstancesManager() {
             ) : (
               <div className="flex flex-col items-center gap-4 py-4">
                 <p className="text-sm text-muted-foreground text-center">
-                  Escaneie o QR Code com o WhatsApp no celular
+                  Abra o WhatsApp no celular → Menu (⋮) → Aparelhos conectados → Conectar
                 </p>
                 {qrData ? (
                   <QrPreview value={qrData} size={256} />
