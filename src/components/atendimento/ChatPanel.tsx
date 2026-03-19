@@ -786,13 +786,15 @@ export function ChatPanel({
                   variant="outline"
                   className={cn(
                     "text-[9px] h-5 gap-1 px-1.5 font-medium border-border/20",
-                    channel === "web_manual_team"
+                    channel === "evolution"
                       ? "text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/5"
-                      : "text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/5"
+                      : channel === "web_manual_team"
+                        ? "text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/5"
+                        : "text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/5"
                   )}
                 >
-                  {channel === "web_manual_team" ? <Globe className="h-3 w-3" /> : <Smartphone className="h-3 w-3" />}
-                  {channel === "web_manual_team" ? "Web Manual" : "Oficial"}
+                  {channel === "evolution" ? <Globe className="h-3 w-3" /> : channel === "web_manual_team" ? <Globe className="h-3 w-3" /> : <Smartphone className="h-3 w-3" />}
+                  {channel === "evolution" ? "WhatsApp Web" : channel === "web_manual_team" ? "Web Manual" : "Oficial"}
                 </Badge>
               </div>
               {ci.subtitle && (
