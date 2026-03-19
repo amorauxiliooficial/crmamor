@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { useDebouncedCallback } from "use-debounce";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useInboundNotification } from "@/hooks/useInboundNotification";
 import { useWaConversations, useWaMessages, useSendWhatsApp, useRetryWhatsApp, useMarkConversationRead, useUpdateConversationStatus, useEditMessage, useAssumeConversation, useTransferConversation, useCloseConversation, useReopenConversation, type WaConversation } from "@/hooks/useWhatsApp";
 import { useConversationEvents, useCreateConversationEvent } from "@/hooks/useConversationEvents";
