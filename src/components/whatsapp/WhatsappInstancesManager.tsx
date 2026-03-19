@@ -5,7 +5,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { MissingEvolutionEnvError } from "@/config/evolutionEnv";
+// Evolution API calls are now proxied through edge function (no CORS issues)
 import {
   createInstance,
   getQRCode,
@@ -91,14 +91,6 @@ function getStatusConfig(status: string) {
 }
 
 function handleEvolutionError(err: unknown, fallbackMsg: string) {
-  if (err instanceof MissingEvolutionEnvError) {
-    toast.error("Integração com Evolution não configurada.", {
-      description:
-        "No Lovable: Settings → Workspace → Build secrets. Adicione VITE_EVOLUTION_API_URL e VITE_EVOLUTION_API_KEY e depois faça Rebuild/Restart do Preview.",
-      duration: 10000,
-    });
-    return;
-  }
   const msg = err instanceof Error ? err.message : fallbackMsg;
   toast.error(msg);
 }
@@ -243,8 +235,8 @@ export default function WhatsappInstancesManager() {
     mutationFn: async (instance: WaInstance) => {
       try {
         await deleteInstance(instance.evolution_instance_name);
-      } catch (err) {
-        if (err instanceof MissingEvolutionEnvError) throw err;
+      } catch {
+        // Instance may already be deleted on Evolution side
       }
       const { error } = await supabase
         .from("whatsapp_instances")
