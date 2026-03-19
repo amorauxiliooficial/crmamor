@@ -5,7 +5,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { MissingEvolutionEnvError } from "@/config/evolutionEnv";
+// Evolution API calls are now proxied through edge function (no CORS issues)
 import {
   createInstance,
   getQRCode,
