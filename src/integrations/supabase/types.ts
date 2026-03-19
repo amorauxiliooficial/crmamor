@@ -467,26 +467,41 @@ export type Database = {
         Row: {
           conversation_id: string
           created_at: string
-          from_agent_id: string
+          from_agent_id: string | null
+          from_channel_code: string | null
+          from_instance_id: string | null
           id: string
           reason: string | null
-          to_agent_id: string
+          to_agent_id: string | null
+          to_channel_code: string | null
+          to_instance_id: string | null
+          triggered_by: string | null
         }
         Insert: {
           conversation_id: string
           created_at?: string
-          from_agent_id: string
+          from_agent_id?: string | null
+          from_channel_code?: string | null
+          from_instance_id?: string | null
           id?: string
           reason?: string | null
-          to_agent_id: string
+          to_agent_id?: string | null
+          to_channel_code?: string | null
+          to_instance_id?: string | null
+          triggered_by?: string | null
         }
         Update: {
           conversation_id?: string
           created_at?: string
-          from_agent_id?: string
+          from_agent_id?: string | null
+          from_channel_code?: string | null
+          from_instance_id?: string | null
           id?: string
           reason?: string | null
-          to_agent_id?: string
+          to_agent_id?: string | null
+          to_channel_code?: string | null
+          to_instance_id?: string | null
+          triggered_by?: string | null
         }
         Relationships: [
           {
@@ -494,6 +509,20 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "wa_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_transfers_from_instance_id_fkey"
+            columns: ["from_instance_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_transfers_to_instance_id_fkey"
+            columns: ["to_instance_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_instances"
             referencedColumns: ["id"]
           },
         ]
