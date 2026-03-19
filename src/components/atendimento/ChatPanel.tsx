@@ -510,7 +510,12 @@ export function ChatPanel({
     return inboundFromMessages > dbLastInbound ? inboundFromMessages : dbLastInbound;
   }, [lastInboundAt, mensagens]);
 
-  const windowStatus = useWindowStatus(effectiveLastInboundAt);
+  const rawWindowStatus = useWindowStatus(effectiveLastInboundAt);
+  // Evolution/WhatsApp Web channel doesn't have the 24h window restriction
+  const isEvolutionChannel = channel === "evolution";
+  const windowStatus = isEvolutionChannel
+    ? { isOpen: true, expiresAt: rawWindowStatus.expiresAt, remainingMs: rawWindowStatus.remainingMs }
+    : rawWindowStatus;
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [quickReplyIndex, setQuickReplyIndex] = useState(0);
   const [aiLoading, setAiLoading] = useState<AiAction | null>(null);
