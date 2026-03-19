@@ -630,7 +630,7 @@ export default function Atendimento() {
                   contactPhone={selectedWa.wa_phone}
                   contactName={selectedWa.wa_name}
                   onTransferred={() => {
-                    // Force refetch conversations after transfer
+                    queryClient.invalidateQueries({ queryKey: ["wa-conversations"] });
                   }}
                 />
               )}
