@@ -100,7 +100,7 @@ export async function transferConversationToEvolution(
       .from("wa_conversations")
       .update({
         active_channel_code: "evolution",
-        preferred_channel: "evolution",
+        preferred_channel: "whatsapp_web",
         instance_id: instanceId,
         labels: newLabels,
         status: conv.status === "closed" ? "open" : conv.status,
