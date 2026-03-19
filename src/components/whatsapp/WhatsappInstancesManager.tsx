@@ -330,6 +330,7 @@ export default function WhatsappInstancesManager() {
 
       queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
       setPendingInstanceName(evolutionName);
+      startPolling(evolutionName);
     } catch (err) {
       handleEvolutionError(err, "Falha ao criar instância");
     } finally {
