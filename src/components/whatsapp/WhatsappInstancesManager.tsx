@@ -173,6 +173,7 @@ export default function WhatsappInstancesManager() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [pendingInstanceName, setPendingInstanceName] = useState<string | null>(null);
   const [reconnectingId, setReconnectingId] = useState<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -193,6 +194,92 @@ export default function WhatsappInstancesManager() {
       return (data ?? []) as WaInstance[];
     },
   });
+
+  const normalizeConnectionStatus = (status?: string | null): WaInstance["status"] => {
+    const value = status?.toLowerCase();
+
+    if (value === "open" || value === "connected") return "connected";
+    if (value === "connecting" || value === "qr_pending" || value === "qrcode") return "qr_pending";
+    return "disconnected";
+  };
+
+  const syncInstancesStatus = useCallback(async () => {
+    if (syncing) return;
+
+    setSyncing(true);
+    try {
+      let removedCount = 0;
+      let updatedCount = 0;
+
+      await Promise.all(
+        instances.map(async (instance) => {
+          try {
+            const { status } = await getInstanceStatus(instance.evolution_instance_name);
+            const normalizedStatus = normalizeConnectionStatus(status);
+            const nextPayload: Partial<WaInstance> = {};
+
+            if (instance.status !== normalizedStatus) {
+              nextPayload.status = normalizedStatus;
+            }
+
+            if (normalizedStatus === "connected" && instance.qr_code) {
+              nextPayload.qr_code = null;
+            }
+
+            if (Object.keys(nextPayload).length > 0) {
+              const { error } = await supabase
+                .from("whatsapp_instances")
+                .update(nextPayload)
+                .eq("id", instance.id);
+
+              if (error) throw error;
+              updatedCount += 1;
+            }
+          } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            const missingOnServer = message.includes("404") || message.includes("does not exist");
+
+            if (missingOnServer) {
+              const { error } = await supabase
+                .from("whatsapp_instances")
+                .delete()
+                .eq("id", instance.id);
+
+              if (error) throw error;
+              removedCount += 1;
+              return;
+            }
+
+            if (instance.status !== "disconnected") {
+              const { error } = await supabase
+                .from("whatsapp_instances")
+                .update({ status: "disconnected" })
+                .eq("id", instance.id);
+
+              if (error) throw error;
+              updatedCount += 1;
+            }
+          }
+        })
+      );
+
+      await queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] });
+
+      if (removedCount > 0) {
+        toast.success(
+          `${removedCount} instância${removedCount > 1 ? "s" : ""} removida${removedCount > 1 ? "s" : ""} do sistema.`
+        );
+      } else if (updatedCount > 0) {
+        toast.success("Status das instâncias atualizado.");
+      } else {
+        toast.success("Instâncias verificadas.");
+      }
+    } catch (err) {
+      handleEvolutionError(err, "Erro ao verificar instâncias");
+    } finally {
+      setSyncing(false);
+    }
+  }, [instances, queryClient, syncing]);
 
   // Realtime subscription
   useEffect(() => {
@@ -236,11 +323,10 @@ export default function WhatsappInstancesManager() {
 
       try {
         const { status } = await getInstanceStatus(evolutionName);
-        if (status === "open") {
+        if (normalizeConnectionStatus(status) === "connected") {
           if (pollingRef.current) clearInterval(pollingRef.current);
           pollingRef.current = null;
 
-          // Update DB
           const updateFilter = instanceId
             ? supabase.from("whatsapp_instances").update({ status: "connected", qr_code: null }).eq("id", instanceId)
             : supabase.from("whatsapp_instances").update({ status: "connected", qr_code: null }).eq("evolution_instance_name", evolutionName);
@@ -284,6 +370,7 @@ export default function WhatsappInstancesManager() {
       setReconnectingId(null);
     }
   }, [instances, reconnectingId]);
+
   const deleteMutation = useMutation({
     mutationFn: async (instance: WaInstance) => {
       try {
@@ -291,6 +378,7 @@ export default function WhatsappInstancesManager() {
       } catch {
         // Instance may already be deleted on Evolution side
       }
+
       const { error } = await supabase
         .from("whatsapp_instances")
         .delete()
@@ -402,12 +490,13 @@ export default function WhatsappInstancesManager() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => queryClient.invalidateQueries({ queryKey: ["whatsapp_instances"] })}
+                  onClick={() => void syncInstancesStatus()}
+                  disabled={syncing}
                 >
-                  <RefreshCw className="h-3.5 w-3.5" />
+                  <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Atualizar lista</TooltipContent>
+              <TooltipContent>Verificar status real</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
@@ -440,7 +529,6 @@ export default function WhatsappInstancesManager() {
           />
         ))}
 
-        {/* Reconnect QR dialog */}
         {reconnectInstance && reconnectInstance.status !== "connected" && (
           <Dialog open={!!reconnectingId} onOpenChange={(v) => !v && setReconnectingId(null)}>
             <DialogContent className="sm:max-w-sm">
@@ -468,7 +556,6 @@ export default function WhatsappInstancesManager() {
           </Dialog>
         )}
 
-        {/* New instance dialog */}
         <Dialog open={open} onOpenChange={handleDialogChange}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" className="w-full gap-2">
