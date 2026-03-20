@@ -186,7 +186,8 @@ serve(async (req: Request): Promise<Response> => {
       responseJson = { raw: responseText };
     }
 
-    if (!evoRes.ok) {
+    // For deleteInstance, treat 404 as success (instance already gone)
+    if (!evoRes.ok && !(action === "deleteInstance" && evoRes.status === 404)) {
       console.error(`❌ Evolution ${evoRes.status}: ${responseText.slice(0, 300)}`);
       return toJson(
         { error: `Evolution API error (${evoRes.status})`, details: responseJson },
