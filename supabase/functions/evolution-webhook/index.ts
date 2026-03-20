@@ -15,12 +15,14 @@ serve(async (req: Request): Promise<Response> => {
     return new Response("Method not allowed", { status: 405, headers: corsHeaders });
   }
 
+  const url = new URL(req.url);
+
   // Validate webhook secret
   const expectedSecret = Deno.env.get("EVOLUTION_WEBHOOK_SECRET");
-  const receivedSecret = req.headers.get("x-webhook-secret");
+  const receivedSecret = req.headers.get("x-webhook-secret") ?? url.searchParams.get("secret");
 
   if (!expectedSecret || receivedSecret !== expectedSecret) {
-    console.warn("❌ Invalid or missing x-webhook-secret");
+    console.warn("❌ Invalid or missing Evolution webhook secret");
     return new Response("Forbidden", { status: 403, headers: corsHeaders });
   }
 
@@ -34,7 +36,6 @@ serve(async (req: Request): Promise<Response> => {
     const body = await req.json();
 
     // Determine event type from path (webhook_by_events=true) or body
-    const url = new URL(req.url);
     const pathSegments = url.pathname.split("/").filter(Boolean);
     const lastSegment = pathSegments[pathSegments.length - 1];
 
@@ -112,7 +113,6 @@ serve(async (req: Request): Promise<Response> => {
         }
       }
     } else if (eventType === "MESSAGES_UPSERT" || eventType === "MESSAGES_UPDATE") {
-      // ====== INBOUND MESSAGE HANDLING ======
       await handleInboundMessage(supabase, body, instanceName);
     } else {
       console.log(`ℹ️ Unhandled event: ${eventType}`);
@@ -131,13 +131,11 @@ serve(async (req: Request): Promise<Response> => {
   }
 });
 
-// ====== Inbound message processor ======
 async function handleInboundMessage(
   supabase: any,
   body: any,
   instanceName: string,
 ) {
-  // Evolution v2 sends messages as body.data or body.data[0]
   const msgData = Array.isArray(body.data) ? body.data[0] : body.data;
   if (!msgData) {
     console.warn("⚠️ MESSAGES_UPSERT but no message data");
@@ -149,26 +147,22 @@ async function handleInboundMessage(
   const remoteJid: string = key.remoteJid ?? "";
   const messageId: string = key.id ?? "";
 
-  // Skip outgoing messages (we already saved those from whatsapp-send)
   if (fromMe) {
     console.log(`⏭️ Skipping outgoing message ${messageId}`);
     return;
   }
 
-  // Skip group messages
   if (remoteJid.includes("@g.us")) {
     console.log(`⏭️ Skipping group message from ${remoteJid}`);
     return;
   }
 
-  // Extract phone number from remoteJid (format: 5511999999999@s.whatsapp.net)
   const phone = remoteJid.replace(/@.*$/, "");
   if (!phone || phone.length < 8) {
     console.warn(`⚠️ Invalid phone from remoteJid: ${remoteJid}`);
     return;
   }
 
-  // Extract message content
   const message = msgData.message ?? {};
   const pushName: string = msgData.pushName ?? "";
 
@@ -213,7 +207,6 @@ async function handleInboundMessage(
 
   console.log(`📨 Inbound from +${phone} via ${instanceName}: ${msgType} — "${bodyText.slice(0, 60)}"`);
 
-  // Look up the whatsapp_instances record to get instance_id
   const { data: instance } = await supabase
     .from("whatsapp_instances")
     .select("id")
@@ -222,14 +215,13 @@ async function handleInboundMessage(
 
   const instanceId: string | null = instance?.id ?? null;
 
-  // Find existing conversation by phone (try with and without +)
   const phoneVariants = [phone, `+${phone}`];
   let conversation: any = null;
 
   for (const pv of phoneVariants) {
     const { data } = await supabase
       .from("wa_conversations")
-      .select("id, status, wa_name, active_channel_code, instance_id")
+      .select("id, status, wa_name, unread_count")
       .eq("wa_phone", pv)
       .order("last_message_at", { ascending: false })
       .limit(1)
@@ -242,14 +234,13 @@ async function handleInboundMessage(
   }
 
   if (!conversation) {
-    // Create new conversation for this Evolution inbound
     const { data: newConv, error: convErr } = await supabase
       .from("wa_conversations")
       .insert({
         wa_phone: phone,
         wa_name: pushName || null,
         status: "open",
-        channel: "evolution",
+        channel: "whatsapp_web",
         active_channel_code: "evolution",
         preferred_channel: "evolution",
         instance_id: instanceId,
@@ -265,62 +256,30 @@ async function handleInboundMessage(
       console.error("❌ Error creating conversation:", convErr.message);
       return;
     }
-    conversation = { id: newConv.id };
+
+    conversation = { id: newConv.id, unread_count: 1 };
     console.log(`🆕 Created conversation ${newConv.id} for +${phone}`);
   } else {
-    // Update existing conversation
-    const updatePayload: any = {
-      last_message_at: new Date().toISOString(),
-      last_message_preview: bodyText.slice(0, 200),
-      last_inbound_at: new Date().toISOString(),
-      unread_count: (await supabase.rpc("", {}).then(() => 0).catch(() => 0)) || 0,
-    };
-
-    // Update wa_name if we got a pushName and it was empty
-    if (pushName && !conversation.wa_name) {
-      updatePayload.wa_name = pushName;
-    }
-
-    // If conversation is closed, reopen it
-    if (conversation.status === "closed") {
-      updatePayload.status = "open";
-    }
-
-    // Increment unread_count via raw update
     const { error: updateErr } = await supabase
-      .from("wa_conversations")
-      .update({
-        ...updatePayload,
-        unread_count: supabase.rpc ? 1 : 1, // simplified — just set to 1+ 
-      })
-      .eq("id", conversation.id);
-
-    // Actually increment unread
-    await supabase.rpc("", {}).catch(() => null); // no-op, we'll use SQL below
-
-    // Simple increment via update
-    const { data: currentConv } = await supabase
-      .from("wa_conversations")
-      .select("unread_count")
-      .eq("id", conversation.id)
-      .single();
-
-    await supabase
       .from("wa_conversations")
       .update({
         last_message_at: new Date().toISOString(),
         last_message_preview: bodyText.slice(0, 200),
         last_inbound_at: new Date().toISOString(),
-        unread_count: (currentConv?.unread_count ?? 0) + 1,
+        unread_count: (conversation.unread_count ?? 0) + 1,
         ...(pushName && !conversation.wa_name ? { wa_name: pushName } : {}),
         ...(conversation.status === "closed" ? { status: "open" } : {}),
       })
       .eq("id", conversation.id);
 
+    if (updateErr) {
+      console.error("❌ Error updating conversation:", updateErr.message);
+      return;
+    }
+
     console.log(`📝 Updated conversation ${conversation.id}`);
   }
 
-  // Check for duplicate message
   const { data: existing } = await supabase
     .from("wa_messages")
     .select("id")
@@ -332,7 +291,6 @@ async function handleInboundMessage(
     return;
   }
 
-  // Insert the message
   const { error: msgErr } = await supabase.from("wa_messages").insert({
     conversation_id: conversation.id,
     meta_message_id: messageId,
@@ -340,7 +298,7 @@ async function handleInboundMessage(
     body: bodyText,
     msg_type: msgType,
     status: "received",
-    channel: "evolution",
+    channel: "whatsapp_web",
     instance_id: instanceId,
     ...(mediaUrl ? { media_url: mediaUrl } : {}),
     ...(mediaMime ? { media_mime: mediaMime } : {}),

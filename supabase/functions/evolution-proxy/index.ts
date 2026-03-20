@@ -7,11 +7,73 @@ const corsHeaders: Record<string, string> = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const WEBHOOK_EVENTS = [
+  "QRCODE_UPDATED",
+  "CONNECTION_UPDATE",
+  "MESSAGES_UPSERT",
+  "MESSAGES_UPDATE",
+];
+
 function toJson(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function buildEvolutionHeaders(apiKey: string) {
+  return {
+    "Content-Type": "application/json",
+    apikey: apiKey,
+    Authorization: `Bearer ${apiKey}`,
+  };
+}
+
+async function ensureWebhookConfigured(params: {
+  baseUrl: string;
+  apiKey: string;
+  instanceName: string;
+  supabaseUrl: string;
+  webhookSecret?: string | null;
+}) {
+  const { baseUrl, apiKey, instanceName, supabaseUrl, webhookSecret } = params;
+
+  if (!webhookSecret) {
+    console.warn(`⚠️ EVOLUTION_WEBHOOK_SECRET missing, skipping webhook setup for ${instanceName}`);
+    return;
+  }
+
+  const webhookUrl = `${supabaseUrl.replace(/\/+$/, "")}/functions/v1/evolution-webhook?secret=${encodeURIComponent(webhookSecret)}`;
+  const webhookEndpoint = `${baseUrl}/webhook/set/${encodeURIComponent(instanceName)}`;
+
+  const response = await fetch(webhookEndpoint, {
+    method: "POST",
+    headers: buildEvolutionHeaders(apiKey),
+    body: JSON.stringify({
+      enabled: true,
+      url: webhookUrl,
+      webhookByEvents: false,
+      webhookBase64: false,
+      events: WEBHOOK_EVENTS,
+    }),
+  });
+
+  const responseText = await response.text();
+  let responseJson: unknown = null;
+
+  try {
+    responseJson = responseText ? JSON.parse(responseText) : null;
+  } catch {
+    responseJson = { raw: responseText };
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Webhook setup failed (${response.status}): ${JSON.stringify(responseJson).slice(0, 300)}`,
+    );
+  }
+
+  console.log(`✅ Evolution webhook configured for ${instanceName}: ${webhookUrl}`);
 }
 
 serve(async (req: Request): Promise<Response> => {
@@ -38,6 +100,7 @@ serve(async (req: Request): Promise<Response> => {
   // Evolution env
   const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL");
   const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
+  const EVOLUTION_WEBHOOK_SECRET = Deno.env.get("EVOLUTION_WEBHOOK_SECRET");
 
   if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
     return toJson({ error: "Evolution API not configured on server" }, 500);
@@ -100,7 +163,7 @@ serve(async (req: Request): Promise<Response> => {
         method = "POST";
         evoBody = JSON.stringify({
           number: phone.replace(/^\+/, ""),
-          text: text,
+          text,
         });
         break;
 
@@ -112,11 +175,7 @@ serve(async (req: Request): Promise<Response> => {
 
     const evoRes = await fetch(evoUrl, {
       method,
-      headers: {
-        "Content-Type": "application/json",
-        apikey: EVOLUTION_API_KEY,
-        Authorization: `Bearer ${EVOLUTION_API_KEY}`,
-      },
+      headers: buildEvolutionHeaders(EVOLUTION_API_KEY),
       ...(evoBody ? { body: evoBody } : {}),
     });
 
@@ -134,6 +193,25 @@ serve(async (req: Request): Promise<Response> => {
         { error: `Evolution API error (${evoRes.status})`, details: responseJson },
         evoRes.status >= 500 ? 502 : evoRes.status,
       );
+    }
+
+    if (
+      instanceName &&
+      ["createInstance", "connect", "connectionState", "sendText"].includes(action)
+    ) {
+      try {
+        await ensureWebhookConfigured({
+          baseUrl,
+          apiKey: EVOLUTION_API_KEY,
+          instanceName,
+          supabaseUrl,
+          webhookSecret: EVOLUTION_WEBHOOK_SECRET,
+        });
+      } catch (error) {
+        console.warn(
+          `⚠️ Failed to configure webhook for ${instanceName}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
     }
 
     return toJson(responseJson);
