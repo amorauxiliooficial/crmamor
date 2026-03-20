@@ -91,9 +91,8 @@ serve(async (req: Request): Promise<Response> => {
     global: { headers: { Authorization: authHeader } },
   });
 
-  const token = authHeader.replace("Bearer ", "");
-  const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-  if (claimsError || !claimsData?.claims) {
+  const { data: userData, error: userError } = await userClient.auth.getUser();
+  if (userError || !userData?.user) {
     return toJson({ error: "Unauthorized" }, 401);
   }
 
