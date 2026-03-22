@@ -38,7 +38,7 @@ export function getAllowedOrigin(req: Request): string {
 /**
  * Build CORS headers with the dynamic allowed origin.
  */
-export function corsHeaders(req: Request): Record<string, string> {
+export function buildCorsHeaders(req: Request): Record<string, string> {
   return {
     "Access-Control-Allow-Origin": getAllowedOrigin(req),
     "Access-Control-Allow-Headers": DEFAULT_ALLOWED_HEADERS,
