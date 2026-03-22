@@ -276,7 +276,9 @@ async function handleInboundMessage(
   const instanceId: string | null = instance?.id ?? null;
 
   // Find existing conversation by phone (try multiple formats)
-  const phoneVariants = [phone, `+${phone}`];
+  const phoneVariants = isLid
+    ? [storedPhone, phone] // LID: try full JID first, then raw number
+    : [phone, `+${phone}`]; // Normal phone: try raw, then with +
   let conversation: any = null;
 
   for (const pv of phoneVariants) {
