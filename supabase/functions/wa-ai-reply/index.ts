@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
 import { buildCorsHeaders } from "../_shared/cors.ts";
 
+let corsHeaders: Record<string, string> = {};
 const DEFAULT_MODEL = "gpt-4o-mini";
 const MAX_HISTORY = 20;
 const DEBOUNCE_SECONDS = 10;
