@@ -1,21 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
-const corsHeaders: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": [
-    "authorization",
-    "x-client-info",
-    "apikey",
-    "content-type",
-    "x-internal-token",
-    "x-supabase-client-platform",
-    "x-supabase-client-platform-version",
-    "x-supabase-client-runtime",
-    "x-supabase-client-runtime-version",
-  ].join(", "),
-};
+import { buildCorsHeaders } from "../_shared/cors.ts";
 
+let corsHeaders: Record<string, string> = {};
 const GRAPH_API_VERSION = "v21.0";
 const DEFAULT_TEMPLATE_NAME = "retomar_atendimento";
 const DEFAULT_TEMPLATE_LANG = "pt_BR";
@@ -162,6 +150,7 @@ async function uploadMediaToMeta(params: {
 /** ---------- handler ---------- */
 
 serve(async (req: Request): Promise<Response> => {
+  corsHeaders = buildCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: corsHeaders });
 
