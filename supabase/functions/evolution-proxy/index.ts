@@ -14,6 +14,21 @@ const WEBHOOK_EVENTS = [
   "MESSAGES_UPDATE",
 ];
 
+function buildWebhookPayload(webhookUrl: string) {
+  const config = {
+    enabled: true,
+    url: webhookUrl,
+    webhookByEvents: false,
+    webhookBase64: false,
+    events: WEBHOOK_EVENTS,
+  };
+
+  return {
+    ...config,
+    webhook: config,
+  };
+}
+
 function toJson(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -49,13 +64,7 @@ async function ensureWebhookConfigured(params: {
   const response = await fetch(webhookEndpoint, {
     method: "POST",
     headers: buildEvolutionHeaders(apiKey),
-    body: JSON.stringify({
-      enabled: true,
-      url: webhookUrl,
-      webhookByEvents: false,
-      webhookBase64: false,
-      events: WEBHOOK_EVENTS,
-    }),
+    body: JSON.stringify(buildWebhookPayload(webhookUrl)),
   });
 
   const responseText = await response.text();
