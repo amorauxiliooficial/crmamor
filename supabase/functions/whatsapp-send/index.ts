@@ -287,9 +287,11 @@ serve(async (req: Request): Promise<Response> => {
 
         if (msgType === "text") {
           if (!text) return toJson({ error: 'Missing "text"' }, 400);
+          // For LID contacts, use the full JID; for normal phones, use cleaned number
+          const evoNumber = cleanPhone.includes("@lid") ? cleanPhone : cleanPhone;
           evoEndpoint = `/message/sendText/${instanceName}`;
           evoPayload = {
-            number: cleanPhone,
+            number: evoNumber,
             text: text,
           };
         } else if (msgType === "image" && media_url) {
