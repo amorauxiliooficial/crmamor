@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { corsHeaders } from "../_shared/cors.ts";
+import { buildCorsHeaders } from "../_shared/cors.ts";
 
 const PROMPTS: Record<string, string> = {
   summarize: `Você é um assistente de CRM especializado em processos previdenciários (salário-maternidade).

@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import { corsHeaders } from "../_shared/cors.ts";
+import { buildCorsHeaders } from "../_shared/cors.ts";
 
 // Prompt jurídico fixo - NÃO EDITÁVEL por usuários (apenas admin no código)
 const PROMPT_ANALISE_ELEGIBILIDADE = `Você é um especialista jurídico em direito previdenciário brasileiro, especializado em análise de elegibilidade para salário-maternidade.
