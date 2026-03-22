@@ -246,10 +246,12 @@ serve(async (req: Request): Promise<Response> => {
 
     if (!to) return toJson({ error: 'Missing "to"' }, 400);
 
-    const cleanPhone = normalizePhone(to);
+    // Detect LID (Line ID) format used by WhatsApp Web for some contacts
+    const isLidContact = String(to).includes("@lid");
+    const cleanPhone = isLidContact ? String(to) : normalizePhone(to);
     const msgType = String(type || "text");
 
-    console.log(`📤 Sending ${msgType} to +${cleanPhone} (internal=${isInternal})`);
+    console.log(`📤 Sending ${msgType} to ${cleanPhone} (internal=${isInternal}, lid=${isLidContact})`);
 
     // ====== EVOLUTION API ROUTING ======
     // Check if conversation uses Evolution channel
