@@ -1,0 +1,1 @@
+UPDATE wa_conversations SET wa_phone = '163122874683622@lid' WHERE id = 'bf86616a-3b2c-49c0-87ac-622fac7bfefb' AND wa_phone = '163122874683622';

@@ -194,17 +194,22 @@ async function handleInboundMessage(
     return;
   }
 
-  // Handle status updates (like "read" receipts)
-  if (remoteJid.includes("@s.whatsapp.net") === false && !remoteJid) {
+  if (!remoteJid) {
     console.warn(`⚠️ Invalid remoteJid: ${remoteJid}`);
     return;
   }
 
+  // Detect LID (Line ID) format: 163122874683622@lid
+  const isLid = remoteJid.includes("@lid");
   const phone = remoteJid.replace(/@.*$/, "");
   if (!phone || phone.length < 8) {
     console.warn(`⚠️ Invalid phone from remoteJid: ${remoteJid}`);
     return;
   }
+
+  // For LID contacts, store the full JID so we can use it to send messages back
+  const storedPhone = isLid ? remoteJid : phone;
+  console.log(`📱 Contact: ${storedPhone} (isLid=${isLid})`);
 
   const message = msgData.message ?? {};
   const pushName: string = msgData.pushName ?? "";
@@ -259,7 +264,7 @@ async function handleInboundMessage(
     msgType = "unsupported";
   }
 
-  console.log(`📨 Inbound from +${phone} via ${instanceName}: ${msgType} — "${bodyText.slice(0, 60)}"`);
+  console.log(`📨 Inbound from ${storedPhone} via ${instanceName}: ${msgType} — "${bodyText.slice(0, 60)}"`);
 
   // Get instance ID
   const { data: instance } = await supabase
@@ -271,7 +276,9 @@ async function handleInboundMessage(
   const instanceId: string | null = instance?.id ?? null;
 
   // Find existing conversation by phone (try multiple formats)
-  const phoneVariants = [phone, `+${phone}`];
+  const phoneVariants = isLid
+    ? [storedPhone, phone] // LID: try full JID first, then raw number
+    : [phone, `+${phone}`]; // Normal phone: try raw, then with +
   let conversation: any = null;
 
   for (const pv of phoneVariants) {
@@ -293,7 +300,7 @@ async function handleInboundMessage(
     const { data: newConv, error: convErr } = await supabase
       .from("wa_conversations")
       .insert({
-        wa_phone: phone,
+        wa_phone: storedPhone,
         wa_name: pushName || null,
         status: "open",
         channel: "whatsapp_web",
@@ -314,7 +321,7 @@ async function handleInboundMessage(
     }
 
     conversation = { id: newConv.id, unread_count: 1 };
-    console.log(`🆕 Created conversation ${newConv.id} for +${phone}`);
+    console.log(`🆕 Created conversation ${newConv.id} for ${storedPhone}`);
   } else {
     const updatePayload: any = {
       last_message_at: new Date().toISOString(),

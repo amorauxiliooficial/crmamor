@@ -49,7 +49,7 @@ function waToConversa(wa: WaConversation, profileMap: Map<string, string>): Conv
     id: wa.id,
     nome: wa.wa_name,
     waName: wa.wa_name,
-    telefone: wa.wa_phone.startsWith("+") ? wa.wa_phone : `+${wa.wa_phone}`,
+    telefone: wa.wa_phone.includes("@lid") ? wa.wa_phone : (wa.wa_phone.startsWith("+") ? wa.wa_phone : `+${wa.wa_phone}`),
     ultimaMensagem: wa.last_message_preview ?? "",
     horario: new Date(wa.last_message_at),
     status: statusMap[wa.status] ?? "Aberto",

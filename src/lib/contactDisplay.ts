@@ -24,6 +24,10 @@ export interface ContactDisplayInfo {
  * Output: "(11) 99999-1234"
  */
 function formatE164ToBR(phone: string): string {
+  // Handle LID (Line ID) format from WhatsApp Web
+  if (phone.includes("@lid")) {
+    return "WhatsApp Web";
+  }
   // Strip + and country code 55
   let digits = phone.replace(/\D/g, "");
   if (digits.startsWith("55") && digits.length >= 12) {
