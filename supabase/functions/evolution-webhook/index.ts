@@ -300,7 +300,7 @@ async function handleInboundMessage(
     const { data: newConv, error: convErr } = await supabase
       .from("wa_conversations")
       .insert({
-        wa_phone: phone,
+        wa_phone: storedPhone,
         wa_name: pushName || null,
         status: "open",
         channel: "whatsapp_web",
