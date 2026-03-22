@@ -6,6 +6,7 @@ import { buildCorsHeaders } from "../_shared/cors.ts";
 const GRAPH_API_VERSION = 'v21.0';
 
 serve(async (req: Request): Promise<Response> => {
+  const corsHeaders = buildCorsHeaders(req);
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }

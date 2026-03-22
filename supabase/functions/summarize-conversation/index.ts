@@ -33,6 +33,7 @@ Responda APENAS neste formato, sem introdução.`,
 };
 
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

@@ -150,6 +150,7 @@ async function uploadMediaToMeta(params: {
 /** ---------- handler ---------- */
 
 serve(async (req: Request): Promise<Response> => {
+  corsHeaders = buildCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: corsHeaders });
 

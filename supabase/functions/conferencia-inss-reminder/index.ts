@@ -15,6 +15,7 @@ const RECIPIENTS = [
 const CONFERENCIA_INTERVALO_DIAS = 2;
 
 serve(async (req: Request): Promise<Response> => {
+  const corsHeaders = buildCorsHeaders(req);
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });

@@ -83,6 +83,7 @@ async function ensureWebhookConfigured(params: {
 }
 
 serve(async (req: Request): Promise<Response> => {
+  corsHeaders = buildCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   // Auth check
