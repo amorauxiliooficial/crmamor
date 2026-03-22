@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
 import { buildCorsHeaders } from "../_shared/cors.ts";
 
+let corsHeaders: Record<string, string> = {};
 const WEBHOOK_EVENTS = [
   "QRCODE_UPDATED",
   "CONNECTION_UPDATE",
