@@ -321,7 +321,7 @@ async function handleInboundMessage(
     }
 
     conversation = { id: newConv.id, unread_count: 1 };
-    console.log(`🆕 Created conversation ${newConv.id} for +${phone}`);
+    console.log(`🆕 Created conversation ${newConv.id} for ${storedPhone}`);
   } else {
     const updatePayload: any = {
       last_message_at: new Date().toISOString(),
