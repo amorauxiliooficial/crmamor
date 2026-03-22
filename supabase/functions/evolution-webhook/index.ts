@@ -264,7 +264,7 @@ async function handleInboundMessage(
     msgType = "unsupported";
   }
 
-  console.log(`📨 Inbound from +${phone} via ${instanceName}: ${msgType} — "${bodyText.slice(0, 60)}"`);
+  console.log(`📨 Inbound from ${storedPhone} via ${instanceName}: ${msgType} — "${bodyText.slice(0, 60)}"`);
 
   // Get instance ID
   const { data: instance } = await supabase
