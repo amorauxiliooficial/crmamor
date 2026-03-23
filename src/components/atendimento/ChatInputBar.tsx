@@ -238,7 +238,7 @@ export function ChatInputBar({
 
         <Textarea
           ref={textareaRef}
-          placeholder={!windowIsOpen ? "Janela fechada — use um template" : pendingFile ? "Legenda (opcional)..." : "Mensagem..."}
+          placeholder={!windowIsOpen && channel !== "evolution" ? "Janela fechada — use um template" : pendingFile ? "Legenda (opcional)..." : "Mensagem..."}
           value={msgText}
           onChange={(e) => {
             handleAutoCorrect(e.target.value, msgText);
