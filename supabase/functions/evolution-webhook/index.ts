@@ -197,53 +197,17 @@ async function handleInboundMessage(
     return;
   }
 
-  // Detect LID (Line ID) format: 163122874683622@lid
-  const isLid = remoteJid.includes("@lid");
-  const phone = remoteJid.replace(/@.*$/, "");
+  // Canonical identifiers: wa_jid = full remoteJid, wa_phone = digits only
+  const wa_jid = remoteJid;
+  const wa_phone = remoteJid.replace(/@.*$/, "").replace(/\D/g, "");
 
-  let storedPhone: string;
-
-  if (isLid) {
-    // Log available keys to help identify where the real number lives
-    console.log(`🔍 LID detected. msgData keys: ${Object.keys(msgData).join(",")}`);
-    console.log(`🔍 key keys: ${Object.keys(key).join(",")}`);
-    if (msgData.sender) {
-      console.log(`🔍 msgData.sender keys: ${Object.keys(msgData.sender).join(",")}`);
-    }
-    const participantRaw = msgData?.participant ?? key?.participant;
-    if (participantRaw) console.log(`🔍 participant: ${participantRaw}`);
-    if (msgData?.from) console.log(`🔍 from: ${msgData.from}`);
-
-    // Try to extract a real phone number from alternative fields
-    const candidate: string =
-      msgData?.sender?.id ??
-      msgData?.sender?.jid ??
-      msgData?.participant ??
-      msgData?.from ??
-      key?.participant ??
-      "";
-
-    const candidateDigits = candidate.includes("@")
-      ? candidate.replace(/@.*$/, "").replace(/\D/g, "")
-      : candidate.replace(/\D/g, "");
-
-    if (candidateDigits.length >= 10 && candidateDigits.length <= 15) {
-      storedPhone = candidateDigits;
-      console.log(`📱 LID resolved to real phone: ${storedPhone}`);
-    } else {
-      // Fallback: keep the LID JID so messages can still be routed
-      storedPhone = remoteJid;
-      console.warn(`⚠️ LID sem número real no payload. Usando LID JID: ${remoteJid}`);
-    }
-  } else {
-    if (!phone || phone.length < 8) {
-      console.warn(`⚠️ Invalid phone from remoteJid: ${remoteJid}`);
-      return;
-    }
-    storedPhone = phone;
+  if (wa_phone.length < 10 || wa_phone.length > 15) {
+    console.warn(`⚠️ Invalid phone digits from remoteJid: ${remoteJid} → "${wa_phone}" (${wa_phone.length} digits). Skipping.`);
+    return;
   }
 
-  console.log(`📱 Contact: ${storedPhone} (isLid=${isLid})`);
+  const isLid = remoteJid.includes("@lid");
+  console.log(`📱 Contact: wa_jid=${wa_jid}, wa_phone=${wa_phone}, isLid=${isLid}`);
 
   const message = msgData.message ?? {};
   const pushName: string = msgData.pushName ?? "";
@@ -298,7 +262,7 @@ async function handleInboundMessage(
     msgType = "unsupported";
   }
 
-  console.log(`📨 Inbound from ${storedPhone} via ${instanceName}: ${msgType} — "${bodyText.slice(0, 60)}"`);
+  console.log(`📨 Inbound from ${wa_phone} via ${instanceName}: ${msgType} — "${bodyText.slice(0, 60)}"`);
 
   // Get instance ID
   const { data: instance } = await supabase
@@ -309,24 +273,41 @@ async function handleInboundMessage(
 
   const instanceId: string | null = instance?.id ?? null;
 
-  // Find existing conversation by phone (try multiple formats)
-  const phoneVariants = isLid
-    ? [storedPhone, phone] // LID: try full JID first, then raw number
-    : [phone, `+${phone}`]; // Normal phone: try raw, then with +
+  // === Find existing conversation: wa_jid first, then fallback by wa_phone ===
   let conversation: any = null;
+  let needsJidBackfill = false;
 
-  for (const pv of phoneVariants) {
-    const { data } = await supabase
-      .from("wa_conversations")
-      .select("id, status, wa_name, unread_count")
-      .eq("wa_phone", pv)
-      .order("last_message_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+  // (a) Primary lookup by wa_jid
+  const { data: byJid } = await supabase
+    .from("wa_conversations")
+    .select("id, status, wa_name, unread_count, wa_phone")
+    .eq("wa_jid", wa_jid)
+    .order("last_message_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-    if (data) {
-      conversation = data;
-      break;
+  if (byJid) {
+    conversation = byJid;
+    console.log(`🔍 Found conversation by wa_jid: ${conversation.id}`);
+  } else {
+    // (b) Fallback: search by wa_phone for legacy records without wa_jid
+    const phoneVariants = [wa_phone, `+${wa_phone}`];
+    for (const pv of phoneVariants) {
+      const { data } = await supabase
+        .from("wa_conversations")
+        .select("id, status, wa_name, unread_count, wa_phone")
+        .eq("wa_phone", pv)
+        .is("wa_jid", null)
+        .order("last_message_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        conversation = data;
+        needsJidBackfill = true;
+        console.log(`🔍 Found legacy conversation by wa_phone=${pv}: ${conversation.id} — will backfill wa_jid`);
+        break;
+      }
     }
   }
 
@@ -334,7 +315,8 @@ async function handleInboundMessage(
     const { data: newConv, error: convErr } = await supabase
       .from("wa_conversations")
       .insert({
-        wa_phone: storedPhone,
+        wa_jid: wa_jid,
+        wa_phone: wa_phone,
         wa_name: pushName || null,
         status: "open",
         channel: "whatsapp_web",
@@ -355,9 +337,11 @@ async function handleInboundMessage(
     }
 
     conversation = { id: newConv.id, unread_count: 1 };
-    console.log(`🆕 Created conversation ${newConv.id} for ${storedPhone}`);
+    console.log(`🆕 Created conversation ${newConv.id} for wa_jid=${wa_jid} wa_phone=${wa_phone}`);
   } else {
     const updatePayload: any = {
+      wa_jid: wa_jid,
+      wa_phone: wa_phone,
       last_message_at: new Date().toISOString(),
       last_message_preview: bodyText.slice(0, 200),
       last_inbound_at: new Date().toISOString(),
@@ -390,7 +374,7 @@ async function handleInboundMessage(
       return;
     }
 
-    console.log(`📝 Updated conversation ${conversation.id}`);
+    console.log(`📝 Updated conversation ${conversation.id}${needsJidBackfill ? " (backfilled wa_jid)" : ""}`);
   }
 
   // Check for duplicate message

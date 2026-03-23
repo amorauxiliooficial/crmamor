@@ -1913,6 +1913,7 @@ export type Database = {
           status: string
           unread_count: number
           updated_at: string
+          wa_jid: string | null
           wa_name: string | null
           wa_phone: string
         }
@@ -1938,6 +1939,7 @@ export type Database = {
           status?: string
           unread_count?: number
           updated_at?: string
+          wa_jid?: string | null
           wa_name?: string | null
           wa_phone: string
         }
@@ -1963,6 +1965,7 @@ export type Database = {
           status?: string
           unread_count?: number
           updated_at?: string
+          wa_jid?: string | null
           wa_name?: string | null
           wa_phone?: string
         }
