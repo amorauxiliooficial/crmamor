@@ -154,7 +154,7 @@ export function ChatInputBar({
       )}
 
       {/* Window closed banner */}
-      {!windowIsOpen && (
+      {!windowIsOpen && channel !== "evolution" && (
         <div className="mx-4 mt-2 mb-1 p-2.5 bg-destructive/5 border border-destructive/10 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
           <Lock className="h-4 w-4 text-destructive/60 shrink-0" />
           <div className="flex-1 min-w-0">
@@ -238,7 +238,7 @@ export function ChatInputBar({
 
         <Textarea
           ref={textareaRef}
-          placeholder={!windowIsOpen ? "Janela fechada — use um template" : pendingFile ? "Legenda (opcional)..." : "Mensagem..."}
+          placeholder={!windowIsOpen && channel !== "evolution" ? "Janela fechada — use um template" : pendingFile ? "Legenda (opcional)..." : "Mensagem..."}
           value={msgText}
           onChange={(e) => {
             handleAutoCorrect(e.target.value, msgText);
@@ -246,14 +246,14 @@ export function ChatInputBar({
             e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
           }}
           onKeyDown={handleKeyDown}
-          disabled={!windowIsOpen}
+          disabled={!windowIsOpen && channel !== "evolution"}
           spellCheck={true}
           autoComplete="off"
           autoCapitalize="sentences"
           lang="pt-BR"
           className={cn(
             "min-h-[42px] max-h-[120px] resize-none text-[14px] flex-1 rounded-xl bg-muted/10 border-border/10 focus-visible:border-primary/20 focus-visible:bg-background transition-all",
-            (!windowIsOpen || isSending) && "opacity-50 cursor-not-allowed"
+            ((!windowIsOpen && channel !== "evolution") || isSending) && "opacity-50 cursor-not-allowed"
           )}
           rows={1}
         />
@@ -272,7 +272,7 @@ export function ChatInputBar({
                 onSend();
               }
             }}
-            disabled={(!msgText.trim() && !pendingFile) || !windowIsOpen || isSending}
+            disabled={(!msgText.trim() && !pendingFile) || (!windowIsOpen && channel !== "evolution") || isSending}
             className="shrink-0 rounded-xl h-10 w-10"
           >
             <Send className="h-4 w-4" />

@@ -114,7 +114,9 @@ export function ChatConversationHeader({
         <div className="flex items-center gap-2">
           <p className="font-semibold text-[15px] truncate">{ci.displayName}</p>
           <span className={cn("h-2 w-2 rounded-full shrink-0", connectionDot)} />
-          <WindowBadge lastInboundAt={effectiveLastInboundAt} onSendTemplate={onOpenTemplateDialog} />
+          {channel !== "evolution" && (
+            <WindowBadge lastInboundAt={effectiveLastInboundAt} onSendTemplate={onOpenTemplateDialog} />
+          )}
           <ConsumptionBadge conversationId={conversa.id} lastInboundAt={effectiveLastInboundAt} />
           <Badge
             variant="outline"
