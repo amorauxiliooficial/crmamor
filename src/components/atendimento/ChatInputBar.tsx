@@ -154,7 +154,7 @@ export function ChatInputBar({
       )}
 
       {/* Window closed banner */}
-      {!windowIsOpen && (
+      {!windowIsOpen && channel !== "evolution" && (
         <div className="mx-4 mt-2 mb-1 p-2.5 bg-destructive/5 border border-destructive/10 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
           <Lock className="h-4 w-4 text-destructive/60 shrink-0" />
           <div className="flex-1 min-w-0">
