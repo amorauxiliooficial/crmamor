@@ -286,6 +286,11 @@ export function InboxSidebar({
                     {naoLidasCount}
                   </span>
                 )}
+                {tab.value === "finalizadas" && finalizadasCount > 0 && (
+                  <span className="ml-1 bg-muted-foreground/30 text-white text-[9px] rounded-full px-1.5 font-bold">
+                    {finalizadasCount}
+                  </span>
+                )}
               </button>
             );
           })}
