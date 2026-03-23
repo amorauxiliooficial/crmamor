@@ -419,17 +419,20 @@ serve(async (req: Request): Promise<Response> => {
         const buildEvolutionPayload = (target: string) => {
           if (msgType === "text") {
             const safeText = String(text ?? "")
-              .replace(/[\u200B-\u200D\uFEFF]/g, "") // remove caracteres invisíveis (zero-width)
+              .replace(/[\u200B-\u200D\uFEFF]/g, "") // remove zero-width
               .trim();
 
             if (!safeText) return null;
 
-            // Evolution sendText geralmente espera número limpo (sem @lid/@s.whatsapp.net)
-            const safeNumber = String(target ?? "").split("@")[0];
+            // ✅ IMPORTANTÍSSIMO:
+            // Para TEXT, só envia se o destino for um telefone (apenas dígitos).
+            // Se vier @lid ou @s.whatsapp.net, a gente ignora esse candidato e tenta o próximo.
+            const digitsOnly = String(target ?? "").replace(/\D/g, "");
+            if (digitsOnly.length < 10) return null;
 
             evoEndpoint = `/message/sendText/${instanceName}`;
             return {
-              number: safeNumber,
+              number: digitsOnly,
               text: safeText,
             };
           }
