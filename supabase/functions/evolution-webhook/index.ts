@@ -197,53 +197,17 @@ async function handleInboundMessage(
     return;
   }
 
-  // Detect LID (Line ID) format: 163122874683622@lid
-  const isLid = remoteJid.includes("@lid");
-  const phone = remoteJid.replace(/@.*$/, "");
+  // Canonical identifiers: wa_jid = full remoteJid, wa_phone = digits only
+  const wa_jid = remoteJid;
+  const wa_phone = remoteJid.replace(/@.*$/, "").replace(/\D/g, "");
 
-  let storedPhone: string;
-
-  if (isLid) {
-    // Log available keys to help identify where the real number lives
-    console.log(`🔍 LID detected. msgData keys: ${Object.keys(msgData).join(",")}`);
-    console.log(`🔍 key keys: ${Object.keys(key).join(",")}`);
-    if (msgData.sender) {
-      console.log(`🔍 msgData.sender keys: ${Object.keys(msgData.sender).join(",")}`);
-    }
-    const participantRaw = msgData?.participant ?? key?.participant;
-    if (participantRaw) console.log(`🔍 participant: ${participantRaw}`);
-    if (msgData?.from) console.log(`🔍 from: ${msgData.from}`);
-
-    // Try to extract a real phone number from alternative fields
-    const candidate: string =
-      msgData?.sender?.id ??
-      msgData?.sender?.jid ??
-      msgData?.participant ??
-      msgData?.from ??
-      key?.participant ??
-      "";
-
-    const candidateDigits = candidate.includes("@")
-      ? candidate.replace(/@.*$/, "").replace(/\D/g, "")
-      : candidate.replace(/\D/g, "");
-
-    if (candidateDigits.length >= 10 && candidateDigits.length <= 15) {
-      storedPhone = candidateDigits;
-      console.log(`📱 LID resolved to real phone: ${storedPhone}`);
-    } else {
-      // Fallback: keep the LID JID so messages can still be routed
-      storedPhone = remoteJid;
-      console.warn(`⚠️ LID sem número real no payload. Usando LID JID: ${remoteJid}`);
-    }
-  } else {
-    if (!phone || phone.length < 8) {
-      console.warn(`⚠️ Invalid phone from remoteJid: ${remoteJid}`);
-      return;
-    }
-    storedPhone = phone;
+  if (wa_phone.length < 10 || wa_phone.length > 15) {
+    console.warn(`⚠️ Invalid phone digits from remoteJid: ${remoteJid} → "${wa_phone}" (${wa_phone.length} digits). Skipping.`);
+    return;
   }
 
-  console.log(`📱 Contact: ${storedPhone} (isLid=${isLid})`);
+  const isLid = remoteJid.includes("@lid");
+  console.log(`📱 Contact: wa_jid=${wa_jid}, wa_phone=${wa_phone}, isLid=${isLid}`);
 
   const message = msgData.message ?? {};
   const pushName: string = msgData.pushName ?? "";
