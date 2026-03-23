@@ -13,6 +13,7 @@ import { useConversationEvents, useCreateConversationEvent } from "@/hooks/useCo
 import { useRealtimeConnection } from "@/hooks/useRealtimeConnection";
 import { respostasRapidas } from "@/data/respostasRapidas";
 import { InboxSidebar } from "@/components/atendimento/InboxSidebar";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ChatPanel } from "@/components/atendimento/ChatPanel";
 import { CrmContextPanel } from "@/components/atendimento/CrmContextPanel";
 import { MobileBottomNav, type MobileTab } from "@/components/atendimento/MobileBottomNav";
