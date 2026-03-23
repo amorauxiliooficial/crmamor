@@ -782,6 +782,7 @@ export default function Atendimento() {
         channel={currentChannel}
         onChangeChannel={handleChangeChannel}
         onTransferToWeb={() => setTransferToWebOpen(true)}
+        isSending={sendWhatsApp.isPending}
       />
 
       <TransferDialog
