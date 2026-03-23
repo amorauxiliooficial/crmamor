@@ -760,23 +760,25 @@ export default function Atendimento() {
         onInsertTemplate={(t) => setMsgText(t)}
       />
 
-      <InboxSidebar
-        conversas={sortedConversas}
-        selectedId={selectedId}
-        search={search}
-        onSearchChange={handleSearchChange}
-        debouncedSearch={debouncedSearch}
-        onSelect={selectConversa}
-        onOpenConfig={() => setSettingsOpen(true)}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        atendenteFilter={atendenteFilter}
-        onAtendenteFilterChange={setAtendenteFilter}
-        onAssume={handleAssume}
-        onPendente={handlePendente}
-        onStartAtendimento={handleStartAtendimento}
-        isLoading={loadingConvos}
-      />
+      <ErrorBoundary fallbackMessage="Erro na lista de conversas">
+        <InboxSidebar
+          conversas={sortedConversas}
+          selectedId={selectedId}
+          search={search}
+          onSearchChange={handleSearchChange}
+          debouncedSearch={debouncedSearch}
+          onSelect={selectConversa}
+          onOpenConfig={() => setSettingsOpen(true)}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          atendenteFilter={atendenteFilter}
+          onAtendenteFilterChange={setAtendenteFilter}
+          onAssume={handleAssume}
+          onPendente={handlePendente}
+          onStartAtendimento={handleStartAtendimento}
+          isLoading={loadingConvos}
+        />
+      </ErrorBoundary>
 
       <ChatPanel
         conversa={conversa}
