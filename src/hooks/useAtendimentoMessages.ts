@@ -7,27 +7,29 @@ const LID_BLOCK_MSG = "Contato sem número válido (LID). Aguarde correção do 
 
 function hasValidSendablePhone(raw: string | null | undefined): boolean {
   if (!raw) return false;
+
+  // LID is sendable (handled downstream)
   if (raw.startsWith("lid:") || raw.includes("@lid")) return true;
+
+  // Raw JIDs are NOT phone numbers
+  if (raw.startsWith("raw:") || raw.includes("@s.whatsapp.net") || raw.includes("@c.us") || raw.includes("@tampa")) {
+    return false;
+  }
+
   const digits = raw.replace(/\D/g, "");
   return digits.length >= 10 && digits.length <= 15;
 }
 
 /** Check if a conversation is blocked for sending because it only has a private LID */
-function isLidContact(conv: WaConversation | null | undefined): boolean {
-  if (!conv) return false;
-  if (hasValidSendablePhone(conv.wa_phone)) return false;
-  return !!(
-    conv.wa_jid?.includes("@lid") ||
-    conv.wa_phone?.includes("@lid") ||
-    conv.wa_phone?.startsWith("lid:") ||
-    !conv.wa_phone
-  );
-}
-
-/** Normalize wa_phone for sending: return E.164 digits */
 function normalizeWhatsAppTo(raw: string): string | null {
   // LID contacts from WhatsApp Web — keep as-is
-  if (raw.includes("@lid")) return raw;
+  if (raw.includes("@lid") || raw.startsWith("lid:")) return raw;
+
+  // Do NOT treat raw JIDs as phone numbers
+  if (raw.startsWith("raw:") || raw.includes("@s.whatsapp.net") || raw.includes("@c.us") || raw.includes("@tampa")) {
+    return null;
+  }
+
   // Normal phone: strip non-digits, ensure 10+ digits
   const stripped = raw.split("@")[0];
   const digits = stripped.replace(/\D/g, "");
