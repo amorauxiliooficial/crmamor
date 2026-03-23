@@ -207,11 +207,8 @@ export function useSendWhatsApp() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wa_conversations"] });
-      if (variables.conversation_id) {
-        queryClient.invalidateQueries({ queryKey: ["wa_messages", variables.conversation_id] });
-      }
     },
   });
 }
