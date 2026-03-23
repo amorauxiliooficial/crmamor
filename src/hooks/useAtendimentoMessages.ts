@@ -120,7 +120,7 @@ export function useAtendimentoMessages({
         onSuccess: () => toast({ title: "Mensagem reenviada ✅" }),
         onError: (err: any) => {
           console.error("Retry error:", err);
-          toast({ title: "Falha ao reenviar", description: "Tente novamente.", variant: "destructive" });
+          toast({ title: "Falha ao reenviar", description: err?.message || "Tente novamente.", variant: "destructive" });
         },
       }
     );
