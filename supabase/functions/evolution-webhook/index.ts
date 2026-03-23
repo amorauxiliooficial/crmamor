@@ -350,9 +350,31 @@ async function handleInboundMessage(
   }
 
   if (!conversation) {
+    // For LID contacts without real phone, try to find phone from CRM by name match
+    let resolvedPhone = validPhone ? wa_phone : `lid:${wa_jid}`;
+    let resolvedMaeId: string | null = null;
+
+    if (!validPhone && pushName) {
+      const { data: crmMatch } = await supabase
+        .from("mae_processo")
+        .select("id, telefone_e164")
+        .ilike("nome_mae", pushName.trim())
+        .limit(1)
+        .maybeSingle();
+
+      if (crmMatch?.telefone_e164) {
+        const crmDigits = crmMatch.telefone_e164.replace(/\D/g, "");
+        if (crmDigits.length >= 10) {
+          resolvedPhone = crmDigits;
+          resolvedMaeId = crmMatch.id;
+          console.log(`🔗 LID resolved via CRM: "${pushName}" → phone=${crmDigits}, mae_id=${crmMatch.id}`);
+        }
+      }
+    }
+
     const insertData: any = {
       wa_jid: wa_jid,
-      wa_phone: validPhone ? wa_phone : `lid:${wa_jid}`, // LID without real phone — prefix to block outbound
+      wa_phone: resolvedPhone,
       wa_name: pushName || null,
       status: "open",
       channel: "whatsapp_web",
@@ -363,6 +385,7 @@ async function handleInboundMessage(
       last_message_at: new Date().toISOString(),
       last_message_preview: bodyText.slice(0, 200),
       last_inbound_at: new Date().toISOString(),
+      ...(resolvedMaeId ? { mae_id: resolvedMaeId } : {}),
     };
 
     const { data: newConv, error: convErr } = await supabase
