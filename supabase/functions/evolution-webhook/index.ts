@@ -361,8 +361,8 @@ async function handleInboundMessage(
 
   // === Alias-based lookup before creating a new conversation ===
   if (!conversation) {
-    const storedPhone = validPhone ? wa_phone : `lid:${wa_jid}`;
-    const phoneVariantsForAlias = validPhone
+    const storedPhone = effectiveValidPhone ? wa_phone : (isLid ? `lid:${wa_jid}` : `raw:${wa_jid}`);
+    const phoneVariantsForAlias = effectiveValidPhone
       ? [wa_phone, `+${wa_phone}`, wa_jid]
       : [storedPhone, wa_jid];
 
