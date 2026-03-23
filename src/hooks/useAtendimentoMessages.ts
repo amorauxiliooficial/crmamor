@@ -3,13 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import type { QueryClient } from "@tanstack/react-query";
 import type { WaConversation } from "@/hooks/useWhatsApp";
 
-/** Strip @lid suffix and non-digit chars, returning E.164 string or null */
+/** Normalize wa_phone for sending: preserve @lid JIDs as-is, otherwise return E.164 */
 function normalizeWhatsAppTo(raw: string): string | null {
-  // Remove @lid / @s.whatsapp.net suffixes
+  // LID contacts must keep the @lid suffix for Evolution API routing
+  if (raw.includes("@lid")) {
+    return raw.trim();
+  }
+  // Strip @s.whatsapp.net or other suffixes
   const stripped = raw.split("@")[0];
   const digits = stripped.replace(/\D/g, "");
   if (digits.length < 10) return null;
-  // Ensure leading +
   return digits.startsWith("+") ? digits : `+${digits}`;
 }
 
