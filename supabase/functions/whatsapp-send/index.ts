@@ -410,10 +410,9 @@ serve(async (req: Request): Promise<Response> => {
           return { ok: res.ok, status: res.status, text: resText, json: resJson };
         }
 
-        // Detect if this is a LID "exists:false" error
-        function isLidExistsFalse(result: { ok: boolean; status: number; json: any }): boolean {
+        // Detect if Evolution still says the resolved real phone does not exist
+        function isNumberExistsFalse(result: { ok: boolean; status: number; json: any }): boolean {
           if (result.ok || result.status !== 400) return false;
-          if (!cleanPhone.includes("@lid")) return false;
           try {
             const resp = result.json?.response ?? result.json;
             const msgs = Array.isArray(resp?.message) ? resp.message : [];
@@ -424,25 +423,8 @@ serve(async (req: Request): Promise<Response> => {
         let evoResult = await callEvolution(evoPayload);
         console.log(`📡 Evolution response (${evoResult.status}): ${evoResult.text.slice(0, 500)}`);
 
-        // LID retry: try alternative number formats
-        if (isLidExistsFalse(evoResult)) {
-          const lidBase = cleanPhone.replace(/@.*$/, "");
-
-          // Retry 1: swap @lid → @s.whatsapp.net
-          const alt1 = `${lidBase}@s.whatsapp.net`;
-          console.log(`🔄 LID retry #1: ${alt1}`);
-          const retryPayload1 = { ...evoPayload, number: alt1 };
-          evoResult = await callEvolution(retryPayload1);
-          console.log(`📡 Retry #1 response (${evoResult.status}): ${evoResult.text.slice(0, 500)}`);
-
-          // Retry 2: digits only
-          if (!evoResult.ok) {
-            const alt2 = lidBase.replace(/\D/g, "");
-            console.log(`🔄 LID retry #2: ${alt2}`);
-            const retryPayload2 = { ...evoPayload, number: alt2 };
-            evoResult = await callEvolution(retryPayload2);
-            console.log(`📡 Retry #2 response (${evoResult.status}): ${evoResult.text.slice(0, 500)}`);
-          }
+        if (isNumberExistsFalse(evoResult)) {
+          console.warn(`⚠️ Evolution says resolved number does not exist: ${resolvedTo}`);
         }
 
         if (!evoResult.ok) {
