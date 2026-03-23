@@ -194,7 +194,7 @@ export const MessageBubble = memo(function MessageBubble({
             <div
               className={cn(
                 "relative overflow-hidden break-words min-w-0 shadow-[0_1px_0.5px_rgba(0,0,0,0.06)]",
-                isMedia ? "p-[3px]" : "px-[9px] py-[6px]",
+                isMedia ? "p-[3px]" : "px-[9px] py-[6px] pb-5",
                 isMe ? cn("bg-chat-outbound text-chat-outbound-foreground", rounding) : cn("bg-chat-inbound text-chat-inbound-foreground", rounding),
                 isFailed && "ring-1 ring-destructive/30"
               )}
@@ -212,12 +212,21 @@ export const MessageBubble = memo(function MessageBubble({
                   isMe={isMe}
                 />
               ) : (
-                <span className="text-[14.2px] leading-[19px] whitespace-pre-wrap" style={{ wordBreak: "break-word", overflowWrap: "break-word" }}>
-                  {m.msgType === "reaction" ? "❤️" : m.msgType === "unsupported" ? "⚠️ Mensagem não suportada" : /^\[.+\]$/.test(m.texto.trim()) ? "" : renderTextWithLinks(m.texto)}
-                </span>
+                <div
+                  className="block min-w-0 pr-14 text-[14.2px] leading-[19px] whitespace-pre-wrap"
+                  style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
+                >
+                  {m.msgType === "reaction"
+                    ? "❤️"
+                    : m.msgType === "unsupported"
+                      ? "⚠️ Mensagem não suportada"
+                      : /^\[.+\]$/.test(m.texto.trim())
+                        ? ""
+                        : renderTextWithLinks(m.texto)}
+                </div>
               )}
 
-              <span className={cn("inline-flex items-center gap-0.5 float-right ml-2 mt-[3px] relative -mb-[3px]", isMedia ? "px-1.5 pb-0.5" : "")}>
+              <span className={cn("absolute bottom-[6px] right-[9px] inline-flex items-center gap-0.5", isMedia ? "px-1.5 pb-0.5" : "") }>
                 {m.editedAt && <span className="text-[11px] italic text-chat-meta/40 mr-0.5">editada</span>}
                 <span className="text-[11px] tabular-nums text-chat-meta/55">
                   {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
