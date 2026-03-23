@@ -95,6 +95,14 @@ export function useAtendimentoMessages({
           } else if (msg.includes("Unauthorized") || msg.includes("status=401")) {
             description = "Sessão expirada ou inválida. Faça login novamente.";
           }
+          // Extract status and details for better debugging
+          const statusMatch = msg.match(/status=(\d+)/);
+          const detailsMatch = msg.match(/details=(.*)/);
+          const statusCode = statusMatch ? statusMatch[1] : null;
+          const detailsText = detailsMatch ? detailsMatch[1] : null;
+          if (statusCode && detailsText && detailsText !== "{}") {
+            description = `[${statusCode}] ${detailsText}`;
+          }
           toast({ title: "Erro ao enviar", description, variant: "destructive" });
         },
       }
