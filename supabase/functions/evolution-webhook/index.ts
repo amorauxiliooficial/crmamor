@@ -350,22 +350,24 @@ async function handleInboundMessage(
   }
 
   if (!conversation) {
+    const insertData: any = {
+      wa_jid: wa_jid,
+      wa_phone: validPhone ? wa_phone : remoteJid.replace(/@.*$/, ""), // fallback: raw digits from LID
+      wa_name: pushName || null,
+      status: "open",
+      channel: "whatsapp_web",
+      active_channel_code: "evolution",
+      preferred_channel: "whatsapp_web",
+      instance_id: instanceId,
+      unread_count: 1,
+      last_message_at: new Date().toISOString(),
+      last_message_preview: bodyText.slice(0, 200),
+      last_inbound_at: new Date().toISOString(),
+    };
+
     const { data: newConv, error: convErr } = await supabase
       .from("wa_conversations")
-      .insert({
-        wa_jid: wa_jid,
-        wa_phone: wa_phone,
-        wa_name: pushName || null,
-        status: "open",
-        channel: "whatsapp_web",
-        active_channel_code: "evolution",
-        preferred_channel: "whatsapp_web",
-        instance_id: instanceId,
-        unread_count: 1,
-        last_message_at: new Date().toISOString(),
-        last_message_preview: bodyText.slice(0, 200),
-        last_inbound_at: new Date().toISOString(),
-      })
+      .insert(insertData)
       .select("id")
       .single();
 
@@ -375,16 +377,20 @@ async function handleInboundMessage(
     }
 
     conversation = { id: newConv.id, unread_count: 1 };
-    console.log(`🆕 Created conversation ${newConv.id} for wa_jid=${wa_jid} wa_phone=${wa_phone}`);
+    console.log(`🆕 Created conversation ${newConv.id} for wa_jid=${wa_jid} wa_phone=${insertData.wa_phone} (validPhone=${validPhone})`);
   } else {
     const updatePayload: any = {
       wa_jid: wa_jid,
-      wa_phone: wa_phone,
       last_message_at: new Date().toISOString(),
       last_message_preview: bodyText.slice(0, 200),
       last_inbound_at: new Date().toISOString(),
       unread_count: (conversation.unread_count ?? 0) + 1,
     };
+
+    // Only overwrite wa_phone if we have a valid real phone number
+    if (validPhone) {
+      updatePayload.wa_phone = wa_phone;
+    }
 
     // Update name if missing
     if (pushName && !conversation.wa_name) {
