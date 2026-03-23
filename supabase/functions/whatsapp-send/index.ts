@@ -320,10 +320,23 @@ serve(async (req: Request): Promise<Response> => {
         }
 
         if (resolvedTo && normalizePhone(String(conv.wa_phone ?? "")) !== resolvedTo) {
-          await adminClient
+          const { data: duplicatePhoneConversation } = await adminClient
             .from("wa_conversations")
-            .update({ wa_phone: resolvedTo })
-            .eq("id", conversation_id);
+            .select("id")
+            .neq("id", conversation_id)
+            .eq("wa_phone", resolvedTo)
+            .maybeSingle();
+
+          if (!duplicatePhoneConversation) {
+            const { error: syncPhoneError } = await adminClient
+              .from("wa_conversations")
+              .update({ wa_phone: resolvedTo })
+              .eq("id", conversation_id);
+
+            if (syncPhoneError) {
+              console.warn(`⚠️ Failed to sync resolved phone on conversation ${conversation_id}: ${syncPhoneError.message}`);
+            }
+          }
         }
 
         if (!resolvedTo) {
