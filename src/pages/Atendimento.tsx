@@ -780,59 +780,61 @@ export default function Atendimento() {
         />
       </ErrorBoundary>
 
-      <ChatPanel
-        conversa={conversa}
-        mensagens={msgs}
-        isMobile={false}
-        msgText={msgText}
-        onMsgTextChange={setMsgText}
-        onSend={handleSend}
-        onSendMedia={handleSendMedia}
-        onRetry={handleRetry}
-        onBack={() => {}}
-        onAssume={() => handleAssume()}
-        onPendente={() => handlePendente()}
-        onFinalizar={() => handleFinalizar()}
-        onTransfer={() => setTransferDialogOpen(true)}
-        onToggleEtiqueta={toggleEtiqueta}
-        respostas={respostasRapidas}
-        showContext={showContext}
-        onToggleContext={() => {
-          if (isTablet) {
-            setShowContextDrawer(!showContextDrawer);
-          } else {
-            setShowContext(!showContext);
-          }
-        }}
-        isLoadingMessages={loadingMsgs}
-        currentUserId={user?.id ?? null}
-        onEditMessage={(messageId, newBody) => {
-          if (!selectedId) return;
-          editMessage.mutate({ messageId, newBody, conversationId: selectedId }, {
-            onSuccess: () => toast({ title: "Mensagem editada ✅" }),
-            onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
-          });
-        }}
-        soundEnabled={soundEnabled}
-        autoplayBlocked={autoplayBlocked}
-        onToggleSound={toggleSound}
-        onReopen={handleReopen}
-        connectionStatus={connectionStatus}
-        onReconnect={onReconnect}
-        conversationEvents={conversationEvents ?? []}
-        profileMap={profileMap}
-        aiEnabled={aiEnabled}
-        onToggleAi={handleToggleAi}
-        aiAgents={aiAgents ?? []}
-        selectedAiAgentId={selectedAiAgentId}
-        onChangeAiAgent={handleChangeAiAgent}
-        lastInboundAt={conversa?.lastInboundAt}
-        conversationPhone={selectedWa?.wa_phone}
-        channel={currentChannel}
-        onChangeChannel={handleChangeChannel}
-        onTransferToWeb={() => setTransferToWebOpen(true)}
-        isSending={sendWhatsApp.isPending}
-      />
+      <ErrorBoundary key={selectedId} fallbackMessage="Erro no chat — selecione outra conversa">
+        <ChatPanel
+          conversa={conversa}
+          mensagens={msgs}
+          isMobile={false}
+          msgText={msgText}
+          onMsgTextChange={setMsgText}
+          onSend={handleSend}
+          onSendMedia={handleSendMedia}
+          onRetry={handleRetry}
+          onBack={() => {}}
+          onAssume={() => handleAssume()}
+          onPendente={() => handlePendente()}
+          onFinalizar={() => handleFinalizar()}
+          onTransfer={() => setTransferDialogOpen(true)}
+          onToggleEtiqueta={toggleEtiqueta}
+          respostas={respostasRapidas}
+          showContext={showContext}
+          onToggleContext={() => {
+            if (isTablet) {
+              setShowContextDrawer(!showContextDrawer);
+            } else {
+              setShowContext(!showContext);
+            }
+          }}
+          isLoadingMessages={loadingMsgs}
+          currentUserId={user?.id ?? null}
+          onEditMessage={(messageId, newBody) => {
+            if (!selectedId) return;
+            editMessage.mutate({ messageId, newBody, conversationId: selectedId }, {
+              onSuccess: () => toast({ title: "Mensagem editada ✅" }),
+              onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
+            });
+          }}
+          soundEnabled={soundEnabled}
+          autoplayBlocked={autoplayBlocked}
+          onToggleSound={toggleSound}
+          onReopen={handleReopen}
+          connectionStatus={connectionStatus}
+          onReconnect={onReconnect}
+          conversationEvents={conversationEvents ?? []}
+          profileMap={profileMap}
+          aiEnabled={aiEnabled}
+          onToggleAi={handleToggleAi}
+          aiAgents={aiAgents ?? []}
+          selectedAiAgentId={selectedAiAgentId}
+          onChangeAiAgent={handleChangeAiAgent}
+          lastInboundAt={conversa?.lastInboundAt}
+          conversationPhone={selectedWa?.wa_phone}
+          channel={currentChannel}
+          onChangeChannel={handleChangeChannel}
+          onTransferToWeb={() => setTransferToWebOpen(true)}
+          isSending={sendWhatsApp.isPending}
+        />
+      </ErrorBoundary>
 
       <TransferDialog
         open={transferDialogOpen}

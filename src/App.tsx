@@ -44,33 +44,35 @@ const App = () => (
           <AuthProvider>
             <Toaster />
             <Sonner />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/conferencia" element={<Conferencia />} />
-              <Route path="/pagamentos" element={<Pagamentos />} />
-              <Route path="/financeiro" element={<Financeiro />} />
-              <Route path="/playbook" element={<Playbook />} />
-              <Route path="/senhas" element={<Senhas />} />
-              <Route path="/marketing" element={<Marketing />} />
-              <Route path="/indicar" element={<Indicar />} />
+            <ErrorBoundary fallbackMessage="Ocorreu um erro inesperado">
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/conferencia" element={<Conferencia />} />
+                <Route path="/pagamentos" element={<Pagamentos />} />
+                <Route path="/financeiro" element={<Financeiro />} />
+                <Route path="/playbook" element={<Playbook />} />
+                <Route path="/senhas" element={<Senhas />} />
+                <Route path="/marketing" element={<Marketing />} />
+                <Route path="/indicar" element={<Indicar />} />
 
-              <Route path="/atendimento" element={<Atendimento />} />
-              <Route path="/atendimento/chat/:id" element={<Atendimento />} />
-              <Route path="/atendimento/config" element={<AtendimentoConfig />} />
-              <Route path="/atendimento/agentes-ia" element={<AgentesIA />} />
-              <Route path="/atendimento/templates" element={<WaTemplatesConfig />} />
+                <Route path="/atendimento" element={<Atendimento />} />
+                <Route path="/atendimento/chat/:id" element={<Atendimento />} />
+                <Route path="/atendimento/config" element={<AtendimentoConfig />} />
+                <Route path="/atendimento/agentes-ia" element={<AgentesIA />} />
+                <Route path="/atendimento/templates" element={<WaTemplatesConfig />} />
 
-              <Route path="/pre-analises" element={<PreAnalises />} />
-              <Route path="/roadmap" element={<Roadmap />} />
-              <Route path="/relatorio-semanal" element={<RelatorioSemanal />} />
+                <Route path="/pre-analises" element={<PreAnalises />} />
+                <Route path="/roadmap" element={<Roadmap />} />
+                <Route path="/relatorio-semanal" element={<RelatorioSemanal />} />
 
-              {/* ✅ NOVO: Configurações -> WhatsApp Instâncias */}
-              <Route path="/settings/whatsapp-instances" element={<WhatsappInstances />} />
+                {/* ✅ NOVO: Configurações -> WhatsApp Instâncias */}
+                <Route path="/settings/whatsapp-instances" element={<WhatsappInstances />} />
 
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ErrorBoundary>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
