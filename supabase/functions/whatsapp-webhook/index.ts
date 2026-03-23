@@ -91,7 +91,7 @@ serve(async (req: Request): Promise<Response> => {
           // Find or create conversation
           const now = new Date().toISOString();
 
-          // First, try to find existing conversation
+          // First, try to find existing conversation by wa_phone
           const { data: existingConvo } = await supabase
             .from("wa_conversations")
             .select(
@@ -115,28 +115,80 @@ serve(async (req: Request): Promise<Response> => {
             await supabase.from("wa_conversations").update(updatePayload).eq("id", existingConvo.id);
             convo = existingConvo;
           } else {
-            // New conversation — safe to set all fields
-            const { data: newConvo, error: newErr } = await supabase
-              .from("wa_conversations")
-              .insert({
-                wa_phone: phone,
-                wa_name: contactName,
-                last_message_at: now,
-                last_inbound_at: now,
-                last_message_preview: textBody.slice(0, 200),
-                status: "open",
-                channel: "meta_api",
-                active_channel_code: "official",
-                unread_count: 0,
-              })
-              .select("id, unread_count, labels, status, ai_enabled, ai_agent_id")
-              .single();
+            // === Alias-based lookup before creating a new conversation ===
+            const phoneVariants = [phone, `+${phone}`];
+            const { data: aliasMatch } = await supabase
+              .from("conversation_phone_aliases")
+              .select("conversation_id")
+              .in("phone_value", phoneVariants)
+              .limit(1)
+              .maybeSingle();
 
-            if (newErr || !newConvo) {
-              console.error("Insert error:", newErr);
-              continue;
+            if (aliasMatch) {
+              const { data: aliasConvo } = await supabase
+                .from("wa_conversations")
+                .select("id, unread_count, labels, status, ai_enabled, ai_agent_id, active_channel_code, instance_id, wa_name")
+                .eq("id", aliasMatch.conversation_id)
+                .single();
+
+              if (aliasConvo) {
+                console.log(`🔗 Meta webhook: found conversation via alias: ${aliasConvo.id}`);
+                const updatePayload: any = {
+                  last_message_at: now,
+                  last_inbound_at: now,
+                  last_message_preview: textBody.slice(0, 200),
+                  // Update wa_phone to real E.164 since Meta provides real numbers
+                  wa_phone: phone,
+                };
+                if (contactName && !aliasConvo.wa_name) updatePayload.wa_name = contactName;
+                if (aliasConvo.status === "closed") updatePayload.status = "open";
+
+                await supabase.from("wa_conversations").update(updatePayload).eq("id", aliasConvo.id);
+
+                // Upsert alias for this phone
+                await supabase
+                  .from("conversation_phone_aliases")
+                  .upsert(
+                    { conversation_id: aliasConvo.id, phone_value: phone, phone_type: "e164" },
+                    { onConflict: "phone_value" }
+                  );
+
+                convo = aliasConvo;
+              }
             }
-            convo = newConvo;
+
+            if (!convo) {
+              // No existing conversation found — create new
+              const { data: newConvo, error: newErr } = await supabase
+                .from("wa_conversations")
+                .insert({
+                  wa_phone: phone,
+                  wa_name: contactName,
+                  last_message_at: now,
+                  last_inbound_at: now,
+                  last_message_preview: textBody.slice(0, 200),
+                  status: "open",
+                  channel: "meta_api",
+                  active_channel_code: "official",
+                  unread_count: 0,
+                })
+                .select("id, unread_count, labels, status, ai_enabled, ai_agent_id")
+                .single();
+
+              if (newErr || !newConvo) {
+                console.error("Insert error:", newErr);
+                continue;
+              }
+              convo = newConvo;
+
+              // Insert alias for new conversation
+              await supabase
+                .from("conversation_phone_aliases")
+                .upsert(
+                  { conversation_id: newConvo.id, phone_value: phone, phone_type: "e164" },
+                  { onConflict: "phone_value" }
+                );
+            }
           }
 
           // ✅ Ensure Lead Intake exists for this WhatsApp conversation (with proof logs)
