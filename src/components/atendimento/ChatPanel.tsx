@@ -55,6 +55,7 @@ interface ChatPanelProps {
   channel?: string;
   onChangeChannel?: (channel: string) => void;
   onTransferToWeb?: () => void;
+  isSending?: boolean;
 }
 
 export function ChatPanel({
