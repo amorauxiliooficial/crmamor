@@ -91,7 +91,7 @@ export function useWaMessages(conversationId: string | null) {
       return ((data as WaMessage[]) ?? []).reverse();
     },
     enabled: !!conversationId,
-    refetchInterval: conversationId ? 3000 : false,
+    refetchOnReconnect: true,
   });
 
   // Realtime for new messages + conversation updates (keeps chat in sync with inbox)
