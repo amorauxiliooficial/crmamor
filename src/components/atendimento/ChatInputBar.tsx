@@ -28,6 +28,7 @@ interface ChatInputBarProps {
   replyTo: Mensagem | null;
   onClearReply: () => void;
   channel: string;
+  isSending?: boolean;
 }
 
 export function ChatInputBar({
