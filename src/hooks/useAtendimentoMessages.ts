@@ -3,6 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import type { QueryClient } from "@tanstack/react-query";
 import type { WaConversation } from "@/hooks/useWhatsApp";
 
+/** Strip @lid suffix and non-digit chars, returning E.164 string or null */
+function normalizeWhatsAppTo(raw: string): string | null {
+  // Remove @lid / @s.whatsapp.net suffixes
+  const stripped = raw.split("@")[0];
+  const digits = stripped.replace(/\D/g, "");
+  if (digits.length < 10) return null;
+  // Ensure leading +
+  return digits.startsWith("+") ? digits : `+${digits}`;
+}
+
 interface UseAtendimentoMessagesParams {
   conversationId: string | null;
   selectedWa: WaConversation | undefined | null;
