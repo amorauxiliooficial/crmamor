@@ -349,6 +349,47 @@ async function handleInboundMessage(
     }
   }
 
+  // === Alias-based lookup before creating a new conversation ===
+  if (!conversation) {
+    const storedPhone = validPhone ? wa_phone : `lid:${wa_jid}`;
+    const phoneVariantsForAlias = validPhone
+      ? [wa_phone, `+${wa_phone}`, wa_jid]
+      : [storedPhone, wa_jid];
+
+    // Deduplicate variants
+    const uniqueVariants = [...new Set(phoneVariantsForAlias)];
+
+    const { data: aliasMatch } = await supabase
+      .from("conversation_phone_aliases")
+      .select("conversation_id")
+      .in("phone_value", uniqueVariants)
+      .limit(1)
+      .maybeSingle();
+
+    if (aliasMatch) {
+      // Reuse existing conversation found via alias
+      const { data: existingConv } = await supabase
+        .from("wa_conversations")
+        .select("id, status, wa_name, unread_count, wa_phone")
+        .eq("id", aliasMatch.conversation_id)
+        .single();
+
+      if (existingConv) {
+        conversation = existingConv;
+        console.log(`🔗 Found conversation via phone alias: ${conversation.id} (variants=${uniqueVariants.join(",")})`);
+
+        // Insert alias for storedPhone if not already present (upsert)
+        const aliasPhoneType = storedPhone.includes("@lid") || storedPhone.startsWith("lid:") ? "lid" : "e164";
+        await supabase
+          .from("conversation_phone_aliases")
+          .upsert(
+            { conversation_id: conversation.id, phone_value: storedPhone, phone_type: aliasPhoneType },
+            { onConflict: "phone_value" }
+          );
+      }
+    }
+  }
+
   if (!conversation) {
     // For LID contacts without real phone, try to resolve from sibling conversations or CRM
     let resolvedPhone = validPhone ? wa_phone : `lid:${wa_jid}`;
@@ -419,6 +460,25 @@ async function handleInboundMessage(
 
     conversation = { id: newConv.id, unread_count: 1 };
     console.log(`🆕 Created conversation ${newConv.id} for wa_jid=${wa_jid} wa_phone=${insertData.wa_phone} (validPhone=${validPhone})`);
+
+    // Insert aliases for the new conversation
+    const aliasesToInsert = [
+      { conversation_id: newConv.id, phone_value: resolvedPhone, phone_type: resolvedPhone.startsWith("lid:") || resolvedPhone.includes("@lid") ? "lid" : "e164" },
+    ];
+    // Also add wa_jid as alias if different
+    if (wa_jid !== resolvedPhone) {
+      aliasesToInsert.push({ conversation_id: newConv.id, phone_value: wa_jid, phone_type: wa_jid.includes("@lid") ? "lid" : "raw" });
+    }
+    // Also add wa_phone digits if valid and different
+    if (validPhone && wa_phone !== resolvedPhone) {
+      aliasesToInsert.push({ conversation_id: newConv.id, phone_value: wa_phone, phone_type: "e164" });
+    }
+
+    for (const alias of aliasesToInsert) {
+      await supabase
+        .from("conversation_phone_aliases")
+        .upsert(alias, { onConflict: "phone_value" });
+    }
   } else {
     const updatePayload: any = {
       wa_jid: wa_jid,
