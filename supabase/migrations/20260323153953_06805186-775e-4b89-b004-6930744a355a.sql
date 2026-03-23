@@ -1,0 +1,1 @@
+UPDATE wa_conversations SET wa_phone = 'lid:' || wa_jid WHERE wa_jid LIKE '%@lid' AND wa_phone NOT LIKE 'lid:%';
