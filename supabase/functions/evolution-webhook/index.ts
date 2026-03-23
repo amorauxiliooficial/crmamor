@@ -499,7 +499,7 @@ async function handleInboundMessage(
     };
 
     // Only overwrite wa_phone if we have a valid real phone number
-    if (validPhone) {
+    if (effectiveValidPhone) {
       updatePayload.wa_phone = wa_phone;
     }
 
