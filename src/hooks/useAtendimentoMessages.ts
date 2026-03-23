@@ -12,7 +12,12 @@ function hasValidSendablePhone(raw: string | null | undefined): boolean {
   if (raw.startsWith("lid:") || raw.includes("@lid")) return true;
 
   // Raw JIDs are NOT phone numbers
-  if (raw.startsWith("raw:") || raw.includes("@s.whatsapp.net") || raw.includes("@c.us") || raw.includes("@tampa")) {
+  if (
+    raw.startsWith("raw:") ||
+    raw.includes("@s.whatsapp.net") ||
+    raw.includes("@c.us") ||
+    raw.includes("@tampa")
+  ) {
     return false;
   }
 
@@ -38,7 +43,12 @@ function normalizeWhatsAppTo(raw: string): string | null {
   if (raw.includes("@lid") || raw.startsWith("lid:")) return raw;
 
   // Do NOT treat raw JIDs as phone numbers
-  if (raw.startsWith("raw:") || raw.includes("@s.whatsapp.net") || raw.includes("@c.us") || raw.includes("@tampa")) {
+  if (
+    raw.startsWith("raw:") ||
+    raw.includes("@s.whatsapp.net") ||
+    raw.includes("@c.us") ||
+    raw.includes("@tampa")
+  ) {
     return null;
   }
 
@@ -72,8 +82,9 @@ export function useAtendimentoMessages({
   const sendingRef = useRef(false);
 
   const handleSend = useCallback(() => {
-    if (!conversationId || !msgText.trim() || !selectedWa) return;
-
+const text = msgText
+  .replace(/[\u200B-\u200D\uFEFF]/g, "") // remove caracteres invisíveis (zero-width)
+  .trim();
     if (isLidContact(selectedWa)) {
       toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
       return;
@@ -85,7 +96,7 @@ export function useAtendimentoMessages({
     const text = msgText.trim();
     const to = normalizeWhatsAppTo(selectedWa.wa_phone);
 
-    if (!to) {
+{ to, text, type: "text", conversation_id: conversationId },
       sendingRef.current = false;
       toast({
         title: "Numero invalido",
