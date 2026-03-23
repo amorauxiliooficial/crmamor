@@ -384,13 +384,21 @@ serve(async (req: Request): Promise<Response> => {
               .eq("id", conversation_id);
 
             if (syncPhoneError) {
-              console.warn(`⚠️ Failed to sync resolved phone on conversation ${conversation_id}: ${syncPhoneError.message}`);
+              console.warn(
+                `⚠️ Failed to sync resolved phone on conversation ${conversation_id}: ${syncPhoneError.message}`,
+              );
             }
           }
         }
 
         if (!sendCandidates.length) {
-          return toJson({ error: "Contato do WhatsApp Web está com ID privado (LID) e sem identificador enviável resolvido. Vincule ao CRM ou aguarde mensagem no canal oficial." }, 409);
+          return toJson(
+            {
+              error:
+                "Contato do WhatsApp Web está com ID privado (LID) e sem identificador enviável resolvido. Vincule ao CRM ou aguarde mensagem no canal oficial.",
+            },
+            409,
+          );
         }
 
         // Get instance name
@@ -410,11 +418,19 @@ serve(async (req: Request): Promise<Response> => {
         let evoEndpoint = "";
         const buildEvolutionPayload = (target: string) => {
           if (msgType === "text") {
-            if (!text) return null;
+            const safeText = String(text ?? "")
+              .replace(/[\u200B-\u200D\uFEFF]/g, "") // remove caracteres invisíveis (zero-width)
+              .trim();
+
+            if (!safeText) return null;
+
+            // Evolution sendText geralmente espera número limpo (sem @lid/@s.whatsapp.net)
+            const safeNumber = String(target ?? "").split("@")[0];
+
             evoEndpoint = `/message/sendText/${instanceName}`;
             return {
-              number: target,
-              text,
+              number: safeNumber,
+              text: safeText,
             };
           }
           if (msgType === "image" && media_url) {
@@ -473,7 +489,11 @@ serve(async (req: Request): Promise<Response> => {
           });
           const resText = await res.text().catch(() => "");
           let resJson: any = null;
-          try { resJson = resText ? JSON.parse(resText) : null; } catch { /* ignore */ }
+          try {
+            resJson = resText ? JSON.parse(resText) : null;
+          } catch {
+            /* ignore */
+          }
           return { ok: res.ok, status: res.status, text: resText, json: resJson };
         }
 
@@ -483,21 +503,27 @@ serve(async (req: Request): Promise<Response> => {
             const resp = result.json?.response ?? result.json;
             const msgs = Array.isArray(resp?.message) ? resp.message : [];
             return msgs.some((m: any) => m?.exists === false);
-          } catch { return false; }
+          } catch {
+            return false;
+          }
         }
 
         let evoResult: { ok: boolean; status: number; text: string; json: any } | null = null;
         let usedTarget = "";
         let usedSource = "";
 
-        console.log(`📤 Evolution: ${evoEndpoint} via ${instance.name} candidates=${sendCandidates.map((candidate) => `${candidate.source}:${candidate.target}`).join(", ")}`);
+        console.log(
+          `📤 Evolution: ${evoEndpoint} via ${instance.name} candidates=${sendCandidates.map((candidate) => `${candidate.source}:${candidate.target}`).join(", ")}`,
+        );
 
         for (let index = 0; index < sendCandidates.length; index += 1) {
           const candidate = sendCandidates[index];
           const payload = buildEvolutionPayload(candidate.target);
           if (!payload) continue;
 
-          console.log(`📤 Evolution attempt ${index + 1}/${sendCandidates.length}: ${candidate.target} (${candidate.source})`);
+          console.log(
+            `📤 Evolution attempt ${index + 1}/${sendCandidates.length}: ${candidate.target} (${candidate.source})`,
+          );
           const result = await callEvolution(payload);
           console.log(`📡 Evolution response (${result.status}) [${candidate.target}]: ${result.text.slice(0, 500)}`);
 
@@ -530,9 +556,14 @@ serve(async (req: Request): Promise<Response> => {
         }
 
         if (!evoResult.ok) {
-          const errMsg = typeof evoResult.json === "object" && evoResult.json?.message
-            ? String(typeof evoResult.json.message === "string" ? evoResult.json.message : JSON.stringify(evoResult.json.message))
-            : evoResult.text || "Unknown error";
+          const errMsg =
+            typeof evoResult.json === "object" && evoResult.json?.message
+              ? String(
+                  typeof evoResult.json.message === "string"
+                    ? evoResult.json.message
+                    : JSON.stringify(evoResult.json.message),
+                )
+              : evoResult.text || "Unknown error";
 
           console.error(`❌ Evolution error ${evoResult.status}: ${errMsg}`);
 
@@ -558,7 +589,9 @@ serve(async (req: Request): Promise<Response> => {
         const bodyText = msgType === "text" ? String(text || "") : caption || `[${msgType}]`;
         const evoMsgId = evoJson?.key?.id ?? null;
 
-        console.log(`✅ Evolution sent OK. Saving to DB... msgId=${evoMsgId}, userId=${userId}, target=${usedTarget}, source=${usedSource}`);
+        console.log(
+          `✅ Evolution sent OK. Saving to DB... msgId=${evoMsgId}, userId=${userId}, target=${usedTarget}, source=${usedSource}`,
+        );
 
         const { error: insertErr } = await adminClient.from("wa_messages").insert({
           conversation_id,
