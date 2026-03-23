@@ -141,8 +141,18 @@ export function useWaMessages(conversationId: string | null) {
           table: "wa_messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["wa_messages", conversationId] });
+        (payload) => {
+          queryClient.setQueryData(["wa_messages", conversationId], (old: any[]) => {
+            if (!old) return old;
+            const newMsg = payload.new;
+            // Remove any optimistic temp messages and add the real one
+            const filtered = old.filter((m: any) => !m.id.startsWith("temp-"));
+            // Avoid duplicates
+            if (filtered.some((m: any) => m.id === newMsg.id)) return filtered;
+            return [...filtered, newMsg].sort((a: any, b: any) =>
+              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            );
+          });
         }
       )
       .on(
@@ -197,11 +207,8 @@ export function useSendWhatsApp() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wa_conversations"] });
-      if (variables.conversation_id) {
-        queryClient.invalidateQueries({ queryKey: ["wa_messages", variables.conversation_id] });
-      }
     },
   });
 }

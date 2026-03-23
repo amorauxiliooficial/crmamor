@@ -61,9 +61,6 @@ export function useAtendimentoMessages({
       {
         onSuccess: () => {
           sendingRef.current = false;
-          queryClient.setQueryData(["wa_messages", conversationId], (old: any[]) =>
-            old ? old.filter((m: any) => m.id !== optimisticMsg.id) : old
-          );
         },
         onError: (err: any) => {
           sendingRef.current = false;
