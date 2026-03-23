@@ -20,7 +20,19 @@ function hasValidSendablePhone(raw: string | null | undefined): boolean {
   return digits.length >= 10 && digits.length <= 15;
 }
 
-/** Check if a conversation is blocked for sending because it only has a private LID */
+/**
+ * Block sending ONLY when the conversation is a LID-like identifier but not sendable.
+ * With current rules, LID is sendable, so this will not block LID anymore.
+ * Kept to avoid changing call sites.
+ */
+function isLidContact(convo: WaConversation | undefined | null): boolean {
+  const raw = convo?.wa_phone;
+  if (!raw) return false;
+
+  const isLid = raw.startsWith("lid:") || raw.includes("@lid");
+  return isLid && !hasValidSendablePhone(raw);
+}
+
 function normalizeWhatsAppTo(raw: string): string | null {
   // LID contacts from WhatsApp Web — keep as-is
   if (raw.includes("@lid") || raw.startsWith("lid:")) return raw;
@@ -61,15 +73,18 @@ export function useAtendimentoMessages({
 
   const handleSend = useCallback(() => {
     if (!conversationId || !msgText.trim() || !selectedWa) return;
+
     if (isLidContact(selectedWa)) {
       toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
       return;
     }
+
     if (sendingRef.current) return;
     sendingRef.current = true;
-    const text = msgText.trim();
 
+    const text = msgText.trim();
     const to = normalizeWhatsAppTo(selectedWa.wa_phone);
+
     if (!to) {
       sendingRef.current = false;
       toast({
@@ -89,8 +104,10 @@ export function useAtendimentoMessages({
         onError: (err: any) => {
           sendingRef.current = false;
           console.error("Send error:", err);
+
           const msg = err?.message || "Tente novamente.";
           let description = msg;
+
           if (msg.includes("Sem sessão ativa")) {
             description = "Sessão inválida. Faça login novamente.";
           } else if (msg.includes("missing Meta credentials") || msg.includes("META_WA_TOKEN")) {
@@ -100,6 +117,7 @@ export function useAtendimentoMessages({
           } else if (msg.includes("Unauthorized") || msg.includes("status=401")) {
             description = "Sessão expirada ou inválida. Faça login novamente.";
           }
+
           // Extract status and details for better debugging
           const statusMatch = msg.match(/status=(\d+)/);
           const detailsMatch = msg.match(/details=(.*)/);
@@ -108,16 +126,19 @@ export function useAtendimentoMessages({
           if (statusCode && detailsText && detailsText !== "{}") {
             description = `[${statusCode}] ${detailsText}`;
           }
+
           toast({ title: "Erro ao enviar", description, variant: "destructive" });
         },
       },
     );
+
     setMsgText("");
   }, [conversationId, msgText, selectedWa, sendWhatsApp, toast]);
 
   const handleSendMedia = useCallback(
     async (file: File) => {
       if (!conversationId || !selectedWa) return;
+
       if (isLidContact(selectedWa)) {
         toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
         return;
@@ -172,6 +193,7 @@ export function useAtendimentoMessages({
             },
           },
         );
+
         setMsgText("");
       } catch (err) {
         console.error("Upload error:", err);
@@ -191,10 +213,12 @@ export function useAtendimentoMessages({
       mediaFilename?: string,
     ) => {
       if (!conversationId || !selectedWa) return;
+
       if (isLidContact(selectedWa)) {
         toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
         return;
       }
+
       const retryTo = normalizeWhatsAppTo(selectedWa.wa_phone);
       if (!retryTo) {
         toast({
@@ -204,6 +228,7 @@ export function useAtendimentoMessages({
         });
         return;
       }
+
       retryWhatsApp.mutate(
         {
           messageId,
