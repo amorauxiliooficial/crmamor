@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { QueryClient } from "@tanstack/react-query";
 import type { WaConversation } from "@/hooks/useWhatsApp";
 
+const LID_BLOCK_MSG = "Contato sem número válido (LID). Aguarde correção do canal.";
+
 /** Normalize wa_phone for sending: preserve @lid JIDs as-is, otherwise return E.164 */
 function normalizeWhatsAppTo(raw: string): string | null {
   // LID contacts must keep the @lid suffix for Evolution API routing
@@ -40,6 +42,10 @@ export function useAtendimentoMessages({
 
   const handleSend = useCallback(() => {
     if (!conversationId || !msgText.trim() || !selectedWa) return;
+    if (selectedWa.wa_phone?.includes("@lid")) {
+      toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
+      return;
+    }
     if (sendingRef.current) return;
     sendingRef.current = true;
     const text = msgText.trim();
@@ -80,6 +86,10 @@ export function useAtendimentoMessages({
 
   const handleSendMedia = useCallback(async (file: File) => {
     if (!conversationId || !selectedWa) return;
+    if (selectedWa.wa_phone?.includes("@lid")) {
+      toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
+      return;
+    }
 
     const mediaTo = normalizeWhatsAppTo(selectedWa.wa_phone);
     if (!mediaTo) {
@@ -131,6 +141,10 @@ export function useAtendimentoMessages({
 
   const handleRetry = useCallback((messageId: string, body: string, msgType?: string, mediaUrl?: string, mediaMime?: string, mediaFilename?: string) => {
     if (!conversationId || !selectedWa) return;
+    if (selectedWa.wa_phone?.includes("@lid")) {
+      toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
+      return;
+    }
     const retryTo = normalizeWhatsAppTo(selectedWa.wa_phone);
     if (!retryTo) {
       toast({ title: "Número inválido", description: "Não foi possível normalizar o telefone do contato.", variant: "destructive" });
