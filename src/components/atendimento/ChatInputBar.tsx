@@ -253,7 +253,7 @@ export function ChatInputBar({
           lang="pt-BR"
           className={cn(
             "min-h-[42px] max-h-[120px] resize-none text-[14px] flex-1 rounded-xl bg-muted/10 border-border/10 focus-visible:border-primary/20 focus-visible:bg-background transition-all",
-            !windowIsOpen && "opacity-50 cursor-not-allowed"
+            (!windowIsOpen || isSending) && "opacity-50 cursor-not-allowed"
           )}
           rows={1}
         />
