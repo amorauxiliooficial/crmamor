@@ -917,7 +917,7 @@ serve(async (req: Request): Promise<Response> => {
         .eq("id", conversation_id);
     }
 
-    return toJson({ success: true, meta_message_id: metaMsgId, conversation_id });
+    return toJson({ success: true, channel: "official", meta_message_id: metaMsgId, conversation_id });
   } catch (err) {
     console.error("❌ whatsapp-send error:", err);
     return toJson({ error: "Internal server error", error_message: String(err) }, 500);
