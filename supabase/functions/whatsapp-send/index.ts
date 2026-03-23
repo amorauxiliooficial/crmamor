@@ -251,12 +251,7 @@ serve(async (req: Request): Promise<Response> => {
         .eq("id", conversation_id)
         .single();
 
-      const hasOfficialFallback =
-        conv?.channel_code === "official" &&
-        !isLidContact &&
-        !!normalizePhone(String(to || conv?.wa_phone || ""));
-
-      if (conv?.active_channel_code === "evolution" && conv?.instance_id && !hasOfficialFallback) {
+      if (conv?.active_channel_code === "evolution" && conv?.instance_id) {
         const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL");
         const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
 
