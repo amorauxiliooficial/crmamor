@@ -128,10 +128,15 @@ export function useAtendimentoMessages({
 
   const handleRetry = useCallback((messageId: string, body: string, msgType?: string, mediaUrl?: string, mediaMime?: string, mediaFilename?: string) => {
     if (!conversationId || !selectedWa) return;
+    const retryTo = normalizeWhatsAppTo(selectedWa.wa_phone);
+    if (!retryTo) {
+      toast({ title: "Número inválido", description: "Não foi possível normalizar o telefone do contato.", variant: "destructive" });
+      return;
+    }
     retryWhatsApp.mutate(
       {
         messageId,
-        to: selectedWa.wa_phone,
+        to: retryTo,
         text: msgType === 'text' || !msgType ? body : undefined,
         conversation_id: conversationId,
         type: msgType,
