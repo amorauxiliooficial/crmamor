@@ -259,22 +259,68 @@ serve(async (req: Request): Promise<Response> => {
           return toJson({ error: "Evolution API not configured" }, 500);
         }
 
+        const isLidTarget = (value: string | null | undefined) => {
+          const raw = String(value ?? "").trim();
+          return !!raw && (raw.startsWith("lid:") || raw.includes("@lid"));
+        };
+
+        const isJidTarget = (value: string | null | undefined) => {
+          const raw = String(value ?? "").trim();
+          return !!raw && (raw.includes("@lid") || raw.includes("@s.whatsapp.net"));
+        };
+
         const isSendablePhone = (value: string | null | undefined) => {
           const raw = String(value ?? "").trim();
-          if (!raw || raw.startsWith("lid:") || raw.includes("@lid")) return false;
+          if (!raw || raw.startsWith("lid:") || raw.startsWith("raw:") || raw.includes("@")) return false;
           const digits = raw.replace(/\D/g, "");
           return digits.length >= 10 && digits.length <= 15;
         };
 
-        let resolvedTo = isSendablePhone(cleanPhone) ? normalizePhone(cleanPhone) : "";
+        const normalizeEvolutionTarget = (value: string | null | undefined) => {
+          const raw = String(value ?? "").trim();
+          if (!raw) return "";
+          if (raw.startsWith("raw:")) return raw.slice(4);
+          if (raw.startsWith("lid:")) return raw.slice(4);
+          if (raw.includes("@lid") || raw.includes("@s.whatsapp.net")) return raw;
+          return normalizePhone(raw);
+        };
+
+        const sendCandidates: Array<{ target: string; source: string; kind: "jid" | "phone" }> = [];
+        const pushCandidate = (value: string | null | undefined, source: string) => {
+          const target = normalizeEvolutionTarget(value);
+          if (!target) return;
+          if (sendCandidates.some((candidate) => candidate.target === target)) return;
+          sendCandidates.push({
+            target,
+            source,
+            kind: isJidTarget(target) ? "jid" : "phone",
+          });
+        };
+
+        pushCandidate(isLidContact ? cleanPhone : null, "request");
+        pushCandidate(conv.wa_jid, "conversation_jid");
+
+        const { data: aliases } = await adminClient
+          .from("conversation_phone_aliases")
+          .select("phone_value, phone_type")
+          .eq("conversation_id", conversation_id)
+          .order("created_at", { ascending: false });
+
+        for (const alias of aliases ?? []) {
+          if (alias.phone_type === "lid" || alias.phone_type === "raw") {
+            pushCandidate(alias.phone_value, `alias:${alias.phone_type}`);
+          }
+        }
+
+        let resolvedPhone = isSendablePhone(cleanPhone) ? normalizePhone(cleanPhone) : "";
         let resolvedFrom = "request";
 
-        if (!resolvedTo && isSendablePhone(conv.wa_phone)) {
-          resolvedTo = normalizePhone(String(conv.wa_phone));
+        if (!resolvedPhone && isSendablePhone(conv.wa_phone)) {
+          resolvedPhone = normalizePhone(String(conv.wa_phone));
           resolvedFrom = "conversation";
         }
 
-        if (!resolvedTo && conv.mae_id) {
+        if (!resolvedPhone && conv.mae_id) {
           const { data: contact } = await adminClient
             .from("mother_contacts")
             .select("value_e164")
@@ -285,12 +331,12 @@ serve(async (req: Request): Promise<Response> => {
             .maybeSingle();
 
           if (isSendablePhone(contact?.value_e164)) {
-            resolvedTo = normalizePhone(String(contact?.value_e164));
+            resolvedPhone = normalizePhone(String(contact?.value_e164));
             resolvedFrom = "mother_contacts";
           }
         }
 
-        if (!resolvedTo && conv.mae_id) {
+        if (!resolvedPhone && conv.mae_id) {
           const { data: mae } = await adminClient
             .from("mae_processo")
             .select("telefone_e164")
@@ -298,12 +344,12 @@ serve(async (req: Request): Promise<Response> => {
             .maybeSingle();
 
           if (isSendablePhone(mae?.telefone_e164)) {
-            resolvedTo = normalizePhone(String(mae?.telefone_e164));
+            resolvedPhone = normalizePhone(String(mae?.telefone_e164));
             resolvedFrom = "mae_processo";
           }
         }
 
-        if (!resolvedTo && conv.wa_name) {
+        if (!resolvedPhone && conv.wa_name) {
           const { data: siblingConversations } = await adminClient
             .from("wa_conversations")
             .select("id, wa_phone")
@@ -314,23 +360,27 @@ serve(async (req: Request): Promise<Response> => {
 
           const siblingWithPhone = (siblingConversations ?? []).find((row: any) => isSendablePhone(row?.wa_phone));
           if (siblingWithPhone?.wa_phone) {
-            resolvedTo = normalizePhone(String(siblingWithPhone.wa_phone));
+            resolvedPhone = normalizePhone(String(siblingWithPhone.wa_phone));
             resolvedFrom = `conversation:${siblingWithPhone.id}`;
           }
         }
 
-        if (resolvedTo && normalizePhone(String(conv.wa_phone ?? "")) !== resolvedTo) {
+        if (resolvedPhone) {
+          pushCandidate(resolvedPhone, resolvedFrom);
+        }
+
+        if (resolvedPhone && normalizePhone(String(conv.wa_phone ?? "")) !== resolvedPhone) {
           const { data: duplicatePhoneConversation } = await adminClient
             .from("wa_conversations")
             .select("id")
             .neq("id", conversation_id)
-            .eq("wa_phone", resolvedTo)
+            .eq("wa_phone", resolvedPhone)
             .maybeSingle();
 
           if (!duplicatePhoneConversation) {
             const { error: syncPhoneError } = await adminClient
               .from("wa_conversations")
-              .update({ wa_phone: resolvedTo })
+              .update({ wa_phone: resolvedPhone })
               .eq("id", conversation_id);
 
             if (syncPhoneError) {
@@ -339,8 +389,8 @@ serve(async (req: Request): Promise<Response> => {
           }
         }
 
-        if (!resolvedTo) {
-          return toJson({ error: "Contato do WhatsApp Web está com ID privado (LID) e sem número real resolvido. Vincule ao CRM ou aguarde mensagem no canal oficial." }, 409);
+        if (!sendCandidates.length) {
+          return toJson({ error: "Contato do WhatsApp Web está com ID privado (LID) e sem identificador enviável resolvido. Vincule ao CRM ou aguarde mensagem no canal oficial." }, 409);
         }
 
         // Get instance name
@@ -357,54 +407,58 @@ serve(async (req: Request): Promise<Response> => {
         const evoBaseUrl = EVOLUTION_API_URL.replace(/\/+$/, "");
         const instanceName = encodeURIComponent(instance.evolution_instance_name);
 
-        let evoPayload: any = null;
         let evoEndpoint = "";
+        const buildEvolutionPayload = (target: string) => {
+          if (msgType === "text") {
+            if (!text) return null;
+            evoEndpoint = `/message/sendText/${instanceName}`;
+            return {
+              number: target,
+              text,
+            };
+          }
+          if (msgType === "image" && media_url) {
+            evoEndpoint = `/message/sendMedia/${instanceName}`;
+            return {
+              number: target,
+              mediatype: "image",
+              media: media_url,
+              caption: caption || undefined,
+            };
+          }
+          if (msgType === "audio" && media_url) {
+            evoEndpoint = `/message/sendWhatsAppAudio/${instanceName}`;
+            return {
+              number: target,
+              audio: media_url,
+            };
+          }
+          if (msgType === "document" && media_url) {
+            evoEndpoint = `/message/sendMedia/${instanceName}`;
+            return {
+              number: target,
+              mediatype: "document",
+              media: media_url,
+              fileName: media_filename || "document",
+              caption: caption || undefined,
+            };
+          }
+          if (msgType === "video" && media_url) {
+            evoEndpoint = `/message/sendMedia/${instanceName}`;
+            return {
+              number: target,
+              mediatype: "video",
+              media: media_url,
+              caption: caption || undefined,
+            };
+          }
+          return null;
+        };
 
-        if (msgType === "text") {
-          if (!text) return toJson({ error: 'Missing "text"' }, 400);
-          evoEndpoint = `/message/sendText/${instanceName}`;
-          evoPayload = {
-            number: resolvedTo,
-            text: text,
-          };
-        } else if (msgType === "image" && media_url) {
-          evoEndpoint = `/message/sendMedia/${instanceName}`;
-          evoPayload = {
-            number: resolvedTo,
-            mediatype: "image",
-            media: media_url,
-            caption: caption || undefined,
-          };
-        } else if (msgType === "audio" && media_url) {
-          evoEndpoint = `/message/sendWhatsAppAudio/${instanceName}`;
-          evoPayload = {
-            number: resolvedTo,
-            audio: media_url,
-          };
-        } else if (msgType === "document" && media_url) {
-          evoEndpoint = `/message/sendMedia/${instanceName}`;
-          evoPayload = {
-            number: resolvedTo,
-            mediatype: "document",
-            media: media_url,
-            fileName: media_filename || "document",
-            caption: caption || undefined,
-          };
-        } else if (msgType === "video" && media_url) {
-          evoEndpoint = `/message/sendMedia/${instanceName}`;
-          evoPayload = {
-            number: resolvedTo,
-            mediatype: "video",
-            media: media_url,
-            caption: caption || undefined,
-          };
-        }
-
-        if (!evoPayload || !evoEndpoint) {
+        const previewPayload = buildEvolutionPayload(sendCandidates[0]?.target ?? "");
+        if (!previewPayload || !evoEndpoint) {
           return toJson({ error: `Unsupported message type for Evolution: ${msgType}` }, 400);
         }
-
-        console.log(`📤 Evolution: ${evoEndpoint} to ${resolvedTo} via ${instance.name} (resolvedFrom=${resolvedFrom})`);
 
         // Helper: call Evolution API with a given payload
         async function callEvolution(payload: any): Promise<{ ok: boolean; status: number; text: string; json: any }> {
@@ -423,7 +477,6 @@ serve(async (req: Request): Promise<Response> => {
           return { ok: res.ok, status: res.status, text: resText, json: resJson };
         }
 
-        // Detect if Evolution still says the resolved real phone does not exist
         function isNumberExistsFalse(result: { ok: boolean; status: number; json: any }): boolean {
           if (result.ok || result.status !== 400) return false;
           try {
@@ -433,11 +486,47 @@ serve(async (req: Request): Promise<Response> => {
           } catch { return false; }
         }
 
-        let evoResult = await callEvolution(evoPayload);
-        console.log(`📡 Evolution response (${evoResult.status}): ${evoResult.text.slice(0, 500)}`);
+        let evoResult: { ok: boolean; status: number; text: string; json: any } | null = null;
+        let usedTarget = "";
+        let usedSource = "";
 
-        if (isNumberExistsFalse(evoResult)) {
-          console.warn(`⚠️ Evolution says resolved number does not exist: ${resolvedTo}`);
+        console.log(`📤 Evolution: ${evoEndpoint} via ${instance.name} candidates=${sendCandidates.map((candidate) => `${candidate.source}:${candidate.target}`).join(", ")}`);
+
+        for (let index = 0; index < sendCandidates.length; index += 1) {
+          const candidate = sendCandidates[index];
+          const payload = buildEvolutionPayload(candidate.target);
+          if (!payload) continue;
+
+          console.log(`📤 Evolution attempt ${index + 1}/${sendCandidates.length}: ${candidate.target} (${candidate.source})`);
+          const result = await callEvolution(payload);
+          console.log(`📡 Evolution response (${result.status}) [${candidate.target}]: ${result.text.slice(0, 500)}`);
+
+          if (result.ok) {
+            evoResult = result;
+            usedTarget = candidate.target;
+            usedSource = candidate.source;
+            break;
+          }
+
+          if (isNumberExistsFalse(result)) {
+            console.warn(`⚠️ Evolution says target does not exist: ${candidate.target}`);
+            continue;
+          }
+
+          const hasMoreCandidates = index < sendCandidates.length - 1;
+          if (hasMoreCandidates && result.status >= 400 && result.status < 500) {
+            console.warn(`⚠️ Evolution rejected ${candidate.target} (${result.status}). Trying next candidate.`);
+            continue;
+          }
+
+          evoResult = result;
+          usedTarget = candidate.target;
+          usedSource = candidate.source;
+          break;
+        }
+
+        if (!evoResult) {
+          return toJson({ error: "Nenhum destino válido encontrado para envio pelo WhatsApp Web." }, 409);
         }
 
         if (!evoResult.ok) {
@@ -447,7 +536,6 @@ serve(async (req: Request): Promise<Response> => {
 
           console.error(`❌ Evolution error ${evoResult.status}: ${errMsg}`);
 
-          // Store failed message
           const bodyText = msgType === "text" ? String(text || "") : caption || `[${msgType}]`;
           await adminClient.from("wa_messages").insert({
             conversation_id,
@@ -467,12 +555,10 @@ serve(async (req: Request): Promise<Response> => {
         }
 
         const evoJson = evoResult.json;
-
-        // Store success message
         const bodyText = msgType === "text" ? String(text || "") : caption || `[${msgType}]`;
         const evoMsgId = evoJson?.key?.id ?? null;
 
-        console.log(`✅ Evolution sent OK. Saving to DB... msgId=${evoMsgId}, userId=${userId}`);
+        console.log(`✅ Evolution sent OK. Saving to DB... msgId=${evoMsgId}, userId=${userId}, target=${usedTarget}, source=${usedSource}`);
 
         const { error: insertErr } = await adminClient.from("wa_messages").insert({
           conversation_id,
@@ -514,6 +600,8 @@ serve(async (req: Request): Promise<Response> => {
           instance: instance.name,
           meta_message_id: evoMsgId,
           conversation_id,
+          target: usedTarget,
+          target_source: usedSource,
         });
       }
     }
