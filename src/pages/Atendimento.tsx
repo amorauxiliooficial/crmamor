@@ -444,13 +444,19 @@ export default function Atendimento() {
     }
   }, [selectedId, selectedWa, aiEnabled, toast, createEvent, currentChannel]);
 
+  const sendingRef = useRef(false);
+
   const handleSend = useCallback(() => {
     if (!selectedId || !msgText.trim() || !selectedWa) return;
+    if (sendingRef.current) return;
+    sendingRef.current = true;
     const text = msgText.trim();
     sendWhatsApp.mutate(
       { to: selectedWa.wa_phone, text, conversation_id: selectedId },
       {
+        onSuccess: () => { sendingRef.current = false; },
         onError: (err) => {
+          sendingRef.current = false;
           console.error("Send error:", err);
           toast({ title: "Erro ao enviar", description: "Tente novamente.", variant: "destructive" });
         },
