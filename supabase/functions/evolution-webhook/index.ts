@@ -229,23 +229,33 @@ async function handleInboundMessage(
   const wa_jid = remoteJid;
   const isLid = remoteJid.includes("@lid");
 
-  // For phone: prefer remoteJidAlt (real number) over remoteJid (which may be a LID)
+  // Detect raw JID: @s.whatsapp.net where remoteJidAlt doesn't provide a real number
+  const isRawJid = remoteJid.includes("@s.whatsapp.net") && !remoteJidAlt;
+
+  // For phone: prefer remoteJidAlt (real number) over remoteJid (which may be a LID or raw JID)
   const baseForPhone = remoteJidAlt ?? remoteJid;
-  const wa_phone = baseForPhone.replace(/@.*$/, "").replace(/\D/g, "");
+  const wa_phone_digits = baseForPhone.replace(/@.*$/, "").replace(/\D/g, "");
 
-  console.log("EVOLUTION JIDs", { remoteJid, remoteJidAlt, wa_jid, wa_phone, isLid });
+  // If it's a raw JID (no remoteJidAlt), don't trust the digits as a real phone
+  const validPhone = !isRawJid && !isLid && wa_phone_digits.length >= 10 && wa_phone_digits.length <= 15;
+  // For LID with remoteJidAlt providing real digits, allow it
+  const validPhoneLid = isLid && remoteJidAlt && wa_phone_digits.length >= 10 && wa_phone_digits.length <= 15;
 
-  if (wa_phone.length < 10 || wa_phone.length > 15) {
-    if (isLid) {
-      console.warn(`⚠️ LID sem remoteJidAlt válido. wa_phone="${wa_phone}" (${wa_phone.length} dígitos). Outbound deve ser bloqueado. remoteJid=${remoteJid}`);
-      // Still proceed to create/update conversation with wa_jid so inbound messages are tracked
-    } else {
-      console.warn(`⚠️ Invalid phone digits from remoteJid: ${remoteJid} → "${wa_phone}" (${wa_phone.length} digits). Skipping.`);
-      return;
-    }
+  // The phone we store: real E.164 digits, or prefixed identifier
+  const wa_phone = (validPhone || validPhoneLid)
+    ? wa_phone_digits
+    : isLid
+      ? `lid:${wa_jid}`
+      : `raw:${wa_jid}`;
+
+  const effectiveValidPhone = validPhone || validPhoneLid;
+
+  console.log("EVOLUTION JIDs", { remoteJid, remoteJidAlt, wa_jid, wa_phone, isLid, isRawJid, validPhone: effectiveValidPhone });
+
+  if (!effectiveValidPhone && !isLid && !isRawJid) {
+    console.warn(`⚠️ Invalid phone digits from remoteJid: ${remoteJid} → "${wa_phone_digits}" (${wa_phone_digits.length} digits). Skipping.`);
+    return;
   }
-
-  const validPhone = wa_phone.length >= 10 && wa_phone.length <= 15;
 
   const message = msgData.message ?? {};
   const pushName: string = msgData.pushName ?? "";
@@ -327,7 +337,7 @@ async function handleInboundMessage(
   if (byJid) {
     conversation = byJid;
     console.log(`🔍 Found conversation by wa_jid: ${conversation.id}`);
-  } else if (validPhone) {
+  } else if (effectiveValidPhone) {
     // (b) Fallback: search by wa_phone for legacy records without wa_jid
     const phoneVariants = [wa_phone, `+${wa_phone}`];
     for (const pv of phoneVariants) {
@@ -351,8 +361,8 @@ async function handleInboundMessage(
 
   // === Alias-based lookup before creating a new conversation ===
   if (!conversation) {
-    const storedPhone = validPhone ? wa_phone : `lid:${wa_jid}`;
-    const phoneVariantsForAlias = validPhone
+    const storedPhone = effectiveValidPhone ? wa_phone : (isLid ? `lid:${wa_jid}` : `raw:${wa_jid}`);
+    const phoneVariantsForAlias = effectiveValidPhone
       ? [wa_phone, `+${wa_phone}`, wa_jid]
       : [storedPhone, wa_jid];
 
@@ -392,10 +402,10 @@ async function handleInboundMessage(
 
   if (!conversation) {
     // For LID contacts without real phone, try to resolve from sibling conversations or CRM
-    let resolvedPhone = validPhone ? wa_phone : `lid:${wa_jid}`;
+    let resolvedPhone = effectiveValidPhone ? wa_phone : (isLid ? `lid:${wa_jid}` : `raw:${wa_jid}`);
     let resolvedMaeId: string | null = null;
 
-    if (!validPhone && pushName) {
+    if (!effectiveValidPhone && pushName) {
       const { data: siblingMatches } = await supabase
         .from("wa_conversations")
         .select("id, wa_phone, mae_id")
@@ -463,14 +473,14 @@ async function handleInboundMessage(
 
     // Insert aliases for the new conversation
     const aliasesToInsert = [
-      { conversation_id: newConv.id, phone_value: resolvedPhone, phone_type: resolvedPhone.startsWith("lid:") || resolvedPhone.includes("@lid") ? "lid" : "e164" },
+      { conversation_id: newConv.id, phone_value: resolvedPhone, phone_type: resolvedPhone.startsWith("lid:") || resolvedPhone.includes("@lid") ? "lid" : resolvedPhone.startsWith("raw:") ? "raw" : "e164" },
     ];
     // Also add wa_jid as alias if different
     if (wa_jid !== resolvedPhone) {
       aliasesToInsert.push({ conversation_id: newConv.id, phone_value: wa_jid, phone_type: wa_jid.includes("@lid") ? "lid" : "raw" });
     }
     // Also add wa_phone digits if valid and different
-    if (validPhone && wa_phone !== resolvedPhone) {
+    if (effectiveValidPhone && wa_phone !== resolvedPhone) {
       aliasesToInsert.push({ conversation_id: newConv.id, phone_value: wa_phone, phone_type: "e164" });
     }
 
@@ -489,7 +499,7 @@ async function handleInboundMessage(
     };
 
     // Only overwrite wa_phone if we have a valid real phone number
-    if (validPhone) {
+    if (effectiveValidPhone) {
       updatePayload.wa_phone = wa_phone;
     }
 
