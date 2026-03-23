@@ -402,7 +402,7 @@ async function handleInboundMessage(
 
   if (!conversation) {
     // For LID contacts without real phone, try to resolve from sibling conversations or CRM
-    let resolvedPhone = validPhone ? wa_phone : `lid:${wa_jid}`;
+    let resolvedPhone = effectiveValidPhone ? wa_phone : (isLid ? `lid:${wa_jid}` : `raw:${wa_jid}`);
     let resolvedMaeId: string | null = null;
 
     if (!validPhone && pushName) {
