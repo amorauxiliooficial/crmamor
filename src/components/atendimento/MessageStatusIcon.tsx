@@ -17,6 +17,11 @@ export const MessageStatusIcon = memo(function MessageStatusIcon({
   if (!status) return null;
 
   switch (status) {
+    case "sending":
+      return (
+        <Loader2 className={cn("h-3 w-3 text-white/50 animate-spin", className)} />
+      );
+
     case "pending":
       return (
         <Clock className={cn("h-3 w-3 text-white/60", className)} />

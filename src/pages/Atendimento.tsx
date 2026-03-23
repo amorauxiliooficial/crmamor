@@ -445,25 +445,68 @@ export default function Atendimento() {
   }, [selectedId, selectedWa, aiEnabled, toast, createEvent, currentChannel]);
 
   const sendingRef = useRef(false);
+  const lastMsgRef = useRef("");
+  const queryClient = useQueryClient();
 
   const handleSend = useCallback(() => {
     if (!selectedId || !msgText.trim() || !selectedWa) return;
     if (sendingRef.current) return;
     sendingRef.current = true;
     const text = msgText.trim();
+    lastMsgRef.current = text;
+
+    // Optimistic message
+    const optimisticMsg = {
+      id: "temp-" + Date.now(),
+      conversation_id: selectedId,
+      meta_message_id: null,
+      direction: "out",
+      body: text,
+      msg_type: "text",
+      status: "sending",
+      sent_by: user?.id ?? null,
+      created_at: new Date().toISOString(),
+      media_url: null,
+      media_mime: null,
+      media_filename: null,
+      media_size: null,
+      media_duration: null,
+      meta_media_id: null,
+    };
+
+    queryClient.setQueryData(["wa_messages", selectedId], (old: any[]) => [
+      ...(old || []),
+      optimisticMsg,
+    ]);
+
     sendWhatsApp.mutate(
       { to: selectedWa.wa_phone, text, conversation_id: selectedId },
       {
-        onSuccess: () => { sendingRef.current = false; },
+        onSuccess: () => {
+          sendingRef.current = false;
+          // Remove optimistic message — realtime will bring the real one
+          queryClient.setQueryData(["wa_messages", selectedId], (old: any[]) =>
+            old ? old.filter((m: any) => m.id !== optimisticMsg.id) : old
+          );
+        },
         onError: (err) => {
           sendingRef.current = false;
           console.error("Send error:", err);
+          // Mark optimistic message as failed
+          queryClient.setQueryData(["wa_messages", selectedId], (old: any[]) =>
+            old
+              ? old.map((m: any) =>
+                  m.id === optimisticMsg.id ? { ...m, status: "failed" } : m
+                )
+              : old
+          );
+          setMsgText(lastMsgRef.current);
           toast({ title: "Erro ao enviar", description: "Tente novamente.", variant: "destructive" });
         },
       }
     );
     setMsgText("");
-  }, [selectedId, msgText, selectedWa, sendWhatsApp, toast]);
+  }, [selectedId, msgText, selectedWa, sendWhatsApp, toast, user?.id, queryClient]);
 
   const handleSendMedia = useCallback(async (file: File) => {
     if (!selectedId || !selectedWa) return;
