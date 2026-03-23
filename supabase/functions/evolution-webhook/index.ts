@@ -509,53 +509,54 @@ async function handleInboundMessage(
       }
     }
 
-    const insertData: any = {
-      wa_jid: wa_jid,
-      wa_phone: resolvedPhone,
-      wa_name: pushName || null,
-      status: "open",
-      channel: "whatsapp_web",
-      active_channel_code: "evolution",
-      preferred_channel: "whatsapp_web",
-      instance_id: instanceId,
-      unread_count: 1,
-      last_message_at: new Date().toISOString(),
-      last_message_preview: bodyText.slice(0, 200),
-      last_inbound_at: new Date().toISOString(),
-      ...(resolvedMaeId ? { mae_id: resolvedMaeId } : {}),
-    };
+    // Only create a new conversation if resolution didn't find one
+    if (!conversation) {
+      const insertData: any = {
+        wa_jid: wa_jid,
+        wa_phone: resolvedPhone,
+        wa_name: pushName || null,
+        status: "open",
+        channel: "whatsapp_web",
+        active_channel_code: "evolution",
+        preferred_channel: "whatsapp_web",
+        instance_id: instanceId,
+        unread_count: 1,
+        last_message_at: new Date().toISOString(),
+        last_message_preview: bodyText.slice(0, 200),
+        last_inbound_at: new Date().toISOString(),
+        ...(resolvedMaeId ? { mae_id: resolvedMaeId } : {}),
+      };
 
-    const { data: newConv, error: convErr } = await supabase
-      .from("wa_conversations")
-      .insert(insertData)
-      .select("id")
-      .single();
+      const { data: newConv, error: convErr } = await supabase
+        .from("wa_conversations")
+        .insert(insertData)
+        .select("id")
+        .single();
 
-    if (convErr) {
-      console.error("❌ Error creating conversation:", convErr.message, JSON.stringify(convErr));
-      return;
-    }
+      if (convErr) {
+        console.error("❌ Error creating conversation:", convErr.message, JSON.stringify(convErr));
+        return;
+      }
 
-    conversation = { id: newConv.id, unread_count: 1 };
-    console.log(`🆕 Created conversation ${newConv.id} for wa_jid=${wa_jid} wa_phone=${insertData.wa_phone} (validPhone=${validPhone})`);
+      conversation = { id: newConv.id, unread_count: 1 };
+      console.log(`🆕 Created conversation ${newConv.id} for wa_jid=${wa_jid} wa_phone=${insertData.wa_phone} (effectiveValidPhone=${effectiveValidPhone})`);
 
-    // Insert aliases for the new conversation
-    const aliasesToInsert = [
-      { conversation_id: newConv.id, phone_value: resolvedPhone, phone_type: resolvedPhone.startsWith("lid:") || resolvedPhone.includes("@lid") ? "lid" : resolvedPhone.startsWith("raw:") ? "raw" : "e164" },
-    ];
-    // Also add wa_jid as alias if different
-    if (wa_jid !== resolvedPhone) {
-      aliasesToInsert.push({ conversation_id: newConv.id, phone_value: wa_jid, phone_type: wa_jid.includes("@lid") ? "lid" : "raw" });
-    }
-    // Also add wa_phone digits if valid and different
-    if (effectiveValidPhone && wa_phone !== resolvedPhone) {
-      aliasesToInsert.push({ conversation_id: newConv.id, phone_value: wa_phone, phone_type: "e164" });
-    }
+      // Insert aliases for the new conversation
+      const aliasesToInsert = [
+        { conversation_id: newConv.id, phone_value: resolvedPhone, phone_type: resolvedPhone.startsWith("lid:") || resolvedPhone.includes("@lid") ? "lid" : resolvedPhone.startsWith("raw:") ? "raw" : "e164" },
+      ];
+      if (wa_jid !== resolvedPhone) {
+        aliasesToInsert.push({ conversation_id: newConv.id, phone_value: wa_jid, phone_type: wa_jid.includes("@lid") ? "lid" : "raw" });
+      }
+      if (effectiveValidPhone && wa_phone !== resolvedPhone) {
+        aliasesToInsert.push({ conversation_id: newConv.id, phone_value: wa_phone, phone_type: "e164" });
+      }
 
-    for (const alias of aliasesToInsert) {
-      await supabase
-        .from("conversation_phone_aliases")
-        .upsert(alias, { onConflict: "phone_value" });
+      for (const alias of aliasesToInsert) {
+        await supabase
+          .from("conversation_phone_aliases")
+          .upsert(alias, { onConflict: "phone_value" });
+      }
     }
   } else {
     const updatePayload: any = {
