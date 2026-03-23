@@ -27,11 +27,13 @@ function isLidContact(conv: WaConversation | null | undefined): boolean {
 /** Normalize wa_phone for sending: return E.164 digits */
 function normalizeWhatsAppTo(raw: string | null | undefined): string | null {
   if (!raw) return null;
-  // Strip @s.whatsapp.net or other suffixes
+  // LID contacts from WhatsApp Web — keep as-is
+  if (raw.includes("@lid")) return raw;
+  // Normal phone: strip non-digits, ensure 10+ digits
   const stripped = raw.split("@")[0];
   const digits = stripped.replace(/\D/g, "");
   if (digits.length < 10) return null;
-  return digits.startsWith("+") ? digits : `+${digits}`;
+  return digits;
 }
 
 interface UseAtendimentoMessagesParams {
@@ -69,7 +71,7 @@ export function useAtendimentoMessages({
     const to = normalizeWhatsAppTo(selectedWa.wa_phone);
     if (!to) {
       sendingRef.current = false;
-      toast({ title: "Número inválido", description: "Não foi possível normalizar o telefone do contato.", variant: "destructive" });
+      toast({ title: "Numero invalido", description: "O telefone do contato nao pode ser identificado. Verifique o cadastro.", variant: "destructive" });
       return;
     }
 
