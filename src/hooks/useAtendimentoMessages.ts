@@ -93,7 +93,7 @@ export function useAtendimentoMessages({
 
   const handleSendMedia = useCallback(async (file: File) => {
     if (!conversationId || !selectedWa) return;
-    if (selectedWa.wa_phone?.includes("@lid")) {
+    if (isLidContact(selectedWa)) {
       toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
       return;
     }
