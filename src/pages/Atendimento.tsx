@@ -656,6 +656,7 @@ export default function Atendimento() {
                 onTransferToWeb={() => setTransferToWebOpen(true)}
                 isSending={sendWhatsApp.isPending}
               />
+              </ErrorBoundary>
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
                   <CrmContextPanel
