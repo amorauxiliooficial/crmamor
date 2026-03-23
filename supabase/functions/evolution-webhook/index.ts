@@ -327,7 +327,7 @@ async function handleInboundMessage(
   if (byJid) {
     conversation = byJid;
     console.log(`🔍 Found conversation by wa_jid: ${conversation.id}`);
-  } else {
+  } else if (validPhone) {
     // (b) Fallback: search by wa_phone for legacy records without wa_jid
     const phoneVariants = [wa_phone, `+${wa_phone}`];
     for (const pv of phoneVariants) {
