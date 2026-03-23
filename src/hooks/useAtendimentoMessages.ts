@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { QueryClient } from "@tanstack/react-query";
 import type { WaConversation } from "@/hooks/useWhatsApp";
 
+const LID_BLOCK_MSG = "Contato sem número válido (LID). Aguarde correção do canal.";
+
 /** Normalize wa_phone for sending: preserve @lid JIDs as-is, otherwise return E.164 */
 function normalizeWhatsAppTo(raw: string): string | null {
   // LID contacts must keep the @lid suffix for Evolution API routing
