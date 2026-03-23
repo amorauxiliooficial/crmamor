@@ -41,8 +41,15 @@ export function useAtendimentoMessages({
     sendingRef.current = true;
     const text = msgText.trim();
 
+    const to = normalizeWhatsAppTo(selectedWa.wa_phone);
+    if (!to) {
+      sendingRef.current = false;
+      toast({ title: "Número inválido", description: "Não foi possível normalizar o telefone do contato.", variant: "destructive" });
+      return;
+    }
+
     sendWhatsApp.mutate(
-      { to: selectedWa.wa_phone, text, conversation_id: conversationId },
+      { to, text, conversation_id: conversationId },
       {
         onSuccess: () => {
           sendingRef.current = false;
