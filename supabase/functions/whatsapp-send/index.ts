@@ -247,11 +247,16 @@ serve(async (req: Request): Promise<Response> => {
     if (conversation_id) {
       const { data: conv } = await adminClient
         .from("wa_conversations")
-        .select("active_channel_code, instance_id, wa_phone, wa_jid, wa_name, mae_id")
+        .select("active_channel_code, channel_code, instance_id, wa_phone, wa_jid, wa_name, mae_id")
         .eq("id", conversation_id)
         .single();
 
-      if (conv?.active_channel_code === "evolution" && conv?.instance_id) {
+      const hasOfficialFallback =
+        conv?.channel_code === "official" &&
+        !isLidContact &&
+        !!normalizePhone(String(to || conv?.wa_phone || ""));
+
+      if (conv?.active_channel_code === "evolution" && conv?.instance_id && !hasOfficialFallback) {
         const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL");
         const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
 
@@ -912,7 +917,7 @@ serve(async (req: Request): Promise<Response> => {
         .eq("id", conversation_id);
     }
 
-    return toJson({ success: true, meta_message_id: metaMsgId, conversation_id });
+    return toJson({ success: true, channel: "official", meta_message_id: metaMsgId, conversation_id });
   } catch (err) {
     console.error("❌ whatsapp-send error:", err);
     return toJson({ error: "Internal server error", error_message: String(err) }, 500);
