@@ -246,7 +246,7 @@ export function ChatInputBar({
             e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
           }}
           onKeyDown={handleKeyDown}
-          disabled={!windowIsOpen}
+          disabled={!windowIsOpen && channel !== "evolution"}
           spellCheck={true}
           autoComplete="off"
           autoCapitalize="sentences"
