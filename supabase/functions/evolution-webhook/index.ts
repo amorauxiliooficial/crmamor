@@ -473,14 +473,14 @@ async function handleInboundMessage(
 
     // Insert aliases for the new conversation
     const aliasesToInsert = [
-      { conversation_id: newConv.id, phone_value: resolvedPhone, phone_type: resolvedPhone.startsWith("lid:") || resolvedPhone.includes("@lid") ? "lid" : "e164" },
+      { conversation_id: newConv.id, phone_value: resolvedPhone, phone_type: resolvedPhone.startsWith("lid:") || resolvedPhone.includes("@lid") ? "lid" : resolvedPhone.startsWith("raw:") ? "raw" : "e164" },
     ];
     // Also add wa_jid as alias if different
     if (wa_jid !== resolvedPhone) {
       aliasesToInsert.push({ conversation_id: newConv.id, phone_value: wa_jid, phone_type: wa_jid.includes("@lid") ? "lid" : "raw" });
     }
     // Also add wa_phone digits if valid and different
-    if (validPhone && wa_phone !== resolvedPhone) {
+    if (effectiveValidPhone && wa_phone !== resolvedPhone) {
       aliasesToInsert.push({ conversation_id: newConv.id, phone_value: wa_phone, phone_type: "e164" });
     }
 
