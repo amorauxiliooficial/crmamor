@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, memo } from "react";
+import { useState, useEffect, useCallback, useMemo, memo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveAiAgents } from "@/hooks/useAiAgents";
 import { useNavigate, useParams } from "react-router-dom";
