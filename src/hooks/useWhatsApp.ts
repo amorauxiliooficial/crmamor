@@ -179,10 +179,22 @@ export function useSendWhatsApp() {
       media_filename?: string;
       caption?: string;
     }) => {
+      // Validate active session before calling edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Sem sessão ativa. Faça login novamente para enviar mensagens.");
+      }
+
       const { data, error } = await supabase.functions.invoke("whatsapp-send", {
         body: params,
       });
-      if (error) throw error;
+      if (error) {
+        const status = (error as any).status ?? "?";
+        const details = (error as any).context || (error as any).details || {};
+        throw new Error(
+          `whatsapp-send failed: ${error.message} | status=${status} | details=${JSON.stringify(details)}`
+        );
+      }
       return data;
     },
     onSuccess: (_data, variables) => {
