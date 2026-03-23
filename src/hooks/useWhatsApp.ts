@@ -142,10 +142,6 @@ export function useWaMessages(conversationId: string | null) {
           filter: `conversation_id=eq.${conversationId}`,
         },
         () => {
-          queryClient.setQueryData(["wa_messages", conversationId], (old: any[]) => {
-            if (!old) return old;
-            return old.filter((m: any) => !String(m.id).startsWith("temp-"));
-          });
           queryClient.invalidateQueries({ queryKey: ["wa_messages", conversationId] });
         }
       )
@@ -189,8 +185,11 @@ export function useSendWhatsApp() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["wa_conversations"] });
+      if (variables.conversation_id) {
+        queryClient.invalidateQueries({ queryKey: ["wa_messages", variables.conversation_id] });
+      }
     },
   });
 }
