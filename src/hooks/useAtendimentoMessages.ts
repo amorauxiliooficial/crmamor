@@ -3,6 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import type { QueryClient } from "@tanstack/react-query";
 import type { WaConversation } from "@/hooks/useWhatsApp";
 
+/** Strip @lid suffix and non-digit chars, returning E.164 string or null */
+function normalizeWhatsAppTo(raw: string): string | null {
+  // Remove @lid / @s.whatsapp.net suffixes
+  const stripped = raw.split("@")[0];
+  const digits = stripped.replace(/\D/g, "");
+  if (digits.length < 10) return null;
+  // Ensure leading +
+  return digits.startsWith("+") ? digits : `+${digits}`;
+}
+
 interface UseAtendimentoMessagesParams {
   conversationId: string | null;
   selectedWa: WaConversation | undefined | null;
@@ -31,8 +41,15 @@ export function useAtendimentoMessages({
     sendingRef.current = true;
     const text = msgText.trim();
 
+    const to = normalizeWhatsAppTo(selectedWa.wa_phone);
+    if (!to) {
+      sendingRef.current = false;
+      toast({ title: "Número inválido", description: "Não foi possível normalizar o telefone do contato.", variant: "destructive" });
+      return;
+    }
+
     sendWhatsApp.mutate(
-      { to: selectedWa.wa_phone, text, conversation_id: conversationId },
+      { to, text, conversation_id: conversationId },
       {
         onSuccess: () => {
           sendingRef.current = false;
@@ -61,6 +78,12 @@ export function useAtendimentoMessages({
   const handleSendMedia = useCallback(async (file: File) => {
     if (!conversationId || !selectedWa) return;
 
+    const mediaTo = normalizeWhatsAppTo(selectedWa.wa_phone);
+    if (!mediaTo) {
+      toast({ title: "Número inválido", description: "Não foi possível normalizar o telefone do contato.", variant: "destructive" });
+      return;
+    }
+
     try {
       const ext = file.name.split('.').pop() || 'bin';
       const path = `outbound/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
@@ -81,7 +104,7 @@ export function useAtendimentoMessages({
 
       sendWhatsApp.mutate(
         {
-          to: selectedWa.wa_phone,
+          to: mediaTo,
           conversation_id: conversationId,
           type: msgType,
           media_url: publicUrl,
@@ -105,10 +128,15 @@ export function useAtendimentoMessages({
 
   const handleRetry = useCallback((messageId: string, body: string, msgType?: string, mediaUrl?: string, mediaMime?: string, mediaFilename?: string) => {
     if (!conversationId || !selectedWa) return;
+    const retryTo = normalizeWhatsAppTo(selectedWa.wa_phone);
+    if (!retryTo) {
+      toast({ title: "Número inválido", description: "Não foi possível normalizar o telefone do contato.", variant: "destructive" });
+      return;
+    }
     retryWhatsApp.mutate(
       {
         messageId,
-        to: selectedWa.wa_phone,
+        to: retryTo,
         text: msgType === 'text' || !msgType ? body : undefined,
         conversation_id: conversationId,
         type: msgType,
