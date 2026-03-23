@@ -223,6 +223,7 @@ export default function Atendimento() {
       sentByAgentName: m.sent_by ? profileMap.get(m.sent_by) ?? null : null,
       editedAt: (m as any).edited_at ?? null,
       editedByAgentId: (m as any).edited_by_agent_id ?? null,
+      channel: (m as any).channel ?? null,
     }));
   }, [waMessages, profileMap]);
 

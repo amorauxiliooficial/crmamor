@@ -36,6 +36,7 @@ export interface Mensagem {
   sentByAgentName?: string | null;
   editedAt?: string | null;
   editedByAgentId?: string | null;
+  channel?: string | null;
 }
 
 export const mockConversas: Conversa[] = [
