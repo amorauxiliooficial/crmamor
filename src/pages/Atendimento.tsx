@@ -446,7 +446,6 @@ export default function Atendimento() {
 
   const sendingRef = useRef(false);
   const lastMsgRef = useRef("");
-  const queryClient = useQueryClient();
 
   const handleSend = useCallback(() => {
     if (!selectedId || !msgText.trim() || !selectedWa) return;
