@@ -530,21 +530,12 @@ serve(async (req: Request): Promise<Response> => {
         }
 
         if (!evoResult.ok) {
-          console.warn(`⚠️ Evolution failed for final target ${usedTarget || "unknown"}`);
-        }
-
-        if (evoResult.ok) {
-          console.log(`✅ Evolution accepted message for ${usedTarget} (source=${usedSource})`);
-        }
-
-        if (!evoResult.ok) {
           const errMsg = typeof evoResult.json === "object" && evoResult.json?.message
             ? String(typeof evoResult.json.message === "string" ? evoResult.json.message : JSON.stringify(evoResult.json.message))
             : evoResult.text || "Unknown error";
 
           console.error(`❌ Evolution error ${evoResult.status}: ${errMsg}`);
 
-          // Store failed message
           const bodyText = msgType === "text" ? String(text || "") : caption || `[${msgType}]`;
           await adminClient.from("wa_messages").insert({
             conversation_id,
@@ -564,12 +555,10 @@ serve(async (req: Request): Promise<Response> => {
         }
 
         const evoJson = evoResult.json;
-
-        // Store success message
         const bodyText = msgType === "text" ? String(text || "") : caption || `[${msgType}]`;
         const evoMsgId = evoJson?.key?.id ?? null;
 
-        console.log(`✅ Evolution sent OK. Saving to DB... msgId=${evoMsgId}, userId=${userId}`);
+        console.log(`✅ Evolution sent OK. Saving to DB... msgId=${evoMsgId}, userId=${userId}, target=${usedTarget}, source=${usedSource}`);
 
         const { error: insertErr } = await adminClient.from("wa_messages").insert({
           conversation_id,
@@ -611,6 +600,8 @@ serve(async (req: Request): Promise<Response> => {
           instance: instance.name,
           meta_message_id: evoMsgId,
           conversation_id,
+          target: usedTarget,
+          target_source: usedSource,
         });
       }
     }
