@@ -272,7 +272,7 @@ export function ChatInputBar({
                 onSend();
               }
             }}
-            disabled={(!msgText.trim() && !pendingFile) || !windowIsOpen || isSending}
+            disabled={(!msgText.trim() && !pendingFile) || (!windowIsOpen && channel !== "evolution") || isSending}
             className="shrink-0 rounded-xl h-10 w-10"
           >
             <Send className="h-4 w-4" />
