@@ -405,7 +405,7 @@ async function handleInboundMessage(
     let resolvedPhone = effectiveValidPhone ? wa_phone : (isLid ? `lid:${wa_jid}` : `raw:${wa_jid}`);
     let resolvedMaeId: string | null = null;
 
-    if (!validPhone && pushName) {
+    if (!effectiveValidPhone && pushName) {
       const { data: siblingMatches } = await supabase
         .from("wa_conversations")
         .select("id, wa_phone, mae_id")
