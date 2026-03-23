@@ -687,6 +687,7 @@ export default function Atendimento() {
               )}
             </>
           ) : mobileTab === "conversas" ? (
+            <ErrorBoundary fallbackMessage="Erro na lista de conversas">
             <InboxSidebar
               conversas={sortedConversas}
               selectedId={selectedId}
