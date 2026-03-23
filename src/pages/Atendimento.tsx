@@ -688,23 +688,24 @@ export default function Atendimento() {
             </>
           ) : mobileTab === "conversas" ? (
             <ErrorBoundary fallbackMessage="Erro na lista de conversas">
-            <InboxSidebar
-              conversas={sortedConversas}
-              selectedId={selectedId}
-              search={search}
-              onSearchChange={handleSearchChange}
-              debouncedSearch={debouncedSearch}
-              onSelect={selectConversa}
-              onOpenConfig={() => setSettingsOpen(true)}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-              atendenteFilter={atendenteFilter}
-              onAtendenteFilterChange={setAtendenteFilter}
-              onAssume={handleAssume}
-              onPendente={handlePendente}
-              onStartAtendimento={handleStartAtendimento}
-              isLoading={loadingConvos}
-            />
+              <InboxSidebar
+                conversas={sortedConversas}
+                selectedId={selectedId}
+                search={search}
+                onSearchChange={handleSearchChange}
+                debouncedSearch={debouncedSearch}
+                onSelect={selectConversa}
+                onOpenConfig={() => setSettingsOpen(true)}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                atendenteFilter={atendenteFilter}
+                onAtendenteFilterChange={setAtendenteFilter}
+                onAssume={handleAssume}
+                onPendente={handlePendente}
+                onStartAtendimento={handleStartAtendimento}
+                isLoading={loadingConvos}
+              />
+            </ErrorBoundary>
           ) : mobileTab === "kanban" ? (
             <div className="flex-1 flex items-center justify-center p-6">
               <div className="text-center space-y-2">
