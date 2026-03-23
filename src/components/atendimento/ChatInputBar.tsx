@@ -44,6 +44,7 @@ export function ChatInputBar({
   replyTo,
   onClearReply,
   channel,
+  isSending = false,
 }: ChatInputBarProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
