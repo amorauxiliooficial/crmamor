@@ -12,12 +12,7 @@ function hasValidSendablePhone(raw: string | null | undefined): boolean {
   if (raw.startsWith("lid:") || raw.includes("@lid")) return true;
 
   // Raw JIDs are NOT phone numbers
-  if (
-    raw.startsWith("raw:") ||
-    raw.includes("@s.whatsapp.net") ||
-    raw.includes("@c.us") ||
-    raw.includes("@tampa")
-  ) {
+  if (raw.startsWith("raw:") || raw.includes("@s.whatsapp.net") || raw.includes("@c.us") || raw.includes("@tampa")) {
     return false;
   }
 
@@ -43,12 +38,7 @@ function normalizeWhatsAppTo(raw: string): string | null {
   if (raw.includes("@lid") || raw.startsWith("lid:")) return raw;
 
   // Do NOT treat raw JIDs as phone numbers
-  if (
-    raw.startsWith("raw:") ||
-    raw.includes("@s.whatsapp.net") ||
-    raw.includes("@c.us") ||
-    raw.includes("@tampa")
-  ) {
+  if (raw.startsWith("raw:") || raw.includes("@s.whatsapp.net") || raw.includes("@c.us") || raw.includes("@tampa")) {
     return null;
   }
 
@@ -82,32 +72,37 @@ export function useAtendimentoMessages({
   const sendingRef = useRef(false);
 
   const handleSend = useCallback(() => {
-const text = msgText
-  .replace(/[\u200B-\u200D\uFEFF]/g, "") // remove caracteres invisíveis (zero-width)
-  .trim();
+    if (!conversationId || !selectedWa) return;
+
+    // Sanitiza texto (remove zero-width) e evita enviar vazio/invisível
+    const text = msgText.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+    if (!text) return;
+
     if (isLidContact(selectedWa)) {
-      toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
+      toast({
+        title: "Envio bloqueado",
+        description: LID_BLOCK_MSG,
+        variant: "destructive",
+      });
       return;
     }
 
     if (sendingRef.current) return;
     sendingRef.current = true;
 
-    const text = msgText.trim();
     const to = normalizeWhatsAppTo(selectedWa.wa_phone);
-
-{ to, text, type: "text", conversation_id: conversationId },
+    if (!to) {
       sendingRef.current = false;
       toast({
-        title: "Numero invalido",
-        description: "O telefone do contato nao pode ser identificado. Verifique o cadastro.",
+        title: "Número inválido",
+        description: "O telefone do contato não pode ser identificado. Verifique o cadastro.",
         variant: "destructive",
       });
       return;
     }
 
     sendWhatsApp.mutate(
-      { to, text, conversation_id: conversationId },
+      { to, text, type: "text", conversation_id: conversationId },
       {
         onSuccess: () => {
           sendingRef.current = false;
@@ -191,7 +186,7 @@ const text = msgText
             media_url: publicUrl,
             media_mime: file.type,
             media_filename: file.name,
-            caption: msgText.trim() || undefined,
+            caption: msgText.replace(/[\u200B-\u200D\uFEFF]/g, "").trim() || undefined,
           },
           {
             onError: (err: any) => {
