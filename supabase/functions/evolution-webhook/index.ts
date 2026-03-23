@@ -232,6 +232,7 @@ async function handleInboundMessage(
   }
 
   const isLid = remoteJid.includes("@lid");
+  console.log("EVOLUTION: ids", { wa_jid, wa_phone, isLid });
   console.log(`📱 Contact: wa_jid=${wa_jid}, wa_phone=${wa_phone}, isLid=${isLid}`);
 
   const message = msgData.message ?? {};
