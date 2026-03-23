@@ -7,7 +7,7 @@ const LID_BLOCK_MSG = "Contato sem número válido (LID). Aguarde correção do 
 
 function hasValidSendablePhone(raw: string | null | undefined): boolean {
   if (!raw) return false;
-  if (raw.startsWith("lid:") || raw.includes("@lid")) return false;
+  if (raw.startsWith("lid:") || raw.includes("@lid")) return true;
   const digits = raw.replace(/\D/g, "");
   return digits.length >= 10 && digits.length <= 15;
 }
