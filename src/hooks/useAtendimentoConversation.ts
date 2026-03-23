@@ -136,10 +136,20 @@ export function useAtendimentoConversation({
         onSuccess: () => {
           toast({ title: "Atendimento finalizado ✅" });
           createEvent.mutate({ conversation_id: target, event_type: "closed" });
+          // Navigate to next open conversation or clear selection
+          const openConversas = conversas.filter((c) => c.id !== target && c.status !== "Fechado");
+          if (openConversas.length > 0) {
+            const next = openConversas[0];
+            setSelectedId(next.id);
+            navigate(`/atendimento/chat/${next.id}`, { replace: true });
+          } else {
+            setSelectedId(null);
+            navigate("/atendimento", { replace: true });
+          }
         },
       });
     },
-    [selectedId, toast, closeConversation, createEvent]
+    [selectedId, toast, closeConversation, createEvent, conversas, navigate, setSelectedId]
   );
 
   const handleReopen = useCallback(() => {
