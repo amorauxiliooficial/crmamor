@@ -166,6 +166,10 @@ async function handleInboundMessage(
   const remoteJid: string = key.remoteJid ?? "";
   const messageId: string = key.id ?? "";
 
+  // Extract remoteJidAlt — Evolution may provide the real JID for LID contacts
+  const remoteJidAlt: string | null =
+    key.remoteJidAlt ?? msgData.remoteJidAlt ?? null;
+
   // For outgoing messages, update status AND backfill wa_jid/wa_phone on conversation
   if (fromMe) {
     console.log(`⏭️ Outgoing message ${messageId} — checking for status update`);
@@ -173,23 +177,22 @@ async function handleInboundMessage(
     // Backfill wa_jid/wa_phone on the conversation if remoteJid is valid
     if (remoteJid && !remoteJid.includes("@g.us")) {
       const outWaJid = remoteJid;
-      const outWaPhone = remoteJid.replace(/@.*$/, "").replace(/\D/g, "");
+      const baseForPhoneOut = remoteJidAlt ?? remoteJid;
+      const outWaPhone = baseForPhoneOut.replace(/@.*$/, "").replace(/\D/g, "");
       if (outWaPhone.length >= 10 && outWaPhone.length <= 15) {
-        // Find conversation missing wa_jid for this phone and backfill
         const { data: convToFix } = await supabase
           .from("wa_conversations")
           .select("id, wa_jid")
-          .or(`wa_phone.eq.${outWaPhone},wa_phone.eq.+${outWaPhone}`)
-          .is("wa_jid", null)
+          .or(`wa_phone.eq.${outWaPhone},wa_phone.eq.+${outWaPhone},wa_jid.eq.${outWaJid}`)
           .limit(1)
           .maybeSingle();
 
-        if (convToFix) {
+        if (convToFix && !convToFix.wa_jid) {
           await supabase
             .from("wa_conversations")
             .update({ wa_jid: outWaJid, wa_phone: outWaPhone })
             .eq("id", convToFix.id);
-          console.log(`🔧 Backfilled wa_jid=${outWaJid} on conversation ${convToFix.id} (fromMe)`);
+          console.log(`🔧 Backfilled wa_jid=${outWaJid}, wa_phone=${outWaPhone} on conversation ${convToFix.id} (fromMe)`);
         }
       }
     }
@@ -222,18 +225,27 @@ async function handleInboundMessage(
     return;
   }
 
-  // Canonical identifiers: wa_jid = full remoteJid, wa_phone = digits only
+  // Canonical identifiers
   const wa_jid = remoteJid;
-  const wa_phone = remoteJid.replace(/@.*$/, "").replace(/\D/g, "");
+  const isLid = remoteJid.includes("@lid");
+
+  // For phone: prefer remoteJidAlt (real number) over remoteJid (which may be a LID)
+  const baseForPhone = remoteJidAlt ?? remoteJid;
+  const wa_phone = baseForPhone.replace(/@.*$/, "").replace(/\D/g, "");
+
+  console.log("EVOLUTION JIDs", { remoteJid, remoteJidAlt, wa_jid, wa_phone, isLid });
 
   if (wa_phone.length < 10 || wa_phone.length > 15) {
-    console.warn(`⚠️ Invalid phone digits from remoteJid: ${remoteJid} → "${wa_phone}" (${wa_phone.length} digits). Skipping.`);
-    return;
+    if (isLid) {
+      console.warn(`⚠️ LID sem remoteJidAlt válido. wa_phone="${wa_phone}" (${wa_phone.length} dígitos). Outbound deve ser bloqueado. remoteJid=${remoteJid}`);
+      // Still proceed to create/update conversation with wa_jid so inbound messages are tracked
+    } else {
+      console.warn(`⚠️ Invalid phone digits from remoteJid: ${remoteJid} → "${wa_phone}" (${wa_phone.length} digits). Skipping.`);
+      return;
+    }
   }
 
-  const isLid = remoteJid.includes("@lid");
-  console.log("EVOLUTION: ids", { wa_jid, wa_phone, isLid });
-  console.log(`📱 Contact: wa_jid=${wa_jid}, wa_phone=${wa_phone}, isLid=${isLid}`);
+  const validPhone = wa_phone.length >= 10 && wa_phone.length <= 15;
 
   const message = msgData.message ?? {};
   const pushName: string = msgData.pushName ?? "";
@@ -315,7 +327,7 @@ async function handleInboundMessage(
   if (byJid) {
     conversation = byJid;
     console.log(`🔍 Found conversation by wa_jid: ${conversation.id}`);
-  } else {
+  } else if (validPhone) {
     // (b) Fallback: search by wa_phone for legacy records without wa_jid
     const phoneVariants = [wa_phone, `+${wa_phone}`];
     for (const pv of phoneVariants) {
@@ -338,22 +350,24 @@ async function handleInboundMessage(
   }
 
   if (!conversation) {
+    const insertData: any = {
+      wa_jid: wa_jid,
+      wa_phone: validPhone ? wa_phone : remoteJid.replace(/@.*$/, ""), // fallback: raw digits from LID
+      wa_name: pushName || null,
+      status: "open",
+      channel: "whatsapp_web",
+      active_channel_code: "evolution",
+      preferred_channel: "whatsapp_web",
+      instance_id: instanceId,
+      unread_count: 1,
+      last_message_at: new Date().toISOString(),
+      last_message_preview: bodyText.slice(0, 200),
+      last_inbound_at: new Date().toISOString(),
+    };
+
     const { data: newConv, error: convErr } = await supabase
       .from("wa_conversations")
-      .insert({
-        wa_jid: wa_jid,
-        wa_phone: wa_phone,
-        wa_name: pushName || null,
-        status: "open",
-        channel: "whatsapp_web",
-        active_channel_code: "evolution",
-        preferred_channel: "whatsapp_web",
-        instance_id: instanceId,
-        unread_count: 1,
-        last_message_at: new Date().toISOString(),
-        last_message_preview: bodyText.slice(0, 200),
-        last_inbound_at: new Date().toISOString(),
-      })
+      .insert(insertData)
       .select("id")
       .single();
 
@@ -363,16 +377,20 @@ async function handleInboundMessage(
     }
 
     conversation = { id: newConv.id, unread_count: 1 };
-    console.log(`🆕 Created conversation ${newConv.id} for wa_jid=${wa_jid} wa_phone=${wa_phone}`);
+    console.log(`🆕 Created conversation ${newConv.id} for wa_jid=${wa_jid} wa_phone=${insertData.wa_phone} (validPhone=${validPhone})`);
   } else {
     const updatePayload: any = {
       wa_jid: wa_jid,
-      wa_phone: wa_phone,
       last_message_at: new Date().toISOString(),
       last_message_preview: bodyText.slice(0, 200),
       last_inbound_at: new Date().toISOString(),
       unread_count: (conversation.unread_count ?? 0) + 1,
     };
+
+    // Only overwrite wa_phone if we have a valid real phone number
+    if (validPhone) {
+      updatePayload.wa_phone = wa_phone;
+    }
 
     // Update name if missing
     if (pushName && !conversation.wa_name) {
