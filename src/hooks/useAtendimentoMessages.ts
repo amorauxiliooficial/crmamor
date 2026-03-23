@@ -78,6 +78,12 @@ export function useAtendimentoMessages({
   const handleSendMedia = useCallback(async (file: File) => {
     if (!conversationId || !selectedWa) return;
 
+    const mediaTo = normalizeWhatsAppTo(selectedWa.wa_phone);
+    if (!mediaTo) {
+      toast({ title: "Número inválido", description: "Não foi possível normalizar o telefone do contato.", variant: "destructive" });
+      return;
+    }
+
     try {
       const ext = file.name.split('.').pop() || 'bin';
       const path = `outbound/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
