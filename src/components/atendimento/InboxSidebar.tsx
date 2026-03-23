@@ -40,7 +40,7 @@ function formatHorario(d: Date) {
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
-type TabFilter = "nao_lidas" | "Aberto" | "Pendente" | "Fechado";
+type TabFilter = "nao_lidas" | "Aberto" | "Pendente" | "Fechado" | "finalizadas";
 
 interface InboxSidebarProps {
   conversas: Conversa[];
