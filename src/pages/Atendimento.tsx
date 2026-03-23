@@ -69,7 +69,7 @@ function waToConversa(wa: WaConversation, profileMap: Map<string, string>): Conv
   };
 }
 
-type TabFilter = "nao_lidas" | "Aberto" | "Pendente" | "Fechado";
+type TabFilter = "nao_lidas" | "Aberto" | "Pendente" | "Fechado" | "finalizadas";
 
 export default function Atendimento() {
   const { user, loading } = useAuth();
