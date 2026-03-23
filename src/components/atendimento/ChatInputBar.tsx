@@ -28,6 +28,7 @@ interface ChatInputBarProps {
   replyTo: Mensagem | null;
   onClearReply: () => void;
   channel: string;
+  isSending?: boolean;
 }
 
 export function ChatInputBar({
@@ -43,6 +44,7 @@ export function ChatInputBar({
   replyTo,
   onClearReply,
   channel,
+  isSending = false,
 }: ChatInputBarProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
@@ -111,7 +113,7 @@ export function ChatInputBar({
     }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onSend();
+      if (!isSending) onSend();
     }
   }
 
@@ -251,7 +253,7 @@ export function ChatInputBar({
           lang="pt-BR"
           className={cn(
             "min-h-[42px] max-h-[120px] resize-none text-[14px] flex-1 rounded-xl bg-muted/10 border-border/10 focus-visible:border-primary/20 focus-visible:bg-background transition-all",
-            !windowIsOpen && "opacity-50 cursor-not-allowed"
+            (!windowIsOpen || isSending) && "opacity-50 cursor-not-allowed"
           )}
           rows={1}
         />
@@ -270,7 +272,7 @@ export function ChatInputBar({
                 onSend();
               }
             }}
-            disabled={(!msgText.trim() && !pendingFile) || !windowIsOpen}
+            disabled={(!msgText.trim() && !pendingFile) || !windowIsOpen || isSending}
             className="shrink-0 rounded-xl h-10 w-10"
           >
             <Send className="h-4 w-4" />

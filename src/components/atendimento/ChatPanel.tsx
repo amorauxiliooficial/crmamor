@@ -55,6 +55,7 @@ interface ChatPanelProps {
   channel?: string;
   onChangeChannel?: (channel: string) => void;
   onTransferToWeb?: () => void;
+  isSending?: boolean;
 }
 
 export function ChatPanel({
@@ -95,6 +96,7 @@ export function ChatPanel({
   channel = "official",
   onChangeChannel,
   onTransferToWeb,
+  isSending = false,
 }: ChatPanelProps) {
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState<AiAction | null>(null);
@@ -241,6 +243,7 @@ export function ChatPanel({
         replyTo={replyTo}
         onClearReply={() => setReplyTo(null)}
         channel={channel}
+        isSending={isSending}
       />
 
       {conversationPhone && (

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, memo } from "react";
+import { useState, useEffect, useCallback, useMemo, memo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveAiAgents } from "@/hooks/useAiAgents";
 import { useNavigate, useParams } from "react-router-dom";
@@ -444,13 +444,19 @@ export default function Atendimento() {
     }
   }, [selectedId, selectedWa, aiEnabled, toast, createEvent, currentChannel]);
 
+  const sendingRef = useRef(false);
+
   const handleSend = useCallback(() => {
     if (!selectedId || !msgText.trim() || !selectedWa) return;
+    if (sendingRef.current) return;
+    sendingRef.current = true;
     const text = msgText.trim();
     sendWhatsApp.mutate(
       { to: selectedWa.wa_phone, text, conversation_id: selectedId },
       {
+        onSuccess: () => { sendingRef.current = false; },
         onError: (err) => {
+          sendingRef.current = false;
           console.error("Send error:", err);
           toast({ title: "Erro ao enviar", description: "Tente novamente.", variant: "destructive" });
         },
@@ -605,6 +611,7 @@ export default function Atendimento() {
                 channel={currentChannel}
                 onChangeChannel={handleChangeChannel}
                 onTransferToWeb={() => setTransferToWebOpen(true)}
+                isSending={sendWhatsApp.isPending}
               />
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
@@ -775,6 +782,7 @@ export default function Atendimento() {
         channel={currentChannel}
         onChangeChannel={handleChangeChannel}
         onTransferToWeb={() => setTransferToWebOpen(true)}
+        isSending={sendWhatsApp.isPending}
       />
 
       <TransferDialog
