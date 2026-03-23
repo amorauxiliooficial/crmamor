@@ -104,7 +104,7 @@ export function useAtendimentoMessages({
 
       sendWhatsApp.mutate(
         {
-          to: selectedWa.wa_phone,
+          to: mediaTo,
           conversation_id: conversationId,
           type: msgType,
           media_url: publicUrl,
