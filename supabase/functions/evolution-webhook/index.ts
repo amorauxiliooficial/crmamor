@@ -352,7 +352,7 @@ async function handleInboundMessage(
   if (!conversation) {
     const insertData: any = {
       wa_jid: wa_jid,
-      wa_phone: validPhone ? wa_phone : null, // LID without real phone — leave null to block outbound
+      wa_phone: validPhone ? wa_phone : `lid:${wa_jid}`, // LID without real phone — prefix to block outbound
       wa_name: pushName || null,
       status: "open",
       channel: "whatsapp_web",

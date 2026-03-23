@@ -10,7 +10,7 @@ function isLidContact(conv: WaConversation | null | undefined): boolean {
   if (!conv) return false;
   if (conv.wa_jid?.includes("@lid")) return true;
   if (conv.wa_phone?.includes("@lid")) return true;
-  // No phone at all (LID conversation with null wa_phone)
+  if (conv.wa_phone?.startsWith("lid:")) return true;
   if (!conv.wa_phone) return true;
   return false;
 }
