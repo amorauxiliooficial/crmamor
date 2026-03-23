@@ -88,27 +88,55 @@ serve(async (req: Request): Promise<Response> => {
             `📨 Message from +${phone} (${contactName}): type=${msgType}, media_id=${metaMediaId?.slice(0, 20)}`,
           );
 
-          // Upsert conversation
+          // Find or create conversation
           const now = new Date().toISOString();
-          const { data: convo, error: convoErr } = await supabase
+
+          // First, try to find existing conversation
+          const { data: existingConvo } = await supabase
             .from("wa_conversations")
-            .upsert(
-              {
+            .select(
+              "id, unread_count, labels, status, ai_enabled, ai_agent_id, active_channel_code, instance_id, wa_name"
+            )
+            .eq("wa_phone", phone)
+            .maybeSingle();
+
+          let convo;
+          if (existingConvo) {
+            // Update ONLY safe fields — preserve active_channel_code and instance_id
+            const updatePayload: any = {
+              last_message_at: now,
+              last_inbound_at: now,
+              last_message_preview: textBody.slice(0, 200),
+            };
+
+            if (contactName && !existingConvo.wa_name) updatePayload.wa_name = contactName;
+            if (existingConvo.status === "closed") updatePayload.status = "open";
+
+            await supabase.from("wa_conversations").update(updatePayload).eq("id", existingConvo.id);
+            convo = existingConvo;
+          } else {
+            // New conversation — safe to set all fields
+            const { data: newConvo, error: newErr } = await supabase
+              .from("wa_conversations")
+              .insert({
                 wa_phone: phone,
                 wa_name: contactName,
                 last_message_at: now,
                 last_inbound_at: now,
                 last_message_preview: textBody.slice(0, 200),
                 status: "open",
-              },
-              { onConflict: "wa_phone" },
-            )
-            .select("id, unread_count, labels, status, ai_enabled, ai_agent_id")
-            .single();
+                channel: "meta_api",
+                active_channel_code: "official",
+                unread_count: 0,
+              })
+              .select("id, unread_count, labels, status, ai_enabled, ai_agent_id")
+              .single();
 
-          if (convoErr || !convo?.id) {
-            console.error("❌ Conversation upsert error:", convoErr);
-            continue;
+            if (newErr || !newConvo) {
+              console.error("Insert error:", newErr);
+              continue;
+            }
+            convo = newConvo;
           }
 
           // ✅ Ensure Lead Intake exists for this WhatsApp conversation (with proof logs)
