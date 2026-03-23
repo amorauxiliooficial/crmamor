@@ -5,14 +5,23 @@ import type { WaConversation } from "@/hooks/useWhatsApp";
 
 const LID_BLOCK_MSG = "Contato sem número válido (LID). Aguarde correção do canal.";
 
-/** Check if a conversation is a LID contact (no real phone available) */
+function hasValidSendablePhone(raw: string | null | undefined): boolean {
+  if (!raw) return false;
+  if (raw.startsWith("lid:") || raw.includes("@lid")) return false;
+  const digits = raw.replace(/\D/g, "");
+  return digits.length >= 10 && digits.length <= 15;
+}
+
+/** Check if a conversation is blocked for sending because it only has a private LID */
 function isLidContact(conv: WaConversation | null | undefined): boolean {
   if (!conv) return false;
-  if (conv.wa_jid?.includes("@lid")) return true;
-  if (conv.wa_phone?.includes("@lid")) return true;
-  if (conv.wa_phone?.startsWith("lid:")) return true;
-  if (!conv.wa_phone) return true;
-  return false;
+  if (hasValidSendablePhone(conv.wa_phone)) return false;
+  return !!(
+    conv.wa_jid?.includes("@lid") ||
+    conv.wa_phone?.includes("@lid") ||
+    conv.wa_phone?.startsWith("lid:") ||
+    !conv.wa_phone
+  );
 }
 
 /** Normalize wa_phone for sending: return E.164 digits */

@@ -26,7 +26,7 @@ export interface ContactDisplayInfo {
 function formatE164ToBR(phone: string): string {
   // Handle LID (Line ID) format from WhatsApp Web
   if (phone.includes("@lid") || phone.startsWith("lid:")) {
-    return "Número privado";
+    return "WhatsApp Web • ID privado";
   }
   // Strip + and country code 55
   let digits = phone.replace(/\D/g, "");
