@@ -350,24 +350,42 @@ async function handleInboundMessage(
   }
 
   if (!conversation) {
-    // For LID contacts without real phone, try to find phone from CRM by name match
+    // For LID contacts without real phone, try to resolve from sibling conversations or CRM
     let resolvedPhone = validPhone ? wa_phone : `lid:${wa_jid}`;
     let resolvedMaeId: string | null = null;
 
     if (!validPhone && pushName) {
-      const { data: crmMatch } = await supabase
-        .from("mae_processo")
-        .select("id, telefone_e164")
-        .ilike("nome_mae", pushName.trim())
-        .limit(1)
-        .maybeSingle();
+      const { data: siblingMatches } = await supabase
+        .from("wa_conversations")
+        .select("id, wa_phone, mae_id")
+        .ilike("wa_name", pushName.trim())
+        .order("last_message_at", { ascending: false })
+        .limit(5);
 
-      if (crmMatch?.telefone_e164) {
-        const crmDigits = crmMatch.telefone_e164.replace(/\D/g, "");
-        if (crmDigits.length >= 10) {
-          resolvedPhone = crmDigits;
-          resolvedMaeId = crmMatch.id;
-          console.log(`🔗 LID resolved via CRM: "${pushName}" → phone=${crmDigits}, mae_id=${crmMatch.id}`);
+      const siblingWithPhone = (siblingMatches ?? []).find((row: any) => {
+        const digits = String(row?.wa_phone ?? "").replace(/\D/g, "");
+        return !String(row?.wa_phone ?? "").startsWith("lid:") && digits.length >= 10 && digits.length <= 15;
+      });
+
+      if (siblingWithPhone) {
+        resolvedPhone = String(siblingWithPhone.wa_phone).replace(/\D/g, "");
+        resolvedMaeId = siblingWithPhone.mae_id ?? null;
+        console.log(`🔗 LID resolved via sibling conversation: "${pushName}" → phone=${resolvedPhone}`);
+      } else {
+        const { data: crmMatch } = await supabase
+          .from("mae_processo")
+          .select("id, telefone_e164")
+          .ilike("nome_mae", pushName.trim())
+          .limit(1)
+          .maybeSingle();
+
+        if (crmMatch?.telefone_e164) {
+          const crmDigits = crmMatch.telefone_e164.replace(/\D/g, "");
+          if (crmDigits.length >= 10) {
+            resolvedPhone = crmDigits;
+            resolvedMaeId = crmMatch.id;
+            console.log(`🔗 LID resolved via CRM: "${pushName}" → phone=${crmDigits}, mae_id=${crmMatch.id}`);
+          }
         }
       }
     }

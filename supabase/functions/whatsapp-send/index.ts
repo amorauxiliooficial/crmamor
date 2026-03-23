@@ -247,7 +247,7 @@ serve(async (req: Request): Promise<Response> => {
     if (conversation_id) {
       const { data: conv } = await adminClient
         .from("wa_conversations")
-        .select("active_channel_code, instance_id")
+        .select("active_channel_code, instance_id, wa_phone, wa_jid, wa_name, mae_id")
         .eq("id", conversation_id)
         .single();
 
@@ -257,6 +257,90 @@ serve(async (req: Request): Promise<Response> => {
 
         if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
           return toJson({ error: "Evolution API not configured" }, 500);
+        }
+
+        const isSendablePhone = (value: string | null | undefined) => {
+          const raw = String(value ?? "").trim();
+          if (!raw || raw.startsWith("lid:") || raw.includes("@lid")) return false;
+          const digits = raw.replace(/\D/g, "");
+          return digits.length >= 10 && digits.length <= 15;
+        };
+
+        let resolvedTo = isSendablePhone(cleanPhone) ? normalizePhone(cleanPhone) : "";
+        let resolvedFrom = "request";
+
+        if (!resolvedTo && isSendablePhone(conv.wa_phone)) {
+          resolvedTo = normalizePhone(String(conv.wa_phone));
+          resolvedFrom = "conversation";
+        }
+
+        if (!resolvedTo && conv.mae_id) {
+          const { data: contact } = await adminClient
+            .from("mother_contacts")
+            .select("value_e164")
+            .eq("mae_id", conv.mae_id)
+            .eq("active", true)
+            .order("is_primary", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (isSendablePhone(contact?.value_e164)) {
+            resolvedTo = normalizePhone(String(contact?.value_e164));
+            resolvedFrom = "mother_contacts";
+          }
+        }
+
+        if (!resolvedTo && conv.mae_id) {
+          const { data: mae } = await adminClient
+            .from("mae_processo")
+            .select("telefone_e164")
+            .eq("id", conv.mae_id)
+            .maybeSingle();
+
+          if (isSendablePhone(mae?.telefone_e164)) {
+            resolvedTo = normalizePhone(String(mae?.telefone_e164));
+            resolvedFrom = "mae_processo";
+          }
+        }
+
+        if (!resolvedTo && conv.wa_name) {
+          const { data: siblingConversations } = await adminClient
+            .from("wa_conversations")
+            .select("id, wa_phone")
+            .neq("id", conversation_id)
+            .ilike("wa_name", conv.wa_name.trim())
+            .order("last_message_at", { ascending: false })
+            .limit(5);
+
+          const siblingWithPhone = (siblingConversations ?? []).find((row: any) => isSendablePhone(row?.wa_phone));
+          if (siblingWithPhone?.wa_phone) {
+            resolvedTo = normalizePhone(String(siblingWithPhone.wa_phone));
+            resolvedFrom = `conversation:${siblingWithPhone.id}`;
+          }
+        }
+
+        if (resolvedTo && normalizePhone(String(conv.wa_phone ?? "")) !== resolvedTo) {
+          const { data: duplicatePhoneConversation } = await adminClient
+            .from("wa_conversations")
+            .select("id")
+            .neq("id", conversation_id)
+            .eq("wa_phone", resolvedTo)
+            .maybeSingle();
+
+          if (!duplicatePhoneConversation) {
+            const { error: syncPhoneError } = await adminClient
+              .from("wa_conversations")
+              .update({ wa_phone: resolvedTo })
+              .eq("id", conversation_id);
+
+            if (syncPhoneError) {
+              console.warn(`⚠️ Failed to sync resolved phone on conversation ${conversation_id}: ${syncPhoneError.message}`);
+            }
+          }
+        }
+
+        if (!resolvedTo) {
+          return toJson({ error: "Contato do WhatsApp Web está com ID privado (LID) e sem número real resolvido. Vincule ao CRM ou aguarde mensagem no canal oficial." }, 409);
         }
 
         // Get instance name
@@ -278,17 +362,15 @@ serve(async (req: Request): Promise<Response> => {
 
         if (msgType === "text") {
           if (!text) return toJson({ error: 'Missing "text"' }, 400);
-          // For LID contacts, use the full JID; for normal phones, use cleaned number
-          const evoNumber = cleanPhone.includes("@lid") ? cleanPhone : cleanPhone;
           evoEndpoint = `/message/sendText/${instanceName}`;
           evoPayload = {
-            number: evoNumber,
+            number: resolvedTo,
             text: text,
           };
         } else if (msgType === "image" && media_url) {
           evoEndpoint = `/message/sendMedia/${instanceName}`;
           evoPayload = {
-            number: cleanPhone,
+            number: resolvedTo,
             mediatype: "image",
             media: media_url,
             caption: caption || undefined,
@@ -296,13 +378,13 @@ serve(async (req: Request): Promise<Response> => {
         } else if (msgType === "audio" && media_url) {
           evoEndpoint = `/message/sendWhatsAppAudio/${instanceName}`;
           evoPayload = {
-            number: cleanPhone,
+            number: resolvedTo,
             audio: media_url,
           };
         } else if (msgType === "document" && media_url) {
           evoEndpoint = `/message/sendMedia/${instanceName}`;
           evoPayload = {
-            number: cleanPhone,
+            number: resolvedTo,
             mediatype: "document",
             media: media_url,
             fileName: media_filename || "document",
@@ -311,7 +393,7 @@ serve(async (req: Request): Promise<Response> => {
         } else if (msgType === "video" && media_url) {
           evoEndpoint = `/message/sendMedia/${instanceName}`;
           evoPayload = {
-            number: cleanPhone,
+            number: resolvedTo,
             mediatype: "video",
             media: media_url,
             caption: caption || undefined,
@@ -322,7 +404,7 @@ serve(async (req: Request): Promise<Response> => {
           return toJson({ error: `Unsupported message type for Evolution: ${msgType}` }, 400);
         }
 
-        console.log(`📤 Evolution: ${evoEndpoint} to ${cleanPhone} via ${instance.name}`);
+        console.log(`📤 Evolution: ${evoEndpoint} to ${resolvedTo} via ${instance.name} (resolvedFrom=${resolvedFrom})`);
 
         // Helper: call Evolution API with a given payload
         async function callEvolution(payload: any): Promise<{ ok: boolean; status: number; text: string; json: any }> {
@@ -341,10 +423,9 @@ serve(async (req: Request): Promise<Response> => {
           return { ok: res.ok, status: res.status, text: resText, json: resJson };
         }
 
-        // Detect if this is a LID "exists:false" error
-        function isLidExistsFalse(result: { ok: boolean; status: number; json: any }): boolean {
+        // Detect if Evolution still says the resolved real phone does not exist
+        function isNumberExistsFalse(result: { ok: boolean; status: number; json: any }): boolean {
           if (result.ok || result.status !== 400) return false;
-          if (!cleanPhone.includes("@lid")) return false;
           try {
             const resp = result.json?.response ?? result.json;
             const msgs = Array.isArray(resp?.message) ? resp.message : [];
@@ -355,25 +436,8 @@ serve(async (req: Request): Promise<Response> => {
         let evoResult = await callEvolution(evoPayload);
         console.log(`📡 Evolution response (${evoResult.status}): ${evoResult.text.slice(0, 500)}`);
 
-        // LID retry: try alternative number formats
-        if (isLidExistsFalse(evoResult)) {
-          const lidBase = cleanPhone.replace(/@.*$/, "");
-
-          // Retry 1: swap @lid → @s.whatsapp.net
-          const alt1 = `${lidBase}@s.whatsapp.net`;
-          console.log(`🔄 LID retry #1: ${alt1}`);
-          const retryPayload1 = { ...evoPayload, number: alt1 };
-          evoResult = await callEvolution(retryPayload1);
-          console.log(`📡 Retry #1 response (${evoResult.status}): ${evoResult.text.slice(0, 500)}`);
-
-          // Retry 2: digits only
-          if (!evoResult.ok) {
-            const alt2 = lidBase.replace(/\D/g, "");
-            console.log(`🔄 LID retry #2: ${alt2}`);
-            const retryPayload2 = { ...evoPayload, number: alt2 };
-            evoResult = await callEvolution(retryPayload2);
-            console.log(`📡 Retry #2 response (${evoResult.status}): ${evoResult.text.slice(0, 500)}`);
-          }
+        if (isNumberExistsFalse(evoResult)) {
+          console.warn(`⚠️ Evolution says resolved number does not exist: ${resolvedTo}`);
         }
 
         if (!evoResult.ok) {
