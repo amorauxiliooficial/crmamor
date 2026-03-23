@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback, useMemo, memo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useActiveAiAgents } from "@/hooks/useAiAgents";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +26,11 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import type { Conversa, Mensagem } from "@/data/atendimentoMock";
 
+import { useAtendimentoMessages } from "@/hooks/useAtendimentoMessages";
+import { useAtendimentoConversation } from "@/hooks/useAtendimentoConversation";
+import { useAtendimentoAI } from "@/hooks/useAtendimentoAI";
+import { useAtendimentoChannel } from "@/hooks/useAtendimentoChannel";
+
 // Convert WA data to existing UI types
 function waToConversa(wa: WaConversation, profileMap: Map<string, string>): Conversa {
   const statusMap: Record<string, "Aberto" | "Pendente" | "Fechado"> = {
@@ -36,7 +40,6 @@ function waToConversa(wa: WaConversation, profileMap: Map<string, string>): Conv
   };
   const assignedName = wa.assigned_to ? profileMap.get(wa.assigned_to) ?? null : null;
 
-  // Derive queue status
   let queueStatus: Conversa["queueStatus"] = "novo";
   if (wa.status === "closed") queueStatus = "encerrado";
   else if (!wa.assigned_to) queueStatus = "novo";
@@ -71,17 +74,13 @@ type TabFilter = "nao_lidas" | "Aberto" | "Pendente" | "Fechado";
 export default function Atendimento() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { id: routeId } = useParams<{ id: string }>();
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { recordAssignment } = useAssignmentActions();
   const { addEvent } = useTimelineActions();
 
-  // Real WhatsApp data
   const queryClient = useQueryClient();
   const { data: waConversations, isLoading: loadingConvos } = useWaConversations();
-  const [selectedId, setSelectedId] = useState<string | null>(routeId ?? null);
-  const { data: waMessages, isLoading: loadingMsgs } = useWaMessages(selectedId);
   const sendWhatsApp = useSendWhatsApp();
   const retryWhatsApp = useRetryWhatsApp();
   const markRead = useMarkConversationRead();
@@ -93,50 +92,10 @@ export default function Atendimento() {
   const reopenConversation = useReopenConversation();
   const createEvent = useCreateConversationEvent();
   const { status: connectionStatus, reconnect: onReconnect } = useRealtimeConnection();
-  const { data: conversationEvents } = useConversationEvents(selectedId);
   const { soundEnabled, autoplayBlocked, intensity, toggleSound, changeIntensity, playNotification, requestPermission, setActiveConversation } = useInboundNotification();
 
-  // Request browser notification permission on mount
   useEffect(() => { requestPermission(); }, [requestPermission]);
 
-  // Track active conversation for focus-aware notifications
-  useEffect(() => {
-    setActiveConversation(selectedId);
-  }, [selectedId, setActiveConversation]);
-
-  // Realtime listener for inbound messages – plays notification sound + visual alerts
-  useEffect(() => {
-    const channel = supabase
-      .channel("inbound_notification")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "wa_messages",
-          filter: "direction=eq.in",
-        },
-        (payload: any) => {
-          const convId = payload.new?.conversation_id;
-          const body = payload.new?.body;
-          // Find conversation name
-          const conv = (waConversations ?? []).find((c) => c.id === convId);
-          const contactName = conv?.wa_name || undefined;
-          const preview = body?.slice(0, 80) || undefined;
-          playNotification(contactName, preview, convId);
-
-          // Show in-app toast for better visibility
-          toast({
-            title: `💬 ${contactName || "Nova mensagem"}`,
-            description: preview || "Você recebeu uma nova mensagem",
-            duration: 6000,
-          });
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [playNotification, waConversations, toast]);
   // Fetch all profiles for agent name mapping
   const { data: profiles } = useQuery({
     queryKey: ["profiles_all"],
@@ -156,44 +115,92 @@ export default function Atendimento() {
     return map;
   }, [profiles]);
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<TabFilter | null>(null);
-  const [atendenteFilter, setAtendenteFilter] = useState<"todos" | "meus">("todos");
-  const [msgText, setMsgText] = useState("");
-  const [showContext, setShowContext] = useState(false);
-  const [showContextDrawer, setShowContextDrawer] = useState(false);
-  const [mobileCrmDrawerOpen, setMobileCrmDrawerOpen] = useState(false);
-  const [mobileTab, setMobileTab] = useState<MobileTab>("conversas");
-  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
-  const [transferToWebOpen, setTransferToWebOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-
-  const debouncedSetSearch = useDebouncedCallback((value: string) => {
-    setDebouncedSearch(value);
-  }, 300);
-
-  const handleSearchChange = useCallback((value: string) => {
-    setSearch(value);
-    debouncedSetSearch(value);
-  }, [debouncedSetSearch]);
-
-  const [isTablet, setIsTablet] = useState(false);
-  useEffect(() => {
-    const check = () => setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1280);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
-
-  useEffect(() => {
-    if (routeId) setSelectedId(routeId);
-  }, [routeId]);
-
   // Convert WA conversations to UI format
   const conversas: Conversa[] = useMemo(() => {
     return (waConversations ?? []).map((wa) => waToConversa(wa, profileMap));
   }, [waConversations, profileMap]);
+
+  // --- Extracted hooks ---
+  const {
+    selectedId, setSelectedId, conversa, selectedWa, selectConversa,
+    handleAssume, handleStartAtendimento, handleTransfer,
+    handlePendente, handleFinalizar, handleReopen, toggleEtiqueta,
+  } = useAtendimentoConversation({
+    waConversations,
+    conversas,
+    user,
+    toast,
+    assumeConversation,
+    transferConversation,
+    closeConversation,
+    reopenConversation,
+    updateStatus,
+    createEvent,
+    recordAssignment,
+    setMsgText: (t: string) => setMsgText(t),
+  });
+
+  const { data: waMessages, isLoading: loadingMsgs } = useWaMessages(selectedId);
+  const { data: conversationEvents } = useConversationEvents(selectedId);
+
+  const {
+    msgText, setMsgText, handleSend, handleSendMedia, handleRetry,
+  } = useAtendimentoMessages({
+    conversationId: selectedId,
+    selectedWa,
+    sendWhatsApp,
+    retryWhatsApp,
+    toast,
+    queryClient,
+    userId: user?.id ?? null,
+  });
+
+  const {
+    aiEnabled, aiAgents, selectedAiAgentId, handleToggleAi, handleChangeAiAgent,
+  } = useAtendimentoAI({
+    selectedId,
+    selectedWa,
+    toast,
+    createEvent,
+  });
+
+  const { currentChannel, handleChangeChannel } = useAtendimentoChannel({
+    selectedId,
+    selectedWa,
+    aiEnabled,
+    toast,
+    createEvent,
+  });
+
+  // Track active conversation for focus-aware notifications
+  useEffect(() => {
+    setActiveConversation(selectedId);
+  }, [selectedId, setActiveConversation]);
+
+  // Realtime listener for inbound messages
+  useEffect(() => {
+    const channel = supabase
+      .channel("inbound_notification")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "wa_messages", filter: "direction=eq.in" },
+        (payload: any) => {
+          const convId = payload.new?.conversation_id;
+          const body = payload.new?.body;
+          const conv = (waConversations ?? []).find((c) => c.id === convId);
+          const contactName = conv?.wa_name || undefined;
+          const preview = body?.slice(0, 80) || undefined;
+          playNotification(contactName, preview, convId);
+          toast({
+            title: `💬 ${contactName || "Nova mensagem"}`,
+            description: preview || "Você recebeu uma nova mensagem",
+            duration: 6000,
+          });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [playNotification, waConversations, toast]);
 
   // Convert WA messages to UI format
   const msgs: Mensagem[] = useMemo(() => {
@@ -219,9 +226,6 @@ export default function Atendimento() {
     }));
   }, [waMessages, profileMap]);
 
-  const conversa = selectedId ? conversas.find((c) => c.id === selectedId) ?? null : null;
-  const selectedWa = selectedId ? (waConversations ?? []).find((c) => c.id === selectedId) : null;
-
   // Mark as read when selecting conversation
   useEffect(() => {
     if (selectedId && conversa && conversa.naoLidas > 0) {
@@ -229,356 +233,37 @@ export default function Atendimento() {
     }
   }, [selectedId]);
 
-  const selectConversa = useCallback(
-    (id: string) => {
-      setSelectedId(id);
-      navigate(`/atendimento/chat/${id}`, { replace: true });
-    },
-    [navigate]
-  );
+  // UI state
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<TabFilter | null>(null);
+  const [atendenteFilter, setAtendenteFilter] = useState<"todos" | "meus">("todos");
+  const [showContext, setShowContext] = useState(false);
+  const [showContextDrawer, setShowContextDrawer] = useState(false);
+  const [mobileCrmDrawerOpen, setMobileCrmDrawerOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState<MobileTab>("conversas");
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [transferToWebOpen, setTransferToWebOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const handleAssume = useCallback(
-    (id?: string) => {
-      const target = id || selectedId;
-      if (!target) return;
-      assumeConversation.mutate(target, {
-        onSuccess: () => {
-          toast({ title: "Conversa assumida ✅" });
-          createEvent.mutate({ conversation_id: target, event_type: "assumed", to_agent_id: user?.id });
-          recordAssignment.mutate({
-            conversation_id: target,
-            from_user_id: null,
-            to_user_id: user?.id,
-            reason: "Conversa assumida manualmente",
-          });
-        },
-      });
-    },
-    [selectedId, toast, recordAssignment, user, assumeConversation, createEvent]
-  );
+  const debouncedSetSearch = useDebouncedCallback((value: string) => {
+    setDebouncedSearch(value);
+  }, 300);
 
-  const DEFAULT_GREETING = "Olá! Tudo bem? Sou atendente da equipe. Como posso te ajudar hoje? 😊";
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    debouncedSetSearch(value);
+  }, [debouncedSetSearch]);
 
-  const handleStartAtendimento = useCallback(
-    (id: string) => {
-      assumeConversation.mutate(id, {
-        onSuccess: () => {
-          toast({ title: "Atendimento iniciado ✅" });
-          createEvent.mutate({ conversation_id: id, event_type: "assumed", to_agent_id: user?.id });
-          recordAssignment.mutate({
-            conversation_id: id,
-            from_user_id: null,
-            to_user_id: user?.id,
-            reason: "Atendimento iniciado via fila",
-          });
-          setSelectedId(id);
-          navigate(`/atendimento/chat/${id}`, { replace: true });
-          setMsgText(DEFAULT_GREETING);
-        },
-      });
-    },
-    [toast, recordAssignment, user, assumeConversation, createEvent, navigate]
-  );
+  const [isTablet, setIsTablet] = useState(false);
+  useEffect(() => {
+    const check = () => setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1280);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
-  const handleTransfer = useCallback(
-    (toAgentId: string, reason?: string) => {
-      if (!selectedId) return;
-      transferConversation.mutate(
-        { conversationId: selectedId, toAgentId, reason },
-        {
-          onSuccess: () => {
-            toast({ title: "Atendimento transferido ✅" });
-            setTransferDialogOpen(false);
-            createEvent.mutate({
-              conversation_id: selectedId,
-              event_type: "transfer",
-              from_agent_id: conversa?.assignedAgentId,
-              to_agent_id: toAgentId,
-              meta: reason ? { reason } : {},
-            });
-          },
-          onError: () => {
-            toast({ title: "Erro ao transferir", variant: "destructive" });
-          },
-        }
-      );
-    },
-    [selectedId, toast, transferConversation, createEvent, conversa]
-  );
-
-  const handlePendente = useCallback(
-    (id?: string) => {
-      const target = id || selectedId;
-      if (!target) return;
-      updateStatus.mutate({ id: target, status: "pending" });
-    },
-    [selectedId, updateStatus]
-  );
-
-  const handleFinalizar = useCallback(
-    (id?: string) => {
-      const target = id || selectedId;
-      if (!target) return;
-      closeConversation.mutate({ conversationId: target }, {
-        onSuccess: () => {
-          toast({ title: "Atendimento finalizado ✅" });
-          createEvent.mutate({ conversation_id: target, event_type: "closed" });
-        },
-      });
-    },
-    [selectedId, toast, closeConversation, createEvent]
-  );
-
-  const handleReopen = useCallback(() => {
-    if (!selectedId) return;
-    reopenConversation.mutate(selectedId, {
-      onSuccess: () => {
-        toast({ title: "Conversa reaberta ✅" });
-        createEvent.mutate({ conversation_id: selectedId, event_type: "reopened" });
-      },
-    });
-  }, [selectedId, toast, reopenConversation, createEvent]);
-
-  const toggleEtiqueta = useCallback(
-    (etiqueta: string) => {
-      // Labels are stored in wa_conversations but for now we keep local behavior
-      // TODO: persist labels to DB
-    },
-    [selectedId]
-  );
-
-  // AI agents list
-  const { data: aiAgents } = useActiveAiAgents();
-
-  // AI toggle: use ai_enabled column + legacy labels
-  const aiEnabled = useMemo(() => {
-    if (!selectedWa) return false;
-    return (selectedWa as any).ai_enabled === true || (selectedWa?.labels ?? []).includes("AI_ON");
-  }, [selectedWa]);
-
-  const selectedAiAgentId = useMemo(() => {
-    return (selectedWa as any)?.ai_agent_id ?? null;
-  }, [selectedWa]);
-
-  const handleToggleAi = useCallback(async () => {
-    if (!selectedId || !selectedWa) return;
-    const newEnabled = !aiEnabled;
-    const currentLabels: string[] = selectedWa.labels ?? [];
-    let newLabels = currentLabels;
-    if (newEnabled) {
-      newLabels = [...currentLabels.filter(l => l !== "HANDOFF_HUMAN" && l !== "AI_PAUSED"), "AI_ON"];
-    } else {
-      newLabels = currentLabels.filter(l => l !== "AI_ON" && l !== "AI_PRIMARY");
-    }
-    const { error } = await supabase
-      .from("wa_conversations")
-      .update({ ai_enabled: newEnabled, labels: newLabels } as any)
-      .eq("id", selectedId);
-    if (error) {
-      toast({ title: "Erro ao atualizar IA", variant: "destructive" });
-    } else {
-      toast({ title: newEnabled ? "IA ativada 🤖" : "IA desativada" });
-      createEvent.mutate({
-        conversation_id: selectedId,
-        event_type: newEnabled ? "ai_enabled" : "ai_disabled",
-      });
-    }
-  }, [selectedId, selectedWa, aiEnabled, toast, createEvent]);
-
-  const handleChangeAiAgent = useCallback(async (agentId: string | null) => {
-    if (!selectedId) return;
-    const { error } = await supabase
-      .from("wa_conversations")
-      .update({ ai_agent_id: agentId } as any)
-      .eq("id", selectedId);
-    if (error) {
-      toast({ title: "Erro ao mudar agente", variant: "destructive" });
-    } else {
-      const agentName = aiAgents?.find(a => a.id === agentId)?.name || "Padrão";
-      toast({ title: `Agente alterado para ${agentName} 🤖` });
-    }
-  }, [selectedId, aiAgents, toast]);
-
-  const currentChannel = useMemo(() => {
-    return (selectedWa as any)?.active_channel_code ?? (selectedWa as any)?.channel ?? "official";
-  }, [selectedWa]);
-
-  const currentInstanceId = useMemo(() => {
-    return (selectedWa as any)?.instance_id ?? null;
-  }, [selectedWa]);
-
-  const handleChangeChannel = useCallback(async (newChannel: string) => {
-    if (!selectedId) return;
-
-    // If switching back to official from evolution, use the transfer service
-    if (newChannel === "official" && currentChannel === "evolution") {
-      const { transferConversationToOfficial } = await import("@/services/conversationTransfer");
-      const result = await transferConversationToOfficial(selectedId);
-      if (result.success) {
-        toast({ title: "Voltou para canal Meta Oficial 📱" });
-      } else {
-        toast({ title: "Erro ao retornar", description: result.error, variant: "destructive" });
-      }
-      return;
-    }
-
-    const { error } = await supabase
-      .from("wa_conversations")
-      .update({ active_channel_code: newChannel, channel: newChannel } as any)
-      .eq("id", selectedId);
-    if (error) {
-      toast({ title: "Erro ao mudar canal", variant: "destructive" });
-    } else {
-      toast({ title: newChannel === "web_manual_team" ? "Transferido para Web Manual 🌐" : "Voltou para Oficial 📱" });
-      createEvent.mutate({
-        conversation_id: selectedId,
-        event_type: newChannel === "web_manual_team" ? "channel_to_web" : "channel_to_official",
-      });
-      // Disable AI when switching to web_manual_team
-      if (newChannel === "web_manual_team" && aiEnabled) {
-        const currentLabels: string[] = selectedWa?.labels ?? [];
-        await supabase
-          .from("wa_conversations")
-          .update({ ai_enabled: false, labels: currentLabels.filter(l => l !== "AI_ON" && l !== "AI_PRIMARY") } as any)
-          .eq("id", selectedId);
-      }
-    }
-  }, [selectedId, selectedWa, aiEnabled, toast, createEvent, currentChannel]);
-
-  const sendingRef = useRef(false);
-  const lastMsgRef = useRef("");
-
-  const handleSend = useCallback(() => {
-    if (!selectedId || !msgText.trim() || !selectedWa) return;
-    if (sendingRef.current) return;
-    sendingRef.current = true;
-    const text = msgText.trim();
-    lastMsgRef.current = text;
-
-    // Optimistic message
-    const optimisticMsg = {
-      id: "temp-" + Date.now(),
-      conversation_id: selectedId,
-      meta_message_id: null,
-      direction: "out",
-      body: text,
-      msg_type: "text",
-      status: "sending",
-      sent_by: user?.id ?? null,
-      created_at: new Date().toISOString(),
-      media_url: null,
-      media_mime: null,
-      media_filename: null,
-      media_size: null,
-      media_duration: null,
-      meta_media_id: null,
-    };
-
-    queryClient.setQueryData(["wa_messages", selectedId], (old: any[]) => [
-      ...(old || []),
-      optimisticMsg,
-    ]);
-
-    sendWhatsApp.mutate(
-      { to: selectedWa.wa_phone, text, conversation_id: selectedId },
-      {
-        onSuccess: () => {
-          sendingRef.current = false;
-          // Remove optimistic message — realtime will bring the real one
-          queryClient.setQueryData(["wa_messages", selectedId], (old: any[]) =>
-            old ? old.filter((m: any) => m.id !== optimisticMsg.id) : old
-          );
-        },
-        onError: (err) => {
-          sendingRef.current = false;
-          console.error("Send error:", err);
-          // Mark optimistic message as failed
-          queryClient.setQueryData(["wa_messages", selectedId], (old: any[]) =>
-            old
-              ? old.map((m: any) =>
-                  m.id === optimisticMsg.id ? { ...m, status: "failed" } : m
-                )
-              : old
-          );
-          setMsgText(lastMsgRef.current);
-          toast({ title: "Erro ao enviar", description: "Tente novamente.", variant: "destructive" });
-        },
-      }
-    );
-    setMsgText("");
-  }, [selectedId, msgText, selectedWa, sendWhatsApp, toast, user?.id, queryClient]);
-
-  const handleSendMedia = useCallback(async (file: File) => {
-    if (!selectedId || !selectedWa) return;
-
-    try {
-      // Upload to wa-media bucket
-      const ext = file.name.split('.').pop() || 'bin';
-      const path = `outbound/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      
-      const { error: uploadErr } = await supabase.storage
-        .from('wa-media')
-        .upload(path, file, { contentType: file.type, upsert: false });
-
-      if (uploadErr) throw uploadErr;
-
-      const { data: urlData } = supabase.storage.from('wa-media').getPublicUrl(path);
-      const publicUrl = urlData.publicUrl;
-
-      // Determine type
-      let msgType = 'document';
-      if (file.type.startsWith('image/')) msgType = 'image';
-      else if (file.type.startsWith('video/')) msgType = 'video';
-      else if (file.type.startsWith('audio/')) msgType = 'audio';
-
-      sendWhatsApp.mutate(
-        {
-          to: selectedWa.wa_phone,
-          conversation_id: selectedId,
-          type: msgType,
-          media_url: publicUrl,
-          media_mime: file.type,
-          media_filename: file.name,
-          caption: msgText.trim() || undefined,
-        },
-        {
-          onError: (err) => {
-            console.error("Send media error:", err);
-            toast({ title: "Erro ao enviar mídia", description: "Tente novamente.", variant: "destructive" });
-          },
-        }
-      );
-      setMsgText("");
-    } catch (err) {
-      console.error("Upload error:", err);
-      toast({ title: "Erro ao fazer upload", description: "Tente novamente.", variant: "destructive" });
-    }
-  }, [selectedId, selectedWa, sendWhatsApp, msgText, toast]);
-
-  const handleRetry = useCallback((messageId: string, body: string, msgType?: string, mediaUrl?: string, mediaMime?: string, mediaFilename?: string) => {
-    if (!selectedId || !selectedWa) return;
-    retryWhatsApp.mutate(
-      {
-        messageId,
-        to: selectedWa.wa_phone,
-        text: msgType === 'text' || !msgType ? body : undefined,
-        conversation_id: selectedId,
-        type: msgType,
-        media_url: mediaUrl,
-        media_mime: mediaMime,
-        media_filename: mediaFilename,
-      },
-      {
-        onSuccess: () => toast({ title: "Mensagem reenviada ✅" }),
-        onError: (err) => {
-          console.error("Retry error:", err);
-          toast({ title: "Falha ao reenviar", description: "Tente novamente.", variant: "destructive" });
-        },
-      }
-    );
-  }, [selectedId, selectedWa, retryWhatsApp, toast]);
-
-  // Sort: by last_message_at desc
+  // Sort conversations
   const sortedConversas = useMemo(() => {
     return [...conversas].sort((a, b) => {
       if (a.prioridade === "alta" && b.prioridade !== "alta") return -1;
@@ -589,7 +274,60 @@ export default function Atendimento() {
 
   const unreadCount = useMemo(() => conversas.filter((c) => c.naoLidas > 0).length, [conversas]);
 
+  // Transfer dialog callback (needs access to setTransferDialogOpen)
+  const onTransferSuccess = useCallback((toAgentId: string, reason?: string) => {
+    handleTransfer(toAgentId, reason);
+    setTransferDialogOpen(false);
+  }, [handleTransfer]);
+
+  const onEditMessage = useCallback((messageId: string, newBody: string) => {
+    if (!selectedId) return;
+    editMessage.mutate({ messageId, newBody, conversationId: selectedId }, {
+      onSuccess: () => toast({ title: "Mensagem editada ✅" }),
+      onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
+    });
+  }, [selectedId, editMessage, toast]);
+
   if (loading || !user) return null;
+
+  // Shared ChatPanel props
+  const chatPanelProps = {
+    conversa,
+    mensagens: msgs,
+    msgText,
+    onMsgTextChange: setMsgText,
+    onSend: handleSend,
+    onSendMedia: handleSendMedia,
+    onRetry: handleRetry,
+    onAssume: () => handleAssume(),
+    onPendente: () => handlePendente(),
+    onFinalizar: () => handleFinalizar(),
+    onTransfer: () => setTransferDialogOpen(true),
+    onToggleEtiqueta: toggleEtiqueta,
+    respostas: respostasRapidas,
+    isLoadingMessages: loadingMsgs,
+    currentUserId: user?.id ?? null,
+    onEditMessage,
+    soundEnabled,
+    autoplayBlocked,
+    onToggleSound: toggleSound,
+    onReopen: handleReopen,
+    connectionStatus,
+    onReconnect,
+    conversationEvents: conversationEvents ?? [],
+    profileMap,
+    aiEnabled,
+    onToggleAi: handleToggleAi,
+    aiAgents,
+    selectedAiAgentId,
+    onChangeAiAgent: handleChangeAiAgent,
+    lastInboundAt: conversa?.lastInboundAt,
+    conversationPhone: selectedWa?.wa_phone,
+    channel: currentChannel,
+    onChangeChannel: handleChangeChannel,
+    onTransferToWeb: () => setTransferToWebOpen(true),
+    isSending: sendWhatsApp.isPending,
+  };
 
   // Mobile
   if (isMobile) {
@@ -611,66 +349,22 @@ export default function Atendimento() {
           {selectedId && mobileTab === "conversas" ? (
             <>
               <ErrorBoundary key={selectedId} fallbackMessage="Erro no chat — selecione outra conversa">
-              <ChatPanel
-                conversa={conversa}
-                mensagens={msgs}
-                isMobile
-                msgText={msgText}
-                onMsgTextChange={setMsgText}
-                onSend={handleSend}
-                onSendMedia={handleSendMedia}
-                onRetry={handleRetry}
-                onBack={() => { setSelectedId(null); navigate("/atendimento"); }}
-                onAssume={() => handleAssume()}
-                onPendente={() => handlePendente()}
-                onFinalizar={() => handleFinalizar()}
-                onTransfer={() => setTransferDialogOpen(true)}
-                onToggleEtiqueta={toggleEtiqueta}
-                respostas={respostasRapidas}
-                onToggleContext={() => setMobileCrmDrawerOpen(true)}
-                isLoadingMessages={loadingMsgs}
-                currentUserId={user?.id ?? null}
-                onEditMessage={(messageId, newBody) => {
-                  if (!selectedId) return;
-                  editMessage.mutate({ messageId, newBody, conversationId: selectedId }, {
-                    onSuccess: () => toast({ title: "Mensagem editada ✅" }),
-                    onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
-                  });
-                }}
-                soundEnabled={soundEnabled}
-                autoplayBlocked={autoplayBlocked}
-                onToggleSound={toggleSound}
-                onReopen={handleReopen}
-                connectionStatus={connectionStatus}
-                onReconnect={onReconnect}
-                conversationEvents={conversationEvents ?? []}
-                profileMap={profileMap}
-                aiEnabled={aiEnabled}
-                onToggleAi={handleToggleAi}
-                aiAgents={aiAgents ?? []}
-                selectedAiAgentId={selectedAiAgentId}
-                onChangeAiAgent={handleChangeAiAgent}
-                lastInboundAt={conversa?.lastInboundAt}
-                conversationPhone={selectedWa?.wa_phone}
-                channel={currentChannel}
-                onChangeChannel={handleChangeChannel}
-                onTransferToWeb={() => setTransferToWebOpen(true)}
-                isSending={sendWhatsApp.isPending}
-              />
+                <ChatPanel
+                  {...chatPanelProps}
+                  isMobile
+                  onBack={() => { setSelectedId(null); navigate("/atendimento"); }}
+                  onToggleContext={() => setMobileCrmDrawerOpen(true)}
+                />
               </ErrorBoundary>
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
-                  <CrmContextPanel
-                    conversa={conversa}
-                    maeId={conversa?.maeId ?? null}
-                    className="w-full border-l-0 h-auto max-h-[80dvh]"
-                  />
+                  <CrmContextPanel conversa={conversa} maeId={conversa?.maeId ?? null} className="w-full border-l-0 h-auto max-h-[80dvh]" />
                 </DrawerContent>
               </Drawer>
               <TransferDialog
                 open={transferDialogOpen}
                 onOpenChange={setTransferDialogOpen}
-                onTransfer={handleTransfer}
+                onTransfer={onTransferSuccess}
                 currentAgentId={conversa?.assignedAgentId}
                 isLoading={transferConversation.isPending}
               />
@@ -681,9 +375,7 @@ export default function Atendimento() {
                   conversationId={selectedId!}
                   contactPhone={selectedWa.wa_phone}
                   contactName={selectedWa.wa_name}
-                  onTransferred={() => {
-                    queryClient.invalidateQueries({ queryKey: ["wa-conversations"] });
-                  }}
+                  onTransferred={() => queryClient.invalidateQueries({ queryKey: ["wa-conversations"] })}
                 />
               )}
             </>
@@ -712,9 +404,7 @@ export default function Atendimento() {
               <div className="text-center space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Kanban</p>
                 <p className="text-xs text-muted-foreground/60">Acesse o painel principal para a visão completa</p>
-                <button onClick={() => navigate("/")} className="text-xs text-primary font-medium">
-                  Ir para o Painel →
-                </button>
+                <button onClick={() => navigate("/")} className="text-xs text-primary font-medium">Ir para o Painel →</button>
               </div>
             </div>
           ) : (
@@ -728,18 +418,9 @@ export default function Atendimento() {
         </div>
 
         {!(selectedId && mobileTab === "conversas") && (
-          <MobileBottomNav
-            activeTab={mobileTab}
-            onTabChange={setMobileTab}
-            onOpenCrmDrawer={() => setMobileCrmDrawerOpen(true)}
-            showCrmButton={!!selectedId}
-            unreadCount={unreadCount}
-          />
+          <MobileBottomNav activeTab={mobileTab} onTabChange={setMobileTab} onOpenCrmDrawer={() => setMobileCrmDrawerOpen(true)} showCrmButton={!!selectedId} unreadCount={unreadCount} />
         )}
-
-        {!(selectedId && mobileTab === "conversas") && (
-          <div className="h-[56px] shrink-0" />
-        )}
+        {!(selectedId && mobileTab === "conversas") && <div className="h-[56px] shrink-0" />}
         <SettingsDrawer open={settingsOpen} onOpenChange={setSettingsOpen} />
       </div>
     );
@@ -782,21 +463,9 @@ export default function Atendimento() {
 
       <ErrorBoundary key={selectedId} fallbackMessage="Erro no chat — selecione outra conversa">
         <ChatPanel
-          conversa={conversa}
-          mensagens={msgs}
+          {...chatPanelProps}
           isMobile={false}
-          msgText={msgText}
-          onMsgTextChange={setMsgText}
-          onSend={handleSend}
-          onSendMedia={handleSendMedia}
-          onRetry={handleRetry}
           onBack={() => {}}
-          onAssume={() => handleAssume()}
-          onPendente={() => handlePendente()}
-          onFinalizar={() => handleFinalizar()}
-          onTransfer={() => setTransferDialogOpen(true)}
-          onToggleEtiqueta={toggleEtiqueta}
-          respostas={respostasRapidas}
           showContext={showContext}
           onToggleContext={() => {
             if (isTablet) {
@@ -805,41 +474,13 @@ export default function Atendimento() {
               setShowContext(!showContext);
             }
           }}
-          isLoadingMessages={loadingMsgs}
-          currentUserId={user?.id ?? null}
-          onEditMessage={(messageId, newBody) => {
-            if (!selectedId) return;
-            editMessage.mutate({ messageId, newBody, conversationId: selectedId }, {
-              onSuccess: () => toast({ title: "Mensagem editada ✅" }),
-              onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
-            });
-          }}
-          soundEnabled={soundEnabled}
-          autoplayBlocked={autoplayBlocked}
-          onToggleSound={toggleSound}
-          onReopen={handleReopen}
-          connectionStatus={connectionStatus}
-          onReconnect={onReconnect}
-          conversationEvents={conversationEvents ?? []}
-          profileMap={profileMap}
-          aiEnabled={aiEnabled}
-          onToggleAi={handleToggleAi}
-          aiAgents={aiAgents ?? []}
-          selectedAiAgentId={selectedAiAgentId}
-          onChangeAiAgent={handleChangeAiAgent}
-          lastInboundAt={conversa?.lastInboundAt}
-          conversationPhone={selectedWa?.wa_phone}
-          channel={currentChannel}
-          onChangeChannel={handleChangeChannel}
-          onTransferToWeb={() => setTransferToWebOpen(true)}
-          isSending={sendWhatsApp.isPending}
         />
       </ErrorBoundary>
 
       <TransferDialog
         open={transferDialogOpen}
         onOpenChange={setTransferDialogOpen}
-        onTransfer={handleTransfer}
+        onTransfer={onTransferSuccess}
         currentAgentId={conversa?.assignedAgentId}
         isLoading={transferConversation.isPending}
       />
@@ -851,9 +492,7 @@ export default function Atendimento() {
           conversationId={selectedId!}
           contactPhone={selectedWa.wa_phone}
           contactName={selectedWa.wa_name}
-          onTransferred={() => {
-            queryClient.invalidateQueries({ queryKey: ["wa-conversations"] });
-          }}
+          onTransferred={() => queryClient.invalidateQueries({ queryKey: ["wa-conversations"] })}
         />
       )}
 
