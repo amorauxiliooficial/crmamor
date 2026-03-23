@@ -42,6 +42,10 @@ export function useAtendimentoMessages({
 
   const handleSend = useCallback(() => {
     if (!conversationId || !msgText.trim() || !selectedWa) return;
+    if (selectedWa.wa_phone?.includes("@lid")) {
+      toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
+      return;
+    }
     if (sendingRef.current) return;
     sendingRef.current = true;
     const text = msgText.trim();
