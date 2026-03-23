@@ -538,6 +538,24 @@ serve(async (req: Request): Promise<Response> => {
       return toJson({ error: `Unsupported message type: ${msgType}` }, 400);
     }
 
+    // Dedup check: prevent duplicate messages within 5 seconds
+    if (conversation_id && (msgType === "text" || msgType === "template")) {
+      const bodyForDedup = msgType === "text" ? String(text || "") : `[template: ${template_name}]`;
+      const { data: existing } = await adminClient
+        .from("wa_messages")
+        .select("id")
+        .eq("conversation_id", conversation_id)
+        .eq("body", bodyForDedup)
+        .eq("direction", "out")
+        .gte("sent_at", new Date(Date.now() - 5000).toISOString())
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        console.log(`⚠️ Duplicate detected, returning existing message ${existing[0].id}`);
+        return toJson({ success: true, deduplicated: true, message_id: existing[0].id, conversation_id });
+      }
+    }
+
     // Send to Meta
     const metaRes = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/${META_PHONE_NUMBER_ID}/messages`, {
       method: "POST",
