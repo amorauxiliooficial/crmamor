@@ -463,6 +463,38 @@ export type Database = {
           },
         ]
       }
+      conversation_phone_aliases: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          phone_type: string
+          phone_value: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          phone_type?: string
+          phone_value: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          phone_type?: string
+          phone_value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_phone_aliases_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "wa_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_transfers: {
         Row: {
           conversation_id: string
