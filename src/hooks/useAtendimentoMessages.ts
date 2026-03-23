@@ -25,8 +25,7 @@ function isLidContact(conv: WaConversation | null | undefined): boolean {
 }
 
 /** Normalize wa_phone for sending: return E.164 digits */
-function normalizeWhatsAppTo(raw: string | null | undefined): string | null {
-  if (!raw) return null;
+function normalizeWhatsAppTo(raw: string): string | null {
   // LID contacts from WhatsApp Web — keep as-is
   if (raw.includes("@lid")) return raw;
   // Normal phone: strip non-digits, ensure 10+ digits
@@ -71,7 +70,11 @@ export function useAtendimentoMessages({
     const to = normalizeWhatsAppTo(selectedWa.wa_phone);
     if (!to) {
       sendingRef.current = false;
-      toast({ title: "Numero invalido", description: "O telefone do contato nao pode ser identificado. Verifique o cadastro.", variant: "destructive" });
+      toast({
+        title: "Numero invalido",
+        description: "O telefone do contato nao pode ser identificado. Verifique o cadastro.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -105,97 +108,126 @@ export function useAtendimentoMessages({
           }
           toast({ title: "Erro ao enviar", description, variant: "destructive" });
         },
-      }
+      },
     );
     setMsgText("");
   }, [conversationId, msgText, selectedWa, sendWhatsApp, toast]);
 
-  const handleSendMedia = useCallback(async (file: File) => {
-    if (!conversationId || !selectedWa) return;
-    if (isLidContact(selectedWa)) {
-      toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
-      return;
-    }
+  const handleSendMedia = useCallback(
+    async (file: File) => {
+      if (!conversationId || !selectedWa) return;
+      if (isLidContact(selectedWa)) {
+        toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
+        return;
+      }
 
-    const mediaTo = normalizeWhatsAppTo(selectedWa.wa_phone);
-    if (!mediaTo) {
-      toast({ title: "Número inválido", description: "Não foi possível normalizar o telefone do contato.", variant: "destructive" });
-      return;
-    }
+      const mediaTo = normalizeWhatsAppTo(selectedWa.wa_phone);
+      if (!mediaTo) {
+        toast({
+          title: "Número inválido",
+          description: "Não foi possível normalizar o telefone do contato.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    try {
-      const ext = file.name.split('.').pop() || 'bin';
-      const path = `outbound/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      try {
+        const ext = file.name.split(".").pop() || "bin";
+        const path = `outbound/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
 
-      const { error: uploadErr } = await supabase.storage
-        .from('wa-media')
-        .upload(path, file, { contentType: file.type, upsert: false });
+        const { error: uploadErr } = await supabase.storage
+          .from("wa-media")
+          .upload(path, file, { contentType: file.type, upsert: false });
 
-      if (uploadErr) throw uploadErr;
+        if (uploadErr) throw uploadErr;
 
-      const { data: urlData } = supabase.storage.from('wa-media').getPublicUrl(path);
-      const publicUrl = urlData.publicUrl;
+        const { data: urlData } = supabase.storage.from("wa-media").getPublicUrl(path);
+        const publicUrl = urlData.publicUrl;
 
-      let msgType = 'document';
-      if (file.type.startsWith('image/')) msgType = 'image';
-      else if (file.type.startsWith('video/')) msgType = 'video';
-      else if (file.type.startsWith('audio/')) msgType = 'audio';
+        let msgType = "document";
+        if (file.type.startsWith("image/")) msgType = "image";
+        else if (file.type.startsWith("video/")) msgType = "video";
+        else if (file.type.startsWith("audio/")) msgType = "audio";
 
-      sendWhatsApp.mutate(
+        sendWhatsApp.mutate(
+          {
+            to: mediaTo,
+            conversation_id: conversationId,
+            type: msgType,
+            media_url: publicUrl,
+            media_mime: file.type,
+            media_filename: file.name,
+            caption: msgText.trim() || undefined,
+          },
+          {
+            onError: (err: any) => {
+              console.error("Send media error:", err);
+              toast({
+                title: "Erro ao enviar mídia",
+                description: err?.message || "Tente novamente.",
+                variant: "destructive",
+              });
+            },
+          },
+        );
+        setMsgText("");
+      } catch (err) {
+        console.error("Upload error:", err);
+        toast({ title: "Erro ao fazer upload", description: "Tente novamente.", variant: "destructive" });
+      }
+    },
+    [conversationId, selectedWa, sendWhatsApp, msgText, toast],
+  );
+
+  const handleRetry = useCallback(
+    (
+      messageId: string,
+      body: string,
+      msgType?: string,
+      mediaUrl?: string,
+      mediaMime?: string,
+      mediaFilename?: string,
+    ) => {
+      if (!conversationId || !selectedWa) return;
+      if (isLidContact(selectedWa)) {
+        toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
+        return;
+      }
+      const retryTo = normalizeWhatsAppTo(selectedWa.wa_phone);
+      if (!retryTo) {
+        toast({
+          title: "Número inválido",
+          description: "Não foi possível normalizar o telefone do contato.",
+          variant: "destructive",
+        });
+        return;
+      }
+      retryWhatsApp.mutate(
         {
-          to: mediaTo,
+          messageId,
+          to: retryTo,
+          text: msgType === "text" || !msgType ? body : undefined,
           conversation_id: conversationId,
           type: msgType,
-          media_url: publicUrl,
-          media_mime: file.type,
-          media_filename: file.name,
-          caption: msgText.trim() || undefined,
+          media_url: mediaUrl,
+          media_mime: mediaMime,
+          media_filename: mediaFilename,
         },
         {
+          onSuccess: () => toast({ title: "Mensagem reenviada ✅" }),
           onError: (err: any) => {
-            console.error("Send media error:", err);
-            toast({ title: "Erro ao enviar mídia", description: err?.message || "Tente novamente.", variant: "destructive" });
+            console.error("Retry error:", err);
+            toast({
+              title: "Falha ao reenviar",
+              description: err?.message || "Tente novamente.",
+              variant: "destructive",
+            });
           },
-        }
-      );
-      setMsgText("");
-    } catch (err) {
-      console.error("Upload error:", err);
-      toast({ title: "Erro ao fazer upload", description: "Tente novamente.", variant: "destructive" });
-    }
-  }, [conversationId, selectedWa, sendWhatsApp, msgText, toast]);
-
-  const handleRetry = useCallback((messageId: string, body: string, msgType?: string, mediaUrl?: string, mediaMime?: string, mediaFilename?: string) => {
-    if (!conversationId || !selectedWa) return;
-    if (isLidContact(selectedWa)) {
-      toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
-      return;
-    }
-    const retryTo = normalizeWhatsAppTo(selectedWa.wa_phone);
-    if (!retryTo) {
-      toast({ title: "Número inválido", description: "Não foi possível normalizar o telefone do contato.", variant: "destructive" });
-      return;
-    }
-    retryWhatsApp.mutate(
-      {
-        messageId,
-        to: retryTo,
-        text: msgType === 'text' || !msgType ? body : undefined,
-        conversation_id: conversationId,
-        type: msgType,
-        media_url: mediaUrl,
-        media_mime: mediaMime,
-        media_filename: mediaFilename,
-      },
-      {
-        onSuccess: () => toast({ title: "Mensagem reenviada ✅" }),
-        onError: (err: any) => {
-          console.error("Retry error:", err);
-          toast({ title: "Falha ao reenviar", description: err?.message || "Tente novamente.", variant: "destructive" });
         },
-      }
-    );
-  }, [conversationId, selectedWa, retryWhatsApp, toast]);
+      );
+    },
+    [conversationId, selectedWa, retryWhatsApp, toast],
+  );
 
   return { msgText, setMsgText, handleSend, handleSendMedia, handleRetry };
 }
