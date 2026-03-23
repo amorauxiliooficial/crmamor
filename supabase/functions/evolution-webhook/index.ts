@@ -166,9 +166,34 @@ async function handleInboundMessage(
   const remoteJid: string = key.remoteJid ?? "";
   const messageId: string = key.id ?? "";
 
-  // For outgoing messages, update status if we have a matching record
+  // For outgoing messages, update status AND backfill wa_jid/wa_phone on conversation
   if (fromMe) {
     console.log(`⏭️ Outgoing message ${messageId} — checking for status update`);
+
+    // Backfill wa_jid/wa_phone on the conversation if remoteJid is valid
+    if (remoteJid && !remoteJid.includes("@g.us")) {
+      const outWaJid = remoteJid;
+      const outWaPhone = remoteJid.replace(/@.*$/, "").replace(/\D/g, "");
+      if (outWaPhone.length >= 10 && outWaPhone.length <= 15) {
+        // Find conversation missing wa_jid for this phone and backfill
+        const { data: convToFix } = await supabase
+          .from("wa_conversations")
+          .select("id, wa_jid")
+          .or(`wa_phone.eq.${outWaPhone},wa_phone.eq.+${outWaPhone}`)
+          .is("wa_jid", null)
+          .limit(1)
+          .maybeSingle();
+
+        if (convToFix) {
+          await supabase
+            .from("wa_conversations")
+            .update({ wa_jid: outWaJid, wa_phone: outWaPhone })
+            .eq("id", convToFix.id);
+          console.log(`🔧 Backfilled wa_jid=${outWaJid} on conversation ${convToFix.id} (fromMe)`);
+        }
+      }
+    }
+
     if (messageId) {
       const { data: existing } = await supabase
         .from("wa_messages")
@@ -207,6 +232,7 @@ async function handleInboundMessage(
   }
 
   const isLid = remoteJid.includes("@lid");
+  console.log("EVOLUTION: ids", { wa_jid, wa_phone, isLid });
   console.log(`📱 Contact: wa_jid=${wa_jid}, wa_phone=${wa_phone}, isLid=${isLid}`);
 
   const message = msgData.message ?? {};
