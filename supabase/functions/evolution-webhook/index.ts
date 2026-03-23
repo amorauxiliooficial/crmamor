@@ -262,7 +262,7 @@ async function handleInboundMessage(
     msgType = "unsupported";
   }
 
-  console.log(`📨 Inbound from ${storedPhone} via ${instanceName}: ${msgType} — "${bodyText.slice(0, 60)}"`);
+  console.log(`📨 Inbound from ${wa_phone} via ${instanceName}: ${msgType} — "${bodyText.slice(0, 60)}"`);
 
   // Get instance ID
   const { data: instance } = await supabase
@@ -273,24 +273,41 @@ async function handleInboundMessage(
 
   const instanceId: string | null = instance?.id ?? null;
 
-  // Find existing conversation by phone (try multiple formats)
-  const phoneVariants = isLid
-    ? [storedPhone, phone] // LID: try full JID first, then raw number
-    : [phone, `+${phone}`]; // Normal phone: try raw, then with +
+  // === Find existing conversation: wa_jid first, then fallback by wa_phone ===
   let conversation: any = null;
+  let needsJidBackfill = false;
 
-  for (const pv of phoneVariants) {
-    const { data } = await supabase
-      .from("wa_conversations")
-      .select("id, status, wa_name, unread_count")
-      .eq("wa_phone", pv)
-      .order("last_message_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+  // (a) Primary lookup by wa_jid
+  const { data: byJid } = await supabase
+    .from("wa_conversations")
+    .select("id, status, wa_name, unread_count, wa_phone")
+    .eq("wa_jid", wa_jid)
+    .order("last_message_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-    if (data) {
-      conversation = data;
-      break;
+  if (byJid) {
+    conversation = byJid;
+    console.log(`🔍 Found conversation by wa_jid: ${conversation.id}`);
+  } else {
+    // (b) Fallback: search by wa_phone for legacy records without wa_jid
+    const phoneVariants = [wa_phone, `+${wa_phone}`];
+    for (const pv of phoneVariants) {
+      const { data } = await supabase
+        .from("wa_conversations")
+        .select("id, status, wa_name, unread_count, wa_phone")
+        .eq("wa_phone", pv)
+        .is("wa_jid", null)
+        .order("last_message_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        conversation = data;
+        needsJidBackfill = true;
+        console.log(`🔍 Found legacy conversation by wa_phone=${pv}: ${conversation.id} — will backfill wa_jid`);
+        break;
+      }
     }
   }
 
@@ -298,7 +315,8 @@ async function handleInboundMessage(
     const { data: newConv, error: convErr } = await supabase
       .from("wa_conversations")
       .insert({
-        wa_phone: storedPhone,
+        wa_jid: wa_jid,
+        wa_phone: wa_phone,
         wa_name: pushName || null,
         status: "open",
         channel: "whatsapp_web",
@@ -319,9 +337,11 @@ async function handleInboundMessage(
     }
 
     conversation = { id: newConv.id, unread_count: 1 };
-    console.log(`🆕 Created conversation ${newConv.id} for ${storedPhone}`);
+    console.log(`🆕 Created conversation ${newConv.id} for wa_jid=${wa_jid} wa_phone=${wa_phone}`);
   } else {
     const updatePayload: any = {
+      wa_jid: wa_jid,
+      wa_phone: wa_phone,
       last_message_at: new Date().toISOString(),
       last_message_preview: bodyText.slice(0, 200),
       last_inbound_at: new Date().toISOString(),
@@ -354,7 +374,7 @@ async function handleInboundMessage(
       return;
     }
 
-    console.log(`📝 Updated conversation ${conversation.id}`);
+    console.log(`📝 Updated conversation ${conversation.id}${needsJidBackfill ? " (backfilled wa_jid)" : ""}`);
   }
 
   // Check for duplicate message
