@@ -141,6 +141,10 @@ export function useAtendimentoMessages({
 
   const handleRetry = useCallback((messageId: string, body: string, msgType?: string, mediaUrl?: string, mediaMime?: string, mediaFilename?: string) => {
     if (!conversationId || !selectedWa) return;
+    if (selectedWa.wa_phone?.includes("@lid")) {
+      toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
+      return;
+    }
     const retryTo = normalizeWhatsAppTo(selectedWa.wa_phone);
     if (!retryTo) {
       toast({ title: "Número inválido", description: "Não foi possível normalizar o telefone do contato.", variant: "destructive" });
