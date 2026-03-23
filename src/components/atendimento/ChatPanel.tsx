@@ -96,6 +96,7 @@ export function ChatPanel({
   channel = "official",
   onChangeChannel,
   onTransferToWeb,
+  isSending = false,
 }: ChatPanelProps) {
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState<AiAction | null>(null);
