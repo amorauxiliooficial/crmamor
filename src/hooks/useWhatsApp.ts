@@ -53,17 +53,50 @@ export function useWaConversations() {
       if (error) throw error;
       return data as WaConversation[];
     },
+    refetchInterval: 60000,
   });
 
-  // Realtime subscription
+  // Realtime subscription with granular cache updates
   useEffect(() => {
     const channel = supabase
       .channel("wa_conversations_realtime")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "wa_conversations" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["wa_conversations"] });
+        { event: "UPDATE", schema: "public", table: "wa_conversations" },
+        (payload) => {
+          const updated = payload.new as WaConversation;
+          queryClient.setQueryData<WaConversation[]>(["wa_conversations"], (old) => {
+            if (!old) return old;
+            return old
+              .map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
+              .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+          });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "wa_conversations" },
+        (payload) => {
+          const inserted = payload.new as WaConversation;
+          queryClient.setQueryData<WaConversation[]>(["wa_conversations"], (old) => {
+            if (!old) {
+              queryClient.invalidateQueries({ queryKey: ["wa_conversations"] });
+              return old;
+            }
+            return [inserted, ...old];
+          });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "wa_conversations" },
+        (payload) => {
+          const deletedId = (payload.old as any)?.id;
+          if (!deletedId) return;
+          queryClient.setQueryData<WaConversation[]>(["wa_conversations"], (old) => {
+            if (!old) return old;
+            return old.filter((c) => c.id !== deletedId);
+          });
         }
       )
       .subscribe();
