@@ -24,37 +24,12 @@ export function useAtendimentoMessages({
 }: UseAtendimentoMessagesParams) {
   const [msgText, setMsgText] = useState("");
   const sendingRef = useRef(false);
-  const lastMsgRef = useRef("");
 
   const handleSend = useCallback(() => {
     if (!conversationId || !msgText.trim() || !selectedWa) return;
     if (sendingRef.current) return;
     sendingRef.current = true;
     const text = msgText.trim();
-    lastMsgRef.current = text;
-
-    const optimisticMsg = {
-      id: "temp-" + Date.now(),
-      conversation_id: conversationId,
-      meta_message_id: null,
-      direction: "out",
-      body: text,
-      msg_type: "text",
-      status: "sending",
-      sent_by: userId ?? null,
-      created_at: new Date().toISOString(),
-      media_url: null,
-      media_mime: null,
-      media_filename: null,
-      media_size: null,
-      media_duration: null,
-      meta_media_id: null,
-    };
-
-    queryClient.setQueryData(["wa_messages", conversationId], (old: any[]) => [
-      ...(old || []),
-      optimisticMsg,
-    ]);
 
     sendWhatsApp.mutate(
       { to: selectedWa.wa_phone, text, conversation_id: conversationId },
@@ -65,20 +40,12 @@ export function useAtendimentoMessages({
         onError: (err: any) => {
           sendingRef.current = false;
           console.error("Send error:", err);
-          queryClient.setQueryData(["wa_messages", conversationId], (old: any[]) =>
-            old
-              ? old.map((m: any) =>
-                  m.id === optimisticMsg.id ? { ...m, status: "failed" } : m
-                )
-              : old
-          );
-          setMsgText(lastMsgRef.current);
           toast({ title: "Erro ao enviar", description: "Tente novamente.", variant: "destructive" });
         },
       }
     );
     setMsgText("");
-  }, [conversationId, msgText, selectedWa, sendWhatsApp, toast, userId, queryClient]);
+  }, [conversationId, msgText, selectedWa, sendWhatsApp, toast]);
 
   const handleSendMedia = useCallback(async (file: File) => {
     if (!conversationId || !selectedWa) return;
