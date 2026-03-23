@@ -222,6 +222,11 @@ export const MessageBubble = memo(function MessageBubble({
                 <span className="text-[11px] tabular-nums text-chat-meta/55">
                   {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                 </span>
+                {m.channel && (
+                  <span style={{ fontSize: '9px', opacity: 0.4, marginLeft: '4px' }}>
+                    {m.channel === 'whatsapp_web' ? 'Web' : m.channel === 'system' ? 'Sistema' : 'Meta'}
+                  </span>
+                )}
                 {isMe && <MessageStatusIcon status={m.status} errorMessage={m.errorMessage} className="!h-[14px] !w-[14px]" />}
               </span>
             </div>
