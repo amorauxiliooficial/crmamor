@@ -243,6 +243,7 @@ export function ChatPanel({
         replyTo={replyTo}
         onClearReply={() => setReplyTo(null)}
         channel={channel}
+        isSending={isSending}
       />
 
       {conversationPhone && (
