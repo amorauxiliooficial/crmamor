@@ -40,7 +40,18 @@ export function useAtendimentoMessages({
         onError: (err: any) => {
           sendingRef.current = false;
           console.error("Send error:", err);
-          toast({ title: "Erro ao enviar", description: "Tente novamente.", variant: "destructive" });
+          const msg = err?.message || "Tente novamente.";
+          let description = msg;
+          if (msg.includes("Sem sessão ativa")) {
+            description = "Sessão inválida. Faça login novamente.";
+          } else if (msg.includes("missing Meta credentials") || msg.includes("META_WA_TOKEN")) {
+            description = "Configure META_WA_TOKEN e META_PHONE_NUMBER_ID em Cloud → Secrets.";
+          } else if (msg.includes("Evolution API not configured") || msg.includes("EVOLUTION_API")) {
+            description = "Configure EVOLUTION_API_URL e EVOLUTION_API_KEY em Cloud → Secrets.";
+          } else if (msg.includes("Unauthorized") || msg.includes("status=401")) {
+            description = "Sessão expirada ou inválida. Faça login novamente.";
+          }
+          toast({ title: "Erro ao enviar", description, variant: "destructive" });
         },
       }
     );
@@ -81,7 +92,7 @@ export function useAtendimentoMessages({
         {
           onError: (err: any) => {
             console.error("Send media error:", err);
-            toast({ title: "Erro ao enviar mídia", description: "Tente novamente.", variant: "destructive" });
+            toast({ title: "Erro ao enviar mídia", description: err?.message || "Tente novamente.", variant: "destructive" });
           },
         }
       );
@@ -109,7 +120,7 @@ export function useAtendimentoMessages({
         onSuccess: () => toast({ title: "Mensagem reenviada ✅" }),
         onError: (err: any) => {
           console.error("Retry error:", err);
-          toast({ title: "Falha ao reenviar", description: "Tente novamente.", variant: "destructive" });
+          toast({ title: "Falha ao reenviar", description: err?.message || "Tente novamente.", variant: "destructive" });
         },
       }
     );
