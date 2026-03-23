@@ -205,6 +205,10 @@ export function InboxSidebar({
 
   const filtered = useMemo(() => {
     return conversas.filter((c) => {
+      // "Finalizadas" tab: show only closed
+      if (statusFilter === "finalizadas") return c.status === "Fechado";
+      // All other tabs: hide closed conversations
+      if (c.status === "Fechado") return false;
       if (statusFilter === "nao_lidas" && c.naoLidas === 0) return false;
       if (statusFilter && statusFilter !== "nao_lidas" && c.status !== statusFilter) return false;
       if (searchTerm) {
@@ -222,13 +226,15 @@ export function InboxSidebar({
     });
   }, [conversas, statusFilter, searchTerm]);
 
-  const naoLidasCount = conversas.filter((c) => c.naoLidas > 0).length;
+  const naoLidasCount = conversas.filter((c) => c.naoLidas > 0 && c.status !== "Fechado").length;
+  const finalizadasCount = conversas.filter((c) => c.status === "Fechado").length;
 
   const TABS = [
     { value: "all" as const, label: "Todas" },
     { value: "nao_lidas" as const, label: "Não lidas" },
     { value: "Aberto" as const, label: "Abertos" },
     { value: "Pendente" as const, label: "Pendentes" },
+    { value: "finalizadas" as const, label: "Finalizadas" },
   ];
 
   return (
