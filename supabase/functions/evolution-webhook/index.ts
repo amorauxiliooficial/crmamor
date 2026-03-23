@@ -229,23 +229,33 @@ async function handleInboundMessage(
   const wa_jid = remoteJid;
   const isLid = remoteJid.includes("@lid");
 
-  // For phone: prefer remoteJidAlt (real number) over remoteJid (which may be a LID)
+  // Detect raw JID: @s.whatsapp.net where remoteJidAlt doesn't provide a real number
+  const isRawJid = remoteJid.includes("@s.whatsapp.net") && !remoteJidAlt;
+
+  // For phone: prefer remoteJidAlt (real number) over remoteJid (which may be a LID or raw JID)
   const baseForPhone = remoteJidAlt ?? remoteJid;
-  const wa_phone = baseForPhone.replace(/@.*$/, "").replace(/\D/g, "");
+  const wa_phone_digits = baseForPhone.replace(/@.*$/, "").replace(/\D/g, "");
 
-  console.log("EVOLUTION JIDs", { remoteJid, remoteJidAlt, wa_jid, wa_phone, isLid });
+  // If it's a raw JID (no remoteJidAlt), don't trust the digits as a real phone
+  const validPhone = !isRawJid && !isLid && wa_phone_digits.length >= 10 && wa_phone_digits.length <= 15;
+  // For LID with remoteJidAlt providing real digits, allow it
+  const validPhoneLid = isLid && remoteJidAlt && wa_phone_digits.length >= 10 && wa_phone_digits.length <= 15;
 
-  if (wa_phone.length < 10 || wa_phone.length > 15) {
-    if (isLid) {
-      console.warn(`⚠️ LID sem remoteJidAlt válido. wa_phone="${wa_phone}" (${wa_phone.length} dígitos). Outbound deve ser bloqueado. remoteJid=${remoteJid}`);
-      // Still proceed to create/update conversation with wa_jid so inbound messages are tracked
-    } else {
-      console.warn(`⚠️ Invalid phone digits from remoteJid: ${remoteJid} → "${wa_phone}" (${wa_phone.length} digits). Skipping.`);
-      return;
-    }
+  // The phone we store: real E.164 digits, or prefixed identifier
+  const wa_phone = (validPhone || validPhoneLid)
+    ? wa_phone_digits
+    : isLid
+      ? `lid:${wa_jid}`
+      : `raw:${wa_jid}`;
+
+  const effectiveValidPhone = validPhone || validPhoneLid;
+
+  console.log("EVOLUTION JIDs", { remoteJid, remoteJidAlt, wa_jid, wa_phone, isLid, isRawJid, validPhone: effectiveValidPhone });
+
+  if (!effectiveValidPhone && !isLid && !isRawJid) {
+    console.warn(`⚠️ Invalid phone digits from remoteJid: ${remoteJid} → "${wa_phone_digits}" (${wa_phone_digits.length} digits). Skipping.`);
+    return;
   }
-
-  const validPhone = wa_phone.length >= 10 && wa_phone.length <= 15;
 
   const message = msgData.message ?? {};
   const pushName: string = msgData.pushName ?? "";
