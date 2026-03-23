@@ -148,7 +148,7 @@ export function useAtendimentoMessages({
 
   const handleRetry = useCallback((messageId: string, body: string, msgType?: string, mediaUrl?: string, mediaMime?: string, mediaFilename?: string) => {
     if (!conversationId || !selectedWa) return;
-    if (selectedWa.wa_phone?.includes("@lid")) {
+    if (isLidContact(selectedWa)) {
       toast({ title: "Envio bloqueado", description: LID_BLOCK_MSG, variant: "destructive" });
       return;
     }
