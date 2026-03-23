@@ -324,31 +324,64 @@ serve(async (req: Request): Promise<Response> => {
 
         console.log(`📤 Evolution: ${evoEndpoint} to ${cleanPhone} via ${instance.name}`);
 
-        const evoRes = await fetch(`${evoBaseUrl}${evoEndpoint}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: EVOLUTION_API_KEY,
-            Authorization: `Bearer ${EVOLUTION_API_KEY}`,
-          },
-          body: JSON.stringify(evoPayload),
-        });
-
-        const evoText = await evoRes.text().catch(() => "");
-        console.log(`📡 Evolution response (${evoRes.status}): ${evoText.slice(0, 500)}`);
-        let evoJson: any = null;
-        try {
-          evoJson = evoText ? JSON.parse(evoText) : null;
-        } catch {
-          console.warn("⚠️ Evolution response is not JSON, treating as raw text");
+        // Helper: call Evolution API with a given payload
+        async function callEvolution(payload: any): Promise<{ ok: boolean; status: number; text: string; json: any }> {
+          const res = await fetch(`${evoBaseUrl}${evoEndpoint}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: EVOLUTION_API_KEY!,
+              Authorization: `Bearer ${EVOLUTION_API_KEY}`,
+            },
+            body: JSON.stringify(payload),
+          });
+          const resText = await res.text().catch(() => "");
+          let resJson: any = null;
+          try { resJson = resText ? JSON.parse(resText) : null; } catch { /* ignore */ }
+          return { ok: res.ok, status: res.status, text: resText, json: resJson };
         }
 
-        if (!evoRes.ok) {
-          const errMsg = typeof evoJson === "object" && evoJson?.message
-            ? String(evoJson.message)
-            : evoText || evoRes.statusText;
+        // Detect if this is a LID "exists:false" error
+        function isLidExistsFalse(result: { ok: boolean; status: number; json: any }): boolean {
+          if (result.ok || result.status !== 400) return false;
+          if (!cleanPhone.includes("@lid")) return false;
+          try {
+            const resp = result.json?.response ?? result.json;
+            const msgs = Array.isArray(resp?.message) ? resp.message : [];
+            return msgs.some((m: any) => m?.exists === false);
+          } catch { return false; }
+        }
 
-          console.error(`❌ Evolution error ${evoRes.status}: ${errMsg}`);
+        let evoResult = await callEvolution(evoPayload);
+        console.log(`📡 Evolution response (${evoResult.status}): ${evoResult.text.slice(0, 500)}`);
+
+        // LID retry: try alternative number formats
+        if (isLidExistsFalse(evoResult)) {
+          const lidBase = cleanPhone.replace(/@.*$/, "");
+
+          // Retry 1: swap @lid → @s.whatsapp.net
+          const alt1 = `${lidBase}@s.whatsapp.net`;
+          console.log(`🔄 LID retry #1: ${alt1}`);
+          const retryPayload1 = { ...evoPayload, number: alt1 };
+          evoResult = await callEvolution(retryPayload1);
+          console.log(`📡 Retry #1 response (${evoResult.status}): ${evoResult.text.slice(0, 500)}`);
+
+          // Retry 2: digits only
+          if (!evoResult.ok) {
+            const alt2 = lidBase.replace(/\D/g, "");
+            console.log(`🔄 LID retry #2: ${alt2}`);
+            const retryPayload2 = { ...evoPayload, number: alt2 };
+            evoResult = await callEvolution(retryPayload2);
+            console.log(`📡 Retry #2 response (${evoResult.status}): ${evoResult.text.slice(0, 500)}`);
+          }
+        }
+
+        if (!evoResult.ok) {
+          const errMsg = typeof evoResult.json === "object" && evoResult.json?.message
+            ? String(typeof evoResult.json.message === "string" ? evoResult.json.message : JSON.stringify(evoResult.json.message))
+            : evoResult.text || "Unknown error";
+
+          console.error(`❌ Evolution error ${evoResult.status}: ${errMsg}`);
 
           // Store failed message
           const bodyText = msgType === "text" ? String(text || "") : caption || `[${msgType}]`;
@@ -362,12 +395,14 @@ serve(async (req: Request): Promise<Response> => {
             sent_at: new Date().toISOString(),
             channel: "whatsapp_web",
             instance_id: conv.instance_id,
-            error_code: String(evoRes.status),
+            error_code: String(evoResult.status),
             error_message: errMsg,
           });
 
-          return toJson({ error: `Evolution API error: ${errMsg}` }, evoRes.status);
+          return toJson({ error: `Evolution API error: ${errMsg}` }, evoResult.status);
         }
+
+        const evoJson = evoResult.json;
 
         // Store success message
         const bodyText = msgType === "text" ? String(text || "") : caption || `[${msgType}]`;
