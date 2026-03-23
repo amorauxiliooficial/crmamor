@@ -5,12 +5,19 @@ import type { WaConversation } from "@/hooks/useWhatsApp";
 
 const LID_BLOCK_MSG = "Contato sem número válido (LID). Aguarde correção do canal.";
 
-/** Normalize wa_phone for sending: preserve @lid JIDs as-is, otherwise return E.164 */
-function normalizeWhatsAppTo(raw: string): string | null {
-  // LID contacts must keep the @lid suffix for Evolution API routing
-  if (raw.includes("@lid")) {
-    return raw.trim();
-  }
+/** Check if a conversation is a LID contact (no real phone available) */
+function isLidContact(conv: WaConversation | null | undefined): boolean {
+  if (!conv) return false;
+  if (conv.wa_jid?.includes("@lid")) return true;
+  if (conv.wa_phone?.includes("@lid")) return true;
+  // No phone at all (LID conversation with null wa_phone)
+  if (!conv.wa_phone) return true;
+  return false;
+}
+
+/** Normalize wa_phone for sending: return E.164 digits */
+function normalizeWhatsAppTo(raw: string | null | undefined): string | null {
+  if (!raw) return null;
   // Strip @s.whatsapp.net or other suffixes
   const stripped = raw.split("@")[0];
   const digits = stripped.replace(/\D/g, "");

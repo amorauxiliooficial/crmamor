@@ -6,6 +6,7 @@ export interface WaConversation {
   id: string;
   mae_id: string | null;
   wa_phone: string;
+  wa_jid: string | null;
   wa_name: string | null;
   status: string;
   assigned_to: string | null;
