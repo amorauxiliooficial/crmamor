@@ -13,6 +13,7 @@ import { useConversationEvents, useCreateConversationEvent } from "@/hooks/useCo
 import { useRealtimeConnection } from "@/hooks/useRealtimeConnection";
 import { respostasRapidas } from "@/data/respostasRapidas";
 import { InboxSidebar } from "@/components/atendimento/InboxSidebar";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ChatPanel } from "@/components/atendimento/ChatPanel";
 import { CrmContextPanel } from "@/components/atendimento/CrmContextPanel";
 import { MobileBottomNav, type MobileTab } from "@/components/atendimento/MobileBottomNav";
@@ -609,6 +610,7 @@ export default function Atendimento() {
         <div className="flex-1 flex flex-col min-h-0 min-w-0 w-full overflow-x-hidden">
           {selectedId && mobileTab === "conversas" ? (
             <>
+              <ErrorBoundary key={selectedId} fallbackMessage="Erro no chat — selecione outra conversa">
               <ChatPanel
                 conversa={conversa}
                 mensagens={msgs}
@@ -655,6 +657,7 @@ export default function Atendimento() {
                 onTransferToWeb={() => setTransferToWebOpen(true)}
                 isSending={sendWhatsApp.isPending}
               />
+              </ErrorBoundary>
               <Drawer open={mobileCrmDrawerOpen} onOpenChange={setMobileCrmDrawerOpen}>
                 <DrawerContent className="max-h-[85dvh]">
                   <CrmContextPanel
@@ -685,23 +688,25 @@ export default function Atendimento() {
               )}
             </>
           ) : mobileTab === "conversas" ? (
-            <InboxSidebar
-              conversas={sortedConversas}
-              selectedId={selectedId}
-              search={search}
-              onSearchChange={handleSearchChange}
-              debouncedSearch={debouncedSearch}
-              onSelect={selectConversa}
-              onOpenConfig={() => setSettingsOpen(true)}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-              atendenteFilter={atendenteFilter}
-              onAtendenteFilterChange={setAtendenteFilter}
-              onAssume={handleAssume}
-              onPendente={handlePendente}
-              onStartAtendimento={handleStartAtendimento}
-              isLoading={loadingConvos}
-            />
+            <ErrorBoundary fallbackMessage="Erro na lista de conversas">
+              <InboxSidebar
+                conversas={sortedConversas}
+                selectedId={selectedId}
+                search={search}
+                onSearchChange={handleSearchChange}
+                debouncedSearch={debouncedSearch}
+                onSelect={selectConversa}
+                onOpenConfig={() => setSettingsOpen(true)}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                atendenteFilter={atendenteFilter}
+                onAtendenteFilterChange={setAtendenteFilter}
+                onAssume={handleAssume}
+                onPendente={handlePendente}
+                onStartAtendimento={handleStartAtendimento}
+                isLoading={loadingConvos}
+              />
+            </ErrorBoundary>
           ) : mobileTab === "kanban" ? (
             <div className="flex-1 flex items-center justify-center p-6">
               <div className="text-center space-y-2">
@@ -755,77 +760,81 @@ export default function Atendimento() {
         onInsertTemplate={(t) => setMsgText(t)}
       />
 
-      <InboxSidebar
-        conversas={sortedConversas}
-        selectedId={selectedId}
-        search={search}
-        onSearchChange={handleSearchChange}
-        debouncedSearch={debouncedSearch}
-        onSelect={selectConversa}
-        onOpenConfig={() => setSettingsOpen(true)}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        atendenteFilter={atendenteFilter}
-        onAtendenteFilterChange={setAtendenteFilter}
-        onAssume={handleAssume}
-        onPendente={handlePendente}
-        onStartAtendimento={handleStartAtendimento}
-        isLoading={loadingConvos}
-      />
+      <ErrorBoundary fallbackMessage="Erro na lista de conversas">
+        <InboxSidebar
+          conversas={sortedConversas}
+          selectedId={selectedId}
+          search={search}
+          onSearchChange={handleSearchChange}
+          debouncedSearch={debouncedSearch}
+          onSelect={selectConversa}
+          onOpenConfig={() => setSettingsOpen(true)}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          atendenteFilter={atendenteFilter}
+          onAtendenteFilterChange={setAtendenteFilter}
+          onAssume={handleAssume}
+          onPendente={handlePendente}
+          onStartAtendimento={handleStartAtendimento}
+          isLoading={loadingConvos}
+        />
+      </ErrorBoundary>
 
-      <ChatPanel
-        conversa={conversa}
-        mensagens={msgs}
-        isMobile={false}
-        msgText={msgText}
-        onMsgTextChange={setMsgText}
-        onSend={handleSend}
-        onSendMedia={handleSendMedia}
-        onRetry={handleRetry}
-        onBack={() => {}}
-        onAssume={() => handleAssume()}
-        onPendente={() => handlePendente()}
-        onFinalizar={() => handleFinalizar()}
-        onTransfer={() => setTransferDialogOpen(true)}
-        onToggleEtiqueta={toggleEtiqueta}
-        respostas={respostasRapidas}
-        showContext={showContext}
-        onToggleContext={() => {
-          if (isTablet) {
-            setShowContextDrawer(!showContextDrawer);
-          } else {
-            setShowContext(!showContext);
-          }
-        }}
-        isLoadingMessages={loadingMsgs}
-        currentUserId={user?.id ?? null}
-        onEditMessage={(messageId, newBody) => {
-          if (!selectedId) return;
-          editMessage.mutate({ messageId, newBody, conversationId: selectedId }, {
-            onSuccess: () => toast({ title: "Mensagem editada ✅" }),
-            onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
-          });
-        }}
-        soundEnabled={soundEnabled}
-        autoplayBlocked={autoplayBlocked}
-        onToggleSound={toggleSound}
-        onReopen={handleReopen}
-        connectionStatus={connectionStatus}
-        onReconnect={onReconnect}
-        conversationEvents={conversationEvents ?? []}
-        profileMap={profileMap}
-        aiEnabled={aiEnabled}
-        onToggleAi={handleToggleAi}
-        aiAgents={aiAgents ?? []}
-        selectedAiAgentId={selectedAiAgentId}
-        onChangeAiAgent={handleChangeAiAgent}
-        lastInboundAt={conversa?.lastInboundAt}
-        conversationPhone={selectedWa?.wa_phone}
-        channel={currentChannel}
-        onChangeChannel={handleChangeChannel}
-        onTransferToWeb={() => setTransferToWebOpen(true)}
-        isSending={sendWhatsApp.isPending}
-      />
+      <ErrorBoundary key={selectedId} fallbackMessage="Erro no chat — selecione outra conversa">
+        <ChatPanel
+          conversa={conversa}
+          mensagens={msgs}
+          isMobile={false}
+          msgText={msgText}
+          onMsgTextChange={setMsgText}
+          onSend={handleSend}
+          onSendMedia={handleSendMedia}
+          onRetry={handleRetry}
+          onBack={() => {}}
+          onAssume={() => handleAssume()}
+          onPendente={() => handlePendente()}
+          onFinalizar={() => handleFinalizar()}
+          onTransfer={() => setTransferDialogOpen(true)}
+          onToggleEtiqueta={toggleEtiqueta}
+          respostas={respostasRapidas}
+          showContext={showContext}
+          onToggleContext={() => {
+            if (isTablet) {
+              setShowContextDrawer(!showContextDrawer);
+            } else {
+              setShowContext(!showContext);
+            }
+          }}
+          isLoadingMessages={loadingMsgs}
+          currentUserId={user?.id ?? null}
+          onEditMessage={(messageId, newBody) => {
+            if (!selectedId) return;
+            editMessage.mutate({ messageId, newBody, conversationId: selectedId }, {
+              onSuccess: () => toast({ title: "Mensagem editada ✅" }),
+              onError: (err: any) => toast({ title: "Erro ao editar", description: err?.message?.includes("row-level") ? "Permissão negada ou tempo expirado" : "Tente novamente.", variant: "destructive" }),
+            });
+          }}
+          soundEnabled={soundEnabled}
+          autoplayBlocked={autoplayBlocked}
+          onToggleSound={toggleSound}
+          onReopen={handleReopen}
+          connectionStatus={connectionStatus}
+          onReconnect={onReconnect}
+          conversationEvents={conversationEvents ?? []}
+          profileMap={profileMap}
+          aiEnabled={aiEnabled}
+          onToggleAi={handleToggleAi}
+          aiAgents={aiAgents ?? []}
+          selectedAiAgentId={selectedAiAgentId}
+          onChangeAiAgent={handleChangeAiAgent}
+          lastInboundAt={conversa?.lastInboundAt}
+          conversationPhone={selectedWa?.wa_phone}
+          channel={currentChannel}
+          onChangeChannel={handleChangeChannel}
+          onTransferToWeb={() => setTransferToWebOpen(true)}
+          isSending={sendWhatsApp.isPending}
+        />
+      </ErrorBoundary>
 
       <TransferDialog
         open={transferDialogOpen}
