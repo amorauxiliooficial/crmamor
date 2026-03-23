@@ -113,7 +113,7 @@ export function ChatInputBar({
     }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onSend();
+      if (!isSending) onSend();
     }
   }
 
