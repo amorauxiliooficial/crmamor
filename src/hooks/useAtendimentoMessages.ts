@@ -92,7 +92,7 @@ export function useAtendimentoMessages({
         {
           onError: (err: any) => {
             console.error("Send media error:", err);
-            toast({ title: "Erro ao enviar mídia", description: "Tente novamente.", variant: "destructive" });
+            toast({ title: "Erro ao enviar mídia", description: err?.message || "Tente novamente.", variant: "destructive" });
           },
         }
       );
