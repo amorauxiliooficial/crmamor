@@ -33,6 +33,10 @@ function formatE164ToBR(phone: string): string {
   if (digits.startsWith("55") && digits.length >= 12) {
     digits = digits.slice(2);
   }
+  // If still longer than 11, keep last 11 digits
+  if (digits.length > 11) {
+    digits = digits.slice(-11);
+  }
   return formatPhone(digits);
 }
 

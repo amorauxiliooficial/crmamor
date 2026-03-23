@@ -190,10 +190,18 @@ export function useSendWhatsApp() {
         body: params,
       });
       if (error) {
-        const status = (error as any).status ?? "?";
-        const details = (error as any).context || (error as any).details || {};
+        const status = (error as any).status ?? (error as any).code ?? "?";
+        const ctx = (error as any).context;
+        let bodyText = "";
+        if (ctx && typeof ctx.json === "function") {
+          try { const j = await ctx.json(); bodyText = j?.error || j?.message || JSON.stringify(j); } catch { /* ignore */ }
+        }
+        if (!bodyText && ctx && typeof ctx.text === "function") {
+          try { bodyText = await ctx.text(); } catch { /* ignore */ }
+        }
+        const details = bodyText || (error as any).details || error.message || "Erro desconhecido";
         throw new Error(
-          `whatsapp-send failed: ${error.message} | status=${status} | details=${JSON.stringify(details)}`
+          `whatsapp-send failed: ${error.message} | status=${status} | details=${details}`
         );
       }
       return data;
