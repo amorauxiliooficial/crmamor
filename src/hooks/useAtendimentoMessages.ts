@@ -71,7 +71,7 @@ export function useAtendimentoMessages({
     const to = normalizeWhatsAppTo(selectedWa.wa_phone);
     if (!to) {
       sendingRef.current = false;
-      toast({ title: "Número inválido", description: "Não foi possível normalizar o telefone do contato.", variant: "destructive" });
+      toast({ title: "Numero invalido", description: "O telefone do contato nao pode ser identificado. Verifique o cadastro.", variant: "destructive" });
       return;
     }
 
