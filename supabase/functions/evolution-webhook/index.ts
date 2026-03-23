@@ -401,28 +401,65 @@ async function handleInboundMessage(
   }
 
   if (!conversation) {
-    // For LID contacts without real phone, try to resolve from sibling conversations or CRM
+    // For LID/raw contacts without real phone, try to resolve from existing data
     let resolvedPhone = effectiveValidPhone ? wa_phone : (isLid ? `lid:${wa_jid}` : `raw:${wa_jid}`);
     let resolvedMaeId: string | null = null;
+    let resolvedConversationId: string | null = null;
 
-    if (!effectiveValidPhone && pushName) {
-      const { data: siblingMatches } = await supabase
-        .from("wa_conversations")
-        .select("id, wa_phone, mae_id")
-        .ilike("wa_name", pushName.trim())
-        .order("last_message_at", { ascending: false })
-        .limit(5);
+    if (!effectiveValidPhone) {
+      // Strategy 1: Check if we've sent outbound messages via this instance recently
+      // When we send via Evolution, the response contains the real remoteJid (e.g. 5511...@s.whatsapp.net)
+      // So look for conversations that used this instance and match by pushName
+      if (pushName && instanceId) {
+        const { data: instanceConvos } = await supabase
+          .from("wa_conversations")
+          .select("id, wa_phone, wa_jid, mae_id, wa_name")
+          .eq("instance_id", instanceId)
+          .not("wa_phone", "like", "lid:%")
+          .not("wa_phone", "like", "raw:%")
+          .order("last_message_at", { ascending: false })
+          .limit(20);
 
-      const siblingWithPhone = (siblingMatches ?? []).find((row: any) => {
-        const digits = String(row?.wa_phone ?? "").replace(/\D/g, "");
-        return !String(row?.wa_phone ?? "").startsWith("lid:") && digits.length >= 10 && digits.length <= 15;
-      });
+        const matchByName = (instanceConvos ?? []).find((c: any) => {
+          const nameMatch = c.wa_name && c.wa_name.trim().toLowerCase() === pushName.trim().toLowerCase();
+          const digits = String(c.wa_phone ?? "").replace(/\D/g, "");
+          return nameMatch && digits.length >= 10 && digits.length <= 15;
+        });
 
-      if (siblingWithPhone) {
-        resolvedPhone = String(siblingWithPhone.wa_phone).replace(/\D/g, "");
-        resolvedMaeId = siblingWithPhone.mae_id ?? null;
-        console.log(`🔗 LID resolved via sibling conversation: "${pushName}" → phone=${resolvedPhone}`);
-      } else {
+        if (matchByName) {
+          resolvedPhone = String(matchByName.wa_phone).replace(/\D/g, "");
+          resolvedMaeId = matchByName.mae_id ?? null;
+          resolvedConversationId = matchByName.id;
+          console.log(`🔗 LID/raw resolved via instance conversation: "${pushName}" → phone=${resolvedPhone}, conv=${matchByName.id}`);
+        }
+      }
+
+      // Strategy 2: Sibling conversations by pushName (any instance)
+      if (!resolvedConversationId && pushName) {
+        const { data: siblingMatches } = await supabase
+          .from("wa_conversations")
+          .select("id, wa_phone, mae_id")
+          .ilike("wa_name", pushName.trim())
+          .not("wa_phone", "like", "lid:%")
+          .not("wa_phone", "like", "raw:%")
+          .order("last_message_at", { ascending: false })
+          .limit(5);
+
+        const siblingWithPhone = (siblingMatches ?? []).find((row: any) => {
+          const digits = String(row?.wa_phone ?? "").replace(/\D/g, "");
+          return digits.length >= 10 && digits.length <= 15;
+        });
+
+        if (siblingWithPhone) {
+          resolvedPhone = String(siblingWithPhone.wa_phone).replace(/\D/g, "");
+          resolvedMaeId = siblingWithPhone.mae_id ?? null;
+          resolvedConversationId = siblingWithPhone.id;
+          console.log(`🔗 LID/raw resolved via sibling conversation: "${pushName}" → phone=${resolvedPhone}, conv=${siblingWithPhone.id}`);
+        }
+      }
+
+      // Strategy 3: CRM lookup by name
+      if (!resolvedConversationId && pushName) {
         const { data: crmMatch } = await supabase
           .from("mae_processo")
           .select("id, telefone_e164")
@@ -435,8 +472,39 @@ async function handleInboundMessage(
           if (crmDigits.length >= 10) {
             resolvedPhone = crmDigits;
             resolvedMaeId = crmMatch.id;
-            console.log(`🔗 LID resolved via CRM: "${pushName}" → phone=${crmDigits}, mae_id=${crmMatch.id}`);
+            console.log(`🔗 LID/raw resolved via CRM: "${pushName}" → phone=${crmDigits}, mae_id=${crmMatch.id}`);
           }
+        }
+      }
+
+      // If we found an existing conversation, reuse it instead of creating a new one
+      if (resolvedConversationId) {
+        const { data: resolvedConv } = await supabase
+          .from("wa_conversations")
+          .select("id, status, wa_name, unread_count, wa_phone")
+          .eq("id", resolvedConversationId)
+          .single();
+
+        if (resolvedConv) {
+          conversation = resolvedConv;
+          needsJidBackfill = false; // we'll update below
+
+          // Register the LID/raw JID as an alias for this conversation
+          const aliasValue = isLid ? `lid:${wa_jid}` : `raw:${wa_jid}`;
+          await supabase
+            .from("conversation_phone_aliases")
+            .upsert(
+              { conversation_id: resolvedConv.id, phone_value: wa_jid, phone_type: isLid ? "lid" : "raw" },
+              { onConflict: "phone_value" }
+            );
+          await supabase
+            .from("conversation_phone_aliases")
+            .upsert(
+              { conversation_id: resolvedConv.id, phone_value: aliasValue, phone_type: isLid ? "lid" : "raw" },
+              { onConflict: "phone_value" }
+            );
+
+          console.log(`🔗 Reusing conversation ${resolvedConv.id} for LID/raw ${wa_jid} (resolved to phone=${resolvedPhone})`);
         }
       }
     }
