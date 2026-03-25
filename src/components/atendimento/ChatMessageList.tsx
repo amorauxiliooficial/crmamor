@@ -6,8 +6,12 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { MessageContextMenu } from "@/components/atendimento/MessageContextMenu";
 import {
-  MessageBubble, MessageSkeleton, InlineEvent,
-  formatDayLabel, shouldShowTimestamp, getBubblePosition,
+  MessageBubble,
+  MessageSkeleton,
+  InlineEvent,
+  formatDayLabel,
+  shouldShowTimestamp,
+  getBubblePosition,
 } from "@/components/atendimento/MessageBubble";
 import type { Mensagem } from "@/data/atendimentoMock";
 import type { ConversationEvent } from "@/hooks/useConversationEvents";
@@ -21,7 +25,14 @@ interface ChatMessageListProps {
   isLoadingMessages: boolean;
   currentUserId?: string | null;
   onEditMessage?: (messageId: string, newBody: string) => void;
-  onRetry?: (messageId: string, body: string, msgType?: string, mediaUrl?: string, mediaMime?: string, mediaFilename?: string) => void;
+  onRetry?: (
+    messageId: string,
+    body: string,
+    msgType?: string,
+    mediaUrl?: string,
+    mediaMime?: string,
+    mediaFilename?: string,
+  ) => void;
   conversationEvents: ConversationEvent[];
   profileMap?: Map<string, string>;
   onReply: (msg: Mensagem) => void;
@@ -48,10 +59,20 @@ export function ChatMessageList({
 
   const [visibleCount, setVisibleCount] = useState(MESSAGES_PER_PAGE);
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => {
-    try { const v = localStorage.getItem("atd_pinned"); return v ? new Set(JSON.parse(v)) : new Set(); } catch { return new Set(); }
+    try {
+      const v = localStorage.getItem("atd_pinned");
+      return v ? new Set(JSON.parse(v)) : new Set();
+    } catch {
+      return new Set();
+    }
   });
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(() => {
-    try { const v = localStorage.getItem("atd_favorited"); return v ? new Set(JSON.parse(v)) : new Set(); } catch { return new Set(); }
+    try {
+      const v = localStorage.getItem("atd_favorited");
+      return v ? new Set(JSON.parse(v)) : new Set();
+    } catch {
+      return new Set();
+    }
   });
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
@@ -98,29 +119,48 @@ export function ChatMessageList({
     }
   }, [mensagens.length, scrollToBottom]);
 
-  const handlePin = useCallback((m: Mensagem) => {
-    setPinnedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(m.id)) { next.delete(m.id); toast({ title: "Mensagem desafixada" }); }
-      else { next.add(m.id); toast({ title: "Mensagem fixada 📌" }); }
-      localStorage.setItem("atd_pinned", JSON.stringify([...next]));
-      return next;
-    });
-  }, [toast]);
+  const handlePin = useCallback(
+    (m: Mensagem) => {
+      setPinnedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(m.id)) {
+          next.delete(m.id);
+          toast({ title: "Mensagem desafixada" });
+        } else {
+          next.add(m.id);
+          toast({ title: "Mensagem fixada 📌" });
+        }
+        localStorage.setItem("atd_pinned", JSON.stringify([...next]));
+        return next;
+      });
+    },
+    [toast],
+  );
 
-  const handleFavorite = useCallback((m: Mensagem) => {
-    setFavoritedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(m.id)) { next.delete(m.id); toast({ title: "Removido dos favoritos" }); }
-      else { next.add(m.id); toast({ title: "Mensagem favoritada ⭐" }); }
-      localStorage.setItem("atd_favorited", JSON.stringify([...next]));
-      return next;
-    });
-  }, [toast]);
+  const handleFavorite = useCallback(
+    (m: Mensagem) => {
+      setFavoritedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(m.id)) {
+          next.delete(m.id);
+          toast({ title: "Removido dos favoritos" });
+        } else {
+          next.add(m.id);
+          toast({ title: "Mensagem favoritada ⭐" });
+        }
+        localStorage.setItem("atd_favorited", JSON.stringify([...next]));
+        return next;
+      });
+    },
+    [toast],
+  );
 
-  const handleDeleteMessage = useCallback((m: Mensagem) => {
-    toast({ title: "Mensagem apagada 🗑️", description: "Apenas local" });
-  }, [toast]);
+  const handleDeleteMessage = useCallback(
+    (m: Mensagem) => {
+      toast({ title: "Mensagem apagada 🗑️", description: "Apenas local" });
+    },
+    [toast],
+  );
 
   // Pagination
   const paginatedMessages = useMemo(() => {
@@ -146,16 +186,24 @@ export function ChatMessageList({
   }, [paginatedMessages]);
 
   return (
-    <ScrollArea className="flex-1 w-full overflow-x-hidden bg-chat-bg" ref={(node) => {
-      if (node) {
-        const viewport = node.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement | null;
-        if (viewport) scrollViewportRef.current = viewport;
-      }
-    }}>
-      <div className="px-4 md:px-8 py-3 space-y-0.5 max-w-3xl mx-auto w-full overflow-x-hidden">
+    <ScrollArea
+      className="flex-1 w-full overflow-x-hidden bg-chat-bg"
+      ref={(node) => {
+        if (node) {
+          const viewport = node.querySelector("[data-radix-scroll-area-viewport]") as HTMLDivElement | null;
+          if (viewport) scrollViewportRef.current = viewport;
+        }
+      }}
+    >
+      <div className="px-3 sm:px-4 md:px-6 py-3 space-y-1.5 max-w-[820px] mx-auto w-full overflow-x-hidden">
         {hasMore && (
           <div className="flex justify-center py-3">
-            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground/40 hover:text-foreground" onClick={() => setVisibleCount((v) => v + MESSAGES_PER_PAGE)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs text-muted-foreground/40 hover:text-foreground"
+              onClick={() => setVisibleCount((v) => v + MESSAGES_PER_PAGE)}
+            >
               Carregar mais ({mensagens.length - visibleCount} anteriores)
             </Button>
           </div>
@@ -169,8 +217,12 @@ export function ChatMessageList({
             <div className="mx-auto w-full max-w-3xl mb-2">
               <div className="bg-muted/10 rounded-lg p-2 flex items-center gap-2">
                 <Pin className="h-3 w-3 text-muted-foreground/40 shrink-0" />
-                <span className="text-[11px] text-muted-foreground/50">{pinnedMsgs.length} fixada{pinnedMsgs.length > 1 ? "s" : ""}</span>
-                <p className="text-[11px] text-muted-foreground/35 truncate flex-1">{pinnedMsgs[pinnedMsgs.length - 1]?.texto}</p>
+                <span className="text-[11px] text-muted-foreground/50">
+                  {pinnedMsgs.length} fixada{pinnedMsgs.length > 1 ? "s" : ""}
+                </span>
+                <p className="text-[11px] text-muted-foreground/35 truncate flex-1">
+                  {pinnedMsgs[pinnedMsgs.length - 1]?.texto}
+                </p>
               </div>
             </div>
           );
@@ -183,11 +235,15 @@ export function ChatMessageList({
               onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
               className={cn(
                 "flex items-center gap-1.5 text-[11px] px-3 py-1 rounded-full transition-all",
-                showFavoritesOnly ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "text-muted-foreground/40 hover:text-foreground"
+                showFavoritesOnly
+                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                  : "text-muted-foreground/40 hover:text-foreground",
               )}
             >
               <Star className="h-3 w-3" />
-              {showFavoritesOnly ? "Mostrando favoritas" : `${favoritedIds.size} favorita${favoritedIds.size > 1 ? "s" : ""}`}
+              {showFavoritesOnly
+                ? "Mostrando favoritas"
+                : `${favoritedIds.size} favorita${favoritedIds.size > 1 ? "s" : ""}`}
             </button>
           </div>
         )}
@@ -198,12 +254,19 @@ export function ChatMessageList({
           messageGroups.map((group) => (
             <div key={group.label}>
               <div className="flex items-center justify-center my-4">
-                <span className="text-[10px] font-medium text-muted-foreground/30 bg-muted/10 px-3 py-1 rounded-full">{group.label}</span>
+                <span className="text-[10px] font-medium text-muted-foreground/30 bg-muted/10 px-3 py-1 rounded-full">
+                  {group.label}
+                </span>
               </div>
 
               {(() => {
                 const filtered = group.messages.filter((m) => !showFavoritesOnly || favoritedIds.has(m.id));
-                const agentIds = new Set(filtered.filter(m => m.de === "atendente").map(m => m.sentByAgentId).filter(Boolean));
+                const agentIds = new Set(
+                  filtered
+                    .filter((m) => m.de === "atendente")
+                    .map((m) => m.sentByAgentId)
+                    .filter(Boolean),
+                );
                 const multiAgent = agentIds.size > 1;
 
                 return filtered.map((m, idx) => {
@@ -250,7 +313,19 @@ export function ChatMessageList({
                             showTime={showTime}
                             showAuthorLabel={showAuthorLabel}
                             showAvatar={showAvatar}
-                            onRetry={onRetry ? (msg) => onRetry(msg.id, msg.texto, msg.msgType, msg.mediaUrl ?? undefined, msg.mediaMime ?? undefined, msg.mediaFilename ?? undefined) : undefined}
+                            onRetry={
+                              onRetry
+                                ? (msg) =>
+                                    onRetry(
+                                      msg.id,
+                                      msg.texto,
+                                      msg.msgType,
+                                      msg.mediaUrl ?? undefined,
+                                      msg.mediaMime ?? undefined,
+                                      msg.mediaFilename ?? undefined,
+                                    )
+                                : undefined
+                            }
                             currentUserId={currentUserId}
                             onEditMessage={onEditMessage}
                             profileMap={profileMap}
@@ -263,7 +338,9 @@ export function ChatMessageList({
               })()}
               {(() => {
                 const lastMsgTime = group.messages[group.messages.length - 1]?.horario.getTime() ?? 0;
-                const trailingEvents = conversationEvents.filter((ev) => new Date(ev.created_at).getTime() > lastMsgTime);
+                const trailingEvents = conversationEvents.filter(
+                  (ev) => new Date(ev.created_at).getTime() > lastMsgTime,
+                );
                 return trailingEvents.map((ev) => <InlineEvent key={ev.id} event={ev} profileMap={profileMap} />);
               })()}
             </div>
