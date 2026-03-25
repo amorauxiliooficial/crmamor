@@ -195,7 +195,7 @@ export function ChatMessageList({
         }
       }}
     >
-      <div className="px-3 sm:px-4 md:px-6 py-3 space-y-1.5 max-w-[820px] mx-auto w-full overflow-x-hidden border-2 border-red-500">
+      <div className="px-3 sm:px-4 md:px-6 py-3 space-y-1.5 max-w-[820px] mx-auto w-full overflow-x-hidden">
         {hasMore && (
           <div className="flex justify-center py-3">
             <Button
