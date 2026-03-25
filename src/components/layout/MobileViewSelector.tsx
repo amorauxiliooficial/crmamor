@@ -1,18 +1,5 @@
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  LayoutGrid,
-  List,
-  Baby,
-  ClipboardCheck,
-  DollarSign,
-  UserPlus,
-} from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LayoutGrid, List, Baby, ClipboardCheck, DollarSign, UserPlus, MessageSquare } from "lucide-react";
 
 interface MobileViewSelectorProps {
   value: string;
@@ -26,6 +13,7 @@ const viewOptions = [
   { id: "conferencia", label: "Conferência", icon: ClipboardCheck },
   { id: "pagamentos", label: "Pagamentos", icon: DollarSign },
   { id: "indicacoes", label: "Indicações", icon: UserPlus },
+  { id: "chat", label: "Chat", icon: MessageSquare },
 ];
 
 export function MobileViewSelector({ value, onValueChange }: MobileViewSelectorProps) {
