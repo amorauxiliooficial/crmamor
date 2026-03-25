@@ -52,14 +52,7 @@ export default function Index() {
   const isMobile = useIsMobile();
   const { isAdmin } = useIsAdmin();
 
-  const {
-    maes,
-    users,
-    alertasNaoLidos,
-    loading: dataLoading,
-    refetch,
-    refreshSingleMae,
-  } = useMaesData();
+  const { maes, users, alertasNaoLidos, loading: dataLoading, refetch, refreshSingleMae } = useMaesData();
 
   // View state
   const [currentView, setCurrentView] = useState("kanban");
@@ -72,7 +65,6 @@ export default function Index() {
   const [detailMae, setDetailMae] = useState<MaeProcesso | null>(null);
   const [editMae, setEditMae] = useState<MaeProcesso | null>(null);
   const [selectedIndicacao, setSelectedIndicacao] = useState<Indicacao | null>(null);
-  
 
   // Onboarding / Tour
   const [onboardingOpen, setOnboardingOpen] = useState(false);
@@ -129,19 +121,16 @@ export default function Index() {
           m.nome_mae.toLowerCase().includes(q) ||
           m.cpf.includes(q) ||
           m.telefone?.includes(q) ||
-          m.email?.toLowerCase().includes(q)
+          m.email?.toLowerCase().includes(q),
       );
     }
 
     return result;
   }, [maes, selectedUserId, statusFilter, searchQuery]);
 
-  const getUserDisplayName = useCallback(
-    (u: { id: string; full_name: string | null; email: string | null }) => {
-      return u.full_name || u.email || u.id.slice(0, 8);
-    },
-    []
-  );
+  const getUserDisplayName = useCallback((u: { id: string; full_name: string | null; email: string | null }) => {
+    return u.full_name || u.email || u.id.slice(0, 8);
+  }, []);
 
   const handleCardClick = useCallback((mae: MaeProcesso) => {
     setDetailMae(mae);
@@ -168,7 +157,7 @@ export default function Index() {
 
       refreshSingleMae(maeId);
     },
-    [refreshSingleMae]
+    [refreshSingleMae],
   );
 
   const handleViewChange = useCallback((view: string) => {
@@ -200,9 +189,7 @@ export default function Index() {
 
       <main className="p-3 md:p-6 space-y-4">
         {/* Mobile view selector */}
-        {isMobile && (
-          <MobileViewSelector value={currentView} onValueChange={setCurrentView} />
-        )}
+        {isMobile && <MobileViewSelector value={currentView} onValueChange={setCurrentView} />}
 
         {/* Operations Panel */}
         {(currentView === "kanban" || currentView === "table") && (
@@ -226,12 +213,9 @@ export default function Index() {
             </div>
           ) : (
             <>
-              {currentView === "kanban" && (
-                isMobile ? (
-                  <KanbanMobileList
-                    maes={filteredMaes}
-                    onCardClick={handleCardClick}
-                  />
+              {currentView === "kanban" &&
+                (isMobile ? (
+                  <KanbanMobileList maes={filteredMaes} onCardClick={handleCardClick} />
                 ) : (
                   <KanbanBoard
                     maes={filteredMaes}
@@ -239,15 +223,9 @@ export default function Index() {
                     onStatusChange={handleStatusChange}
                     alertasNaoLidos={alertasNaoLidos}
                   />
-                )
-              )}
+                ))}
 
-              {currentView === "table" && (
-                <MaeTable
-                  maes={filteredMaes}
-                  onRowClick={handleCardClick}
-                />
-              )}
+              {currentView === "table" && <MaeTable maes={filteredMaes} onRowClick={handleCardClick} />}
 
               {currentView === "atividades" && (
                 <AtividadesTab
@@ -257,12 +235,7 @@ export default function Index() {
                 />
               )}
 
-              {currentView === "crm" && (
-                <CrmTab
-                  maes={filteredMaes}
-                  onRefresh={refetch}
-                />
-              )}
+              {currentView === "crm" && <CrmTab maes={filteredMaes} onRefresh={refetch} />}
 
               {currentView === "gestantes" && (
                 <GestantesBoard
@@ -273,17 +246,11 @@ export default function Index() {
               )}
 
               {currentView === "conferencia" && (
-                <ConferenciaTab
-                  searchQuery={searchQuery}
-                  selectedUserId={selectedUserId ?? undefined}
-                />
+                <ConferenciaTab searchQuery={searchQuery} selectedUserId={selectedUserId ?? undefined} />
               )}
 
               {currentView === "pagamentos" && (
-                <PagamentosTab
-                  searchQuery={searchQuery}
-                  selectedUserId={selectedUserId ?? undefined}
-                />
+                <PagamentosTab searchQuery={searchQuery} selectedUserId={selectedUserId ?? undefined} />
               )}
 
               {currentView === "indicacoes" && (
@@ -292,9 +259,10 @@ export default function Index() {
                   externalSelectedIndicacao={selectedIndicacao}
                   onClearExternalSelection={() => setSelectedIndicacao(null)}
                   selectedUserId={selectedUserId ?? undefined}
-                  {currentView === "chat" && <ChatPanel />}
                 />
               )}
+
+              {currentView === "chat" && <ChatPanel />}
             </>
           )}
         </ViewTransition>
@@ -333,10 +301,8 @@ export default function Index() {
           refetch();
         }}
       />
-      <OnboardingModal
-        open={onboardingOpen}
-        onOpenChange={setOnboardingOpen}
-      />
+
+      <OnboardingModal open={onboardingOpen} onOpenChange={setOnboardingOpen} />
 
       <GuidedTour
         run={tourRunning}
