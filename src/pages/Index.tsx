@@ -35,6 +35,7 @@ import { CrmTab } from "@/components/atividades/CrmTab";
 import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
 import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
 import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
+import { ChatPanel } from "@/components/atendimento/ChatPanel";
 
 // Onboarding / Tour
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
@@ -43,7 +44,7 @@ import { GuidedTour } from "@/components/tour/GuidedTour";
 // Types
 import { Indicacao } from "@/types/indicacao";
 
-const VIEW_ORDER = ["kanban", "table", "atividades", "gestantes", "conferencia", "pagamentos", "indicacoes"];
+const VIEW_ORDER = ["kanban", "table", "atividades", "gestantes", "conferencia", "pagamentos", "indicacoes", "chat"];
 
 export default function Index() {
   const { user, loading: authLoading } = useAuth();
@@ -291,6 +292,7 @@ export default function Index() {
                   externalSelectedIndicacao={selectedIndicacao}
                   onClearExternalSelection={() => setSelectedIndicacao(null)}
                   selectedUserId={selectedUserId ?? undefined}
+                  {currentView === "chat" && <ChatPanel />}
                 />
               )}
             </>
