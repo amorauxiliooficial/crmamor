@@ -37,6 +37,7 @@ import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
 import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
 import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
 import { ChatPanel } from "@/components/atendimento/ChatPanel";
+import { ProspeccaoTab } from "@/components/prospeccao/ProspeccaoTab";
 
 // Onboarding / Tour
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
