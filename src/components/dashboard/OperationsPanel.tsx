@@ -1,39 +1,21 @@
-import { useMemo, useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { STATUS_ORDER, StatusProcesso } from "@/types/mae";
 import {
   MessageSquare,
   Users,
   Clock,
   Inbox,
   ArrowRight,
-  Filter,
-  Phone,
-  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface OperationsPanelProps {
   totalMaes: number;
   filteredCount: number;
-  selectedUserId: string | null;
-  onUserChange: (userId: string) => void;
-  statusFilter: StatusProcesso | "all" | "gestantes";
-  onStatusFilterChange: (status: StatusProcesso | "all" | "gestantes") => void;
-  users: { id: string; full_name: string | null; email: string | null }[];
-  getUserDisplayName: (u: { id: string; full_name: string | null; email: string | null }) => string;
 }
 
 interface ChatStats {
@@ -100,12 +82,6 @@ function useChatStats(): { stats: ChatStats; isLoading: boolean } {
 export function OperationsPanel({
   totalMaes,
   filteredCount,
-  selectedUserId,
-  onUserChange,
-  statusFilter,
-  onStatusFilterChange,
-  users,
-  getUserDisplayName,
 }: OperationsPanelProps) {
   const navigate = useNavigate();
   const { stats } = useChatStats();
@@ -182,57 +158,12 @@ export function OperationsPanel({
         </div>
       </div>
 
-      {/* Filters row */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-        
-        <Select value={selectedUserId || "all"} onValueChange={onUserChange}>
-          <SelectTrigger className="w-[160px] h-8 text-xs">
-            <SelectValue placeholder="Responsável" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos responsáveis</SelectItem>
-            {users.map((u) => (
-              <SelectItem key={u.id} value={u.id}>
-                {getUserDisplayName(u)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={statusFilter} onValueChange={(v) => onStatusFilterChange(v as StatusProcesso | "all" | "gestantes")}>
-          <SelectTrigger className="w-[200px] h-8 text-xs">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="gestantes">🤰 Gestantes</SelectItem>
-            {STATUS_ORDER.map((s) => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {(statusFilter !== "all" || (selectedUserId && selectedUserId !== "all")) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs"
-            onClick={() => {
-              onStatusFilterChange("all");
-              onUserChange("all");
-            }}
-          >
-            Limpar filtros
-          </Button>
-        )}
-
-        {filteredCount !== totalMaes && (
-          <Badge variant="secondary" className="text-xs h-6">
-            {filteredCount} de {totalMaes}
-          </Badge>
-        )}
-      </div>
+      {/* Simple count badge */}
+      {filteredCount !== totalMaes && (
+        <Badge variant="secondary" className="text-xs h-6">
+          {filteredCount} de {totalMaes} processos
+        </Badge>
+      )}
     </div>
   );
 }

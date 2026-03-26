@@ -5,7 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useMaesData, MaeProcessoComAtividade } from "@/hooks/useMaesData";
 import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
-import { Loader2 } from "lucide-react";
+import { Loader2, LayoutGrid, List, Baby, ClipboardCheck, DollarSign, UserPlus, MessageSquare } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
 import { toast } from "sonner";
@@ -52,13 +53,12 @@ export default function Index() {
   const isMobile = useIsMobile();
   const { isAdmin } = useIsAdmin();
 
-  const { maes, users, alertasNaoLidos, loading: dataLoading, refetch, refreshSingleMae } = useMaesData();
+  const { maes, alertasNaoLidos, loading: dataLoading, refetch, refreshSingleMae } = useMaesData();
 
   // View state
   const [currentView, setCurrentView] = useState("kanban");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all" | "gestantes">("all");
+  
 
   // Dialog state
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -78,12 +78,6 @@ export default function Index() {
     }
   }, [user, authLoading, navigate]);
 
-  // Set default user filter to current user
-  useEffect(() => {
-    if (user && selectedUserId === null) {
-      setSelectedUserId(user.id);
-    }
-  }, [user, selectedUserId]);
 
   // Swipe navigation for mobile
   const swipeHandlers = useSwipeNavigation({
@@ -101,18 +95,6 @@ export default function Index() {
   const filteredMaes = useMemo(() => {
     let result = maes;
 
-    // Filter by user
-    if (selectedUserId && selectedUserId !== "all") {
-      result = result.filter((m) => m.user_id === selectedUserId);
-    }
-
-    // Filter by status
-    if (statusFilter === "gestantes") {
-      result = result.filter((m) => m.is_gestante);
-    } else if (statusFilter !== "all") {
-      result = result.filter((m) => m.status_processo === statusFilter);
-    }
-
     // Filter by search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -126,11 +108,8 @@ export default function Index() {
     }
 
     return result;
-  }, [maes, selectedUserId, statusFilter, searchQuery]);
+  }, [maes, searchQuery]);
 
-  const getUserDisplayName = useCallback((u: { id: string; full_name: string | null; email: string | null }) => {
-    return u.full_name || u.email || u.id.slice(0, 8);
-  }, []);
 
   const handleCardClick = useCallback((mae: MaeProcesso) => {
     setDetailMae(mae);
@@ -191,17 +170,47 @@ export default function Index() {
         {/* Mobile view selector */}
         {isMobile && <MobileViewSelector value={currentView} onValueChange={setCurrentView} />}
 
-        {/* Operations Panel */}
+        {/* Desktop navigation tabs */}
+        {!isMobile && (
+          <Tabs value={currentView} onValueChange={setCurrentView} className="w-full">
+            <TabsList className="w-full justify-start overflow-x-auto flex-wrap h-auto gap-1 bg-muted/50 p-1">
+              <TabsTrigger value="kanban" className="gap-1.5 text-xs">
+                <LayoutGrid className="h-3.5 w-3.5" />
+                Processos
+              </TabsTrigger>
+              <TabsTrigger value="table" className="gap-1.5 text-xs">
+                <List className="h-3.5 w-3.5" />
+                Tabela
+              </TabsTrigger>
+              <TabsTrigger value="gestantes" className="gap-1.5 text-xs">
+                <Baby className="h-3.5 w-3.5" />
+                Gestantes
+              </TabsTrigger>
+              <TabsTrigger value="conferencia" className="gap-1.5 text-xs">
+                <ClipboardCheck className="h-3.5 w-3.5" />
+                Conferência
+              </TabsTrigger>
+              <TabsTrigger value="pagamentos" className="gap-1.5 text-xs">
+                <DollarSign className="h-3.5 w-3.5" />
+                Pagamentos
+              </TabsTrigger>
+              <TabsTrigger value="indicacoes" className="gap-1.5 text-xs">
+                <UserPlus className="h-3.5 w-3.5" />
+                Indicações
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="gap-1.5 text-xs">
+                <MessageSquare className="h-3.5 w-3.5" />
+                Chat
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
+
+        {/* Operations Panel - simplified */}
         {(currentView === "kanban" || currentView === "table") && (
           <OperationsPanel
             totalMaes={maes.length}
             filteredCount={filteredMaes.length}
-            selectedUserId={selectedUserId}
-            onUserChange={(userId) => setSelectedUserId(userId)}
-            statusFilter={statusFilter}
-            onStatusFilterChange={setStatusFilter}
-            users={users}
-            getUserDisplayName={getUserDisplayName}
           />
         )}
 
@@ -231,7 +240,7 @@ export default function Index() {
                 <AtividadesTab
                   maes={filteredMaes as MaeProcessoComAtividade[]}
                   onRefresh={refetch}
-                  selectedUserId={selectedUserId}
+                  selectedUserId={undefined}
                 />
               )}
 
@@ -246,11 +255,11 @@ export default function Index() {
               )}
 
               {currentView === "conferencia" && (
-                <ConferenciaTab searchQuery={searchQuery} selectedUserId={selectedUserId ?? undefined} />
+                <ConferenciaTab searchQuery={searchQuery} selectedUserId={undefined} />
               )}
 
               {currentView === "pagamentos" && (
-                <PagamentosTab searchQuery={searchQuery} selectedUserId={selectedUserId ?? undefined} />
+                <PagamentosTab searchQuery={searchQuery} selectedUserId={undefined} />
               )}
 
               {currentView === "indicacoes" && (
@@ -258,7 +267,7 @@ export default function Index() {
                   searchQuery={searchQuery}
                   externalSelectedIndicacao={selectedIndicacao}
                   onClearExternalSelection={() => setSelectedIndicacao(null)}
-                  selectedUserId={selectedUserId ?? undefined}
+                  selectedUserId={undefined}
                 />
               )}
 
