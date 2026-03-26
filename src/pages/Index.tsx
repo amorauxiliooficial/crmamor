@@ -95,18 +95,6 @@ export default function Index() {
   const filteredMaes = useMemo(() => {
     let result = maes;
 
-    // Filter by user
-    if (selectedUserId && selectedUserId !== "all") {
-      result = result.filter((m) => m.user_id === selectedUserId);
-    }
-
-    // Filter by status
-    if (statusFilter === "gestantes") {
-      result = result.filter((m) => m.is_gestante);
-    } else if (statusFilter !== "all") {
-      result = result.filter((m) => m.status_processo === statusFilter);
-    }
-
     // Filter by search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -120,7 +108,7 @@ export default function Index() {
     }
 
     return result;
-  }, [maes, selectedUserId, statusFilter, searchQuery]);
+  }, [maes, searchQuery]);
 
   const getUserDisplayName = useCallback((u: { id: string; full_name: string | null; email: string | null }) => {
     return u.full_name || u.email || u.id.slice(0, 8);
