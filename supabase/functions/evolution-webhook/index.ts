@@ -60,7 +60,9 @@ serve(async (req: Request): Promise<Response> => {
     const instanceName: string | undefined =
       body.instance ?? body.data?.instance ?? body.instanceName ?? body.sender?.instance;
 
-    console.log(`📩 Evolution webhook: event=${eventType}, instance=${instanceName ?? "unknown"}, keys=${Object.keys(body).join(",")}`);
+    console.log(
+      `📩 Evolution webhook: event=${eventType}, instance=${instanceName ?? "unknown"}, keys=${Object.keys(body).join(",")}`,
+    );
 
     if (!instanceName) {
       console.warn("⚠️ No instance name in payload, skipping. Full body:", JSON.stringify(body).slice(0, 500));
@@ -96,10 +98,7 @@ serve(async (req: Request): Promise<Response> => {
 
 async function handleQrCode(supabase: any, body: any, instanceName: string) {
   const qrCode: string | undefined =
-    body.data?.qrcode?.base64 ??
-    body.data?.qrcode ??
-    body.qrcode?.base64 ??
-    body.qrcode;
+    body.data?.qrcode?.base64 ?? body.data?.qrcode ?? body.qrcode?.base64 ?? body.qrcode;
 
   if (!qrCode) {
     console.warn("⚠️ QRCODE_UPDATED but no qr data found");
@@ -118,8 +117,7 @@ async function handleQrCode(supabase: any, body: any, instanceName: string) {
 }
 
 async function handleConnectionUpdate(supabase: any, body: any, instanceName: string) {
-  const rawState: string | undefined =
-    body.data?.state ?? body.state ?? body.data?.status;
+  const rawState: string | undefined = body.data?.state ?? body.state ?? body.data?.status;
   const state = rawState?.toLowerCase();
 
   console.log(`🔌 Connection state for ${instanceName}: ${state}`);
@@ -149,11 +147,7 @@ async function handleConnectionUpdate(supabase: any, body: any, instanceName: st
   }
 }
 
-async function handleInboundMessage(
-  supabase: any,
-  body: any,
-  instanceName: string,
-) {
+async function handleInboundMessage(supabase: any, body: any, instanceName: string) {
   // Evolution v2 can send data as array or object
   const msgData = Array.isArray(body.data) ? body.data[0] : body.data;
   if (!msgData) {
@@ -167,8 +161,7 @@ async function handleInboundMessage(
   const messageId: string = key.id ?? "";
 
   // Extract remoteJidAlt — Evolution may provide the real JID for LID contacts
-  const remoteJidAlt: string | null =
-    key.remoteJidAlt ?? msgData.remoteJidAlt ?? null;
+  const remoteJidAlt: string | null = key.remoteJidAlt ?? msgData.remoteJidAlt ?? null;
 
   // For outgoing messages, update status AND backfill wa_jid/wa_phone on conversation
   if (fromMe) {
@@ -192,7 +185,9 @@ async function handleInboundMessage(
             .from("wa_conversations")
             .update({ wa_jid: outWaJid, wa_phone: outWaPhone })
             .eq("id", convToFix.id);
-          console.log(`🔧 Backfilled wa_jid=${outWaJid}, wa_phone=${outWaPhone} on conversation ${convToFix.id} (fromMe)`);
+          console.log(
+            `🔧 Backfilled wa_jid=${outWaJid}, wa_phone=${outWaPhone} on conversation ${convToFix.id} (fromMe)`,
+          );
         }
       }
     }
@@ -205,10 +200,7 @@ async function handleInboundMessage(
         .maybeSingle();
 
       if (existing) {
-        await supabase
-          .from("wa_messages")
-          .update({ status: "delivered" })
-          .eq("id", existing.id);
+        await supabase.from("wa_messages").update({ status: "delivered" }).eq("id", existing.id);
         console.log(`✅ Updated outgoing message ${messageId} to delivered`);
       }
     }
@@ -242,18 +234,24 @@ async function handleInboundMessage(
   const validPhoneLid = isLid && remoteJidAlt && wa_phone_digits.length >= 10 && wa_phone_digits.length <= 15;
 
   // The phone we store: real E.164 digits, or prefixed identifier
-  const wa_phone = (validPhone || validPhoneLid)
-    ? wa_phone_digits
-    : isLid
-      ? `lid:${wa_jid}`
-      : `raw:${wa_jid}`;
+  const wa_phone = validPhone || validPhoneLid ? wa_phone_digits : isLid ? `lid:${wa_jid}` : `raw:${wa_jid}`;
 
   const effectiveValidPhone = validPhone || validPhoneLid;
 
-  console.log("EVOLUTION JIDs", { remoteJid, remoteJidAlt, wa_jid, wa_phone, isLid, isRawJid, validPhone: effectiveValidPhone });
+  console.log("EVOLUTION JIDs", {
+    remoteJid,
+    remoteJidAlt,
+    wa_jid,
+    wa_phone,
+    isLid,
+    isRawJid,
+    validPhone: effectiveValidPhone,
+  });
 
   if (!effectiveValidPhone && !isLid && !isRawJid) {
-    console.warn(`⚠️ Invalid phone digits from remoteJid: ${remoteJid} → "${wa_phone_digits}" (${wa_phone_digits.length} digits). Skipping.`);
+    console.warn(
+      `⚠️ Invalid phone digits from remoteJid: ${remoteJid} → "${wa_phone_digits}" (${wa_phone_digits.length} digits). Skipping.`,
+    );
     return;
   }
 
@@ -274,7 +272,6 @@ async function handleInboundMessage(
     msgType = "image";
     bodyText = message.imageMessage.caption || "[image]";
     mediaMime = message.imageMessage.mimetype || "image/jpeg";
-    // Evolution v2 may provide base64 or URL
     mediaUrl = msgData.media?.url ?? msgData.mediaUrl ?? null;
   } else if (message.audioMessage) {
     msgType = "audio";
@@ -361,12 +358,9 @@ async function handleInboundMessage(
 
   // === Alias-based lookup before creating a new conversation ===
   if (!conversation) {
-    const storedPhone = effectiveValidPhone ? wa_phone : (isLid ? `lid:${wa_jid}` : `raw:${wa_jid}`);
-    const phoneVariantsForAlias = effectiveValidPhone
-      ? [wa_phone, `+${wa_phone}`, wa_jid]
-      : [storedPhone, wa_jid];
+    const storedPhone = effectiveValidPhone ? wa_phone : isLid ? `lid:${wa_jid}` : `raw:${wa_jid}`;
+    const phoneVariantsForAlias = effectiveValidPhone ? [wa_phone, `+${wa_phone}`, wa_jid] : [storedPhone, wa_jid];
 
-    // Deduplicate variants
     const uniqueVariants = [...new Set(phoneVariantsForAlias)];
 
     const { data: aliasMatch } = await supabase
@@ -377,7 +371,6 @@ async function handleInboundMessage(
       .maybeSingle();
 
     if (aliasMatch) {
-      // Reuse existing conversation found via alias
       const { data: existingConv } = await supabase
         .from("wa_conversations")
         .select("id, status, wa_name, unread_count, wa_phone")
@@ -388,28 +381,24 @@ async function handleInboundMessage(
         conversation = existingConv;
         console.log(`🔗 Found conversation via phone alias: ${conversation.id} (variants=${uniqueVariants.join(",")})`);
 
-        // Insert alias for storedPhone if not already present (upsert)
         const aliasPhoneType = storedPhone.includes("@lid") || storedPhone.startsWith("lid:") ? "lid" : "e164";
         await supabase
           .from("conversation_phone_aliases")
           .upsert(
             { conversation_id: conversation.id, phone_value: storedPhone, phone_type: aliasPhoneType },
-            { onConflict: "phone_value" }
+            { onConflict: "phone_value" },
           );
       }
     }
   }
 
   if (!conversation) {
-    // For LID/raw contacts without real phone, try to resolve from existing data
-    let resolvedPhone = effectiveValidPhone ? wa_phone : (isLid ? `lid:${wa_jid}` : `raw:${wa_jid}`);
+    // (mantive seu fluxo de criação/reuso, sem mudanças relevantes)
+    let resolvedPhone = effectiveValidPhone ? wa_phone : isLid ? `lid:${wa_jid}` : `raw:${wa_jid}`;
     let resolvedMaeId: string | null = null;
     let resolvedConversationId: string | null = null;
 
     if (!effectiveValidPhone) {
-      // Strategy 1: Check if we've sent outbound messages via this instance recently
-      // When we send via Evolution, the response contains the real remoteJid (e.g. 5511...@s.whatsapp.net)
-      // So look for conversations that used this instance and match by pushName
       if (pushName && instanceId) {
         const { data: instanceConvos } = await supabase
           .from("wa_conversations")
@@ -430,11 +419,12 @@ async function handleInboundMessage(
           resolvedPhone = String(matchByName.wa_phone).replace(/\D/g, "");
           resolvedMaeId = matchByName.mae_id ?? null;
           resolvedConversationId = matchByName.id;
-          console.log(`🔗 LID/raw resolved via instance conversation: "${pushName}" → phone=${resolvedPhone}, conv=${matchByName.id}`);
+          console.log(
+            `🔗 LID/raw resolved via instance conversation: "${pushName}" → phone=${resolvedPhone}, conv=${matchByName.id}`,
+          );
         }
       }
 
-      // Strategy 2: Sibling conversations by pushName (any instance)
       if (!resolvedConversationId && pushName) {
         const { data: siblingMatches } = await supabase
           .from("wa_conversations")
@@ -454,11 +444,12 @@ async function handleInboundMessage(
           resolvedPhone = String(siblingWithPhone.wa_phone).replace(/\D/g, "");
           resolvedMaeId = siblingWithPhone.mae_id ?? null;
           resolvedConversationId = siblingWithPhone.id;
-          console.log(`🔗 LID/raw resolved via sibling conversation: "${pushName}" → phone=${resolvedPhone}, conv=${siblingWithPhone.id}`);
+          console.log(
+            `🔗 LID/raw resolved via sibling conversation: "${pushName}" → phone=${resolvedPhone}, conv=${siblingWithPhone.id}`,
+          );
         }
       }
 
-      // Strategy 3: CRM lookup by name
       if (!resolvedConversationId && pushName) {
         const { data: crmMatch } = await supabase
           .from("mae_processo")
@@ -477,7 +468,6 @@ async function handleInboundMessage(
         }
       }
 
-      // If we found an existing conversation, reuse it instead of creating a new one
       if (resolvedConversationId) {
         const { data: resolvedConv } = await supabase
           .from("wa_conversations")
@@ -487,29 +477,29 @@ async function handleInboundMessage(
 
         if (resolvedConv) {
           conversation = resolvedConv;
-          needsJidBackfill = false; // we'll update below
+          needsJidBackfill = false;
 
-          // Register the LID/raw JID as an alias for this conversation
           const aliasValue = isLid ? `lid:${wa_jid}` : `raw:${wa_jid}`;
           await supabase
             .from("conversation_phone_aliases")
             .upsert(
               { conversation_id: resolvedConv.id, phone_value: wa_jid, phone_type: isLid ? "lid" : "raw" },
-              { onConflict: "phone_value" }
+              { onConflict: "phone_value" },
             );
           await supabase
             .from("conversation_phone_aliases")
             .upsert(
               { conversation_id: resolvedConv.id, phone_value: aliasValue, phone_type: isLid ? "lid" : "raw" },
-              { onConflict: "phone_value" }
+              { onConflict: "phone_value" },
             );
 
-          console.log(`🔗 Reusing conversation ${resolvedConv.id} for LID/raw ${wa_jid} (resolved to phone=${resolvedPhone})`);
+          console.log(
+            `🔗 Reusing conversation ${resolvedConv.id} for LID/raw ${wa_jid} (resolved to phone=${resolvedPhone})`,
+          );
         }
       }
     }
 
-    // Only create a new conversation if resolution didn't find one
     if (!conversation) {
       const insertData: any = {
         wa_jid: wa_jid,
@@ -539,23 +529,35 @@ async function handleInboundMessage(
       }
 
       conversation = { id: newConv.id, unread_count: 1 };
-      console.log(`🆕 Created conversation ${newConv.id} for wa_jid=${wa_jid} wa_phone=${insertData.wa_phone} (effectiveValidPhone=${effectiveValidPhone})`);
+      console.log(
+        `🆕 Created conversation ${newConv.id} for wa_jid=${wa_jid} wa_phone=${insertData.wa_phone} (effectiveValidPhone=${effectiveValidPhone})`,
+      );
 
-      // Insert aliases for the new conversation
       const aliasesToInsert = [
-        { conversation_id: newConv.id, phone_value: resolvedPhone, phone_type: resolvedPhone.startsWith("lid:") || resolvedPhone.includes("@lid") ? "lid" : resolvedPhone.startsWith("raw:") ? "raw" : "e164" },
+        {
+          conversation_id: newConv.id,
+          phone_value: resolvedPhone,
+          phone_type:
+            resolvedPhone.startsWith("lid:") || resolvedPhone.includes("@lid")
+              ? "lid"
+              : resolvedPhone.startsWith("raw:")
+                ? "raw"
+                : "e164",
+        },
       ];
       if (wa_jid !== resolvedPhone) {
-        aliasesToInsert.push({ conversation_id: newConv.id, phone_value: wa_jid, phone_type: wa_jid.includes("@lid") ? "lid" : "raw" });
+        aliasesToInsert.push({
+          conversation_id: newConv.id,
+          phone_value: wa_jid,
+          phone_type: wa_jid.includes("@lid") ? "lid" : "raw",
+        });
       }
       if (effectiveValidPhone && wa_phone !== resolvedPhone) {
         aliasesToInsert.push({ conversation_id: newConv.id, phone_value: wa_phone, phone_type: "e164" });
       }
 
       for (const alias of aliasesToInsert) {
-        await supabase
-          .from("conversation_phone_aliases")
-          .upsert(alias, { onConflict: "phone_value" });
+        await supabase.from("conversation_phone_aliases").upsert(alias, { onConflict: "phone_value" });
       }
     }
   } else {
@@ -567,22 +569,18 @@ async function handleInboundMessage(
       unread_count: (conversation.unread_count ?? 0) + 1,
     };
 
-    // Only overwrite wa_phone if we have a valid real phone number
     if (effectiveValidPhone) {
       updatePayload.wa_phone = wa_phone;
     }
 
-    // Update name if missing
     if (pushName && !conversation.wa_name) {
       updatePayload.wa_name = pushName;
     }
 
-    // Reopen closed conversations
     if (conversation.status === "closed") {
       updatePayload.status = "open";
     }
 
-    // Update instance if changed
     if (instanceId) {
       updatePayload.instance_id = instanceId;
       updatePayload.active_channel_code = "evolution";
@@ -615,6 +613,32 @@ async function handleInboundMessage(
     }
   }
 
+  // ✅ NOVO: se for mídia criptografada (mmg.whatsapp.net/.enc), converte para base64 via Evolution e salva no Storage.
+  let storedMedia: { publicUrl: string; mime: string; filename: string } | null = null;
+  try {
+    if (
+      (msgType === "audio" || msgType === "image" || msgType === "video" || msgType === "document") &&
+      mediaUrl &&
+      shouldResolveEncryptedMediaUrl(mediaUrl)
+    ) {
+      storedMedia = await resolveAndStoreInboundMedia({
+        supabase,
+        instanceName,
+        messageId,
+        conversationId: conversation.id,
+        msgType,
+        pushName,
+        fallbackMime: mediaMime ?? "application/octet-stream",
+        fallbackFilename: mediaFilename ?? null,
+      });
+    }
+  } catch (e) {
+    console.warn(
+      `⚠️ Media resolve failed (will keep original mediaUrl or null). messageId=${messageId} type=${msgType}:`,
+      String(e?.message ?? e),
+    );
+  }
+
   // Insert the message - use "received" status (now allowed by constraint)
   const insertPayload: any = {
     conversation_id: conversation.id,
@@ -627,17 +651,196 @@ async function handleInboundMessage(
     instance_id: instanceId,
   };
 
-  if (mediaUrl) insertPayload.media_url = mediaUrl;
-  if (mediaMime) insertPayload.media_mime = mediaMime;
-  if (mediaFilename) insertPayload.media_filename = mediaFilename;
+  // ✅ Se conseguimos salvar no Storage, guardamos a URL pública (reutilizável).
+  // Caso contrário, mantém o mediaUrl original (mas ele pode ser .enc e não serve para reenvio).
+  const finalMediaUrl = storedMedia?.publicUrl ?? mediaUrl ?? null;
+  const finalMime = storedMedia?.mime ?? mediaMime ?? null;
+  const finalFilename = storedMedia?.filename ?? mediaFilename ?? null;
 
-  const { error: msgErr } = await supabase
-    .from("wa_messages")
-    .insert(insertPayload);
+  if (finalMediaUrl) insertPayload.media_url = finalMediaUrl;
+  if (finalMime) insertPayload.media_mime = finalMime;
+  if (finalFilename) insertPayload.media_filename = finalFilename;
+
+  const { error: msgErr } = await supabase.from("wa_messages").insert(insertPayload);
 
   if (msgErr) {
     console.error("❌ Error inserting message:", msgErr.message, JSON.stringify(msgErr));
   } else {
     console.log(`✅ Saved inbound message ${messageId} to conversation ${conversation.id}`);
   }
+}
+
+/** -------------------- NOVAS FUNÇÕES (MÍDIA) -------------------- */
+
+function shouldResolveEncryptedMediaUrl(url: string): boolean {
+  const u = String(url || "").toLowerCase();
+  return u.includes("mmg.whatsapp.net") || u.includes(".enc") || u.includes("t62.");
+}
+
+async function resolveAndStoreInboundMedia(params: {
+  supabase: any;
+  instanceName: string;
+  messageId: string;
+  conversationId: string;
+  msgType: string;
+  pushName?: string;
+  fallbackMime: string;
+  fallbackFilename: string | null;
+}): Promise<{ publicUrl: string; mime: string; filename: string }> {
+  const { supabase, instanceName, messageId, conversationId, msgType, fallbackMime, fallbackFilename } = params;
+
+  if (!messageId) {
+    throw new Error("messageId missing (cannot fetch base64 from Evolution)");
+  }
+
+  const evoBaseUrl = (Deno.env.get("EVOLUTION_API_URL") || "").replace(/\/+$/, "");
+  const evoApiKey = Deno.env.get("EVOLUTION_API_KEY") || "";
+  if (!evoBaseUrl || !evoApiKey) {
+    throw new Error("Evolution API not configured (EVOLUTION_API_URL/EVOLUTION_API_KEY)");
+  }
+
+  // 1) pega base64 via Evolution
+  const base64Result = await getBase64FromEvolution({
+    evoBaseUrl,
+    evoApiKey,
+    instanceName,
+    messageId,
+  });
+
+  const mime = base64Result.mimetype || fallbackMime || "application/octet-stream";
+  const ext = guessExtensionFromMime(mime, msgType);
+  const filename =
+    fallbackFilename && fallbackFilename.trim() ? fallbackFilename.trim() : `${msgType}_${messageId}.${ext}`;
+
+  // 2) sobe para storage (bucket wa-media)
+  const bucket = Deno.env.get("WA_MEDIA_BUCKET") || "wa-media";
+  const objectPath = `inbound/${conversationId}/${messageId}.${ext}`;
+
+  const publicUrl = await uploadBase64ToSupabaseStorage({
+    supabase,
+    bucket,
+    objectPath,
+    base64: base64Result.base64,
+    contentType: mime,
+    upsert: true,
+  });
+
+  console.log(`📦 Stored media in Storage: bucket=${bucket} path=${objectPath}`);
+
+  return { publicUrl, mime, filename };
+}
+
+async function getBase64FromEvolution(params: {
+  evoBaseUrl: string;
+  evoApiKey: string;
+  instanceName: string;
+  messageId: string;
+}): Promise<{ base64: string; mimetype?: string }> {
+  const { evoBaseUrl, evoApiKey, instanceName, messageId } = params;
+
+  // Endpoint oficial v2: POST /chat/getBase64FromMediaMessage/{instance}
+  // Doc: https://doc.evolution-api.com/v2/api-reference/chat-controller/get-base64 :contentReference[oaicite:1]{index=1}
+  const endpoint = `${evoBaseUrl}/chat/getBase64FromMediaMessage/${encodeURIComponent(instanceName)}`;
+
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: evoApiKey,
+    },
+    body: JSON.stringify({
+      message: { key: { id: messageId } },
+      // convertToMp4 pode ser útil para vídeo; mantemos default true para compat
+      convertToMp4: true,
+    }),
+  });
+
+  const text = await res.text().catch(() => "");
+  if (!res.ok) {
+    throw new Error(`Evolution getBase64 failed (${res.status}): ${text.slice(0, 300)}`);
+  }
+
+  // Algumas versões retornam JSON com base64; outras retornam vazio (dependendo config).
+  // Vamos tentar os formatos mais comuns.
+  let json: any = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+
+  const base64 =
+    json?.base64 ??
+    json?.data?.base64 ??
+    json?.message?.base64 ??
+    json?.media?.base64 ??
+    json?.response?.base64 ??
+    null;
+
+  const mimetype =
+    json?.mimetype ?? json?.data?.mimetype ?? json?.mediaType ?? json?.mime_type ?? json?.message?.mimetype ?? null;
+
+  if (!base64 || typeof base64 !== "string") {
+    throw new Error(
+      "Evolution returned no base64. (Some versions require enabling base64 or media retrieval settings.)",
+    );
+  }
+
+  return { base64, mimetype: mimetype || undefined };
+}
+
+async function uploadBase64ToSupabaseStorage(params: {
+  supabase: any;
+  bucket: string;
+  objectPath: string;
+  base64: string;
+  contentType: string;
+  upsert: boolean;
+}): Promise<string> {
+  const { supabase, bucket, objectPath, base64, contentType, upsert } = params;
+
+  // remove data URL prefix if present
+  const cleanBase64 = base64.includes(",") ? base64.split(",").pop()! : base64;
+  const bytes = Uint8Array.from(atob(cleanBase64), (c) => c.charCodeAt(0));
+
+  const { error: uploadErr } = await supabase.storage.from(bucket).upload(objectPath, bytes, {
+    contentType,
+    upsert,
+    cacheControl: "3600",
+  });
+
+  if (uploadErr) {
+    throw new Error(`Storage upload failed: ${uploadErr.message}`);
+  }
+
+  // Public URL
+  const { data } = supabase.storage.from(bucket).getPublicUrl(objectPath);
+  const publicUrl = data?.publicUrl;
+  if (!publicUrl) throw new Error("Storage public URL not available");
+
+  return publicUrl;
+}
+
+function guessExtensionFromMime(mime: string, msgType: string): string {
+  const m = String(mime || "").toLowerCase();
+
+  if (m.includes("audio/ogg") || m.includes("audio/opus")) return "ogg";
+  if (m.includes("audio/mpeg") || m.includes("audio/mp3")) return "mp3";
+  if (m.includes("audio/wav")) return "wav";
+  if (m.includes("audio/webm")) return "webm";
+
+  if (m.includes("image/png")) return "png";
+  if (m.includes("image/webp")) return "webp";
+  if (m.includes("image/jpeg") || m.includes("image/jpg")) return "jpg";
+
+  if (m.includes("video/mp4")) return "mp4";
+  if (m.includes("video/webm")) return "webm";
+
+  if (m.includes("application/pdf")) return "pdf";
+
+  // fallback por tipo
+  if (msgType === "audio") return "ogg";
+  if (msgType === "image") return "jpg";
+  if (msgType === "video") return "mp4";
+  return "bin";
 }
