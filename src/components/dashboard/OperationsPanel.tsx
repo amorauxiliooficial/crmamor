@@ -28,12 +28,6 @@ import { cn } from "@/lib/utils";
 interface OperationsPanelProps {
   totalMaes: number;
   filteredCount: number;
-  selectedUserId: string | null;
-  onUserChange: (userId: string) => void;
-  statusFilter: StatusProcesso | "all" | "gestantes";
-  onStatusFilterChange: (status: StatusProcesso | "all" | "gestantes") => void;
-  users: { id: string; full_name: string | null; email: string | null }[];
-  getUserDisplayName: (u: { id: string; full_name: string | null; email: string | null }) => string;
 }
 
 interface ChatStats {
