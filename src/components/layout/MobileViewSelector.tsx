@@ -13,6 +13,7 @@ const viewOptions = [
   { id: "conferencia", label: "Conferência", icon: ClipboardCheck },
   { id: "pagamentos", label: "Pagamentos", icon: DollarSign },
   { id: "indicacoes", label: "Indicações", icon: UserPlus },
+  { id: "prospeccao", label: "Prospecção", icon: Target },
   { id: "chat", label: "Chat", icon: MessageSquare },
 ];
 
