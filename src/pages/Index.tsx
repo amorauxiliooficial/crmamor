@@ -199,6 +199,10 @@ export default function Index() {
                 <UserPlus className="h-3.5 w-3.5" />
                 Indicações
               </TabsTrigger>
+              <TabsTrigger value="prospeccao" className="gap-1.5 text-xs">
+                <Target className="h-3.5 w-3.5" />
+                Prospecção
+              </TabsTrigger>
               <TabsTrigger value="chat" className="gap-1.5 text-xs">
                 <MessageSquare className="h-3.5 w-3.5" />
                 Chat
