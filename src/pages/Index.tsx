@@ -173,17 +173,47 @@ export default function Index() {
         {/* Mobile view selector */}
         {isMobile && <MobileViewSelector value={currentView} onValueChange={setCurrentView} />}
 
-        {/* Operations Panel */}
+        {/* Desktop navigation tabs */}
+        {!isMobile && (
+          <Tabs value={currentView} onValueChange={setCurrentView} className="w-full">
+            <TabsList className="w-full justify-start overflow-x-auto flex-wrap h-auto gap-1 bg-muted/50 p-1">
+              <TabsTrigger value="kanban" className="gap-1.5 text-xs">
+                <LayoutGrid className="h-3.5 w-3.5" />
+                Processos
+              </TabsTrigger>
+              <TabsTrigger value="table" className="gap-1.5 text-xs">
+                <List className="h-3.5 w-3.5" />
+                Tabela
+              </TabsTrigger>
+              <TabsTrigger value="gestantes" className="gap-1.5 text-xs">
+                <Baby className="h-3.5 w-3.5" />
+                Gestantes
+              </TabsTrigger>
+              <TabsTrigger value="conferencia" className="gap-1.5 text-xs">
+                <ClipboardCheck className="h-3.5 w-3.5" />
+                Conferência
+              </TabsTrigger>
+              <TabsTrigger value="pagamentos" className="gap-1.5 text-xs">
+                <DollarSign className="h-3.5 w-3.5" />
+                Pagamentos
+              </TabsTrigger>
+              <TabsTrigger value="indicacoes" className="gap-1.5 text-xs">
+                <UserPlus className="h-3.5 w-3.5" />
+                Indicações
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="gap-1.5 text-xs">
+                <MessageSquare className="h-3.5 w-3.5" />
+                Chat
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
+
+        {/* Operations Panel - simplified */}
         {(currentView === "kanban" || currentView === "table") && (
           <OperationsPanel
             totalMaes={maes.length}
             filteredCount={filteredMaes.length}
-            selectedUserId={selectedUserId}
-            onUserChange={(userId) => setSelectedUserId(userId)}
-            statusFilter={statusFilter}
-            onStatusFilterChange={setStatusFilter}
-            users={users}
-            getUserDisplayName={getUserDisplayName}
           />
         )}
 
@@ -213,7 +243,7 @@ export default function Index() {
                 <AtividadesTab
                   maes={filteredMaes as MaeProcessoComAtividade[]}
                   onRefresh={refetch}
-                  selectedUserId={selectedUserId}
+                  selectedUserId={undefined}
                 />
               )}
 
@@ -228,11 +258,11 @@ export default function Index() {
               )}
 
               {currentView === "conferencia" && (
-                <ConferenciaTab searchQuery={searchQuery} selectedUserId={selectedUserId ?? undefined} />
+                <ConferenciaTab searchQuery={searchQuery} selectedUserId={undefined} />
               )}
 
               {currentView === "pagamentos" && (
-                <PagamentosTab searchQuery={searchQuery} selectedUserId={selectedUserId ?? undefined} />
+                <PagamentosTab searchQuery={searchQuery} selectedUserId={undefined} />
               )}
 
               {currentView === "indicacoes" && (
@@ -240,7 +270,7 @@ export default function Index() {
                   searchQuery={searchQuery}
                   externalSelectedIndicacao={selectedIndicacao}
                   onClearExternalSelection={() => setSelectedIndicacao(null)}
-                  selectedUserId={selectedUserId ?? undefined}
+                  selectedUserId={undefined}
                 />
               )}
 
