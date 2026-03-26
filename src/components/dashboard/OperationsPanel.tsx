@@ -94,12 +94,6 @@ function useChatStats(): { stats: ChatStats; isLoading: boolean } {
 export function OperationsPanel({
   totalMaes,
   filteredCount,
-  selectedUserId,
-  onUserChange,
-  statusFilter,
-  onStatusFilterChange,
-  users,
-  getUserDisplayName,
 }: OperationsPanelProps) {
   const navigate = useNavigate();
   const { stats } = useChatStats();
