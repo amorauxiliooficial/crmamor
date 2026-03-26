@@ -53,7 +53,7 @@ export default function Index() {
   const isMobile = useIsMobile();
   const { isAdmin } = useIsAdmin();
 
-  const { maes, users, alertasNaoLidos, loading: dataLoading, refetch, refreshSingleMae } = useMaesData();
+  const { maes, alertasNaoLidos, loading: dataLoading, refetch, refreshSingleMae } = useMaesData();
 
   // View state
   const [currentView, setCurrentView] = useState("kanban");
