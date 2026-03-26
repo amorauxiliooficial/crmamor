@@ -110,9 +110,6 @@ export default function Index() {
     return result;
   }, [maes, searchQuery]);
 
-  const getUserDisplayName = useCallback((u: { id: string; full_name: string | null; email: string | null }) => {
-    return u.full_name || u.email || u.id.slice(0, 8);
-  }, []);
 
   const handleCardClick = useCallback((mae: MaeProcesso) => {
     setDetailMae(mae);
