@@ -1,5 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LayoutGrid, List, Baby, ClipboardCheck, DollarSign, UserPlus, MessageSquare } from "lucide-react";
+import { LayoutGrid, List, Baby, ClipboardCheck, DollarSign, UserPlus, MessageSquare, Target } from "lucide-react";
 
 interface MobileViewSelectorProps {
   value: string;
