@@ -78,12 +78,6 @@ export default function Index() {
     }
   }, [user, authLoading, navigate]);
 
-  // Set default user filter to current user
-  useEffect(() => {
-    if (user && selectedUserId === null) {
-      setSelectedUserId(user.id);
-    }
-  }, [user, selectedUserId]);
 
   // Swipe navigation for mobile
   const swipeHandlers = useSwipeNavigation({
