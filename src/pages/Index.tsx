@@ -58,7 +58,7 @@ export default function Index() {
   // View state
   const [currentView, setCurrentView] = useState("kanban");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all" | "gestantes">("all");
+  
 
   // Dialog state
   const [addDialogOpen, setAddDialogOpen] = useState(false);
