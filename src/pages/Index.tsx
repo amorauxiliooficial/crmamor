@@ -276,6 +276,10 @@ export default function Index() {
                 />
               )}
 
+              {currentView === "prospeccao" && (
+                <ProspeccaoTab searchQuery={searchQuery} selectedUserId={undefined} />
+              )}
+
               {currentView === "chat" && (
                 <div className="flex flex-col items-center justify-center py-16 gap-4">
                   <p className="text-muted-foreground">Acesse o módulo completo de atendimento</p>
