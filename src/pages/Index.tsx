@@ -46,7 +46,7 @@ import { GuidedTour } from "@/components/tour/GuidedTour";
 // Types
 import { Indicacao } from "@/types/indicacao";
 
-const VIEW_ORDER = ["kanban", "table", "atividades", "gestantes", "conferencia", "pagamentos", "indicacoes", "chat"];
+const VIEW_ORDER = ["kanban", "table", "atividades", "gestantes", "conferencia", "pagamentos", "indicacoes", "prospeccao", "chat"];
 
 export default function Index() {
   const { user, loading: authLoading } = useAuth();
