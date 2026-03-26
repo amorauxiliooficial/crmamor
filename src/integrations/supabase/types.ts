@@ -1562,6 +1562,65 @@ export type Database = {
         }
         Relationships: []
       }
+      prospeccao: {
+        Row: {
+          created_at: string | null
+          id: string
+          mae_processo_id: string | null
+          mes_gestacao: number | null
+          nome: string
+          observacoes: string | null
+          origem: string | null
+          proxima_acao: string | null
+          proxima_acao_data: string | null
+          status: Database["public"]["Enums"]["status_prospeccao"] | null
+          telefone: string
+          telefone_e164: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          mae_processo_id?: string | null
+          mes_gestacao?: number | null
+          nome: string
+          observacoes?: string | null
+          origem?: string | null
+          proxima_acao?: string | null
+          proxima_acao_data?: string | null
+          status?: Database["public"]["Enums"]["status_prospeccao"] | null
+          telefone: string
+          telefone_e164?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          mae_processo_id?: string | null
+          mes_gestacao?: number | null
+          nome?: string
+          observacoes?: string | null
+          origem?: string | null
+          proxima_acao?: string | null
+          proxima_acao_data?: string | null
+          status?: Database["public"]["Enums"]["status_prospeccao"] | null
+          telefone?: string
+          telefone_e164?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospeccao_mae_processo_id_fkey"
+            columns: ["mae_processo_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       senhas_sistemas: {
         Row: {
           created_at: string
@@ -2304,6 +2363,13 @@ export type Database = {
         | "Processo Encerrado"
         | "Inadimplência"
         | "📄 Rescisão de Contrato"
+      status_prospeccao:
+        | "novo"
+        | "em_contato"
+        | "qualificado"
+        | "sem_interesse"
+        | "sem_resposta"
+        | "convertido"
       status_transacao: "pendente" | "pago" | "cancelado" | "atrasado"
       task_category: "bug" | "melhoria" | "nova_funcionalidade" | "ajuste"
       task_priority: "baixa" | "media" | "alta" | "urgente"
@@ -2489,6 +2555,14 @@ export const Constants = {
         "Processo Encerrado",
         "Inadimplência",
         "📄 Rescisão de Contrato",
+      ],
+      status_prospeccao: [
+        "novo",
+        "em_contato",
+        "qualificado",
+        "sem_interesse",
+        "sem_resposta",
+        "convertido",
       ],
       status_transacao: ["pendente", "pago", "cancelado", "atrasado"],
       task_category: ["bug", "melhoria", "nova_funcionalidade", "ajuste"],

@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useMaesData, MaeProcessoComAtividade } from "@/hooks/useMaesData";
 import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
-import { Loader2, LayoutGrid, List, Baby, ClipboardCheck, DollarSign, UserPlus, MessageSquare } from "lucide-react";
+import { Loader2, LayoutGrid, List, Baby, ClipboardCheck, DollarSign, UserPlus, MessageSquare, Target } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
@@ -37,6 +37,7 @@ import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
 import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
 import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
 import { ChatPanel } from "@/components/atendimento/ChatPanel";
+import { ProspeccaoTab } from "@/components/prospeccao/ProspeccaoTab";
 
 // Onboarding / Tour
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
@@ -45,7 +46,7 @@ import { GuidedTour } from "@/components/tour/GuidedTour";
 // Types
 import { Indicacao } from "@/types/indicacao";
 
-const VIEW_ORDER = ["kanban", "table", "atividades", "gestantes", "conferencia", "pagamentos", "indicacoes", "chat"];
+const VIEW_ORDER = ["kanban", "table", "atividades", "gestantes", "conferencia", "pagamentos", "indicacoes", "prospeccao", "chat"];
 
 export default function Index() {
   const { user, loading: authLoading } = useAuth();
@@ -198,6 +199,10 @@ export default function Index() {
                 <UserPlus className="h-3.5 w-3.5" />
                 Indicações
               </TabsTrigger>
+              <TabsTrigger value="prospeccao" className="gap-1.5 text-xs">
+                <Target className="h-3.5 w-3.5" />
+                Prospecção
+              </TabsTrigger>
               <TabsTrigger value="chat" className="gap-1.5 text-xs">
                 <MessageSquare className="h-3.5 w-3.5" />
                 Chat
@@ -269,6 +274,10 @@ export default function Index() {
                   onClearExternalSelection={() => setSelectedIndicacao(null)}
                   selectedUserId={undefined}
                 />
+              )}
+
+              {currentView === "prospeccao" && (
+                <ProspeccaoTab searchQuery={searchQuery} selectedUserId={undefined} />
               )}
 
               {currentView === "chat" && (
