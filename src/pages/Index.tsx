@@ -262,7 +262,17 @@ export default function Index() {
                 />
               )}
 
-              {currentView === "chat" && <ChatPanel />}
+              {currentView === "chat" && (
+                <div className="flex flex-col items-center justify-center py-16 gap-4">
+                  <p className="text-muted-foreground">Acesse o módulo completo de atendimento</p>
+                  <button
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                    onClick={() => navigate("/atendimento")}
+                  >
+                    Abrir Atendimento
+                  </button>
+                </div>
+              )}
             </>
           )}
         </ViewTransition>
