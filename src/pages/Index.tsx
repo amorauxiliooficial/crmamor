@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useMaesData, MaeProcessoComAtividade } from "@/hooks/useMaesData";
 import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
-import { Loader2, LayoutGrid, List, Baby, ClipboardCheck, DollarSign, UserPlus, MessageSquare } from "lucide-react";
+import { Loader2, LayoutGrid, List, Baby, ClipboardCheck, DollarSign, UserPlus, MessageSquare, Target } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
