@@ -278,6 +278,15 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
               Limpar filtro
             </Button>
           )}
+          <Button
+            variant={quenteFilter ? "default" : "outline"}
+            size="sm"
+            onClick={() => setQuenteFilter(!quenteFilter)}
+            className="gap-1"
+          >
+            <Flame className="h-3.5 w-3.5" />
+            Quentes
+          </Button>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
