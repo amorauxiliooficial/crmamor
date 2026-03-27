@@ -114,7 +114,7 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Users className="h-4 w-4 text-primary" />Total</CardTitle></CardHeader>
           <CardContent><div className="text-2xl font-bold">{stats.total}</div></CardContent>
@@ -130,6 +130,10 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><CheckCircle className="h-4 w-4 text-muted-foreground" />Qualificados</CardTitle></CardHeader>
           <CardContent><div className="text-2xl font-bold">{stats.qualificados}</div></CardContent>
+        </Card>
+        <Card className={proximaFilter ? "ring-1 ring-primary" : ""} onClick={() => setProximaFilter(!proximaFilter)} role="button">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Baby className="h-4 w-4 text-pink-500" />7+ meses</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl font-bold">{stats.proximas}</div></CardContent>
         </Card>
       </div>
 
