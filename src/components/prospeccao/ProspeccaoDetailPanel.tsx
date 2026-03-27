@@ -302,7 +302,7 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
               <Label className="text-xs font-medium text-muted-foreground">Status</Label>
               <Select value={formData.status || "novo"} onValueChange={(v) => setFormData({ ...formData, status: v as StatusProspeccao })}>
                 <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent className="z-[100]">
+                <SelectContent className="z-[100]" onCloseAutoFocus={(e) => e.preventDefault()}>
                   {Object.entries(statusProspeccaoLabels).map(([value, label]) => (
                     <SelectItem key={value} value={value}>{label}</SelectItem>
                   ))}
