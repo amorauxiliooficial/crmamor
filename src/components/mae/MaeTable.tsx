@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { format, differenceInMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Settings2, Check, X, ArrowUpDown, Filter, MoreHorizontal, Copy, Baby, FolderOpen } from "lucide-react";
+import { Settings2, Check, X, ArrowUpDown, Filter, MoreHorizontal, Copy, Baby, FolderOpen, Flame } from "lucide-react";
 import { toast } from "sonner";
 
 interface MaeTableProps {
@@ -132,6 +132,7 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
   const [sortColumn, setSortColumn] = useState<keyof MaeProcesso | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all">("all");
+  const [quenteFilter, setQuenteFilter] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(columns));
@@ -140,9 +141,15 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
   const visibleColumns = useMemo(() => columns.filter((col) => col.visible), [columns]);
 
   const filteredMaes = useMemo(() => {
-    if (statusFilter === "all") return maes;
-    return maes.filter((mae) => mae.status_processo === statusFilter);
-  }, [maes, statusFilter]);
+    let result = maes;
+    if (statusFilter !== "all") {
+      result = result.filter((mae) => mae.status_processo === statusFilter);
+    }
+    if (quenteFilter) {
+      result = result.filter((mae) => (mae as any).ja_trabalhou === true);
+    }
+    return result;
+  }, [maes, statusFilter, quenteFilter]);
 
   const sortedMaes = useMemo(() => {
     if (!sortColumn) return filteredMaes;
@@ -210,6 +217,18 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
     const value = mae[columnId as keyof MaeProcesso];
 
     switch (columnId) {
+      case "nome_mae":
+        return (
+          <div className="flex items-center gap-1.5">
+            <span>{value as string}</span>
+            {(mae as any).ja_trabalhou && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 gap-0.5">
+                <Flame className="h-2.5 w-2.5" />
+                Quente
+              </Badge>
+            )}
+          </div>
+        );
       case "cpf":
         return formatCpf(value as string);
       case "data_evento":
@@ -271,6 +290,15 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
               Limpar filtro
             </Button>
           )}
+          <Button
+            variant={quenteFilter ? "default" : "outline"}
+            size="sm"
+            onClick={() => setQuenteFilter(!quenteFilter)}
+            className="gap-1"
+          >
+            <Flame className="h-3.5 w-3.5" />
+            Quentes
+          </Button>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

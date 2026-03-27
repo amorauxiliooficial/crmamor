@@ -1,7 +1,7 @@
 import { MaeProcesso } from "@/types/mae";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Baby, FolderOpen, AlertTriangle, FileWarning, KeyRound } from "lucide-react";
+import { Calendar, FileText, Baby, FolderOpen, AlertTriangle, FileWarning, KeyRound, Flame } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { differenceInDays, differenceInMonths, parseISO } from "date-fns";
@@ -180,6 +180,12 @@ export function KanbanCard({
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-accent text-accent-foreground">
                   <Baby className="h-2.5 w-2.5 mr-0.5" />
                   {mesGestacao}º
+                </Badge>
+              )}
+              {(mae as any).ja_trabalhou && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                  <Flame className="h-2.5 w-2.5 mr-0.5" />
+                  Quente
                 </Badge>
               )}
               {mae.contrato_assinado && (

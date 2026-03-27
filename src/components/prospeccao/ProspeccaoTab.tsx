@@ -16,7 +16,7 @@ import { ProspeccaoDetailPanel } from "./ProspeccaoDetailPanel";
 import { ProspeccaoFormDialog } from "./ProspeccaoFormDialog";
 import { ImportProspeccaoDialog } from "./ImportProspeccaoDialog";
 import { ProspeccaoMobileList } from "./ProspeccaoMobileList";
-import { Plus, Search, Users, Clock, CheckCircle, Loader2, MessageSquare, Phone, Copy, Check, Upload, Target } from "lucide-react";
+import { Plus, Search, Users, Clock, CheckCircle, Loader2, MessageSquare, Phone, Copy, Check, Upload, Target, Baby } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -38,6 +38,7 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
   const [localSearch, setLocalSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [proximaFilter, setProximaFilter] = useState(false);
 
   const fetchData = async () => {
     if (!user?.id) return;
@@ -66,6 +67,9 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
     if (statusFilter !== "all") {
       result = result.filter((p) => p.status === statusFilter);
     }
+    if (proximaFilter) {
+      result = result.filter((p) => p.mes_gestacao != null && p.mes_gestacao >= 7);
+    }
     const q = removeAccents((searchQuery || localSearch).toLowerCase().trim());
     if (q) {
       result = result.filter((p) => {
@@ -76,14 +80,15 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
       });
     }
     return result;
-  }, [items, searchQuery, localSearch, selectedUserId, statusFilter]);
+  }, [items, searchQuery, localSearch, selectedUserId, statusFilter, proximaFilter]);
 
   const stats = useMemo(() => ({
     total: filtered.length,
     novos: filtered.filter((p) => p.status === "novo").length,
     emContato: filtered.filter((p) => p.status === "em_contato").length,
     qualificados: filtered.filter((p) => p.status === "qualificado").length,
-  }), [filtered]);
+    proximas: items.filter((p) => p.mes_gestacao != null && p.mes_gestacao >= 7).length,
+  }), [filtered, items]);
 
   const handleRowClick = (p: Prospeccao) => {
     setSelected(p);
@@ -109,7 +114,7 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Users className="h-4 w-4 text-primary" />Total</CardTitle></CardHeader>
           <CardContent><div className="text-2xl font-bold">{stats.total}</div></CardContent>
@@ -125,6 +130,10 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><CheckCircle className="h-4 w-4 text-muted-foreground" />Qualificados</CardTitle></CardHeader>
           <CardContent><div className="text-2xl font-bold">{stats.qualificados}</div></CardContent>
+        </Card>
+        <Card className={proximaFilter ? "ring-1 ring-primary" : ""} onClick={() => setProximaFilter(!proximaFilter)} role="button">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Baby className="h-4 w-4 text-pink-500" />7+ meses</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl font-bold">{stats.proximas}</div></CardContent>
         </Card>
       </div>
 
@@ -204,7 +213,18 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                           </TooltipProvider>
                         )}
                       </TableCell>
-                      <TableCell>{p.mes_gestacao ? `${p.mes_gestacao}º mês` : "-"}</TableCell>
+                      <TableCell>
+                        {p.mes_gestacao ? (
+                          <div className="flex items-center gap-1">
+                            <span>{p.mes_gestacao}º mês</span>
+                            {p.mes_gestacao >= 7 && (
+                              <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 h-5 ${p.mes_gestacao >= 8 ? "bg-pink-200 text-pink-800 dark:bg-pink-900/40 dark:text-pink-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"}`}>
+                                ⏳ {p.mes_gestacao >= 8 ? "Urgente" : "Próxima"}
+                              </Badge>
+                            )}
+                          </div>
+                        ) : "-"}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="secondary" className={`text-xs ${statusProspeccaoColors[p.status]}`}>
                           {statusProspeccaoLabels[p.status]}
