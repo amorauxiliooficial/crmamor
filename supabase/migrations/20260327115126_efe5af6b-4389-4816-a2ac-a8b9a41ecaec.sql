@@ -1,0 +1,1 @@
+ALTER TABLE public.mae_processo ADD COLUMN IF NOT EXISTS ja_trabalhou BOOLEAN DEFAULT false;
