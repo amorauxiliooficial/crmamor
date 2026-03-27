@@ -51,7 +51,7 @@ export function ImportProspeccaoDialog({ open, onOpenChange, onSuccess }: Import
     setValidating(true);
 
     try {
-      let leads: { nome: string; telefone: string; mes_gestacao?: number }[] = [];
+      let leads: { nome: string; telefone: string; mes_gestacao?: number; observacoes?: string; origem?: string }[] = [];
       const parsed = JSON.parse(rawText.trim());
       if (Array.isArray(parsed)) {
         leads = parsed;
