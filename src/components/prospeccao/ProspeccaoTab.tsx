@@ -182,7 +182,7 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhuma prospecção encontrada</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhuma prospecção encontrada</TableCell></TableRow>
               ) : (
                 filtered.map((p) => {
                   const phone = sanitizePhone(p.telefone_e164 || p.telefone);
