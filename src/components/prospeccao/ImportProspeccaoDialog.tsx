@@ -96,6 +96,7 @@ export function ImportProspeccaoDialog({ open, onOpenChange, onSuccess }: Import
           telefone: cleanPhone || lead.telefone || "",
           telefone_e164,
           mes_gestacao: lead.mes_gestacao || null,
+          observacoes: lead.observacoes || null,
           status,
         };
       });
