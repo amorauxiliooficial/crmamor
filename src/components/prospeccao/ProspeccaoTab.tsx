@@ -214,6 +214,24 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                           </TooltipProvider>
                         )}
                       </TableCell>
+                      <TableCell className="max-w-[200px]">
+                        {p.observacoes ? (
+                          <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="text-xs text-muted-foreground line-clamp-2 cursor-help block leading-relaxed">
+                                  {p.observacoes}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="max-w-[350px] text-xs whitespace-pre-wrap p-3">
+                                {p.observacoes}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <span className="text-xs text-muted-foreground/40">—</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {p.mes_gestacao ? (
                           <div className="flex items-center gap-1">
