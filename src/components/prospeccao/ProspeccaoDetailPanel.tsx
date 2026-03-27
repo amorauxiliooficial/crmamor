@@ -316,7 +316,7 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
             <Label className="text-xs font-medium text-muted-foreground">Origem</Label>
             <Select value={formData.origem || "chatbot"} onValueChange={(v) => setFormData({ ...formData, origem: v })}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-              <SelectContent className="z-[100]">
+              <SelectContent className="z-[100]" onCloseAutoFocus={(e) => e.preventDefault()}>
                 <SelectItem value="chatbot">Chatbot</SelectItem>
                 <SelectItem value="instagram">Instagram</SelectItem>
                 <SelectItem value="whatsapp">WhatsApp</SelectItem>
