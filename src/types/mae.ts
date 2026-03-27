@@ -49,6 +49,7 @@ export interface MaeProcesso {
   cep?: string | null;
   precisa_das: boolean;
   das_concluido: boolean;
+  ja_trabalhou?: boolean;
 }
 
 export interface ChecklistMae {
