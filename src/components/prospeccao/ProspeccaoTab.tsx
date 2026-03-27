@@ -174,7 +174,8 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Telefone</TableHead>
-                <TableHead>Mês Gestação</TableHead>
+                <TableHead>Observações</TableHead>
+                <TableHead>Mês</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Origem</TableHead>
                 <TableHead>Data</TableHead>
