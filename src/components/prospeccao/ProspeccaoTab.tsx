@@ -177,7 +177,6 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                 <TableHead>Observações</TableHead>
                 <TableHead>Mês</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Origem</TableHead>
                 <TableHead>Data</TableHead>
               </TableRow>
             </TableHeader>
