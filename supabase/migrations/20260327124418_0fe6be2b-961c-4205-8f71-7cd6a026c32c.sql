@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX idx_prospeccao_telefone_unique ON public.prospeccao (regexp_replace(telefone, '\D', '', 'g'));
