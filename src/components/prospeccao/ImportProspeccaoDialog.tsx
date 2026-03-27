@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
+import { formatPhone } from "@/lib/formatters";
 import { normalizePhoneToE164BR } from "@/lib/phoneUtils";
 import { Loader2, Upload, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
 
@@ -69,19 +70,26 @@ export function ImportProspeccaoDialog({ open, onOpenChange, onSuccess }: Import
       const maePhones = new Set((existingMae || []).map((m: any) => m.telefone?.replace(/\D/g, "")));
 
       const result: ParsedLead[] = leads.map((lead) => {
-        const digits = lead.telefone?.replace(/\D/g, "") || "";
         const telefone_e164 = normalizePhoneToE164BR(lead.telefone);
+        // Strip country code and format as (DD) XXXXX-XXXX
+        const cleanPhone = formatPhone(lead.telefone || "");
+        const digits = (lead.telefone || "").replace(/\D/g, "");
+        // For duplicate check, use digits without country code
+        let checkDigits = digits;
+        if (checkDigits.startsWith("55") && checkDigits.length >= 12) {
+          checkDigits = checkDigits.slice(2);
+        }
         let status: ParsedLead["status"] = "novo";
 
-        if (maePhones.has(digits)) {
+        if (maePhones.has(checkDigits) || maePhones.has(digits)) {
           status = "ja_processo";
-        } else if (prospPhones.has(digits)) {
+        } else if (prospPhones.has(checkDigits) || prospPhones.has(digits)) {
           status = "duplicado_prospeccao";
         }
 
         return {
           nome: lead.nome || "",
-          telefone: lead.telefone || "",
+          telefone: cleanPhone || lead.telefone || "",
           telefone_e164,
           mes_gestacao: lead.mes_gestacao || null,
           status,
