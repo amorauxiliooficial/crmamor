@@ -290,7 +290,7 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
                 onValueChange={(v) => setFormData({ ...formData, mes_gestacao: v === "none" ? null : parseInt(v) })}
               >
                 <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent className="z-[100]">
+                <SelectContent className="z-[100]" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="none">Não informado</SelectItem>
                   {Array.from({ length: 9 }, (_, i) => i + 1).map((m) => (
                     <SelectItem key={m} value={String(m)}>{m}º mês</SelectItem>
@@ -302,7 +302,7 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
               <Label className="text-xs font-medium text-muted-foreground">Status</Label>
               <Select value={formData.status || "novo"} onValueChange={(v) => setFormData({ ...formData, status: v as StatusProspeccao })}>
                 <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent className="z-[100]">
+                <SelectContent className="z-[100]" onCloseAutoFocus={(e) => e.preventDefault()}>
                   {Object.entries(statusProspeccaoLabels).map(([value, label]) => (
                     <SelectItem key={value} value={value}>{label}</SelectItem>
                   ))}
@@ -316,7 +316,7 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
             <Label className="text-xs font-medium text-muted-foreground">Origem</Label>
             <Select value={formData.origem || "chatbot"} onValueChange={(v) => setFormData({ ...formData, origem: v })}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-              <SelectContent className="z-[100]">
+              <SelectContent className="z-[100]" onCloseAutoFocus={(e) => e.preventDefault()}>
                 <SelectItem value="chatbot">Chatbot</SelectItem>
                 <SelectItem value="instagram">Instagram</SelectItem>
                 <SelectItem value="whatsapp">WhatsApp</SelectItem>
