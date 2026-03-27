@@ -192,7 +192,16 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                         <div>
                           {p.nome}
                           {p.observacoes && (
-                            <p className="text-[11px] text-muted-foreground italic line-clamp-1 mt-0.5">{p.observacoes}</p>
+                            <TooltipProvider delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <p className="text-[11px] text-muted-foreground italic line-clamp-1 mt-0.5 cursor-help max-w-[220px]">{p.observacoes}</p>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="max-w-[320px] text-xs whitespace-pre-wrap">
+                                  {p.observacoes}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           )}
                         </div>
                       </TableCell>
