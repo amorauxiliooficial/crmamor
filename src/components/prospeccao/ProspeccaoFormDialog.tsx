@@ -104,8 +104,15 @@ export function ProspeccaoFormDialog({ open, onOpenChange, onSuccess }: Prospecc
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="prosp_mes">Mês Gestação</Label>
-            <Input id="prosp_mes" type="number" min={1} max={9} value={formData.mes_gestacao} onChange={(e) => setFormData({ ...formData, mes_gestacao: e.target.value })} placeholder="1 a 9" />
+            <Label>Mês Gestação</Label>
+            <Select value={formData.mes_gestacao} onValueChange={(v) => setFormData({ ...formData, mes_gestacao: v })}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent className="z-[100]">
+                {Array.from({ length: 9 }, (_, i) => i + 1).map((m) => (
+                  <SelectItem key={m} value={String(m)}>{m}º mês</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label>Origem</Label>
