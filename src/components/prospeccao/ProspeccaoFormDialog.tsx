@@ -91,7 +91,8 @@ export function ProspeccaoFormDialog({ open, onOpenChange, onSuccess }: Prospecc
 
     if (error) {
       logError("create_prospeccao", error);
-      toast({ variant: "destructive", title: "Erro ao criar", description: getUserFriendlyError(error) });
+      const isDup = error.message?.includes("idx_prospeccao_telefone_unique") || error.code === "23505";
+      toast({ variant: "destructive", title: isDup ? "Contato duplicado" : "Erro ao criar", description: isDup ? "Este telefone já existe na prospecção." : getUserFriendlyError(error) });
     } else {
       toast({ title: "Prospecção criada", description: "Lead registrado com sucesso." });
       onSuccess();

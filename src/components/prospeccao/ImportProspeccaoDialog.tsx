@@ -129,7 +129,8 @@ export function ImportProspeccaoDialog({ open, onOpenChange, onSuccess }: Import
 
     if (error) {
       logError("import_prospeccao", error);
-      toast({ variant: "destructive", title: "Erro ao importar", description: getUserFriendlyError(error) });
+      const isDup = error.message?.includes("idx_prospeccao_telefone_unique") || error.code === "23505";
+      toast({ variant: "destructive", title: isDup ? "Contatos duplicados" : "Erro ao importar", description: isDup ? "Um ou mais telefones já existem na prospecção." : getUserFriendlyError(error) });
     } else {
       const duplicados = parsedLeads.filter((l) => l.status === "duplicado_prospeccao").length;
       const jaProcesso = parsedLeads.filter((l) => l.status === "ja_processo").length;
