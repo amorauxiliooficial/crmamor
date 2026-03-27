@@ -18,6 +18,7 @@ interface ParsedLead {
   telefone: string;
   telefone_e164: string | null;
   mes_gestacao?: number | null;
+  observacoes?: string | null;
   status: "novo" | "duplicado_prospeccao" | "ja_processo";
 }
 
@@ -50,7 +51,7 @@ export function ImportProspeccaoDialog({ open, onOpenChange, onSuccess }: Import
     setValidating(true);
 
     try {
-      let leads: { nome: string; telefone: string; mes_gestacao?: number }[] = [];
+      let leads: { nome: string; telefone: string; mes_gestacao?: number; observacoes?: string; origem?: string }[] = [];
       const parsed = JSON.parse(rawText.trim());
       if (Array.isArray(parsed)) {
         leads = parsed;
@@ -95,6 +96,7 @@ export function ImportProspeccaoDialog({ open, onOpenChange, onSuccess }: Import
           telefone: cleanPhone || lead.telefone || "",
           telefone_e164,
           mes_gestacao: lead.mes_gestacao || null,
+          observacoes: lead.observacoes || null,
           status,
         };
       });
@@ -118,6 +120,7 @@ export function ImportProspeccaoDialog({ open, onOpenChange, onSuccess }: Import
       telefone: l.telefone,
       telefone_e164: l.telefone_e164,
       mes_gestacao: l.mes_gestacao,
+      observacoes: l.observacoes,
       status: "novo",
       user_id: user.id,
     }));
@@ -180,6 +183,7 @@ export function ImportProspeccaoDialog({ open, onOpenChange, onSuccess }: Import
                     <TableHead>Nome</TableHead>
                     <TableHead>Telefone</TableHead>
                     <TableHead>Mês</TableHead>
+                    <TableHead>Obs</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -189,6 +193,7 @@ export function ImportProspeccaoDialog({ open, onOpenChange, onSuccess }: Import
                       <TableCell className="text-sm">{lead.nome}</TableCell>
                       <TableCell className="text-sm">{lead.telefone}</TableCell>
                       <TableCell className="text-sm">{lead.mes_gestacao || "-"}</TableCell>
+                      <TableCell className="text-sm max-w-[150px] truncate">{lead.observacoes || "-"}</TableCell>
                       <TableCell>
                         {lead.status === "novo" && <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-800">Novo</Badge>}
                         {lead.status === "duplicado_prospeccao" && <Badge variant="secondary" className="text-[10px] bg-yellow-100 text-yellow-800">Duplicado</Badge>}
