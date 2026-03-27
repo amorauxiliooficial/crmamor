@@ -69,12 +69,11 @@ export function ImportProspeccaoDialog({ open, onOpenChange, onSuccess }: Import
       const prospPhones = new Set((existingProsp || []).map((p: any) => p.telefone?.replace(/\D/g, "")));
       const maePhones = new Set((existingMae || []).map((m: any) => m.telefone?.replace(/\D/g, "")));
 
+      const seenInBatch = new Set<string>();
       const result: ParsedLead[] = leads.map((lead) => {
         const telefone_e164 = normalizePhoneToE164BR(lead.telefone);
-        // Strip country code and format as (DD) XXXXX-XXXX
         const cleanPhone = formatPhone(lead.telefone || "");
         const digits = (lead.telefone || "").replace(/\D/g, "");
-        // For duplicate check, use digits without country code
         let checkDigits = digits;
         if (checkDigits.startsWith("55") && checkDigits.length >= 12) {
           checkDigits = checkDigits.slice(2);
@@ -85,7 +84,11 @@ export function ImportProspeccaoDialog({ open, onOpenChange, onSuccess }: Import
           status = "ja_processo";
         } else if (prospPhones.has(checkDigits) || prospPhones.has(digits)) {
           status = "duplicado_prospeccao";
+        } else if (seenInBatch.has(checkDigits)) {
+          status = "duplicado_prospeccao";
         }
+
+        seenInBatch.add(checkDigits);
 
         return {
           nome: lead.nome || "",
