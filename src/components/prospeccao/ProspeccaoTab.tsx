@@ -177,13 +177,12 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                 <TableHead>Observações</TableHead>
                 <TableHead>Mês</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Origem</TableHead>
                 <TableHead>Data</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhuma prospecção encontrada</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhuma prospecção encontrada</TableCell></TableRow>
               ) : (
                 filtered.map((p) => {
                   const phone = sanitizePhone(p.telefone_e164 || p.telefone);
@@ -249,7 +248,6 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                           {statusProspeccaoLabels[p.status]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm">{p.origem || "chatbot"}</TableCell>
                       <TableCell className="whitespace-nowrap text-sm">{format(parseISO(p.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
                     </TableRow>
                   );
