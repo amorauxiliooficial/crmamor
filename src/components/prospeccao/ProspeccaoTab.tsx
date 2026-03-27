@@ -174,7 +174,8 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Telefone</TableHead>
-                <TableHead>Mês Gestação</TableHead>
+                <TableHead>Observações</TableHead>
+                <TableHead>Mês</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Origem</TableHead>
                 <TableHead>Data</TableHead>
@@ -182,29 +183,13 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhuma prospecção encontrada</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhuma prospecção encontrada</TableCell></TableRow>
               ) : (
                 filtered.map((p) => {
                   const phone = sanitizePhone(p.telefone_e164 || p.telefone);
                   return (
                     <TableRow key={p.id} className={`cursor-pointer hover:bg-muted/50 ${selected?.id === p.id && panelOpen ? "bg-muted" : ""}`} onClick={() => handleRowClick(p)}>
-                      <TableCell className="font-medium">
-                        <div>
-                          {p.nome}
-                          {p.observacoes && (
-                            <TooltipProvider delayDuration={200}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <p className="text-[11px] text-muted-foreground italic line-clamp-1 mt-0.5 cursor-help max-w-[220px]">{p.observacoes}</p>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom" className="max-w-[320px] text-xs whitespace-pre-wrap">
-                                  {p.observacoes}
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                        </div>
-                      </TableCell>
+                      <TableCell className="font-medium">{p.nome}</TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         {p.telefone && (
                           <TooltipProvider>
@@ -227,6 +212,24 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                               </Tooltip>
                             </div>
                           </TooltipProvider>
+                        )}
+                      </TableCell>
+                      <TableCell className="max-w-[200px]">
+                        {p.observacoes ? (
+                          <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="text-xs text-muted-foreground line-clamp-2 cursor-help block leading-relaxed">
+                                  {p.observacoes}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="max-w-[350px] text-xs whitespace-pre-wrap p-3">
+                                {p.observacoes}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <span className="text-xs text-muted-foreground/40">—</span>
                         )}
                       </TableCell>
                       <TableCell>
