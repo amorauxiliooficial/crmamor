@@ -55,6 +55,27 @@ export function ProspeccaoFormDialog({ open, onOpenChange, onSuccess }: Prospecc
 
     setLoading(true);
     const telefone_e164 = normalizePhoneToE164BR(formData.telefone);
+    const digits = formData.telefone.replace(/\D/g, "");
+    let checkDigits = digits;
+    if (checkDigits.startsWith("55") && checkDigits.length >= 12) checkDigits = checkDigits.slice(2);
+
+    // Check duplicates in prospeccao and mae_processo
+    const { data: existingProsp } = await supabase.from("prospeccao" as any).select("telefone");
+    const { data: existingMae } = await supabase.from("mae_processo").select("telefone");
+    const prospPhones = new Set((existingProsp || []).map((p: any) => p.telefone?.replace(/\D/g, "")));
+    const maePhones = new Set((existingMae || []).map((m: any) => m.telefone?.replace(/\D/g, "")));
+
+    if (prospPhones.has(checkDigits) || prospPhones.has(digits)) {
+      toast({ variant: "destructive", title: "Contato duplicado", description: "Este telefone já existe na prospecção." });
+      setLoading(false);
+      return;
+    }
+    if (maePhones.has(checkDigits) || maePhones.has(digits)) {
+      toast({ variant: "destructive", title: "Contato já cadastrado", description: "Este telefone já tem um processo ativo." });
+      setLoading(false);
+      return;
+    }
+
     const mes = formData.mes_gestacao ? parseInt(formData.mes_gestacao, 10) : null;
 
     const { error } = await supabase.from("prospeccao" as any).insert({
