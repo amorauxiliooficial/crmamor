@@ -290,7 +290,7 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
                 onValueChange={(v) => setFormData({ ...formData, mes_gestacao: v === "none" ? null : parseInt(v) })}
               >
                 <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent className="z-[100]">
+                <SelectContent className="z-[100]" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="none">Não informado</SelectItem>
                   {Array.from({ length: 9 }, (_, i) => i + 1).map((m) => (
                     <SelectItem key={m} value={String(m)}>{m}º mês</SelectItem>
