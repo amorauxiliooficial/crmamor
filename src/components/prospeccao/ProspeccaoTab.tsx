@@ -38,6 +38,7 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
   const [localSearch, setLocalSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [proximaFilter, setProximaFilter] = useState(false);
 
   const fetchData = async () => {
     if (!user?.id) return;
