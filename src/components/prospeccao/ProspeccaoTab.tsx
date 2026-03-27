@@ -248,7 +248,6 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                           {statusProspeccaoLabels[p.status]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm">{p.origem || "chatbot"}</TableCell>
                       <TableCell className="whitespace-nowrap text-sm">{format(parseISO(p.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
                     </TableRow>
                   );
