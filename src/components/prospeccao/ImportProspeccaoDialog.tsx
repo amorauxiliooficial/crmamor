@@ -18,6 +18,7 @@ interface ParsedLead {
   telefone: string;
   telefone_e164: string | null;
   mes_gestacao?: number | null;
+  observacoes?: string | null;
   status: "novo" | "duplicado_prospeccao" | "ja_processo";
 }
 
