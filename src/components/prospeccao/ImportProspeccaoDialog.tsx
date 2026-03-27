@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
+import { formatPhone } from "@/lib/formatters";
 import { normalizePhoneToE164BR } from "@/lib/phoneUtils";
 import { Loader2, Upload, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
 
