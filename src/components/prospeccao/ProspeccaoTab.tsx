@@ -188,7 +188,14 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                   const phone = sanitizePhone(p.telefone_e164 || p.telefone);
                   return (
                     <TableRow key={p.id} className={`cursor-pointer hover:bg-muted/50 ${selected?.id === p.id && panelOpen ? "bg-muted" : ""}`} onClick={() => handleRowClick(p)}>
-                      <TableCell className="font-medium">{p.nome}</TableCell>
+                      <TableCell className="font-medium">
+                        <div>
+                          {p.nome}
+                          {p.observacoes && (
+                            <p className="text-[11px] text-muted-foreground italic line-clamp-1 mt-0.5">{p.observacoes}</p>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         {p.telefone && (
                           <TooltipProvider>
