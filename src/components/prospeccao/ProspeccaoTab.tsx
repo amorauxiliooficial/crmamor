@@ -16,7 +16,7 @@ import { ProspeccaoDetailPanel } from "./ProspeccaoDetailPanel";
 import { ProspeccaoFormDialog } from "./ProspeccaoFormDialog";
 import { ImportProspeccaoDialog } from "./ImportProspeccaoDialog";
 import { ProspeccaoMobileList } from "./ProspeccaoMobileList";
-import { Plus, Search, Users, Clock, CheckCircle, Loader2, MessageSquare, Phone, Copy, Check, Upload, Target } from "lucide-react";
+import { Plus, Search, Users, Clock, CheckCircle, Loader2, MessageSquare, Phone, Copy, Check, Upload, Target, Baby } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
