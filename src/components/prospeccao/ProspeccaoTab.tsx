@@ -213,7 +213,18 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                           </TooltipProvider>
                         )}
                       </TableCell>
-                      <TableCell>{p.mes_gestacao ? `${p.mes_gestacao}º mês` : "-"}</TableCell>
+                      <TableCell>
+                        {p.mes_gestacao ? (
+                          <div className="flex items-center gap-1">
+                            <span>{p.mes_gestacao}º mês</span>
+                            {p.mes_gestacao >= 7 && (
+                              <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 h-5 ${p.mes_gestacao >= 8 ? "bg-pink-200 text-pink-800 dark:bg-pink-900/40 dark:text-pink-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"}`}>
+                                ⏳ {p.mes_gestacao >= 8 ? "Urgente" : "Próxima"}
+                              </Badge>
+                            )}
+                          </div>
+                        ) : "-"}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="secondary" className={`text-xs ${statusProspeccaoColors[p.status]}`}>
                           {statusProspeccaoLabels[p.status]}

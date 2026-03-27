@@ -182,6 +182,12 @@ export function KanbanCard({
                   {mesGestacao}º
                 </Badge>
               )}
+              {(mae as any).ja_trabalhou && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                  <Flame className="h-2.5 w-2.5 mr-0.5" />
+                  Quente
+                </Badge>
+              )}
               {mae.contrato_assinado && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 hidden sm:flex">
                   Contrato
