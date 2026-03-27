@@ -300,7 +300,7 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Status</Label>
-              <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as StatusProspeccao })}>
+              <Select value={formData.status || "novo"} onValueChange={(v) => setFormData({ ...formData, status: v as StatusProspeccao })}>
                 <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent className="z-[100]">
                   {Object.entries(statusProspeccaoLabels).map(([value, label]) => (
