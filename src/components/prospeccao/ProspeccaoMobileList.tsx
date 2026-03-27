@@ -33,6 +33,7 @@ export function ProspeccaoMobileList({ items, selectedId, onSelect }: Prospeccao
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-sm truncate">{p.nome}</p>
                   {p.mes_gestacao && <p className="text-xs text-muted-foreground">{p.mes_gestacao}º mês</p>}
+                  {p.observacoes && <p className="text-[11px] text-muted-foreground italic line-clamp-1">{p.observacoes}</p>}
                 </div>
                 <Badge variant="secondary" className={`text-[10px] ${statusProspeccaoColors[p.status]}`}>
                   {statusProspeccaoLabels[p.status]}
