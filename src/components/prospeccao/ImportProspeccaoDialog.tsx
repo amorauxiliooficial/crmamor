@@ -120,6 +120,7 @@ export function ImportProspeccaoDialog({ open, onOpenChange, onSuccess }: Import
       telefone: l.telefone,
       telefone_e164: l.telefone_e164,
       mes_gestacao: l.mes_gestacao,
+      observacoes: l.observacoes,
       status: "novo",
       user_id: user.id,
     }));
