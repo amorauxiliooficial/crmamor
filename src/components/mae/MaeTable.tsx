@@ -141,9 +141,15 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
   const visibleColumns = useMemo(() => columns.filter((col) => col.visible), [columns]);
 
   const filteredMaes = useMemo(() => {
-    if (statusFilter === "all") return maes;
-    return maes.filter((mae) => mae.status_processo === statusFilter);
-  }, [maes, statusFilter]);
+    let result = maes;
+    if (statusFilter !== "all") {
+      result = result.filter((mae) => mae.status_processo === statusFilter);
+    }
+    if (quenteFilter) {
+      result = result.filter((mae) => (mae as any).ja_trabalhou === true);
+    }
+    return result;
+  }, [maes, statusFilter, quenteFilter]);
 
   const sortedMaes = useMemo(() => {
     if (!sortColumn) return filteredMaes;
