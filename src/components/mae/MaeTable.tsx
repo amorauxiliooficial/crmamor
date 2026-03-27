@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { format, differenceInMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Settings2, Check, X, ArrowUpDown, Filter, MoreHorizontal, Copy, Baby, FolderOpen } from "lucide-react";
+import { Settings2, Check, X, ArrowUpDown, Filter, MoreHorizontal, Copy, Baby, FolderOpen, Flame } from "lucide-react";
 import { toast } from "sonner";
 
 interface MaeTableProps {
