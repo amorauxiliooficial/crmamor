@@ -132,6 +132,7 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
   const [sortColumn, setSortColumn] = useState<keyof MaeProcesso | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all">("all");
+  const [quenteFilter, setQuenteFilter] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(columns));
