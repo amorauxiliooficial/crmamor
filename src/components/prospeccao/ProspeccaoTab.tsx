@@ -67,6 +67,9 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
     if (statusFilter !== "all") {
       result = result.filter((p) => p.status === statusFilter);
     }
+    if (proximaFilter) {
+      result = result.filter((p) => p.mes_gestacao != null && p.mes_gestacao >= 7);
+    }
     const q = removeAccents((searchQuery || localSearch).toLowerCase().trim());
     if (q) {
       result = result.filter((p) => {
@@ -77,7 +80,7 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
       });
     }
     return result;
-  }, [items, searchQuery, localSearch, selectedUserId, statusFilter]);
+  }, [items, searchQuery, localSearch, selectedUserId, statusFilter, proximaFilter]);
 
   const stats = useMemo(() => ({
     total: filtered.length,
