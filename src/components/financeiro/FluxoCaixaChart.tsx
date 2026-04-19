@@ -481,7 +481,9 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                   const { cx, cy, payload } = props;
                   if (!cx || !cy || !payload.isFuture) return <g key={props.key} />;
                   const pct = payload.variacao;
-                  if (pct === undefined) return <g key={props.key} />;
+                  if (pct === undefined || isMobile) {
+                    return <circle key={props.key} cx={cx} cy={cy} r={2.5} fill="hsl(var(--muted-foreground))" />;
+                  }
                   const label = `${pct >= 0 ? "+" : ""}${pct.toFixed(0)}%`;
                   return (
                     <g key={props.key}>
