@@ -344,12 +344,12 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         </div>
 
         {/* Chart */}
-        <div className="h-72 md:h-80 -mx-2">
+        <div className="h-64 md:h-80 -mx-3 md:-mx-2">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
-              data={chartData}
-              margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
-              barCategoryGap="20%"
+              data={displayedData}
+              margin={{ top: 20, right: isMobile ? 6 : 10, left: isMobile ? -10 : 0, bottom: 5 }}
+              barCategoryGap={isMobile ? "15%" : "20%"}
             >
               <defs>
                 <linearGradient id="gradSaldoPast" x1="0" y1="0" x2="0" y2="1">
@@ -364,18 +364,19 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" vertical={false} />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: isMobile ? 10 : 11 }}
                 axisLine={false}
                 tickLine={false}
+                interval={0}
                 className="text-muted-foreground"
               />
               <YAxis
                 tickFormatter={formatCompact}
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: isMobile ? 10 : 11 }}
                 axisLine={false}
                 tickLine={false}
                 className="text-muted-foreground"
-                width={45}
+                width={isMobile ? 36 : 45}
               />
               <Tooltip
                 cursor={{ fill: "hsl(var(--muted)/0.15)" }}
