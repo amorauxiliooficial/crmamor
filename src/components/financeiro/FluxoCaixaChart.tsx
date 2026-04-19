@@ -526,7 +526,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         </div>
 
         {/* Legend */}
-        <div className="flex items-center justify-center gap-5 text-xs text-muted-foreground">
+        <div className="flex items-center justify-center flex-wrap gap-x-3 gap-y-1.5 text-[11px] md:text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm bg-primary opacity-70" />
             Entrou
@@ -536,14 +536,19 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
             Saiu
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-6 rounded-sm bg-primary/20 border border-primary/40" />
-            Saldo Realizado
+            <span className="h-2.5 w-5 rounded-sm bg-primary/20 border border-primary/40" />
+            Saldo
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-6 rounded-sm bg-muted-foreground/10 border border-muted-foreground/30 border-dashed" />
+            <span className="h-2.5 w-5 rounded-sm bg-muted-foreground/10 border border-muted-foreground/30 border-dashed" />
             Projeção
           </span>
         </div>
+        {isMobile && chartData.length > 6 && (
+          <p className="text-center text-[10px] text-muted-foreground -mt-2">
+            Exibindo últimos 6 meses · Veja todos no desktop
+          </p>
+        )}
 
         {/* Best / Worst chips */}
         {(bestMonth || worstMonth) && (
