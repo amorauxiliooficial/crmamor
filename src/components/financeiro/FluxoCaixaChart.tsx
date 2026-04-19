@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   ComposedChart,
   Area,
@@ -216,6 +217,7 @@ const formatCompact = (value: number) => {
 };
 
 export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) {
+  const isMobile = useIsMobile();
   const {
     chartData,
     totalReceitas,
@@ -235,6 +237,9 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
     resultadoProjetado,
     projecaoVsPrev,
   } = useChartData(pagamentos, despesas);
+
+  // On mobile, show only the last 6 months to avoid cramped labels
+  const displayedData = isMobile ? chartData.slice(-6) : chartData;
 
   const TrendIcon = trendPercent > 0 ? ArrowUpRight : trendPercent < 0 ? ArrowDownRight : Minus;
   const trendColor = trendPercent > 0
@@ -339,12 +344,12 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         </div>
 
         {/* Chart */}
-        <div className="h-72 md:h-80 -mx-2">
+        <div className="h-64 md:h-80 -mx-3 md:-mx-2">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
-              data={chartData}
-              margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
-              barCategoryGap="20%"
+              data={displayedData}
+              margin={{ top: 20, right: isMobile ? 6 : 10, left: isMobile ? -10 : 0, bottom: 5 }}
+              barCategoryGap={isMobile ? "15%" : "20%"}
             >
               <defs>
                 <linearGradient id="gradSaldoPast" x1="0" y1="0" x2="0" y2="1">
@@ -359,18 +364,19 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" vertical={false} />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: isMobile ? 10 : 11 }}
                 axisLine={false}
                 tickLine={false}
+                interval={0}
                 className="text-muted-foreground"
               />
               <YAxis
                 tickFormatter={formatCompact}
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: isMobile ? 10 : 11 }}
                 axisLine={false}
                 tickLine={false}
                 className="text-muted-foreground"
-                width={45}
+                width={isMobile ? 36 : 45}
               />
               <Tooltip
                 cursor={{ fill: "hsl(var(--muted)/0.15)" }}
@@ -437,8 +443,8 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                   if (!cx || !cy) return <g key={props.key} />;
                   const pct = payload.variacao;
                   // Skip first month (no variation) and months with no activity
-                  if (pct === undefined || index === 0) {
-                    return <circle key={props.key} cx={cx} cy={cy} r={3} fill="hsl(var(--primary))" />;
+                  if (pct === undefined || index === 0 || isMobile) {
+                    return <circle key={props.key} cx={cx} cy={cy} r={isMobile ? 2.5 : 3} fill="hsl(var(--primary))" />;
                   }
                   const label = `${pct >= 0 ? "+" : ""}${pct.toFixed(0)}%`;
                   const color = pct >= 0 ? "hsl(var(--primary))" : "hsl(var(--destructive))";
@@ -475,7 +481,9 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                   const { cx, cy, payload } = props;
                   if (!cx || !cy || !payload.isFuture) return <g key={props.key} />;
                   const pct = payload.variacao;
-                  if (pct === undefined) return <g key={props.key} />;
+                  if (pct === undefined || isMobile) {
+                    return <circle key={props.key} cx={cx} cy={cy} r={2.5} fill="hsl(var(--muted-foreground))" />;
+                  }
                   const label = `${pct >= 0 ? "+" : ""}${pct.toFixed(0)}%`;
                   return (
                     <g key={props.key}>
@@ -518,7 +526,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         </div>
 
         {/* Legend */}
-        <div className="flex items-center justify-center gap-5 text-xs text-muted-foreground">
+        <div className="flex items-center justify-center flex-wrap gap-x-3 gap-y-1.5 text-[11px] md:text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm bg-primary opacity-70" />
             Entrou
@@ -528,14 +536,19 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
             Saiu
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-6 rounded-sm bg-primary/20 border border-primary/40" />
-            Saldo Realizado
+            <span className="h-2.5 w-5 rounded-sm bg-primary/20 border border-primary/40" />
+            Saldo
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-6 rounded-sm bg-muted-foreground/10 border border-muted-foreground/30 border-dashed" />
+            <span className="h-2.5 w-5 rounded-sm bg-muted-foreground/10 border border-muted-foreground/30 border-dashed" />
             Projeção
           </span>
         </div>
+        {isMobile && chartData.length > 6 && (
+          <p className="text-center text-[10px] text-muted-foreground -mt-2">
+            Exibindo últimos 6 meses · Veja todos no desktop
+          </p>
+        )}
 
         {/* Best / Worst chips */}
         {(bestMonth || worstMonth) && (
