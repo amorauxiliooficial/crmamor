@@ -217,6 +217,7 @@ const formatCompact = (value: number) => {
 };
 
 export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) {
+  const isMobile = useIsMobile();
   const {
     chartData,
     totalReceitas,
@@ -236,6 +237,9 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
     resultadoProjetado,
     projecaoVsPrev,
   } = useChartData(pagamentos, despesas);
+
+  // On mobile, show only the last 6 months to avoid cramped labels
+  const displayedData = isMobile ? chartData.slice(-6) : chartData;
 
   const TrendIcon = trendPercent > 0 ? ArrowUpRight : trendPercent < 0 ? ArrowDownRight : Minus;
   const trendColor = trendPercent > 0
