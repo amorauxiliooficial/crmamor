@@ -443,8 +443,8 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                   if (!cx || !cy) return <g key={props.key} />;
                   const pct = payload.variacao;
                   // Skip first month (no variation) and months with no activity
-                  if (pct === undefined || index === 0) {
-                    return <circle key={props.key} cx={cx} cy={cy} r={3} fill="hsl(var(--primary))" />;
+                  if (pct === undefined || index === 0 || isMobile) {
+                    return <circle key={props.key} cx={cx} cy={cy} r={isMobile ? 2.5 : 3} fill="hsl(var(--primary))" />;
                   }
                   const label = `${pct >= 0 ? "+" : ""}${pct.toFixed(0)}%`;
                   const color = pct >= 0 ? "hsl(var(--primary))" : "hsl(var(--destructive))";
