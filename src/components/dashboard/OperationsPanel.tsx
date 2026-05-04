@@ -92,35 +92,16 @@ export function OperationsPanel({
     <div className="space-y-3">
       {/* Top row: Chat CTA + Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Chat Access Card - Main CTA */}
-        <Card
-          className={cn(
-            "md:col-span-1 cursor-pointer transition-all duration-200 hover:scale-[1.01] border-primary/30 hover:border-primary/60",
-            hasUrgent && "ring-1 ring-primary/40"
-          )}
-          onClick={() => navigate("/atendimento")}
-        >
+        {/* Chat Access Card - Disabled */}
+        <Card className="md:col-span-1 border-dashed opacity-60">
           <CardContent className="p-4 flex items-center gap-4">
-            <div className={cn(
-              "h-12 w-12 rounded-xl flex items-center justify-center shrink-0",
-              hasUrgent ? "bg-primary/20" : "bg-muted"
-            )}>
-              <MessageSquare className={cn("h-6 w-6", hasUrgent ? "text-primary" : "text-muted-foreground")} />
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 bg-muted">
+              <MessageSquare className="h-6 w-6 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-sm">Atendimento</h3>
-                {stats.totalUnread > 0 && (
-                  <Badge className="bg-primary text-primary-foreground text-xs px-1.5 py-0 h-5">
-                    {stats.totalUnread}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {hasUrgent ? "Conversas aguardando" : "Abrir chat"}
-              </p>
+              <h3 className="font-semibold text-sm">Atendimento</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Temporariamente desativado</p>
             </div>
-            <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
           </CardContent>
         </Card>
 

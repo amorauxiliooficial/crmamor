@@ -16,9 +16,7 @@ import Senhas from "./pages/Senhas";
 import Marketing from "./pages/Marketing";
 import Indicar from "./pages/Indicar";
 import Roadmap from "./pages/Roadmap";
-import Atendimento from "./pages/Atendimento";
-import AtendimentoConfig from "./pages/AtendimentoConfig";
-import AgentesIA from "./pages/AgentesIA";
+import AtendimentoDisabled from "./pages/AtendimentoDisabled";
 import PreAnalises from "./pages/PreAnalises";
 import NotFound from "./pages/NotFound";
 import WaTemplatesConfig from "./pages/WaTemplatesConfig";
@@ -56,11 +54,8 @@ const App = () => (
                 <Route path="/marketing" element={<Marketing />} />
                 <Route path="/indicar" element={<Indicar />} />
 
-                <Route path="/atendimento" element={<Atendimento />} />
-                <Route path="/atendimento/chat/:id" element={<Atendimento />} />
-                <Route path="/atendimento/config" element={<AtendimentoConfig />} />
-                <Route path="/atendimento/agentes-ia" element={<AgentesIA />} />
-                <Route path="/atendimento/templates" element={<WaTemplatesConfig />} />
+                <Route path="/atendimento" element={<AtendimentoDisabled />} />
+                <Route path="/atendimento/*" element={<AtendimentoDisabled />} />
 
                 <Route path="/pre-analises" element={<PreAnalises />} />
                 <Route path="/roadmap" element={<Roadmap />} />
