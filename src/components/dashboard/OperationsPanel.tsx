@@ -1,145 +1,28 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  MessageSquare,
-  Users,
-  Clock,
-  Inbox,
-  ArrowRight,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Users } from "lucide-react";
 
 interface OperationsPanelProps {
   totalMaes: number;
   filteredCount: number;
 }
 
-interface ChatStats {
-  totalUnread: number;
-  waitingResponse: number;
-  newConversations: number;
-  openConversations: number;
-}
-
-function useChatStats(): { stats: ChatStats; isLoading: boolean } {
-  const queryClient = useQueryClient();
-
-  // Realtime subscription to invalidate stats on conversation changes
-  useEffect(() => {
-    const channel = supabase
-      .channel("home-chat-stats")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "wa_conversations" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["chat_stats_home"] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["chat_stats_home"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("wa_conversations")
-        .select("status, unread_count, last_inbound_at, assigned_to")
-        .in("status", ["open", "new", "em_atendimento", "aguardando_cliente"]);
-
-      if (error) throw error;
-      const convs = data || [];
-
-      let totalUnread = 0;
-      let waitingResponse = 0;
-      let newConversations = 0;
-      let openConversations = 0;
-
-      for (const c of convs) {
-        totalUnread += c.unread_count || 0;
-        if (c.status === "new") newConversations++;
-        if (c.status === "open" || c.status === "em_atendimento" || c.status === "aguardando_cliente") openConversations++;
-        if (c.last_inbound_at && c.unread_count > 0) waitingResponse++;
-      }
-
-      return { totalUnread, waitingResponse, newConversations, openConversations } as ChatStats;
-    },
-    staleTime: 1000 * 30,
-    refetchInterval: 1000 * 30,
-    refetchOnWindowFocus: true,
-  });
-
-  return { stats: data || { totalUnread: 0, waitingResponse: 0, newConversations: 0, openConversations: 0 }, isLoading };
-}
-
 export function OperationsPanel({
   totalMaes,
   filteredCount,
 }: OperationsPanelProps) {
-  const navigate = useNavigate();
-  const { stats } = useChatStats();
-
-  const hasUrgent = stats.waitingResponse > 0 || stats.newConversations > 0;
-
   return (
     <div className="space-y-3">
-      {/* Top row: Chat CTA + Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Chat Access Card - Disabled */}
-        <Card className="md:col-span-1 border-dashed opacity-60">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 bg-muted">
-              <MessageSquare className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm">Atendimento</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Temporariamente desativado</p>
-            </div>
+      <div className="grid grid-cols-1 gap-3">
+        <Card className="border-border/50 max-w-xs">
+          <CardContent className="p-3 text-center">
+            <Users className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
+            <p className="text-xl font-bold tabular-nums">{totalMaes}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Processos</p>
           </CardContent>
         </Card>
-
-        {/* Stats cards */}
-        <div className="md:col-span-2 grid grid-cols-3 gap-3">
-          <Card className="border-border/50">
-            <CardContent className="p-3 text-center">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
-                <Inbox className="h-4 w-4 text-primary" />
-                {stats.newConversations > 0 && (
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-                  </span>
-                )}
-              </div>
-              <p className="text-xl font-bold tabular-nums">{stats.newConversations}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Na Fila</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border/50">
-            <CardContent className="p-3 text-center">
-              <Clock className="h-4 w-4 text-primary mx-auto mb-1" />
-              <p className="text-xl font-bold tabular-nums">{stats.waitingResponse}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Aguardando</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border/50">
-            <CardContent className="p-3 text-center">
-              <Users className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
-              <p className="text-xl font-bold tabular-nums">{totalMaes}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Processos</p>
-            </CardContent>
-          </Card>
-        </div>
       </div>
 
-      {/* Simple count badge */}
       {filteredCount !== totalMaes && (
         <Badge variant="secondary" className="text-xs h-6">
           {filteredCount} de {totalMaes} processos
