@@ -49,7 +49,7 @@ const navigationItems = [
   { id: "pagamentos", label: "Pagamentos", icon: DollarSign },
   { id: "indicacoes", label: "Indicações", icon: UserPlus },
   { id: "marketing", label: "Marketing", icon: Megaphone, isPage: true },
-  { id: "atendimento", label: "Atendimento", icon: MessageSquare, isPage: true },
+  
 ];
 
 export function MobileSidebar({
