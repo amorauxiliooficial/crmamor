@@ -203,10 +203,6 @@ export default function Index() {
                 <Target className="h-3.5 w-3.5" />
                 Prospecção
               </TabsTrigger>
-              <TabsTrigger value="chat" className="gap-1.5 text-xs">
-                <MessageSquare className="h-3.5 w-3.5" />
-                Chat
-              </TabsTrigger>
             </TabsList>
           </Tabs>
         )}
