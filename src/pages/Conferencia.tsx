@@ -352,6 +352,9 @@ export default function Conferencia() {
                         Última: {format(new Date(mae.ultima_conferencia), "dd/MM/yyyy", { locale: ptBR })}
                         {" · "}
                         {mae.dias_sem_conferencia === 0 ? "Hoje" : `${mae.dias_sem_conferencia} dia(s)`}
+                        {mae.ultima_conferencia_user && (
+                          <span className="italic"> · por {mae.ultima_conferencia_user}</span>
+                        )}
                       </>
                     ) : (
                       "Nunca conferido"
