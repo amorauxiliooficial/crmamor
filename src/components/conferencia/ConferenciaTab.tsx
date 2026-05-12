@@ -111,7 +111,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
         .select("id, full_name, email")
         .in("id", userIds);
       (profiles || []).forEach((p: any) => {
-        profileMap.set(p.id, p.full_name || p.email || "Usuário");
+        profileMap.set(p.id, formatUserDisplayName(p.full_name, p.email));
       });
     }
 
