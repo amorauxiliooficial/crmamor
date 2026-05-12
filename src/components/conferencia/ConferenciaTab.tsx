@@ -163,6 +163,15 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
     setHistoricoDialogOpen(true);
   };
 
+  const copyValue = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      sonnerToast.success(`${label} copiado!`);
+    } catch {
+      sonnerToast.error("Erro ao copiar");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
