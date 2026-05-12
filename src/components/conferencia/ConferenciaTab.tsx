@@ -201,12 +201,24 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
 
   return (
     <div className="space-y-6">
+      {/* Status Tabs */}
+      <Tabs value={statusTab} onValueChange={(v) => setStatusTab(v as "aguardando" | "aprovada")}>
+        <TabsList>
+          <TabsTrigger value="aguardando">
+            Aguardando Análise INSS ({tabCounts.aguardando})
+          </TabsTrigger>
+          <TabsTrigger value="aprovada">
+            Aprovada ({tabCounts.aprovada})
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Aguardando Análise INSS
+              {statusTab === "aguardando" ? "Aguardando Análise INSS" : "Aprovadas"}
             </CardTitle>
           </CardHeader>
           <CardContent>
