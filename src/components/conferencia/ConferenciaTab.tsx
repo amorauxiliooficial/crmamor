@@ -63,6 +63,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
   const [conferenciaDialogOpen, setConferenciaDialogOpen] = useState(false);
   const [historicoDialogOpen, setHistoricoDialogOpen] = useState(false);
   const [selectedMae, setSelectedMae] = useState<MaeEmAnalise | null>(null);
+  const [statusTab, setStatusTab] = useState<"aguardando" | "aprovada">("aguardando");
 
   const fetchMaesEmAnalise = async () => {
     setLoading(true);
