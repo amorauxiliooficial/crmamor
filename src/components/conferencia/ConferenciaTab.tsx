@@ -218,7 +218,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {statusTab === "aguardando" ? "Aguardando Análise INSS" : "Aprovadas"}
+              {statusTab === "aguardando" ? "Aguardando Análise INSS" : "Aprovada"}
             </CardTitle>
           </CardHeader>
           <CardContent>
