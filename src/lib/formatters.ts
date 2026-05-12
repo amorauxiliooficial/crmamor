@@ -32,3 +32,15 @@ export function formatDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleDateString("pt-BR");
 }
+
+export function formatUserDisplayName(fullName?: string | null, email?: string | null): string {
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  if (fullName && fullName.trim()) {
+    return fullName.trim().split(/\s+/).map(cap)[0];
+  }
+  if (email && email.includes("@")) {
+    const local = email.split("@")[0].split(/[._-]/)[0];
+    return cap(local);
+  }
+  return "Usuário";
+}

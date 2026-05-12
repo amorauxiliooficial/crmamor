@@ -38,6 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { formatUserDisplayName } from "@/lib/formatters";
 
 interface MaeEmAnalise {
   id: string;
@@ -103,7 +104,7 @@ export default function Conferencia() {
         .select("id, full_name, email")
         .in("id", userIds);
       (profiles || []).forEach((p: any) => {
-        profileMap.set(p.id, p.full_name || p.email || "Usuário");
+        profileMap.set(p.id, formatUserDisplayName(p.full_name, p.email));
       });
     }
 
