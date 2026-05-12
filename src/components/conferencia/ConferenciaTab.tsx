@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { logError } from "@/lib/errorHandler";
@@ -64,96 +65,96 @@ interface ConferenciaTabProps {
 
 export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabProps) {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [maes, setMaes] = useState<MaeEmAnalise[]>([]);
+  const queryClient = useQueryClient();
   const [conferenciaDialogOpen, setConferenciaDialogOpen] = useState(false);
   const [historicoDialogOpen, setHistoricoDialogOpen] = useState(false);
   const [selectedMae, setSelectedMae] = useState<MaeEmAnalise | null>(null);
   const [statusTab, setStatusTab] = useState<"aguardando" | "aprovada">("aguardando");
 
-  const fetchMaesEmAnalise = async () => {
-    setLoading(true);
+  const { data: maes = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ["conferencia-maes", user?.id],
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 min — evita reload ao trocar de página
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    queryFn: async (): Promise<MaeEmAnalise[]> => {
+      const { data: maesData, error: maesError } = await supabase
+        .from("mae_processo")
+        .select("id, nome_mae, cpf, senha_gov, status_processo, data_ultima_atualizacao, user_id")
+        .in("status_processo", ["Aguardando Análise INSS", "Em Análise", "Aprovada"])
+        .order("data_ultima_atualizacao", { ascending: true });
 
-    const { data: maesData, error: maesError } = await supabase
-      .from("mae_processo")
-      .select("id, nome_mae, cpf, senha_gov, status_processo, data_ultima_atualizacao, user_id")
-      .in("status_processo", ["Aguardando Análise INSS", "Em Análise", "Aprovada"])
-      .order("data_ultima_atualizacao", { ascending: true });
-
-    if (maesError) {
-      logError('fetch_maes_em_analise', maesError);
-      setLoading(false);
-      return;
-    }
-
-    const maeIds = (maesData || []).map((m) => m.id);
-
-    // Buscar última conferência de cada mãe (com user_id)
-    const { data: confs } = await supabase
-      .from("conferencia_inss")
-      .select("mae_id, created_at, user_id")
-      .in("mae_id", maeIds)
-      .order("created_at", { ascending: false });
-
-    const ultimaPorMae = new Map<string, { created_at: string; user_id: string }>();
-    (confs || []).forEach((c: any) => {
-      if (!ultimaPorMae.has(c.mae_id)) {
-        ultimaPorMae.set(c.mae_id, { created_at: c.created_at, user_id: c.user_id });
+      if (maesError) {
+        logError('fetch_maes_em_analise', maesError);
+        return [];
       }
-    });
 
-    // Buscar nomes dos usuários que fizeram a última conferência
-    const userIds = Array.from(new Set(Array.from(ultimaPorMae.values()).map((c) => c.user_id).filter(Boolean)));
-    const profileMap = new Map<string, string>();
-    if (userIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", userIds);
-      (profiles || []).forEach((p: any) => {
-        profileMap.set(p.id, formatUserDisplayName(p.full_name, p.email));
+      const maeIds = (maesData || []).map((m) => m.id);
+
+      const { data: confs } = await supabase
+        .from("conferencia_inss")
+        .select("mae_id, created_at, user_id")
+        .in("mae_id", maeIds)
+        .order("created_at", { ascending: false });
+
+      const ultimaPorMae = new Map<string, { created_at: string; user_id: string }>();
+      (confs || []).forEach((c: any) => {
+        if (!ultimaPorMae.has(c.mae_id)) {
+          ultimaPorMae.set(c.mae_id, { created_at: c.created_at, user_id: c.user_id });
+        }
       });
-    }
 
-    const maesWithConferencia: MaeEmAnalise[] = (maesData || []).map((mae) => {
-      const ult = ultimaPorMae.get(mae.id);
-      const ultimaConferencia = ult?.created_at;
-      const diasSemConferencia = ultimaConferencia
-        ? differenceInDays(new Date(), new Date(ultimaConferencia))
-        : 999;
-      const limite = INTERVALO_POR_STATUS[mae.status_processo] ?? CONFERENCIA_INTERVALO_DIAS_DEFAULT;
-      const precisaConferencia = diasSemConferencia >= limite;
+      const userIds = Array.from(new Set(Array.from(ultimaPorMae.values()).map((c) => c.user_id).filter(Boolean)));
+      const profileMap = new Map<string, string>();
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", userIds);
+        (profiles || []).forEach((p: any) => {
+          profileMap.set(p.id, formatUserDisplayName(p.full_name, p.email));
+        });
+      }
 
-      return {
-        id: mae.id,
-        nome_mae: mae.nome_mae,
-        cpf: mae.cpf,
-        senha_gov: (mae as any).senha_gov ?? null,
-        status_processo: mae.status_processo,
-        data_ultima_atualizacao: mae.data_ultima_atualizacao,
-        ultima_conferencia: ultimaConferencia,
-        ultima_conferencia_user: ult?.user_id ? profileMap.get(ult.user_id) ?? null : null,
-        dias_sem_conferencia: diasSemConferencia,
-        precisa_conferencia: precisaConferencia,
-        user_id: mae.user_id,
-      };
-    });
+      const result: MaeEmAnalise[] = (maesData || []).map((mae) => {
+        const ult = ultimaPorMae.get(mae.id);
+        const ultimaConferencia = ult?.created_at;
+        const diasSemConferencia = ultimaConferencia
+          ? differenceInDays(new Date(), new Date(ultimaConferencia))
+          : 999;
+        const limite = INTERVALO_POR_STATUS[mae.status_processo] ?? CONFERENCIA_INTERVALO_DIAS_DEFAULT;
+        const precisaConferencia = diasSemConferencia >= limite;
 
-    maesWithConferencia.sort((a, b) => {
-      if (a.precisa_conferencia && !b.precisa_conferencia) return -1;
-      if (!a.precisa_conferencia && b.precisa_conferencia) return 1;
-      return b.dias_sem_conferencia - a.dias_sem_conferencia;
-    });
+        return {
+          id: mae.id,
+          nome_mae: mae.nome_mae,
+          cpf: mae.cpf,
+          senha_gov: (mae as any).senha_gov ?? null,
+          status_processo: mae.status_processo,
+          data_ultima_atualizacao: mae.data_ultima_atualizacao,
+          ultima_conferencia: ultimaConferencia,
+          ultima_conferencia_user: ult?.user_id ? profileMap.get(ult.user_id) ?? null : null,
+          dias_sem_conferencia: diasSemConferencia,
+          precisa_conferencia: precisaConferencia,
+          user_id: mae.user_id,
+        };
+      });
 
-    setMaes(maesWithConferencia);
-    setLoading(false);
+      result.sort((a, b) => {
+        if (a.precisa_conferencia && !b.precisa_conferencia) return -1;
+        if (!a.precisa_conferencia && b.precisa_conferencia) return 1;
+        return b.dias_sem_conferencia - a.dias_sem_conferencia;
+      });
+
+      return result;
+    },
+  });
+
+  const fetchMaesEmAnalise = () => {
+    queryClient.invalidateQueries({ queryKey: ["conferencia-maes"] });
+    refetch();
   };
-
-  useEffect(() => {
-    if (user) {
-      fetchMaesEmAnalise();
-    }
-  }, [user]);
 
   const filteredMaes = useMemo(() => {
     let filtered = maes;
