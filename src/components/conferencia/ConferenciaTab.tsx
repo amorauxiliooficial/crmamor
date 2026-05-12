@@ -243,176 +243,177 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {statusTab === "aguardando" ? "Aguardando Análise INSS" : "Aprovada"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
-              <span className="text-2xl font-bold">{stats.total}</span>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl bg-card border border-border border-l-4 border-l-primary p-5 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            {statusTab === "aguardando" ? "Aguardando Análise INSS" : "Aprovada"}
+          </p>
+          <div className="mt-2 flex items-baseline gap-3">
+            <span className="text-4xl font-bold text-foreground tabular-nums">
+              {String(stats.total).padStart(2, "0")}
+            </span>
+            <span className="h-2.5 w-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
+          </div>
+        </div>
 
-        <Card className="border-destructive/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-destructive">
-              Pendentes de Conferência
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
+        <div className="rounded-2xl bg-card border border-border border-l-4 border-l-destructive p-5 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-destructive/80">
+            Pendentes de Conferência
+          </p>
+          <div className="mt-2 flex items-baseline gap-3">
+            <span className="text-4xl font-bold text-foreground tabular-nums">
+              {String(stats.pendentes).padStart(2, "0")}
+            </span>
+            {stats.pendentes > 0 && (
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              <span className="text-2xl font-bold text-destructive">
-                {stats.pendentes}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+            )}
+          </div>
+        </div>
 
-        <Card className="border-emerald-500/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-emerald-600">
-              Em Dia
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              <span className="text-2xl font-bold text-emerald-600">
-                {stats.emDia}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl bg-card border border-border border-l-4 border-l-emerald-500 p-5 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-500/80">
+            Em Dia
+          </p>
+          <div className="mt-2 flex items-baseline gap-3">
+            <span className="text-4xl font-bold text-foreground tabular-nums">
+              {String(stats.emDia).padStart(2, "0")}
+            </span>
+            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+          </div>
+        </div>
       </div>
 
       {/* Table */}
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>CPF</TableHead>
-              <TableHead>Última Conferência</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredMaes.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">
-                  <p className="text-muted-foreground">
-                    {maes.length === 0
-                      ? "Nenhuma mãe aguardando análise INSS"
-                      : "Nenhum resultado para a busca"}
-                  </p>
-                </TableCell>
+      <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Identidade</TableHead>
+                <TableHead className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Credenciais</TableHead>
+                <TableHead className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground text-center">Status</TableHead>
+                <TableHead className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Última Conferência</TableHead>
+                <TableHead className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground text-right">Ações</TableHead>
               </TableRow>
-            ) : (
-              filteredMaes.map((mae) => (
-                <TableRow key={mae.id}>
-                  <TableCell className="font-medium">{mae.nome_mae}</TableCell>
-                  <TableCell className="font-mono text-sm">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1">
-                        <span>{formatCpf(mae.cpf)}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-5 w-5 p-0"
-                          onClick={() => copyValue(mae.cpf.replace(/\D/g, ""), "CPF")}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
+            </TableHeader>
+            <TableBody>
+              {filteredMaes.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-12">
+                    <p className="text-muted-foreground">
+                      {maes.length === 0
+                        ? "Nenhuma mãe aguardando análise INSS"
+                        : "Nenhum resultado para a busca"}
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredMaes.map((mae) => (
+                  <TableRow key={mae.id} className="group transition-colors">
+                    <TableCell className="py-4">
+                      <div className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {mae.nome_mae}
                       </div>
-                      {mae.senha_gov && (
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Key className="h-3 w-3" />
-                          <span>{mae.senha_gov}</span>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[13px] text-foreground/90">
+                            {formatCpf(mae.cpf)}
+                          </span>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-5 w-5 p-0"
-                            onClick={() => copyValue(mae.senha_gov!, "Senha Gov")}
+                            className="h-5 w-5 p-0 text-muted-foreground hover:text-primary"
+                            onClick={() => copyValue(mae.cpf.replace(/\D/g, ""), "CPF")}
                           >
                             <Copy className="h-3 w-3" />
                           </Button>
                         </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {mae.ultima_conferencia ? (
-                      <div className="text-sm">
-                        <div>
-                          {format(
-                            new Date(mae.ultima_conferencia),
-                            "dd/MM/yyyy",
-                            { locale: ptBR }
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {mae.dias_sem_conferencia === 0
-                            ? "Hoje"
-                            : `${mae.dias_sem_conferencia} dia(s) atrás`}
-                        </div>
-                        {mae.ultima_conferencia_user && (
-                          <div className="text-xs text-muted-foreground italic">
-                            por {mae.ultima_conferencia_user}
+                        {mae.senha_gov && (
+                          <div className="flex items-center gap-2">
+                            <span className="px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20">
+                              <span className="text-[10px] font-bold uppercase tracking-tighter text-primary">
+                                Gov.br
+                              </span>
+                            </span>
+                            <span className="font-mono text-[12px] text-muted-foreground">
+                              {mae.senha_gov}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 w-5 p-0 text-muted-foreground hover:text-primary"
+                              onClick={() => copyValue(mae.senha_gov!, "Senha Gov")}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
                           </div>
                         )}
                       </div>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">
-                        Nunca conferido
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {mae.precisa_conferencia ? (
-                      <Badge variant="destructive">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        Pendente
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="secondary"
-                        className="bg-emerald-500/20 text-emerald-600"
-                      >
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Em dia
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleHistorico(mae)}
-                      >
-                        Histórico
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleConferencia(mae)}
-                      >
-                        <ClipboardCheck className="h-4 w-4 mr-1" />
-                        Conferir
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <div className="flex justify-center">
+                        {mae.precisa_conferencia ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive/10 text-destructive text-[11px] font-bold border border-destructive/20">
+                            <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
+                            PENDENTE
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold border border-emerald-500/20">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            EM DIA
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      {mae.ultima_conferencia ? (
+                        <div>
+                          <div className="text-sm font-medium text-foreground tabular-nums">
+                            {format(new Date(mae.ultima_conferencia), "dd/MM/yyyy", { locale: ptBR })}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground mt-0.5">
+                            {mae.dias_sem_conferencia === 0
+                              ? "Hoje"
+                              : `${mae.dias_sem_conferencia} dia(s) atrás`}
+                            {mae.ultima_conferencia_user && (
+                              <>
+                                {" "}por <span className="text-primary/80 font-medium">{mae.ultima_conferencia_user}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm italic">
+                          Nunca conferido
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-4 text-right">
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          onClick={() => handleHistorico(mae)}
+                          className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          Histórico
+                        </button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleConferencia(mae)}
+                          className="rounded-lg font-bold shadow-md hover:scale-105 active:scale-95 transition-all"
+                        >
+                          <ClipboardCheck className="h-4 w-4 mr-1" />
+                          Conferir
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
 
       {/* Conferencia Dialog */}
       {selectedMae && (
