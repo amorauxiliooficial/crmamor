@@ -165,6 +165,15 @@ export default function Conferencia() {
     return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
   };
 
+  const copyValue = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      sonnerToast.success(`${label} copiado!`);
+    } catch {
+      sonnerToast.error("Erro ao copiar");
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
