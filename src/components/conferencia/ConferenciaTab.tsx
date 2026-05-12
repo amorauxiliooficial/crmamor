@@ -68,8 +68,8 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
 
     const { data: maesData, error: maesError } = await supabase
       .from("mae_processo")
-      .select("id, nome_mae, cpf, status_processo, data_ultima_atualizacao, user_id")
-      .eq("status_processo", "Aguardando Análise INSS")
+      .select("id, nome_mae, cpf, senha_gov, status_processo, data_ultima_atualizacao, user_id")
+      .in("status_processo", ["Aguardando Análise INSS", "Em Análise", "Aprovada"])
       .order("data_ultima_atualizacao", { ascending: true });
 
     if (maesError) {
