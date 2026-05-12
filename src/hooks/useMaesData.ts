@@ -19,6 +19,7 @@ export const mapDbStatusToDisplay = (status: string): StatusProcesso => {
     "Indeferida": "❌ Indeferida",
     "Recurso / Judicial": "⚖️ Recurso / Judicial",
     "Inadimplência": "💳 Inadimplência",
+    "Renegociação": "🤝 Renegociação",
     "Rescisão de Contrato": "📄 Rescisão de Contrato",
     "📄 Rescisão de Contrato": "📄 Rescisão de Contrato",
     "Processo Encerrado": "📦 Processo Encerrado",
