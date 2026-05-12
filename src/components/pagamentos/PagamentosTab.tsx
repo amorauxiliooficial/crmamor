@@ -43,7 +43,6 @@ import {
   MoreHorizontal,
   Eye,
   Copy,
-  Handshake,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { format, parseISO, getMonth, getYear } from "date-fns";
@@ -504,15 +503,6 @@ export function PagamentosTab({ searchQuery, selectedUserId }: PagamentosTabProp
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">{stats.inadimplentes}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Renegociação</CardTitle>
-            <Handshake className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">0</div>
           </CardContent>
         </Card>
       </div>
