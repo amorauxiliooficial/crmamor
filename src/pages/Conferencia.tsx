@@ -40,6 +40,7 @@ interface MaeEmAnalise {
   id: string;
   nome_mae: string;
   cpf: string;
+  senha_gov?: string | null;
   status_processo: string;
   data_ultima_atualizacao: string;
   ultima_conferencia?: string;
