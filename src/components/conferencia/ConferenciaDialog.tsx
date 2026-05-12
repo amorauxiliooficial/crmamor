@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, CheckCircle2, XCircle, Copy } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Copy, Key, User } from "lucide-react";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 
 interface ConferenciaDialogProps {
