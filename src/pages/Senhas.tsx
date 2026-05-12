@@ -164,7 +164,7 @@ export default function Senhas() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="p-3 md:p-6 max-w-4xl mx-auto space-y-4">
+      <div className="p-3 md:p-6 max-w-6xl mx-auto space-y-6">
         <div className="flex items-center gap-2 md:gap-4">
           <Button
             variant="ghost"
