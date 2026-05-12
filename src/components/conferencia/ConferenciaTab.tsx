@@ -27,6 +27,7 @@ import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ConferenciaDialog } from "@/components/conferencia/ConferenciaDialog";
 import { ConferenciaHistorico } from "@/components/conferencia/ConferenciaHistorico";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
