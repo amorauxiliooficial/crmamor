@@ -34,7 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { formatCpf } from "@/lib/formatters";
+import { formatCpf, formatUserDisplayName } from "@/lib/formatters";
 
 interface MaeEmAnalise {
   id: string;
