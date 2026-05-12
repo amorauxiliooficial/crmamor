@@ -27,6 +27,7 @@ import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ConferenciaDialog } from "@/components/conferencia/ConferenciaDialog";
 import { ConferenciaHistorico } from "@/components/conferencia/ConferenciaHistorico";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +63,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
   const [conferenciaDialogOpen, setConferenciaDialogOpen] = useState(false);
   const [historicoDialogOpen, setHistoricoDialogOpen] = useState(false);
   const [selectedMae, setSelectedMae] = useState<MaeEmAnalise | null>(null);
+  const [statusTab, setStatusTab] = useState<"aguardando" | "aprovada">("aguardando");
 
   const fetchMaesEmAnalise = async () => {
     setLoading(true);
@@ -127,12 +129,21 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
 
   const filteredMaes = useMemo(() => {
     let filtered = maes;
-    
+
+    // Filter by status tab
+    if (statusTab === "aguardando") {
+      filtered = filtered.filter((m) =>
+        ["Aguardando Análise INSS", "Em Análise"].includes(m.status_processo)
+      );
+    } else {
+      filtered = filtered.filter((m) => m.status_processo === "Aprovada");
+    }
+
     // Filter by user if selected
     if (selectedUserId && selectedUserId !== "all") {
       filtered = filtered.filter((mae) => mae.user_id === selectedUserId);
     }
-    
+
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -142,9 +153,17 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
           mae.cpf.includes(query)
       );
     }
-    
+
     return filtered;
-  }, [maes, searchQuery, selectedUserId]);
+  }, [maes, searchQuery, selectedUserId, statusTab]);
+
+  const tabCounts = useMemo(() => {
+    const aguardando = maes.filter((m) =>
+      ["Aguardando Análise INSS", "Em Análise"].includes(m.status_processo)
+    ).length;
+    const aprovada = maes.filter((m) => m.status_processo === "Aprovada").length;
+    return { aguardando, aprovada };
+  }, [maes]);
 
   const stats = useMemo(() => {
     const dataToCount = filteredMaes;
@@ -182,12 +201,24 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
 
   return (
     <div className="space-y-6">
+      {/* Status Tabs */}
+      <Tabs value={statusTab} onValueChange={(v) => setStatusTab(v as "aguardando" | "aprovada")}>
+        <TabsList>
+          <TabsTrigger value="aguardando">
+            Aguardando Análise INSS ({tabCounts.aguardando})
+          </TabsTrigger>
+          <TabsTrigger value="aprovada">
+            Aprovada ({tabCounts.aprovada})
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Aguardando Análise INSS
+              {statusTab === "aguardando" ? "Aguardando Análise INSS" : "Aprovadas"}
             </CardTitle>
           </CardHeader>
           <CardContent>
