@@ -26,19 +26,13 @@ interface ConferenciaDialogProps {
   onSuccess: () => void;
 }
 
-interface ConferenciaDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  maeId: string;
-  maeNome: string;
-  onSuccess: () => void;
-}
-
 export function ConferenciaDialog({
   open,
   onOpenChange,
   maeId,
   maeNome,
+  cpf,
+  senhaGov,
   onSuccess,
 }: ConferenciaDialogProps) {
   const { user } = useAuth();
