@@ -19,7 +19,10 @@ import {
   AlertTriangle,
   Clock,
   ClipboardCheck,
+  Copy,
+  Key,
 } from "lucide-react";
+import { toast as sonnerToast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ConferenciaDialog } from "@/components/conferencia/ConferenciaDialog";
@@ -36,6 +39,7 @@ interface MaeEmAnalise {
   id: string;
   nome_mae: string;
   cpf: string;
+  senha_gov?: string | null;
   status_processo: string;
   data_ultima_atualizacao: string;
   ultima_conferencia?: string;
@@ -64,8 +68,8 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
 
     const { data: maesData, error: maesError } = await supabase
       .from("mae_processo")
-      .select("id, nome_mae, cpf, status_processo, data_ultima_atualizacao, user_id")
-      .eq("status_processo", "Aguardando Análise INSS")
+      .select("id, nome_mae, cpf, senha_gov, status_processo, data_ultima_atualizacao, user_id")
+      .in("status_processo", ["Aguardando Análise INSS", "Em Análise", "Aprovada"])
       .order("data_ultima_atualizacao", { ascending: true });
 
     if (maesError) {
@@ -94,6 +98,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
           id: mae.id,
           nome_mae: mae.nome_mae,
           cpf: mae.cpf,
+          senha_gov: (mae as any).senha_gov ?? null,
           status_processo: mae.status_processo,
           data_ultima_atualizacao: mae.data_ultima_atualizacao,
           ultima_conferencia: ultimaConferencia,
@@ -156,6 +161,15 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
   const handleHistorico = (mae: MaeEmAnalise) => {
     setSelectedMae(mae);
     setHistoricoDialogOpen(true);
+  };
+
+  const copyValue = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      sonnerToast.success(`${label} copiado!`);
+    } catch {
+      sonnerToast.error("Erro ao copiar");
+    }
   };
 
   if (loading) {
@@ -245,7 +259,33 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
                 <TableRow key={mae.id}>
                   <TableCell className="font-medium">{mae.nome_mae}</TableCell>
                   <TableCell className="font-mono text-sm">
-                    {formatCpf(mae.cpf)}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1">
+                        <span>{formatCpf(mae.cpf)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 p-0"
+                          onClick={() => copyValue(mae.cpf.replace(/\D/g, ""), "CPF")}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      {mae.senha_gov && (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Key className="h-3 w-3" />
+                          <span>{mae.senha_gov}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 w-5 p-0"
+                            onClick={() => copyValue(mae.senha_gov!, "Senha Gov")}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {mae.ultima_conferencia ? (
@@ -318,7 +358,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
           maeId={selectedMae.id}
           maeNome={selectedMae.nome_mae}
           cpf={selectedMae.cpf}
-          senhaGov={(selectedMae as any).senha_gov ?? null}
+          senhaGov={selectedMae.senha_gov ?? null}
           onSuccess={fetchMaesEmAnalise}
         />
       )}
