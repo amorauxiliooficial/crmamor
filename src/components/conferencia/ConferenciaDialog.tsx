@@ -102,48 +102,49 @@ export function ConferenciaDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Conferência INSS</DialogTitle>
-          <DialogDescription>
-            Registrar conferência para: <strong>{maeNome}</strong>
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 shrink-0">
+              <User className="h-6 w-6 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <DialogTitle className="text-lg">{maeNome}</DialogTitle>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-muted-foreground font-mono">
+                  CPF: {formatCpf(cpf)}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => handleCopy(cpf.replace(/\D/g, ""), "CPF")}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+              {senhaGov && (
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground font-mono">
+                    <Key className="h-3 w-3 inline mr-1" />
+                    Senha Gov: {senhaGov}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => handleCopy(senhaGov, "Senha Gov")}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogDescription className="sr-only">
+            Registrar conferência INSS para {maeNome}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <div className="grid gap-2 rounded-lg border bg-muted/30 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">CPF</p>
-                <p className="font-mono text-sm truncate">{formatCpf(cpf)}</p>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => handleCopy(cpf.replace(/\D/g, ""), "CPF")}
-              >
-                <Copy className="h-3.5 w-3.5 mr-1" />
-                Copiar
-              </Button>
-            </div>
-            <div className="flex items-center justify-between gap-2 pt-2 border-t">
-              <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Senha Gov.br</p>
-                <p className="font-mono text-sm truncate">
-                  {senhaGov || <span className="text-muted-foreground italic">Não cadastrada</span>}
-                </p>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={!senhaGov}
-                onClick={() => senhaGov && handleCopy(senhaGov, "Senha Gov.br")}
-              >
-                <Copy className="h-3.5 w-3.5 mr-1" />
-                Copiar
-              </Button>
-            </div>
-          </div>
 
           <div className="space-y-3">
             <Label>Houve atualização no INSS?</Label>
