@@ -46,7 +46,7 @@ import { GuidedTour } from "@/components/tour/GuidedTour";
 // Types
 import { Indicacao } from "@/types/indicacao";
 
-const VIEW_ORDER = ["kanban", "table", "atividades", "gestantes", "conferencia", "pagamentos", "indicacoes", "prospeccao", "chat"];
+const VIEW_ORDER = ["kanban", "atividades", "gestantes", "conferencia", "pagamentos", "indicacoes", "prospeccao", "chat"];
 
 export default function Index() {
   const { user, loading: authLoading } = useAuth();
@@ -179,10 +179,6 @@ export default function Index() {
                 <LayoutGrid className="h-3.5 w-3.5" />
                 Processos
               </TabsTrigger>
-              <TabsTrigger value="table" className="gap-1.5 text-xs">
-                <List className="h-3.5 w-3.5" />
-                Tabela
-              </TabsTrigger>
               <TabsTrigger value="gestantes" className="gap-1.5 text-xs">
                 <Baby className="h-3.5 w-3.5" />
                 Gestantes
@@ -208,7 +204,7 @@ export default function Index() {
         )}
 
         {/* Operations Panel - simplified */}
-        {(currentView === "kanban" || currentView === "table") && (
+        {(currentView === "kanban") && (
           <OperationsPanel
             totalMaes={maes.length}
             filteredCount={filteredMaes.length}
