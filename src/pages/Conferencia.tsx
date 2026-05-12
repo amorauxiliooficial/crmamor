@@ -63,11 +63,11 @@ export default function Conferencia() {
   const fetchMaesEmAnalise = async () => {
     setLoading(true);
 
-    // Fetch mães with status "Em Análise"
+    // Fetch mães with status "Em Análise" or "Aprovada"
     const { data: maesData, error: maesError } = await supabase
       .from("mae_processo")
-      .select("id, nome_mae, cpf, status_processo, data_ultima_atualizacao")
-      .eq("status_processo", "Em Análise")
+      .select("id, nome_mae, cpf, senha_gov, status_processo, data_ultima_atualizacao")
+      .in("status_processo", ["Em Análise", "Aprovada"])
       .order("data_ultima_atualizacao", { ascending: true });
 
     if (maesError) {
@@ -97,6 +97,7 @@ export default function Conferencia() {
           id: mae.id,
           nome_mae: mae.nome_mae,
           cpf: mae.cpf,
+          senha_gov: (mae as any).senha_gov ?? null,
           status_processo: mae.status_processo,
           data_ultima_atualizacao: mae.data_ultima_atualizacao,
           ultima_conferencia: ultimaConferencia,
