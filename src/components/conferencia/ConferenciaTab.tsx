@@ -49,7 +49,12 @@ interface MaeEmAnalise {
   user_id: string;
 }
 
-const CONFERENCIA_INTERVALO_DIAS = 2;
+const INTERVALO_POR_STATUS: Record<string, number> = {
+  "Aguardando Análise INSS": 3,
+  "Em Análise": 3,
+  "Aprovada": 3,
+};
+const CONFERENCIA_INTERVALO_DIAS_DEFAULT = 3;
 
 interface ConferenciaTabProps {
   searchQuery: string;
