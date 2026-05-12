@@ -40,6 +40,7 @@ interface MaeEmAnalise {
   id: string;
   nome_mae: string;
   cpf: string;
+  senha_gov?: string | null;
   status_processo: string;
   data_ultima_atualizacao: string;
   ultima_conferencia?: string;
@@ -62,11 +63,11 @@ export default function Conferencia() {
   const fetchMaesEmAnalise = async () => {
     setLoading(true);
 
-    // Fetch mães with status "Em Análise"
+    // Fetch mães with status "Em Análise" or "Aprovada"
     const { data: maesData, error: maesError } = await supabase
       .from("mae_processo")
-      .select("id, nome_mae, cpf, status_processo, data_ultima_atualizacao")
-      .eq("status_processo", "Em Análise")
+      .select("id, nome_mae, cpf, senha_gov, status_processo, data_ultima_atualizacao")
+      .in("status_processo", ["Em Análise", "Aprovada"])
       .order("data_ultima_atualizacao", { ascending: true });
 
     if (maesError) {
@@ -96,6 +97,7 @@ export default function Conferencia() {
           id: mae.id,
           nome_mae: mae.nome_mae,
           cpf: mae.cpf,
+          senha_gov: (mae as any).senha_gov ?? null,
           status_processo: mae.status_processo,
           data_ultima_atualizacao: mae.data_ultima_atualizacao,
           ultima_conferencia: ultimaConferencia,
@@ -270,6 +272,9 @@ export default function Conferencia() {
                     <div className="min-w-0">
                       <h3 className="font-semibold text-sm truncate">{mae.nome_mae}</h3>
                       <p className="text-xs text-muted-foreground font-mono">{formatCpf(mae.cpf)}</p>
+                      <Badge variant="outline" className="mt-1 text-[10px]">
+                        {mae.status_processo}
+                      </Badge>
                     </div>
                     {mae.precisa_conferencia ? (
                       <Badge variant="destructive" className="text-[10px] shrink-0">
@@ -346,7 +351,14 @@ export default function Conferencia() {
               ) : (
                 filteredMaes.map((mae) => (
                   <TableRow key={mae.id}>
-                    <TableCell className="font-medium">{mae.nome_mae}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col gap-1">
+                        <span>{mae.nome_mae}</span>
+                        <Badge variant="outline" className="text-[10px] w-fit">
+                          {mae.status_processo}
+                        </Badge>
+                      </div>
+                    </TableCell>
                     <TableCell className="font-mono text-sm">
                       {formatCpf(mae.cpf)}
                     </TableCell>
@@ -421,6 +433,8 @@ export default function Conferencia() {
           onOpenChange={setConferenciaDialogOpen}
           maeId={selectedMae.id}
           maeNome={selectedMae.nome_mae}
+          cpf={selectedMae.cpf}
+          senhaGov={selectedMae.senha_gov}
           onSuccess={fetchMaesEmAnalise}
         />
       )}

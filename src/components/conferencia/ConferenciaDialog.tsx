@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Copy } from "lucide-react";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 
 interface ConferenciaDialogProps {
@@ -21,6 +21,8 @@ interface ConferenciaDialogProps {
   onOpenChange: (open: boolean) => void;
   maeId: string;
   maeNome: string;
+  cpf: string;
+  senhaGov?: string | null;
   onSuccess: () => void;
 }
 
@@ -29,6 +31,8 @@ export function ConferenciaDialog({
   onOpenChange,
   maeId,
   maeNome,
+  cpf,
+  senhaGov,
   onSuccess,
 }: ConferenciaDialogProps) {
   const { user } = useAuth();
@@ -80,6 +84,20 @@ export function ConferenciaDialog({
     onSuccess();
   };
 
+  const formatCpf = (v: string) => {
+    const n = (v || "").replace(/\D/g, "");
+    return n.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+  };
+
+  const handleCopy = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast({ title: `${label} copiado`, description: value });
+    } catch {
+      toast({ title: "Erro ao copiar", variant: "destructive" });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -91,6 +109,42 @@ export function ConferenciaDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          <div className="grid gap-2 rounded-lg border bg-muted/30 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">CPF</p>
+                <p className="font-mono text-sm truncate">{formatCpf(cpf)}</p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => handleCopy(cpf.replace(/\D/g, ""), "CPF")}
+              >
+                <Copy className="h-3.5 w-3.5 mr-1" />
+                Copiar
+              </Button>
+            </div>
+            <div className="flex items-center justify-between gap-2 pt-2 border-t">
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Senha Gov.br</p>
+                <p className="font-mono text-sm truncate">
+                  {senhaGov || <span className="text-muted-foreground italic">Não cadastrada</span>}
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={!senhaGov}
+                onClick={() => senhaGov && handleCopy(senhaGov, "Senha Gov.br")}
+              >
+                <Copy className="h-3.5 w-3.5 mr-1" />
+                Copiar
+              </Button>
+            </div>
+          </div>
+
           <div className="space-y-3">
             <Label>Houve atualização no INSS?</Label>
             <RadioGroup
