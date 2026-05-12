@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Eye, EyeOff, Copy, Pencil, Trash2, Key, ArrowLeft } from "lucide-react";
+import { Plus, Eye, EyeOff, Copy, Pencil, Trash2, Key, ArrowLeft, ExternalLink, User, Lock, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface SenhaSistema {
