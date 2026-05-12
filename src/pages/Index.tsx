@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useMaesData, MaeProcessoComAtividade } from "@/hooks/useMaesData";
 import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
-import { Loader2, LayoutGrid, List, Baby, ClipboardCheck, DollarSign, UserPlus, MessageSquare, Target } from "lucide-react";
+import { Loader2, LayoutGrid, Baby, ClipboardCheck, DollarSign, UserPlus, MessageSquare, Target } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
@@ -23,7 +23,7 @@ import { OperationsPanel } from "@/components/dashboard/OperationsPanel";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { KanbanMobileList } from "@/components/kanban/KanbanMobileList";
 import { GestantesBoard } from "@/components/kanban/GestantesBoard";
-import { MaeTable } from "@/components/mae/MaeTable";
+
 
 // Mae dialogs
 import { MaeFormDialog } from "@/components/mae/MaeFormDialog";
@@ -46,7 +46,7 @@ import { GuidedTour } from "@/components/tour/GuidedTour";
 // Types
 import { Indicacao } from "@/types/indicacao";
 
-const VIEW_ORDER = ["kanban", "table", "atividades", "gestantes", "conferencia", "pagamentos", "indicacoes", "prospeccao", "chat"];
+const VIEW_ORDER = ["kanban", "atividades", "gestantes", "conferencia", "pagamentos", "indicacoes", "prospeccao", "chat"];
 
 export default function Index() {
   const { user, loading: authLoading } = useAuth();
@@ -179,10 +179,6 @@ export default function Index() {
                 <LayoutGrid className="h-3.5 w-3.5" />
                 Processos
               </TabsTrigger>
-              <TabsTrigger value="table" className="gap-1.5 text-xs">
-                <List className="h-3.5 w-3.5" />
-                Tabela
-              </TabsTrigger>
               <TabsTrigger value="gestantes" className="gap-1.5 text-xs">
                 <Baby className="h-3.5 w-3.5" />
                 Gestantes
@@ -208,7 +204,7 @@ export default function Index() {
         )}
 
         {/* Operations Panel - simplified */}
-        {(currentView === "kanban" || currentView === "table") && (
+        {(currentView === "kanban") && (
           <OperationsPanel
             totalMaes={maes.length}
             filteredCount={filteredMaes.length}
@@ -235,7 +231,7 @@ export default function Index() {
                   />
                 ))}
 
-              {currentView === "table" && <MaeTable maes={filteredMaes} onRowClick={handleCardClick} />}
+              
 
               {currentView === "atividades" && (
                 <AtividadesTab
