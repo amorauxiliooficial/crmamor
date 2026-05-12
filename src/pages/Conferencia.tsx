@@ -24,7 +24,10 @@ import {
   AlertTriangle,
   Clock,
   ClipboardCheck,
+  Copy,
+  Key,
 } from "lucide-react";
+import { toast as sonnerToast } from "sonner";
 import { format, differenceInDays, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ConferenciaDialog } from "@/components/conferencia/ConferenciaDialog";
@@ -162,6 +165,15 @@ export default function Conferencia() {
     return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
   };
 
+  const copyValue = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      sonnerToast.success(`${label} copiado!`);
+    } catch {
+      sonnerToast.error("Erro ao copiar");
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -269,9 +281,35 @@ export default function Conferencia() {
               <Card key={mae.id} className="overflow-hidden">
                 <CardContent className="p-3">
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-sm truncate">{mae.nome_mae}</h3>
-                      <p className="text-xs text-muted-foreground font-mono">{formatCpf(mae.cpf)}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="text-xs text-muted-foreground font-mono">{formatCpf(mae.cpf)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 p-0"
+                          onClick={() => copyValue(mae.cpf.replace(/\D/g, ""), "CPF")}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      {mae.senha_gov && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground font-mono inline-flex items-center">
+                            <Key className="h-3 w-3 mr-1" />
+                            {mae.senha_gov}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 w-5 p-0"
+                            onClick={() => copyValue(mae.senha_gov!, "Senha Gov")}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
                       <Badge variant="outline" className="mt-1 text-[10px]">
                         {mae.status_processo}
                       </Badge>
@@ -360,7 +398,33 @@ export default function Conferencia() {
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-sm">
-                      {formatCpf(mae.cpf)}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1">
+                          <span>{formatCpf(mae.cpf)}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => copyValue(mae.cpf.replace(/\D/g, ""), "CPF")}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        {mae.senha_gov && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Key className="h-3 w-3" />
+                            <span>{mae.senha_gov}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => copyValue(mae.senha_gov!, "Senha Gov")}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {mae.ultima_conferencia ? (
