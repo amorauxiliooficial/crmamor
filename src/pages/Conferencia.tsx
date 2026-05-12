@@ -351,7 +351,14 @@ export default function Conferencia() {
               ) : (
                 filteredMaes.map((mae) => (
                   <TableRow key={mae.id}>
-                    <TableCell className="font-medium">{mae.nome_mae}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col gap-1">
+                        <span>{mae.nome_mae}</span>
+                        <Badge variant="outline" className="text-[10px] w-fit">
+                          {mae.status_processo}
+                        </Badge>
+                      </div>
+                    </TableCell>
                     <TableCell className="font-mono text-sm">
                       {formatCpf(mae.cpf)}
                     </TableCell>
