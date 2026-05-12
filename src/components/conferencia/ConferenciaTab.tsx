@@ -259,7 +259,33 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
                 <TableRow key={mae.id}>
                   <TableCell className="font-medium">{mae.nome_mae}</TableCell>
                   <TableCell className="font-mono text-sm">
-                    {formatCpf(mae.cpf)}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1">
+                        <span>{formatCpf(mae.cpf)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 p-0"
+                          onClick={() => copyValue(mae.cpf.replace(/\D/g, ""), "CPF")}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      {mae.senha_gov && (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Key className="h-3 w-3" />
+                          <span>{mae.senha_gov}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 w-5 p-0"
+                            onClick={() => copyValue(mae.senha_gov!, "Senha Gov")}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {mae.ultima_conferencia ? (
