@@ -1,5 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LayoutGrid, List, Baby, ClipboardCheck, DollarSign, UserPlus, Target } from "lucide-react";
+import { LayoutGrid, Baby, ClipboardCheck, DollarSign, UserPlus, Target } from "lucide-react";
 
 interface MobileViewSelectorProps {
   value: string;
@@ -8,7 +8,6 @@ interface MobileViewSelectorProps {
 
 const viewOptions = [
   { id: "kanban", label: "Processos", icon: LayoutGrid },
-  { id: "table", label: "Tabela", icon: List },
   { id: "gestantes", label: "Gestantes", icon: Baby },
   { id: "conferencia", label: "Conferência", icon: ClipboardCheck },
   { id: "pagamentos", label: "Pagamentos", icon: DollarSign },
