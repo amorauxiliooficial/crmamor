@@ -361,6 +361,11 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
                             ? "Hoje"
                             : `${mae.dias_sem_conferencia} dia(s) atrás`}
                         </div>
+                        {mae.ultima_conferencia_user && (
+                          <div className="text-xs text-muted-foreground italic">
+                            por {mae.ultima_conferencia_user}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <span className="text-muted-foreground text-sm">
