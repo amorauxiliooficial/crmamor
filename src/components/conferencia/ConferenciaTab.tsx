@@ -98,6 +98,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
           id: mae.id,
           nome_mae: mae.nome_mae,
           cpf: mae.cpf,
+          senha_gov: (mae as any).senha_gov ?? null,
           status_processo: mae.status_processo,
           data_ultima_atualizacao: mae.data_ultima_atualizacao,
           ultima_conferencia: ultimaConferencia,
