@@ -1,0 +1,1 @@
+ALTER TYPE public.status_processo ADD VALUE IF NOT EXISTS 'Renegociação' AFTER 'Inadimplência';
