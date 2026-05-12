@@ -24,7 +24,10 @@ import {
   AlertTriangle,
   Clock,
   ClipboardCheck,
+  Copy,
+  Key,
 } from "lucide-react";
+import { toast as sonnerToast } from "sonner";
 import { format, differenceInDays, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ConferenciaDialog } from "@/components/conferencia/ConferenciaDialog";
