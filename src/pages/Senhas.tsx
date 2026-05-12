@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Eye, EyeOff, Copy, Pencil, Trash2, Key, ArrowLeft } from "lucide-react";
+import { Plus, Eye, EyeOff, Copy, Pencil, Trash2, Key, ArrowLeft, ExternalLink, User, Lock, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface SenhaSistema {
@@ -278,109 +278,203 @@ export default function Senhas() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {senhas.map((senha, idx) => {
+          <div className="space-y-2">
+            {senhas.map((senha) => {
               const isVisible = visiblePasswords.has(senha.id);
-              const initial = (senha.nome_sistema || "?").trim().charAt(0).toUpperCase();
-              const palette = [
-                "from-primary/20 via-primary/5 to-transparent",
-                "from-accent/30 via-accent/10 to-transparent",
-                "from-secondary/40 via-secondary/10 to-transparent",
-                "from-primary/15 via-accent/10 to-transparent",
-              ];
-              const ring = palette[idx % palette.length];
+              const raw = (senha.nome_sistema || "").trim();
+              const isUrl = /^https?:\/\//i.test(raw) || /\.[a-z]{2,}/i.test(raw);
+              const href = isUrl
+                ? raw.startsWith("http")
+                  ? raw
+                  : `https://${raw}`
+                : null;
+              let domain = "";
+              let displayName = raw;
+              try {
+                if (href) {
+                  const u = new URL(href);
+                  domain = u.hostname.replace(/^www\./, "");
+                  displayName = domain;
+                }
+              } catch {
+                /* noop */
+              }
+              const favicon = domain
+                ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+                : null;
+              const initial = raw.charAt(0).toUpperCase() || "?";
+
               return (
                 <Card
                   key={senha.id}
-                  className="group relative overflow-hidden border-border/60 hover:border-primary/40 transition-all hover:shadow-xl hover:-translate-y-1 duration-300"
+                  className="group relative overflow-hidden border-border/60 hover:border-primary/40 hover:shadow-md transition-all"
                 >
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-br ${ring} opacity-60 group-hover:opacity-100 transition-opacity`}
-                  />
-                  <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/20 transition-colors" />
+                  <CardContent className="p-3 md:p-4">
+                    <div className="flex items-center gap-3 md:gap-4">
+                      {/* Avatar / favicon */}
+                      <a
+                        href={href ?? undefined}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`h-11 w-11 md:h-12 md:w-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-border/50 bg-gradient-to-br from-primary/15 to-primary/5 ${
+                          href ? "hover:border-primary hover:shadow-md transition-all cursor-pointer" : "cursor-default pointer-events-none"
+                        }`}
+                        title={href ? `Abrir ${displayName}` : undefined}
+                      >
+                        {favicon ? (
+                          <img
+                            src={favicon}
+                            alt=""
+                            className="h-6 w-6 md:h-7 md:w-7 object-contain"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <span className="font-bold text-base md:text-lg text-primary">{initial}</span>
+                        )}
+                      </a>
 
-                  <CardContent className="relative p-5 space-y-4">
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg shadow-primary/30 shrink-0">
-                          {initial}
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="font-semibold text-sm leading-tight truncate" title={senha.nome_sistema}>
-                            {senha.nome_sistema}
+                      {/* Nome / link */}
+                      <div className="flex-1 min-w-0">
+                        {href ? (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group/link inline-flex items-center gap-1.5 font-semibold text-sm md:text-base truncate hover:text-primary transition-colors max-w-full"
+                            title={href}
+                          >
+                            <span className="truncate">{displayName}</span>
+                            <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-50 group-hover/link:opacity-100" />
+                          </a>
+                        ) : (
+                          <h3 className="font-semibold text-sm md:text-base truncate" title={raw}>
+                            {raw}
                           </h3>
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
-                            Credencial
-                          </p>
+                        )}
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 truncate">
+                          <User className="h-3 w-3 shrink-0" />
+                          <span className="font-mono truncate" title={senha.login}>
+                            {senha.login}
+                          </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => handleEdit(senha)}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => deleteMutation.mutate(senha.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
 
-                    {/* Login */}
-                    <div className="space-y-1">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                        Login
-                      </p>
-                      <div className="flex items-center gap-2 rounded-lg bg-background/60 backdrop-blur-sm border border-border/50 px-3 py-2">
-                        <span className="font-mono text-xs truncate flex-1" title={senha.login}>
-                          {senha.login}
-                        </span>
+                      {/* Ações de cópia */}
+                      <div className="flex items-center gap-1 shrink-0">
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 shrink-0 hover:bg-primary/10 hover:text-primary"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 gap-1.5 hidden sm:inline-flex hover:bg-primary/10 hover:text-primary hover:border-primary/40"
                           onClick={() => copyToClipboard(senha.login, "Login")}
+                          title="Copiar login"
                         >
+                          <User className="h-3.5 w-3.5" />
                           <Copy className="h-3 w-3" />
                         </Button>
-                      </div>
-                    </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 gap-1.5 hidden sm:inline-flex hover:bg-primary/10 hover:text-primary hover:border-primary/40"
+                          onClick={() => copyToClipboard(senha.senha, "Senha")}
+                          title="Copiar senha"
+                        >
+                          <Lock className="h-3.5 w-3.5" />
+                          <Copy className="h-3 w-3" />
+                        </Button>
 
-                    {/* Senha */}
-                    <div className="space-y-1">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                        Senha
-                      </p>
-                      <div className="flex items-center gap-2 rounded-lg bg-background/60 backdrop-blur-sm border border-border/50 px-3 py-2">
-                        <span className="font-mono text-xs truncate flex-1 tracking-wider">
-                          {isVisible ? senha.senha : "•".repeat(Math.min(12, Math.max(8, senha.senha.length)))}
-                        </span>
+                        {/* Mobile compacto */}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 shrink-0 hover:bg-primary/10 hover:text-primary"
-                          onClick={() => togglePasswordVisibility(senha.id)}
+                          className="h-8 w-8 sm:hidden"
+                          onClick={() => copyToClipboard(senha.login, "Login")}
+                          title="Copiar login"
                         >
-                          {isVisible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                          <User className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 shrink-0 hover:bg-primary/10 hover:text-primary"
+                          className="h-8 w-8 sm:hidden"
+                          onClick={() => copyToClipboard(senha.senha, "Senha")}
+                          title="Copiar senha"
+                        >
+                          <Lock className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => togglePasswordVisibility(senha.id)}
+                          title={isVisible ? "Ocultar senha" : "Mostrar senha"}
+                        >
+                          {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+
+                        <div className="hidden md:flex items-center gap-0.5 ml-1 pl-1 border-l border-border/60">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleEdit(senha)}
+                            title="Editar"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => deleteMutation.mutate(senha.id)}
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Senha revelada */}
+                    {isVisible && (
+                      <div className="mt-3 flex items-center gap-2 rounded-lg bg-muted/50 border border-border/50 px-3 py-2">
+                        <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="font-mono text-sm tracking-wider flex-1 break-all">
+                          {senha.senha}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0"
                           onClick={() => copyToClipboard(senha.senha, "Senha")}
                         >
                           <Copy className="h-3 w-3" />
                         </Button>
                       </div>
+                    )}
+
+                    {/* Ações mobile (editar/excluir) */}
+                    <div className="md:hidden flex items-center justify-end gap-1 mt-2 pt-2 border-t border-border/40">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => handleEdit(senha)}
+                      >
+                        <Pencil className="h-3 w-3 mr-1" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-destructive hover:text-destructive"
+                        onClick={() => deleteMutation.mutate(senha.id)}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Excluir
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
