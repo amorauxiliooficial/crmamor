@@ -47,6 +47,7 @@ interface MaeEmAnalise {
   status_processo: string;
   data_ultima_atualizacao: string;
   ultima_conferencia?: string;
+  ultima_conferencia_user?: string | null;
   dias_sem_conferencia: number;
   precisa_conferencia: boolean;
 }
@@ -79,36 +80,54 @@ export default function Conferencia() {
       return;
     }
 
-    // Fetch latest conferencia for each mae
-    const maesWithConferencia: MaeEmAnalise[] = await Promise.all(
-      (maesData || []).map(async (mae) => {
-        const { data: confData } = await supabase
-          .from("conferencia_inss")
-          .select("created_at")
-          .eq("mae_id", mae.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+    const maeIds = (maesData || []).map((m) => m.id);
 
-        const ultimaConferencia = confData?.created_at;
-        const diasSemConferencia = ultimaConferencia
-          ? differenceInDays(new Date(), new Date(ultimaConferencia))
-          : 999;
-        const precisaConferencia = diasSemConferencia >= CONFERENCIA_INTERVALO_DIAS;
+    const { data: confs } = await supabase
+      .from("conferencia_inss")
+      .select("mae_id, created_at, user_id")
+      .in("mae_id", maeIds)
+      .order("created_at", { ascending: false });
 
-        return {
-          id: mae.id,
-          nome_mae: mae.nome_mae,
-          cpf: mae.cpf,
-          senha_gov: (mae as any).senha_gov ?? null,
-          status_processo: mae.status_processo,
-          data_ultima_atualizacao: mae.data_ultima_atualizacao,
-          ultima_conferencia: ultimaConferencia,
-          dias_sem_conferencia: diasSemConferencia,
-          precisa_conferencia: precisaConferencia,
-        };
-      })
-    );
+    const ultimaPorMae = new Map<string, { created_at: string; user_id: string }>();
+    (confs || []).forEach((c: any) => {
+      if (!ultimaPorMae.has(c.mae_id)) {
+        ultimaPorMae.set(c.mae_id, { created_at: c.created_at, user_id: c.user_id });
+      }
+    });
+
+    const userIds = Array.from(new Set(Array.from(ultimaPorMae.values()).map((c) => c.user_id).filter(Boolean)));
+    const profileMap = new Map<string, string>();
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", userIds);
+      (profiles || []).forEach((p: any) => {
+        profileMap.set(p.id, p.full_name || p.email || "Usuário");
+      });
+    }
+
+    const maesWithConferencia: MaeEmAnalise[] = (maesData || []).map((mae) => {
+      const ult = ultimaPorMae.get(mae.id);
+      const ultimaConferencia = ult?.created_at;
+      const diasSemConferencia = ultimaConferencia
+        ? differenceInDays(new Date(), new Date(ultimaConferencia))
+        : 999;
+      const precisaConferencia = diasSemConferencia >= CONFERENCIA_INTERVALO_DIAS;
+
+      return {
+        id: mae.id,
+        nome_mae: mae.nome_mae,
+        cpf: mae.cpf,
+        senha_gov: (mae as any).senha_gov ?? null,
+        status_processo: mae.status_processo,
+        data_ultima_atualizacao: mae.data_ultima_atualizacao,
+        ultima_conferencia: ultimaConferencia,
+        ultima_conferencia_user: ult?.user_id ? profileMap.get(ult.user_id) ?? null : null,
+        dias_sem_conferencia: diasSemConferencia,
+        precisa_conferencia: precisaConferencia,
+      };
+    });
 
     // Sort: pendentes first, then by dias_sem_conferencia desc
     maesWithConferencia.sort((a, b) => {
@@ -333,6 +352,9 @@ export default function Conferencia() {
                         Última: {format(new Date(mae.ultima_conferencia), "dd/MM/yyyy", { locale: ptBR })}
                         {" · "}
                         {mae.dias_sem_conferencia === 0 ? "Hoje" : `${mae.dias_sem_conferencia} dia(s)`}
+                        {mae.ultima_conferencia_user && (
+                          <span className="italic"> · por {mae.ultima_conferencia_user}</span>
+                        )}
                       </>
                     ) : (
                       "Nunca conferido"
@@ -441,6 +463,11 @@ export default function Conferencia() {
                               ? "Hoje"
                               : `${mae.dias_sem_conferencia} dia(s) atrás`}
                           </div>
+                          {mae.ultima_conferencia_user && (
+                            <div className="text-xs text-muted-foreground italic">
+                              por {mae.ultima_conferencia_user}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <span className="text-muted-foreground text-sm">
