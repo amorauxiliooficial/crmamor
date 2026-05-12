@@ -398,7 +398,33 @@ export default function Conferencia() {
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-sm">
-                      {formatCpf(mae.cpf)}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1">
+                          <span>{formatCpf(mae.cpf)}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => copyValue(mae.cpf.replace(/\D/g, ""), "CPF")}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        {mae.senha_gov && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Key className="h-3 w-3" />
+                            <span>{mae.senha_gov}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => copyValue(mae.senha_gov!, "Senha Gov")}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {mae.ultima_conferencia ? (
