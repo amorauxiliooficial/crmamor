@@ -423,6 +423,8 @@ export default function Conferencia() {
           onOpenChange={setConferenciaDialogOpen}
           maeId={selectedMae.id}
           maeNome={selectedMae.nome_mae}
+          cpf={selectedMae.cpf}
+          senhaGov={selectedMae.senha_gov}
           onSuccess={fetchMaesEmAnalise}
         />
       )}
