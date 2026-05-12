@@ -51,7 +51,7 @@ interface MaeEmAnalise {
   precisa_conferencia: boolean;
 }
 
-const CONFERENCIA_INTERVALO_DIAS = 2; // A cada 2 dias
+const CONFERENCIA_INTERVALO_DIAS = 3; // A cada 3 dias
 
 export default function Conferencia() {
   const navigate = useNavigate();

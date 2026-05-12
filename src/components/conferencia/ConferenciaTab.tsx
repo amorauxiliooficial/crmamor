@@ -49,7 +49,12 @@ interface MaeEmAnalise {
   user_id: string;
 }
 
-const CONFERENCIA_INTERVALO_DIAS = 2;
+const INTERVALO_POR_STATUS: Record<string, number> = {
+  "Aguardando Análise INSS": 3,
+  "Em Análise": 3,
+  "Aprovada": 3,
+};
+const CONFERENCIA_INTERVALO_DIAS_DEFAULT = 3;
 
 interface ConferenciaTabProps {
   searchQuery: string;
@@ -94,7 +99,8 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
         const diasSemConferencia = ultimaConferencia
           ? differenceInDays(new Date(), new Date(ultimaConferencia))
           : 999;
-        const precisaConferencia = diasSemConferencia >= CONFERENCIA_INTERVALO_DIAS;
+        const limite = INTERVALO_POR_STATUS[mae.status_processo] ?? CONFERENCIA_INTERVALO_DIAS_DEFAULT;
+        const precisaConferencia = diasSemConferencia >= limite;
 
         return {
           id: mae.id,
