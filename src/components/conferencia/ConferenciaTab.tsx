@@ -44,6 +44,7 @@ interface MaeEmAnalise {
   status_processo: string;
   data_ultima_atualizacao: string;
   ultima_conferencia?: string;
+  ultima_conferencia_user?: string | null;
   dias_sem_conferencia: number;
   precisa_conferencia: boolean;
   user_id: string;
