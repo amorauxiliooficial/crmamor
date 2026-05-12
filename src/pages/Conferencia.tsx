@@ -38,6 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { formatUserDisplayName } from "@/lib/formatters";
 
 interface MaeEmAnalise {
   id: string;
