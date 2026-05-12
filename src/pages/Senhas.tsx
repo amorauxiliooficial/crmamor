@@ -164,7 +164,7 @@ export default function Senhas() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="p-3 md:p-6 max-w-4xl mx-auto space-y-4">
+      <div className="p-3 md:p-6 max-w-6xl mx-auto space-y-6">
         <div className="flex items-center gap-2 md:gap-4">
           <Button
             variant="ghost"
@@ -253,23 +253,69 @@ export default function Senhas() {
         </div>
 
         {isLoading ? (
-          <div className="text-center py-8 text-muted-foreground">
-            Carregando...
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-44 rounded-2xl bg-gradient-to-br from-muted/40 to-muted/10 animate-pulse"
+              />
+            ))}
           </div>
         ) : !senhas?.length ? (
-          <div className="text-center py-8 text-muted-foreground">
-            Nenhuma senha cadastrada ainda.
-          </div>
+          <Card className="border-dashed border-2 bg-gradient-to-br from-primary/5 via-background to-background">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                <Key className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="font-semibold text-lg mb-1">Nenhuma senha cadastrada</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Adicione sua primeira senha para começar
+              </p>
+              <Button onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                Nova Senha
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
-          <>
-            {/* Mobile Card List */}
-            <div className="md:hidden space-y-2">
-              {senhas.map((senha) => (
-                <Card key={senha.id}>
-                  <CardContent className="p-3">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="font-semibold text-sm">{senha.nome_sistema}</h3>
-                      <div className="flex items-center gap-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {senhas.map((senha, idx) => {
+              const isVisible = visiblePasswords.has(senha.id);
+              const initial = (senha.nome_sistema || "?").trim().charAt(0).toUpperCase();
+              const palette = [
+                "from-primary/20 via-primary/5 to-transparent",
+                "from-accent/30 via-accent/10 to-transparent",
+                "from-secondary/40 via-secondary/10 to-transparent",
+                "from-primary/15 via-accent/10 to-transparent",
+              ];
+              const ring = palette[idx % palette.length];
+              return (
+                <Card
+                  key={senha.id}
+                  className="group relative overflow-hidden border-border/60 hover:border-primary/40 transition-all hover:shadow-xl hover:-translate-y-1 duration-300"
+                >
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br ${ring} opacity-60 group-hover:opacity-100 transition-opacity`}
+                  />
+                  <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/20 transition-colors" />
+
+                  <CardContent className="relative p-5 space-y-4">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg shadow-primary/30 shrink-0">
+                          {initial}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-sm leading-tight truncate" title={senha.nome_sistema}>
+                            {senha.nome_sistema}
+                          </h3>
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
+                            Credencial
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -288,145 +334,59 @@ export default function Senhas() {
                         </Button>
                       </div>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs text-muted-foreground">Login:</span>
-                        <div className="flex items-center gap-1">
-                          <span className="font-mono text-xs truncate max-w-[150px]">{senha.login}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 shrink-0"
-                            onClick={() => copyToClipboard(senha.login, "Login")}
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
+
+                    {/* Login */}
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                        Login
+                      </p>
+                      <div className="flex items-center gap-2 rounded-lg bg-background/60 backdrop-blur-sm border border-border/50 px-3 py-2">
+                        <span className="font-mono text-xs truncate flex-1" title={senha.login}>
+                          {senha.login}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0 hover:bg-primary/10 hover:text-primary"
+                          onClick={() => copyToClipboard(senha.login, "Login")}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
                       </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs text-muted-foreground">Senha:</span>
-                        <div className="flex items-center gap-1">
-                          <span className="font-mono text-xs">
-                            {visiblePasswords.has(senha.id) ? senha.senha : "••••••••"}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 shrink-0"
-                            onClick={() => togglePasswordVisibility(senha.id)}
-                          >
-                            {visiblePasswords.has(senha.id) ? (
-                              <EyeOff className="h-3 w-3" />
-                            ) : (
-                              <Eye className="h-3 w-3" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 shrink-0"
-                            onClick={() => copyToClipboard(senha.senha, "Senha")}
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
+                    </div>
+
+                    {/* Senha */}
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                        Senha
+                      </p>
+                      <div className="flex items-center gap-2 rounded-lg bg-background/60 backdrop-blur-sm border border-border/50 px-3 py-2">
+                        <span className="font-mono text-xs truncate flex-1 tracking-wider">
+                          {isVisible ? senha.senha : "•".repeat(Math.min(12, Math.max(8, senha.senha.length)))}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0 hover:bg-primary/10 hover:text-primary"
+                          onClick={() => togglePasswordVisibility(senha.id)}
+                        >
+                          {isVisible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0 hover:bg-primary/10 hover:text-primary"
+                          onClick={() => copyToClipboard(senha.senha, "Senha")}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-
-            {/* Desktop Table */}
-            <Card className="hidden md:block">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Sistema</TableHead>
-                      <TableHead>Login</TableHead>
-                      <TableHead>Senha</TableHead>
-                      <TableHead className="w-[100px]">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {senhas.map((senha) => (
-                      <TableRow key={senha.id}>
-                        <TableCell className="font-medium">
-                          {senha.nome_sistema}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-sm">
-                              {senha.login}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => copyToClipboard(senha.login, "Login")}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-sm">
-                              {visiblePasswords.has(senha.id)
-                                ? senha.senha
-                                : "••••••••"}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => togglePasswordVisibility(senha.id)}
-                            >
-                              {visiblePasswords.has(senha.id) ? (
-                                <EyeOff className="h-3 w-3" />
-                              ) : (
-                                <Eye className="h-3 w-3" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => copyToClipboard(senha.senha, "Senha")}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => handleEdit(senha)}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => deleteMutation.mutate(senha.id)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </Card>
-          </>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
