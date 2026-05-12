@@ -99,7 +99,8 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
         const diasSemConferencia = ultimaConferencia
           ? differenceInDays(new Date(), new Date(ultimaConferencia))
           : 999;
-        const precisaConferencia = diasSemConferencia >= CONFERENCIA_INTERVALO_DIAS;
+        const limite = INTERVALO_POR_STATUS[mae.status_processo] ?? CONFERENCIA_INTERVALO_DIAS_DEFAULT;
+        const precisaConferencia = diasSemConferencia >= limite;
 
         return {
           id: mae.id,
