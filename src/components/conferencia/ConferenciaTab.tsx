@@ -317,6 +317,8 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
           onOpenChange={setConferenciaDialogOpen}
           maeId={selectedMae.id}
           maeNome={selectedMae.nome_mae}
+          cpf={selectedMae.cpf}
+          senhaGov={(selectedMae as any).senha_gov ?? null}
           onSuccess={fetchMaesEmAnalise}
         />
       )}
