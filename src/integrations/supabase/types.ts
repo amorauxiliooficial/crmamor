@@ -2365,6 +2365,7 @@ export type Database = {
         | "Recurso / Judicial"
         | "Processo Encerrado"
         | "Inadimplência"
+        | "Renegociação"
         | "📄 Rescisão de Contrato"
       status_prospeccao:
         | "novo"
@@ -2557,6 +2558,7 @@ export const Constants = {
         "Recurso / Judicial",
         "Processo Encerrado",
         "Inadimplência",
+        "Renegociação",
         "📄 Rescisão de Contrato",
       ],
       status_prospeccao: [
