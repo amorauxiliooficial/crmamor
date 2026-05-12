@@ -86,37 +86,58 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
       return;
     }
 
-    const maesWithConferencia: MaeEmAnalise[] = await Promise.all(
-      (maesData || []).map(async (mae) => {
-        const { data: confData } = await supabase
-          .from("conferencia_inss")
-          .select("created_at")
-          .eq("mae_id", mae.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+    const maeIds = (maesData || []).map((m) => m.id);
 
-        const ultimaConferencia = confData?.created_at;
-        const diasSemConferencia = ultimaConferencia
-          ? differenceInDays(new Date(), new Date(ultimaConferencia))
-          : 999;
-        const limite = INTERVALO_POR_STATUS[mae.status_processo] ?? CONFERENCIA_INTERVALO_DIAS_DEFAULT;
-        const precisaConferencia = diasSemConferencia >= limite;
+    // Buscar última conferência de cada mãe (com user_id)
+    const { data: confs } = await supabase
+      .from("conferencia_inss")
+      .select("mae_id, created_at, user_id")
+      .in("mae_id", maeIds)
+      .order("created_at", { ascending: false });
 
-        return {
-          id: mae.id,
-          nome_mae: mae.nome_mae,
-          cpf: mae.cpf,
-          senha_gov: (mae as any).senha_gov ?? null,
-          status_processo: mae.status_processo,
-          data_ultima_atualizacao: mae.data_ultima_atualizacao,
-          ultima_conferencia: ultimaConferencia,
-          dias_sem_conferencia: diasSemConferencia,
-          precisa_conferencia: precisaConferencia,
-          user_id: mae.user_id,
-        };
-      })
-    );
+    const ultimaPorMae = new Map<string, { created_at: string; user_id: string }>();
+    (confs || []).forEach((c: any) => {
+      if (!ultimaPorMae.has(c.mae_id)) {
+        ultimaPorMae.set(c.mae_id, { created_at: c.created_at, user_id: c.user_id });
+      }
+    });
+
+    // Buscar nomes dos usuários que fizeram a última conferência
+    const userIds = Array.from(new Set(Array.from(ultimaPorMae.values()).map((c) => c.user_id).filter(Boolean)));
+    const profileMap = new Map<string, string>();
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", userIds);
+      (profiles || []).forEach((p: any) => {
+        profileMap.set(p.id, p.full_name || p.email || "Usuário");
+      });
+    }
+
+    const maesWithConferencia: MaeEmAnalise[] = (maesData || []).map((mae) => {
+      const ult = ultimaPorMae.get(mae.id);
+      const ultimaConferencia = ult?.created_at;
+      const diasSemConferencia = ultimaConferencia
+        ? differenceInDays(new Date(), new Date(ultimaConferencia))
+        : 999;
+      const limite = INTERVALO_POR_STATUS[mae.status_processo] ?? CONFERENCIA_INTERVALO_DIAS_DEFAULT;
+      const precisaConferencia = diasSemConferencia >= limite;
+
+      return {
+        id: mae.id,
+        nome_mae: mae.nome_mae,
+        cpf: mae.cpf,
+        senha_gov: (mae as any).senha_gov ?? null,
+        status_processo: mae.status_processo,
+        data_ultima_atualizacao: mae.data_ultima_atualizacao,
+        ultima_conferencia: ultimaConferencia,
+        ultima_conferencia_user: ult?.user_id ? profileMap.get(ult.user_id) ?? null : null,
+        dias_sem_conferencia: diasSemConferencia,
+        precisa_conferencia: precisaConferencia,
+        user_id: mae.user_id,
+      };
+    });
 
     maesWithConferencia.sort((a, b) => {
       if (a.precisa_conferencia && !b.precisa_conferencia) return -1;
