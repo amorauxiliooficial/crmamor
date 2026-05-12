@@ -229,17 +229,43 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
 
   return (
     <div className="space-y-6">
-      {/* Status Tabs */}
-      <Tabs value={statusTab} onValueChange={(v) => setStatusTab(v as "aguardando" | "aprovada")}>
-        <TabsList>
-          <TabsTrigger value="aguardando">
-            Aguardando Análise INSS ({tabCounts.aguardando})
-          </TabsTrigger>
-          <TabsTrigger value="aprovada">
-            Aprovada ({tabCounts.aprovada})
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {/* Status Tabs - Cyber */}
+      <div className="relative inline-flex p-1.5 bg-card/80 border border-border backdrop-blur-xl rounded-2xl shadow-lg">
+        {([
+          { key: "aguardando", label: "Aguardando Análise INSS", count: tabCounts.aguardando },
+          { key: "aprovada", label: "Aprovada", count: tabCounts.aprovada },
+        ] as const).map((tab) => {
+          const active = statusTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setStatusTab(tab.key)}
+              className="relative group flex items-center gap-3 px-5 py-2.5 rounded-xl transition-all duration-300 ease-out"
+            >
+              {active && (
+                <>
+                  <span className="absolute inset-0 bg-muted/60 border border-border rounded-xl shadow-inner" />
+                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-[2px] bg-primary rounded-full blur-[1px]" />
+                </>
+              )}
+              <span className={`relative z-10 text-sm tracking-tight transition-colors ${active ? "font-semibold text-foreground" : "font-medium text-muted-foreground group-hover:text-foreground"}`}>
+                {tab.label}
+              </span>
+              <span
+                className={`relative z-10 flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-md transition-colors ${
+                  active
+                    ? "bg-primary shadow-[0_0_15px_hsl(var(--primary)/0.4)]"
+                    : "bg-muted border border-border group-hover:border-foreground/20"
+                }`}
+              >
+                <span className={`text-[11px] font-bold tabular-nums ${active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"}`}>
+                  {tab.count}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
