@@ -272,6 +272,9 @@ export default function Conferencia() {
                     <div className="min-w-0">
                       <h3 className="font-semibold text-sm truncate">{mae.nome_mae}</h3>
                       <p className="text-xs text-muted-foreground font-mono">{formatCpf(mae.cpf)}</p>
+                      <Badge variant="outline" className="mt-1 text-[10px]">
+                        {mae.status_processo}
+                      </Badge>
                     </div>
                     {mae.precisa_conferencia ? (
                       <Badge variant="destructive" className="text-[10px] shrink-0">
