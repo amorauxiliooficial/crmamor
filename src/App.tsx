@@ -21,6 +21,7 @@ import PreAnalises from "./pages/PreAnalises";
 import NotFound from "./pages/NotFound";
 import WaTemplatesConfig from "./pages/WaTemplatesConfig";
 import RelatorioSemanal from "./pages/RelatorioSemanal";
+import ForecastDashboard from "./pages/ForecastDashboard";
 
 // ✅ NOVO: página de instâncias WhatsApp (Evolution)
 import WhatsappInstances from "./pages/WhatsappInstances";
@@ -60,6 +61,7 @@ const App = () => (
                 <Route path="/pre-analises" element={<PreAnalises />} />
                 <Route path="/roadmap" element={<Roadmap />} />
                 <Route path="/relatorio-semanal" element={<RelatorioSemanal />} />
+                <Route path="/forecast" element={<ForecastDashboard />} />
 
                 {/* ✅ NOVO: Configurações -> WhatsApp Instâncias */}
                 <Route path="/settings/whatsapp-instances" element={<WhatsappInstances />} />
