@@ -105,6 +105,8 @@ export function usePipelineForecast(opts: Options = {}): PipelineForecast {
     const metaSaudavel = pipelineBruto * 0.8 * taxaPagamento;
     const gapMeta = metaSaudavel - pipelineAjustado;
 
+    const totalMaes = fases.reduce((a, f) => a + f.quantidade, 0);
+
     return {
       fases,
       pipelineBruto,
@@ -114,7 +116,7 @@ export function usePipelineForecast(opts: Options = {}): PipelineForecast {
       taxaPagamento,
       metaSaudavel,
       gapMeta,
-      totalMaes: maes.length,
+      totalMaes,
       loading,
     };
   }, [maes, ticketMedio, taxaPagamento, loading]);
