@@ -1,102 +1,71 @@
-# Forecast Pipeline v2 — Metas por fase, drill-down e tempo no funil
+## Objetivo
 
-## Visão geral
+Limpar o card Funil Financeiro (atualmente poluído) e tornar a fase **Gestantes em Maturação** acionável, destacando mães no **7º e 8º mês** — janela crítica em que precisam entrar em contato porque estão prestes a virar caso operacional.
 
-Evoluir o `/forecast` para um **dashboard operacional do pipeline** onde cada fase é clicável, mostra metas configuráveis, gap em valor e quantidade, lista das mães naquela fase e tempo que cada uma já está parada.
+Direção escolhida: **v3 "Camadas com volume"** — funil real com largura afilando por etapa, fundo neutro do card, cor reservada para status e alertas, badge magenta pulsante para urgência.
 
-## O que muda
+## Mudanças
 
-### 1. Banco — novas estruturas
-
-**Tabela `mae_status_history`** — registra cada transição de `status_processo`:
-- `mae_id`, `status_anterior`, `status_novo`, `changed_at`, `changed_by`
-- **Trigger** `mae_status_change_trigger` em `mae_processo` AFTER UPDATE: quando `status_processo` muda, insere linha em `mae_status_history` e mantém `data_ultima_atualizacao = now()`.
-- **Backfill**: registro inicial para cada mãe existente usando `created_at` como `changed_at` e `status_processo` atual como `status_novo` (assim já existe um ponto de partida para o cálculo "dias na fase atual").
-- RLS: SELECT/INSERT para `authenticated` (padrão do projeto: todo mundo vê tudo). Sem UPDATE/DELETE.
-
-**Tabela `forecast_metas_fase`** — meta por fase (única linha por status):
-- `status_processo` (unique), `meta_valor` (numeric), `meta_quantidade` (integer), `ticket_medio` (numeric, nullable — fallback global), `updated_at`, `updated_by`.
-- Uma linha por fase do funil (seed inicial com valores zerados).
-- RLS: SELECT para `authenticated`; INSERT/UPDATE apenas para `admin` (via `has_role`).
-- Tabela auxiliar `forecast_premissas` (1 linha global): `ticket_medio_padrao`, `taxa_pagamento_padrao`. Reutilizada quando a fase não tem ticket próprio.
-
-### 2. Hook `usePipelineForecast.ts`
-
-- Carrega `forecast_metas_fase` + `forecast_premissas` (em vez de receber `ticketMedio`/`taxa` por argumento).
-- Para cada fase adiciona: `metaValor`, `metaQuantidade`, `gapValor`, `gapQuantidade`, `atingimentoPct` (= `valorBruto / metaValor`).
-- Continua usando realtime do `useMaesData`.
-
-### 3. Novo hook `useMaeStatusHistory.ts`
-
-- Função `getDiasNaFaseAtual(maeId)` e `getHistoricoFases(maeId)`.
-- Para a listagem do drill-down: busca em lote `mae_status_history` das mães da fase clicada, calcula `dias_na_fase` (= `now() - max(changed_at WHERE status_novo = fase_atual)`) e `dias_total` (= `now() - min(changed_at)`).
-
-### 4. UI — Funil + Drill-down
-
-**Funil visual reformulado** (componente `FunnelChart.tsx`):
-- SVG real em formato de funil (trapézios encaixados), **clicável por fase**.
-- Cada faixa mostra: nome, quantidade, valor bruto, **barra de progresso meta vs realizado** com cor (verde ≥100%, âmbar 60–99%, vermelho <60%).
-- Hover destaca; click abre painel lateral.
-
-**Painel lateral de fase** (`FaseDrillDownSheet.tsx`, usa ResponsiveOverlay):
-- Header: nome da fase, meta (valor + qtd), realizado, gap, % atingimento.
-- Bloco "Mães nesta fase": tabela com nome, dias na fase (badge colorido: verde <7d, âmbar 7–14d, vermelho >14d), dias no CRM, atendente principal, ticket. Click no nome abre `MaeDetailDialog` existente.
-- Bloco "Tempo médio na fase" (média entre todas as mães que já passaram por ela, do histórico).
-
-**Configuração de metas** (`MetasFaseConfigDialog.tsx`, só admin):
-- Lista todas as fases com inputs de `meta_valor`, `meta_quantidade` e `ticket_medio` (opcional).
-- Botão "Premissas globais" para ajustar `ticket_medio_padrao` e `taxa_pagamento_padrao`.
-- Salva em batch via upsert.
-
-### 5. Layout do `/forecast`
+### 1. Redesign do `FunnelChart`
 
 ```text
-┌───────────────────────────────────────────────────────────┐
-│ Header: título + AO VIVO + [⚙ Metas] (admin)              │
-├───────────────────────────────────────────────────────────┤
-│ Banner de Risco (mantido)                                 │
-├──────────────────────────────┬────────────────────────────┤
-│                              │ Sidebar Insights           │
-│ FUNIL clicável               │ - Top Riscos               │
-│ (SVG real, meta por fase)    │ - Próximas Conversões      │
-│                              │ - Fases abaixo da meta     │
-│                              │ - Resumo Financeiro        │
-├──────────────────────────────┴────────────────────────────┤
-│ Tabela analítica (com colunas Meta Valor / Meta Qtd /     │
-│  Gap Valor / Gap Qtd / % Atingimento)                     │
-└───────────────────────────────────────────────────────────┘
+┌─ Funil Financeiro ──────────────────── Forecast Pipeline ─┐
+│  Largura proporcional ao volume · clique para detalhar    │
+│                                                            │
+│ ┌──────────────────────────────────────────────────────┐ │
+│ │ 🤰 Gestantes em Maturação    🔴 2 em 7º-8º · contato │ │
+│ │ 4 mães em maturação              R$ 7.200 · sem meta │ │
+│ └──────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │ Pendência Documental                               │  │
+│  │ 2 mães aguardando docs       R$ 3.600 · ▰▰▱▱ 40% │  │
+│  └────────────────────────────────────────────────────┘  │
+│   ┌──────────────────────────────────────────────────┐   │
+│   │ Elegível (Análise Positiva)                      │   │
+│   │ 6 mães aprovadas prelim.    R$ 10.800 · ▰▰▰▰ 85%│   │
+│   └──────────────────────────────────────────────────┘   │
+│      ...                                                  │
+│                                                            │
+│ Total: 35 mães · Bruto R$ 63k                            │
+└────────────────────────────────────────────────────────────┘
 ```
 
-Click em qualquer fase (funil, sidebar ou tabela) → abre `FaseDrillDownSheet`.
+- Cada linha é altura fixa (~64px), fundo `bg-{tone}-50/40` sutil, borda fina, sem gradiente forte.
+- Largura afila 5% por etapa (funil de verdade, sem distorção pelo volume).
+- Métrica à direita em coluna alinhada: valor BRL grande + barra de progresso 24×6px da meta (ou label "sem meta").
+- Chevron muda de cor no hover; linha desliza 1px à direita.
+- Linha de rodapé compacta: total mães + bruto + ajustado.
 
-## Arquivos
+### 2. Alerta 7º/8º mês na fase Gestantes em Maturação
 
-**Novos**
-- Migration: `mae_status_history`, `forecast_metas_fase`, `forecast_premissas`, trigger + backfill.
-- `src/hooks/useMaeStatusHistory.ts`
-- `src/hooks/useForecastMetas.ts`
-- `src/components/forecast/FunnelChart.tsx` (substitui `FunnelSVG.tsx`)
-- `src/components/forecast/FaseDrillDownSheet.tsx`
-- `src/components/forecast/MetasFaseConfigDialog.tsx`
+- Inline na própria linha do funil: badge magenta pulsante `🔴 X em 7º-8º · precisa contato` (só aparece quando contagem > 0).
+- Dentro do drill-down (`FaseDrillDownSheet`), as faixas `6–7m` e `8+m` ganham um anel magenta + microbadge "contatar".
+- Cada mãe da lista nessas faixas recebe um indicador 🔔 ao lado do nome, ordenando primeiro.
 
-**Modificados**
-- `src/hooks/usePipelineForecast.ts` — passa a ler metas do banco.
-- `src/pages/ForecastDashboard.tsx` — orquestra drill-down e botão de configuração.
-- `src/components/forecast/InsightsSidebar.tsx` — bloco "Fases abaixo da meta" substitui "Gap vs Meta" derivado.
+### 3. Sinalização no Kanban e listas de mães
 
-**Removidos**
-- `src/components/forecast/FunnelSVG.tsx` (substituído por FunnelChart com interatividade).
+Para a flag ser útil fora do Forecast, adicionar em locais onde a mãe já aparece como gestante:
+
+- **`KanbanCard`**: quando `is_gestante` e mês calculado ∈ {7, 8}, mostrar pílula magenta pequena "🔔 contato 7-8m" no topo do card.
+- **`MaeCardList`**: mesmo indicador na linha.
+- Usar o helper já existente `calcularMesGravidez` de `src/lib/gestacaoUtils.ts` — não duplicar lógica.
+
+### 4. RiskBanner
+
+Acrescentar um terceiro slot "Gestantes 7-8m: N precisam contato" ao lado de Pipeline em Risco e Gap vs Meta (só renderiza se N > 0).
+
+## Detalhes técnicos
+
+- Reescrever `src/components/forecast/FunnelChart.tsx` na estrutura v3. Manter assinatura `{ fases, onFaseClick, formatBRLShort }` + adicionar prop opcional `gestantesCriticas: number` para o badge inline.
+- Criar helper `useGestantes78` em `src/hooks/useMaesData.ts` (ou util puro em `gestacaoUtils.ts`) que devolve `{ total, ids }` para mães com `is_gestante && calcularMesGravidez(m) ∈ {7,8}`.
+- `ForecastDashboard.tsx`: calcular `gestantesCriticas` via memo e passar para `FunnelChart` e `RiskBanner`.
+- `FaseDrillDownSheet.tsx`: no bloco `FaixasGestacionais` já existente, marcar grupos 6-7m e 8+m com tom magenta quando `qtd > 0`; reorganizar ordem da lista de mães para subir as 7-8m primeiro.
+- `KanbanCard.tsx` e `MaeCardList.tsx`: pequeno componente `<GestanteCriticaBadge mae={m} />` reutilizável vivendo em `src/components/gestantes/`.
+- Tokens: usar HSL do tema (`text-primary`, `bg-primary/10`, semáforo `emerald/amber/rose`). Sem cores literais.
+- Animação do badge: classe Tailwind `animate-pulse` (sem framer-motion novo).
 
 ## Fora de escopo
 
-- Editar histórico passado manualmente.
-- Alterar nomes das fases do funil.
-- Histórico de mudança de metas (apenas valor corrente).
-- Gráfico temporal de evolução do pipeline.
-
-## Sequência de execução
-
-1. Migration (tabelas + trigger + backfill + seed das fases em `forecast_metas_fase`).
-2. Hooks (`useForecastMetas`, `useMaeStatusHistory`, refator `usePipelineForecast`).
-3. Componentes (`FunnelChart`, `FaseDrillDownSheet`, `MetasFaseConfigDialog`).
-4. Refator `ForecastDashboard` + `InsightsSidebar`.
+- Notificação push/som para 7-8m (pode entrar depois).
+- Mudança no Kanban da fase (continua sendo a coluna Gestantes em Maturação normal).
+- Alterar os dados do banco — a flag é puramente derivada de `mes_gestacao` + DPP.
