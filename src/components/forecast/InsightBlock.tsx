@@ -5,6 +5,7 @@ interface InsightRow {
   value: string;
   tone?: "default" | "danger" | "warning" | "success" | "info";
   hint?: string;
+  onClick?: () => void;
 }
 
 interface InsightBlockProps {
@@ -45,21 +46,34 @@ export function InsightBlock({ title, icon: Icon, iconTone = "default", rows, em
       {rows.length === 0 ? (
         <p className="text-xs text-muted-foreground italic pl-1">{emptyText}</p>
       ) : (
-        <div className="space-y-2">
-          {rows.map((row, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between gap-3 py-1.5 px-2 rounded-lg hover:bg-muted/40 transition-colors"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-medium truncate">{row.label}</div>
-                {row.hint && <div className="text-[10px] text-muted-foreground truncate mt-0.5">{row.hint}</div>}
+        <div className="space-y-1">
+          {rows.map((row, i) => {
+            const content = (
+              <>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-medium truncate">{row.label}</div>
+                  {row.hint && <div className="text-[10px] text-muted-foreground truncate mt-0.5">{row.hint}</div>}
+                </div>
+                <div className={cn("text-xs font-bold tabular-nums shrink-0", TONE_TEXT[row.tone ?? "default"])}>
+                  {row.value}
+                </div>
+              </>
+            );
+            return row.onClick ? (
+              <button
+                key={i}
+                type="button"
+                onClick={row.onClick}
+                className="w-full flex items-center justify-between gap-3 py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors text-left"
+              >
+                {content}
+              </button>
+            ) : (
+              <div key={i} className="flex items-center justify-between gap-3 py-1.5 px-2 rounded-lg">
+                {content}
               </div>
-              <div className={cn("text-xs font-bold tabular-nums shrink-0", TONE_TEXT[row.tone ?? "default"])}>
-                {row.value}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
