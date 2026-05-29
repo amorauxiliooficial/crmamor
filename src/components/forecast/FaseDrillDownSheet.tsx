@@ -108,6 +108,12 @@ export function FaseDrillDownSheet({ fase, open, onOpenChange, formatBRL, format
             </div>
           )}
 
+          {/* Agrupamento por faixa gestacional - apenas para Gestantes em Maturação */}
+          {fase.faseKey === "Gestantes em Maturação" && (
+            <FaixasGestacionais maes={maesDaFase} ticketMedio={fase.ticketMedio} formatBRLShort={formatBRLShort} />
+          )}
+
+
           {/* Lista de mães */}
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
