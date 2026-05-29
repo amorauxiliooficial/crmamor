@@ -1,4 +1,5 @@
 export type StatusProcesso =
+  | "🤰 Gestantes em Maturação"
   | "⚠️ Pendência Documental"
   | "🟡 Elegível (Análise Positiva)"
   | "⏳ Aguardando Análise INSS"
