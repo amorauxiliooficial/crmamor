@@ -2437,6 +2437,7 @@ export type Database = {
       status_processo:
         | "Entrada de Documentos"
         | "Em Análise"
+        | "Gestantes em Maturação"
         | "Pendência Documental"
         | "Elegível (Análise Positiva)"
         | "Protocolo INSS"
@@ -2630,6 +2631,7 @@ export const Constants = {
       status_processo: [
         "Entrada de Documentos",
         "Em Análise",
+        "Gestantes em Maturação",
         "Pendência Documental",
         "Elegível (Análise Positiva)",
         "Protocolo INSS",
