@@ -26,3 +26,12 @@ export function calcularMesGravidez(mae: MaeProcesso): number | null {
   const mesesAteParto = differenceInMonths(dpp, hoje);
   return Math.max(1, Math.min(9, 9 - mesesAteParto));
 }
+
+/**
+ * Retorna true quando a mãe está no 7º ou 8º mês gestacional —
+ * janela crítica para entrar em contato antes de virar caso operacional.
+ */
+export function isGestanteCritica(mae: MaeProcesso): boolean {
+  const m = calcularMesGravidez(mae);
+  return m === 7 || m === 8;
+}
