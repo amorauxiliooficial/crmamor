@@ -1,65 +1,102 @@
-# Forecast Pipeline — Nova Modelagem
+# Forecast Pipeline v2 — Metas por fase, drill-down e tempo no funil
 
 ## Visão geral
 
-Refatorar `ForecastDashboard.tsx` para um layout tipo **cockpit executivo** com foco em **risco**, mantendo intactos hook, cálculos e dados (`usePipelineForecast`).
+Evoluir o `/forecast` para um **dashboard operacional do pipeline** onde cada fase é clicável, mostra metas configuráveis, gap em valor e quantidade, lista das mães naquela fase e tempo que cada uma já está parada.
 
-## Estrutura da tela
+## O que muda
+
+### 1. Banco — novas estruturas
+
+**Tabela `mae_status_history`** — registra cada transição de `status_processo`:
+- `mae_id`, `status_anterior`, `status_novo`, `changed_at`, `changed_by`
+- **Trigger** `mae_status_change_trigger` em `mae_processo` AFTER UPDATE: quando `status_processo` muda, insere linha em `mae_status_history` e mantém `data_ultima_atualizacao = now()`.
+- **Backfill**: registro inicial para cada mãe existente usando `created_at` como `changed_at` e `status_processo` atual como `status_novo` (assim já existe um ponto de partida para o cálculo "dias na fase atual").
+- RLS: SELECT/INSERT para `authenticated` (padrão do projeto: todo mundo vê tudo). Sem UPDATE/DELETE.
+
+**Tabela `forecast_metas_fase`** — meta por fase (única linha por status):
+- `status_processo` (unique), `meta_valor` (numeric), `meta_quantidade` (integer), `ticket_medio` (numeric, nullable — fallback global), `updated_at`, `updated_by`.
+- Uma linha por fase do funil (seed inicial com valores zerados).
+- RLS: SELECT para `authenticated`; INSERT/UPDATE apenas para `admin` (via `has_role`).
+- Tabela auxiliar `forecast_premissas` (1 linha global): `ticket_medio_padrao`, `taxa_pagamento_padrao`. Reutilizada quando a fase não tem ticket próprio.
+
+### 2. Hook `usePipelineForecast.ts`
+
+- Carrega `forecast_metas_fase` + `forecast_premissas` (em vez de receber `ticketMedio`/`taxa` por argumento).
+- Para cada fase adiciona: `metaValor`, `metaQuantidade`, `gapValor`, `gapQuantidade`, `atingimentoPct` (= `valorBruto / metaValor`).
+- Continua usando realtime do `useMaesData`.
+
+### 3. Novo hook `useMaeStatusHistory.ts`
+
+- Função `getDiasNaFaseAtual(maeId)` e `getHistoricoFases(maeId)`.
+- Para a listagem do drill-down: busca em lote `mae_status_history` das mães da fase clicada, calcula `dias_na_fase` (= `now() - max(changed_at WHERE status_novo = fase_atual)`) e `dias_total` (= `now() - min(changed_at)`).
+
+### 4. UI — Funil + Drill-down
+
+**Funil visual reformulado** (componente `FunnelChart.tsx`):
+- SVG real em formato de funil (trapézios encaixados), **clicável por fase**.
+- Cada faixa mostra: nome, quantidade, valor bruto, **barra de progresso meta vs realizado** com cor (verde ≥100%, âmbar 60–99%, vermelho <60%).
+- Hover destaca; click abre painel lateral.
+
+**Painel lateral de fase** (`FaseDrillDownSheet.tsx`, usa ResponsiveOverlay):
+- Header: nome da fase, meta (valor + qtd), realizado, gap, % atingimento.
+- Bloco "Mães nesta fase": tabela com nome, dias na fase (badge colorido: verde <7d, âmbar 7–14d, vermelho >14d), dias no CRM, atendente principal, ticket. Click no nome abre `MaeDetailDialog` existente.
+- Bloco "Tempo médio na fase" (média entre todas as mães que já passaram por ela, do histórico).
+
+**Configuração de metas** (`MetasFaseConfigDialog.tsx`, só admin):
+- Lista todas as fases com inputs de `meta_valor`, `meta_quantidade` e `ticket_medio` (opcional).
+- Botão "Premissas globais" para ajustar `ticket_medio_padrao` e `taxa_pagamento_padrao`.
+- Salva em batch via upsert.
+
+### 5. Layout do `/forecast`
 
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│  Header: título + status "ao vivo" + Premissas               │
-├──────────────────────────────────────────────────────────────┤
-│  Faixa de alerta (banner) — Risco total destacado            │
-│  Ex: "R$ 84k em risco · 3 fases acima do limite"             │
-├──────────────────────────────────────┬───────────────────────┤
-│                                      │  SIDEBAR INSIGHTS     │
-│   FUNIL VERTICAL (SVG real)          │                       │
-│   - Forma de funil de verdade        │  ▸ Top 3 Riscos       │
-│   - Cada fase = trapézio horizontal  │    (fase, valor, %)   │
-│     com largura proporcional         │                       │
-│   - Cor semântica por risco          │  ▸ Próximas conversões│
-│   - Hover destaca + mostra detalhes  │    (curto prazo)      │
-│   - Label lateral: fase, qtd,        │                       │
-│     bruto, ajustado, prob.           │  ▸ Gap vs Meta        │
-│                                      │    por fase (lista)   │
-│                                      │                       │
-│                                      │  ▸ KPIs compactos     │
-│                                      │    Bruto / Ajustado / │
-│                                      │    Curto Prazo        │
-├──────────────────────────────────────┴───────────────────────┤
-│  Tabela analítica (mantida, mais enxuta)                     │
-└──────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│ Header: título + AO VIVO + [⚙ Metas] (admin)              │
+├───────────────────────────────────────────────────────────┤
+│ Banner de Risco (mantido)                                 │
+├──────────────────────────────┬────────────────────────────┤
+│                              │ Sidebar Insights           │
+│ FUNIL clicável               │ - Top Riscos               │
+│ (SVG real, meta por fase)    │ - Próximas Conversões      │
+│                              │ - Fases abaixo da meta     │
+│                              │ - Resumo Financeiro        │
+├──────────────────────────────┴────────────────────────────┤
+│ Tabela analítica (com colunas Meta Valor / Meta Qtd /     │
+│  Gap Valor / Gap Qtd / % Atingimento)                     │
+└───────────────────────────────────────────────────────────┘
 ```
 
-## Princípios visuais
+Click em qualquer fase (funil, sidebar ou tabela) → abre `FaseDrillDownSheet`.
 
-- **Risco como protagonista**: banner superior + sidebar dedicada destacam inadimplência, renegociação e gaps de meta antes de qualquer outro número.
-- **Funil real em SVG**: trapézios encaixados verticalmente formando o contorno clássico de funil (não mais blocos retangulares centralizados). Largura do trapézio = `valorBruto / maxBruto`.
-- **Sidebar fixa à direita** (desktop) com 4 blocos: Top Riscos, Próximas Conversões, Gap por Fase, KPIs compactos.
-- **Mobile**: sidebar vira seção empilhada abaixo do funil; funil mantém forma mas reduz altura.
+## Arquivos
 
-## Componentes (frontend apenas)
+**Novos**
+- Migration: `mae_status_history`, `forecast_metas_fase`, `forecast_premissas`, trigger + backfill.
+- `src/hooks/useMaeStatusHistory.ts`
+- `src/hooks/useForecastMetas.ts`
+- `src/components/forecast/FunnelChart.tsx` (substitui `FunnelSVG.tsx`)
+- `src/components/forecast/FaseDrillDownSheet.tsx`
+- `src/components/forecast/MetasFaseConfigDialog.tsx`
 
-1. `ForecastDashboard.tsx` — refatorado, orquestra layout grid `lg:grid-cols-[1fr_340px]`.
-2. `components/forecast/RiskBanner.tsx` — faixa superior com valor em risco, contagem de fases críticas, ícone pulsante.
-3. `components/forecast/FunnelSVG.tsx` — SVG do funil vertical, trapézios proporcionais, tooltip on hover, animação de entrada por fase.
-4. `components/forecast/InsightsSidebar.tsx` — agrupa Top Riscos, Próximas Conversões, Gap por Fase, KPIs compactos.
-5. `components/forecast/InsightBlock.tsx` — bloco reutilizável (título + lista de linhas com label/valor/cor).
+**Modificados**
+- `src/hooks/usePipelineForecast.ts` — passa a ler metas do banco.
+- `src/pages/ForecastDashboard.tsx` — orquestra drill-down e botão de configuração.
+- `src/components/forecast/InsightsSidebar.tsx` — bloco "Fases abaixo da meta" substitui "Gap vs Meta" derivado.
 
-## Detalhes técnicos
-
-- **Sem mudanças** em `usePipelineForecast.ts`, banco, tipos ou rotas.
-- Cálculos derivados (já disponíveis no hook): `risco`, `curtoPrazo`, `fases[].valorAjustado`, `gapMeta`.
-- Top Riscos = fases com tone `vermelho` ou `laranja`, ordenadas por `valorBruto` desc, top 3.
-- Próximas Conversões = fases `Aprovada` + `Aguardando Análise INSS`, ordenadas por `valorAjustado`.
-- Gap por Fase = `(valorBruto * 0.8 * taxaPagamento) - valorAjustado`, mostra só fases com gap positivo.
-- SVG funil: cada fase renderiza um `<polygon>` trapezoidal; coordenadas calculadas a partir das larguras proporcionais acumuladas verticalmente.
-- Tokens semânticos do design system (verde/âmbar/vermelho via HSL em `index.css`) — sem cores hardcoded.
-- Mobile-first: grid colapsa para uma coluna abaixo de `lg`.
+**Removidos**
+- `src/components/forecast/FunnelSVG.tsx` (substituído por FunnelChart com interatividade).
 
 ## Fora de escopo
 
-- Novas tabelas, hooks, edge functions.
-- Alterações em fases do funil ou probabilidades.
-- Gráficos de tendência histórica (não há dado temporal hoje).
+- Editar histórico passado manualmente.
+- Alterar nomes das fases do funil.
+- Histórico de mudança de metas (apenas valor corrente).
+- Gráfico temporal de evolução do pipeline.
+
+## Sequência de execução
+
+1. Migration (tabelas + trigger + backfill + seed das fases em `forecast_metas_fase`).
+2. Hooks (`useForecastMetas`, `useMaeStatusHistory`, refator `usePipelineForecast`).
+3. Componentes (`FunnelChart`, `FaseDrillDownSheet`, `MetasFaseConfigDialog`).
+4. Refator `ForecastDashboard` + `InsightsSidebar`.

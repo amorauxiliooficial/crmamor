@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useMaesData } from "@/hooks/useMaesData";
+import { useForecastMetas } from "@/hooks/useForecastMetas";
 import { StatusProcesso } from "@/types/mae";
 
 export const DEFAULT_TICKET_MEDIO = 1800;
@@ -19,7 +20,7 @@ export const PROBABILIDADE_FASE: Record<string, number> = {
   "Indeferida": 0,
 };
 
-// Ordem de exibição no funil
+// Ordem de exibição no funil (com emoji do display)
 export const FASES_FUNIL: StatusProcesso[] = [
   "⚠️ Pendência Documental",
   "🟡 Elegível (Análise Positiva)",
@@ -30,8 +31,7 @@ export const FASES_FUNIL: StatusProcesso[] = [
   "💳 Inadimplência",
 ];
 
-
-const stripEmoji = (s: string) => {
+export const stripEmoji = (s: string) => {
   const parts = s.split(" ");
   return parts.length > 1 ? parts.slice(1).join(" ") : s;
 };
@@ -40,10 +40,16 @@ export interface FaseForecast {
   fase: StatusProcesso;
   faseKey: string;
   quantidade: number;
+  ticketMedio: number;
   valorBruto: number;
   valorAjustado: number;
   probabilidade: number;
   risco: "verde" | "amarelo" | "vermelho";
+  metaValor: number;
+  metaQuantidade: number;
+  gapValor: number;
+  gapQuantidade: number;
+  atingimentoPct: number; // 0..1+
 }
 
 export interface PipelineForecast {
@@ -53,41 +59,63 @@ export interface PipelineForecast {
   curtoPrazo: number;
   risco: number;
   taxaPagamento: number;
-  metaSaudavel: number;
-  gapMeta: number;
+  ticketMedioPadrao: number;
+  metaTotalValor: number;
+  metaTotalQuantidade: number;
+  gapMetaTotal: number;
   totalMaes: number;
   loading: boolean;
 }
 
-interface Options {
-  ticketMedio?: number;
-  taxaPagamento?: number;
-}
-
-export function usePipelineForecast(opts: Options = {}): PipelineForecast {
-  const ticketMedio = opts.ticketMedio ?? DEFAULT_TICKET_MEDIO;
-  const taxaPagamento = opts.taxaPagamento ?? DEFAULT_TAXA_PAGAMENTO;
-  const { maes, loading } = useMaesData();
+export function usePipelineForecast(): PipelineForecast {
+  const { maes, loading: loadingMaes } = useMaesData();
+  const { metas, premissas, loading: loadingCfg } = useForecastMetas();
 
   return useMemo(() => {
+    const ticketMedioPadrao = premissas?.ticket_medio_padrao ?? DEFAULT_TICKET_MEDIO;
+    const taxaPagamento = premissas?.taxa_pagamento_padrao ?? DEFAULT_TAXA_PAGAMENTO;
+
     const counts = new Map<string, number>();
-    for (const m of maes) {
-      counts.set(m.status_processo, (counts.get(m.status_processo) || 0) + 1);
-    }
+    for (const m of maes) counts.set(m.status_processo, (counts.get(m.status_processo) || 0) + 1);
+
+    const metaByFase = new Map(metas.map((m) => [m.status_processo, m]));
 
     const fases: FaseForecast[] = FASES_FUNIL.map((fase) => {
       const key = stripEmoji(fase);
       const quantidade = counts.get(fase) || 0;
       const probabilidade = PROBABILIDADE_FASE[key] ?? 0;
+
+      const metaRow = metaByFase.get(key);
+      const ticketMedio = metaRow?.ticket_medio ?? ticketMedioPadrao;
+      const metaValor = metaRow?.meta_valor ?? 0;
+      const metaQuantidade = metaRow?.meta_quantidade ?? 0;
+
       const valorBruto = quantidade * ticketMedio;
       const valorAjustado = valorBruto * probabilidade * taxaPagamento;
 
       let risco: "verde" | "amarelo" | "vermelho" = "verde";
       if (key === "Inadimplência" || key === "Recurso / Judicial") risco = "vermelho";
       else if (key === "Renegociação" || key === "Pendência Documental") risco = "amarelo";
-      else if (key === "Processo Encerrado") risco = "vermelho";
 
-      return { fase, faseKey: key, quantidade, valorBruto, valorAjustado, probabilidade, risco };
+      const gapValor = metaValor - valorBruto;
+      const gapQuantidade = metaQuantidade - quantidade;
+      const atingimentoPct = metaValor > 0 ? valorBruto / metaValor : 0;
+
+      return {
+        fase,
+        faseKey: key,
+        quantidade,
+        ticketMedio,
+        valorBruto,
+        valorAjustado,
+        probabilidade,
+        risco,
+        metaValor,
+        metaQuantidade,
+        gapValor,
+        gapQuantidade,
+        atingimentoPct,
+      };
     });
 
     const pipelineBruto = fases.reduce((a, f) => a + f.valorBruto, 0);
@@ -101,10 +129,9 @@ export function usePipelineForecast(opts: Options = {}): PipelineForecast {
       .filter((f) => f.faseKey === "Inadimplência" || f.faseKey === "Renegociação")
       .reduce((a, f) => a + f.valorAjustado, 0);
 
-    // Meta saudável = 80% do pipeline bruto convertido
-    const metaSaudavel = pipelineBruto * 0.8 * taxaPagamento;
-    const gapMeta = metaSaudavel - pipelineAjustado;
-
+    const metaTotalValor = fases.reduce((a, f) => a + f.metaValor, 0);
+    const metaTotalQuantidade = fases.reduce((a, f) => a + f.metaQuantidade, 0);
+    const gapMetaTotal = metaTotalValor - pipelineBruto;
     const totalMaes = fases.reduce((a, f) => a + f.quantidade, 0);
 
     return {
@@ -114,10 +141,12 @@ export function usePipelineForecast(opts: Options = {}): PipelineForecast {
       curtoPrazo,
       risco,
       taxaPagamento,
-      metaSaudavel,
-      gapMeta,
+      ticketMedioPadrao,
+      metaTotalValor,
+      metaTotalQuantidade,
+      gapMetaTotal,
       totalMaes,
-      loading,
+      loading: loadingMaes || loadingCfg,
     };
-  }, [maes, ticketMedio, taxaPagamento, loading]);
+  }, [maes, metas, premissas, loadingMaes, loadingCfg]);
 }

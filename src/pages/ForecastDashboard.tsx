@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { usePipelineForecast, DEFAULT_TICKET_MEDIO, DEFAULT_TAXA_PAGAMENTO } from "@/hooks/usePipelineForecast";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { usePipelineForecast, type FaseForecast } from "@/hooks/usePipelineForecast";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -14,16 +13,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  ArrowLeft,
-  Loader2,
-  Activity,
-  Settings2,
-} from "lucide-react";
+import { ArrowLeft, Loader2, Activity, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RiskBanner } from "@/components/forecast/RiskBanner";
-import { FunnelSVG } from "@/components/forecast/FunnelSVG";
+import { FunnelChart, atingimentoTextColor } from "@/components/forecast/FunnelChart";
 import { InsightsSidebar } from "@/components/forecast/InsightsSidebar";
+import { FaseDrillDownSheet } from "@/components/forecast/FaseDrillDownSheet";
+import { MetasFaseConfigDialog } from "@/components/forecast/MetasFaseConfigDialog";
 
 const formatBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -55,16 +51,13 @@ const TONE_DOT: Record<string, string> = {
 
 export default function ForecastDashboard() {
   const { user, loading: authLoading } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
+  const forecast = usePipelineForecast();
 
-  const [ticketMedio, setTicketMedio] = useState(DEFAULT_TICKET_MEDIO);
-  const [taxaPagamento, setTaxaPagamento] = useState(DEFAULT_TAXA_PAGAMENTO * 100);
-  const [showConfig, setShowConfig] = useState(false);
-
-  const forecast = usePipelineForecast({
-    ticketMedio,
-    taxaPagamento: taxaPagamento / 100,
-  });
+  const [selectedFase, setSelectedFase] = useState<FaseForecast | null>(null);
+  const [drillOpen, setDrillOpen] = useState(false);
+  const [configOpen, setConfigOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -79,6 +72,11 @@ export default function ForecastDashboard() {
     [forecast.fases]
   );
 
+  const handleFaseClick = (f: FaseForecast) => {
+    setSelectedFase(f);
+    setDrillOpen(true);
+  };
+
   if (authLoading || forecast.loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -89,7 +87,6 @@ export default function ForecastDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
-      {/* HEADER */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl">
         <div className="flex h-14 items-center justify-between px-4 md:px-6 max-w-[1600px] mx-auto">
           <div className="flex items-center gap-3 min-w-0">
@@ -110,93 +107,58 @@ export default function ForecastDashboard() {
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                {forecast.totalMaes} mães no pipeline · recalcula automaticamente
+                {forecast.totalMaes} mães no pipeline · clique numa fase para detalhar
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setShowConfig((s) => !s)}>
-            <Settings2 className="h-4 w-4 mr-2" />
-            Premissas
-          </Button>
+          {isAdmin && (
+            <Button variant="outline" size="sm" onClick={() => setConfigOpen(true)}>
+              <Settings2 className="h-4 w-4 mr-2" />
+              Metas
+            </Button>
+          )}
         </div>
       </header>
 
       <main className="p-4 md:p-6 space-y-4 md:space-y-5 max-w-[1600px] mx-auto">
-        {/* Configuração colapsável */}
-        {showConfig && (
-          <Card className="border-border/60 animate-fade-in">
-            <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 space-y-1.5">
-                <Label htmlFor="ticket" className="text-xs">Ticket médio (R$)</Label>
-                <Input
-                  id="ticket"
-                  type="number"
-                  min={0}
-                  value={ticketMedio}
-                  onChange={(e) => setTicketMedio(Number(e.target.value) || 0)}
-                />
-              </div>
-              <div className="flex-1 space-y-1.5">
-                <Label htmlFor="taxa" className="text-xs">Taxa de pagamento (%)</Label>
-                <Input
-                  id="taxa"
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={taxaPagamento}
-                  onChange={(e) => setTaxaPagamento(Number(e.target.value) || 0)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* BANNER DE RISCO */}
         <RiskBanner
           valorRisco={forecast.risco}
           fasesCriticas={fasesCriticas}
-          gapMeta={forecast.gapMeta}
+          gapMeta={forecast.gapMetaTotal}
           formatBRL={formatBRL}
         />
 
-        {/* COCKPIT: FUNIL + SIDEBAR */}
         <div className="grid gap-4 md:gap-5 lg:grid-cols-[1fr_340px]">
-          {/* FUNIL */}
           <Card className="border-border/60 overflow-hidden">
             <CardContent className="p-4 md:p-6 space-y-4">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-primary" />
-                    <h2 className="text-base md:text-lg font-bold tracking-tight">
-                      Funil Financeiro
-                    </h2>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Largura proporcional ao valor bruto · passe o mouse para detalhes
-                  </p>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-primary" />
+                  <h2 className="text-base md:text-lg font-bold tracking-tight">Funil Financeiro</h2>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Largura proporcional · barra de progresso = atingimento da meta · clique para drill-down
+                </p>
               </div>
 
-              <FunnelSVG fases={forecast.fases} formatBRLShort={formatBRLShort} />
+              <FunnelChart fases={forecast.fases} onFaseClick={handleFaseClick} formatBRLShort={formatBRLShort} />
             </CardContent>
           </Card>
 
-          {/* SIDEBAR INSIGHTS */}
           <InsightsSidebar
             forecast={forecast}
             formatBRL={formatBRL}
             formatBRLShort={formatBRLShort}
+            onFaseClick={handleFaseClick}
           />
         </div>
 
-        {/* TABELA ANALÍTICA */}
         <Card className="border-border/60">
           <CardContent className="p-4 md:p-6 space-y-4">
             <div>
               <h2 className="text-base md:text-lg font-bold tracking-tight">Análise por Fase</h2>
               <p className="text-xs text-muted-foreground">
-                Meta saudável = 80% bruto × taxa pagamento
+                Clique numa fase para ver mães, tempo na fase e detalhes
               </p>
             </div>
 
@@ -206,45 +168,49 @@ export default function ForecastDashboard() {
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
                     <TableHead className="text-xs">Fase</TableHead>
                     <TableHead className="text-xs text-right">Qtd</TableHead>
+                    <TableHead className="text-xs text-right hidden sm:table-cell">Meta Qtd</TableHead>
                     <TableHead className="text-xs text-right">Bruto</TableHead>
-                    <TableHead className="text-xs text-right">Ajustado</TableHead>
-                    <TableHead className="text-xs text-right">Prob.</TableHead>
                     <TableHead className="text-xs text-right hidden md:table-cell">Meta</TableHead>
                     <TableHead className="text-xs text-right hidden md:table-cell">Gap</TableHead>
+                    <TableHead className="text-xs text-right">Atingim.</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {forecast.fases.map((f) => {
                     const tone = FASE_TONE[f.faseKey] ?? "cinza";
-                    const meta = f.valorBruto * 0.8 * forecast.taxaPagamento;
-                    const gap = meta - f.valorAjustado;
+                    const hasMeta = f.metaValor > 0 || f.metaQuantidade > 0;
                     return (
-                      <TableRow key={f.fase} className="hover:bg-muted/30">
+                      <TableRow
+                        key={f.fase}
+                        className="hover:bg-muted/40 cursor-pointer"
+                        onClick={() => handleFaseClick(f)}
+                      >
                         <TableCell className="py-2.5">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className={cn("h-2 w-2 rounded-full shrink-0", TONE_DOT[tone])} />
-                            <span className="text-xs md:text-sm font-medium truncate">
-                              {f.fase}
-                            </span>
+                            <span className="text-xs md:text-sm font-medium truncate">{f.fase}</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-right text-xs tabular-nums">{f.quantidade}</TableCell>
-                        <TableCell className="text-right text-xs tabular-nums">{formatBRLShort(f.valorBruto)}</TableCell>
-                        <TableCell className="text-right text-xs font-semibold tabular-nums">{formatBRLShort(f.valorAjustado)}</TableCell>
-                        <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
-                          {(f.probabilidade * 100).toFixed(0)}%
+                        <TableCell className="text-right text-xs tabular-nums hidden sm:table-cell text-muted-foreground">
+                          {f.metaQuantidade || "—"}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-semibold tabular-nums">
+                          {formatBRLShort(f.valorBruto)}
                         </TableCell>
                         <TableCell className="text-right text-xs tabular-nums hidden md:table-cell text-muted-foreground">
-                          {formatBRLShort(meta)}
+                          {hasMeta ? formatBRLShort(f.metaValor) : "—"}
                         </TableCell>
                         <TableCell
                           className={cn(
                             "text-right text-xs tabular-nums font-medium hidden md:table-cell",
-                            gap > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
+                            f.gapValor > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
                           )}
                         >
-                          {gap > 0 ? "−" : "+"}
-                          {formatBRLShort(Math.abs(gap))}
+                          {hasMeta ? `${f.gapValor > 0 ? "−" : "+"}${formatBRLShort(Math.abs(f.gapValor))}` : "—"}
+                        </TableCell>
+                        <TableCell className={cn("text-right text-xs font-bold tabular-nums", atingimentoTextColor(f.atingimentoPct, hasMeta))}>
+                          {hasMeta ? `${(f.atingimentoPct * 100).toFixed(0)}%` : "—"}
                         </TableCell>
                       </TableRow>
                     );
@@ -255,6 +221,16 @@ export default function ForecastDashboard() {
           </CardContent>
         </Card>
       </main>
+
+      <FaseDrillDownSheet
+        fase={selectedFase}
+        open={drillOpen}
+        onOpenChange={setDrillOpen}
+        formatBRL={formatBRL}
+        formatBRLShort={formatBRLShort}
+      />
+
+      <MetasFaseConfigDialog open={configOpen} onOpenChange={setConfigOpen} />
     </div>
   );
 }
