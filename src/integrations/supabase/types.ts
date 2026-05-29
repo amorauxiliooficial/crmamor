@@ -767,6 +767,60 @@ export type Database = {
           },
         ]
       }
+      forecast_metas_fase: {
+        Row: {
+          id: string
+          meta_quantidade: number
+          meta_valor: number
+          status_processo: string
+          ticket_medio: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          meta_quantidade?: number
+          meta_valor?: number
+          status_processo: string
+          ticket_medio?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          meta_quantidade?: number
+          meta_valor?: number
+          status_processo?: string
+          ticket_medio?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      forecast_premissas: {
+        Row: {
+          id: string
+          taxa_pagamento_padrao: number
+          ticket_medio_padrao: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          taxa_pagamento_padrao?: number
+          ticket_medio_padrao?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          taxa_pagamento_padrao?: number
+          ticket_medio_padrao?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       fornecedores: {
         Row: {
           ativo: boolean
@@ -1068,6 +1122,33 @@ export type Database = {
           ultima_atividade_em?: string | null
           user_id?: string
           verificacao_duas_etapas?: boolean
+        }
+        Relationships: []
+      }
+      mae_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          mae_id: string
+          status_anterior: string | null
+          status_novo: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          mae_id: string
+          status_anterior?: string | null
+          status_novo: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          mae_id?: string
+          status_anterior?: string | null
+          status_novo?: string
         }
         Relationships: []
       }
