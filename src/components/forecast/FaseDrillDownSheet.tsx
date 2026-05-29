@@ -108,6 +108,12 @@ export function FaseDrillDownSheet({ fase, open, onOpenChange, formatBRL, format
             </div>
           )}
 
+          {/* Agrupamento por faixa gestacional - apenas para Gestantes em Maturação */}
+          {fase.faseKey === "Gestantes em Maturação" && (
+            <FaixasGestacionais maes={maesDaFase} ticketMedio={fase.ticketMedio} formatBRLShort={formatBRLShort} />
+          )}
+
+
           {/* Lista de mães */}
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
@@ -197,6 +203,67 @@ function Stat({
       </div>
       <div className={cn("text-lg font-bold tabular-nums mt-0.5", TONE_TEXT[tone])}>{value}</div>
       {hint && <div className="text-[10px] text-muted-foreground truncate">{hint}</div>}
+    </div>
+  );
+}
+
+const FAIXAS: Array<{ label: string; min: number; max: number }> = [
+  { label: "1–3m", min: 1, max: 3 },
+  { label: "4–5m", min: 4, max: 5 },
+  { label: "6–7m", min: 6, max: 7 },
+  { label: "8+m", min: 8, max: 99 },
+];
+
+function FaixasGestacionais({
+  maes,
+  ticketMedio,
+  formatBRLShort,
+}: {
+  maes: MaeProcesso[];
+  ticketMedio: number;
+  formatBRLShort: (n: number) => string;
+}) {
+  const grupos = FAIXAS.map((f) => {
+    const lista = maes.filter((m) => {
+      const mes = m.mes_gestacao ?? 0;
+      return mes >= f.min && mes <= f.max;
+    });
+    return { ...f, qtd: lista.length, valor: lista.length * ticketMedio };
+  });
+  const semInfo = maes.filter((m) => !m.mes_gestacao).length;
+  const totalQtd = maes.length;
+  const totalValor = totalQtd * ticketMedio;
+
+  return (
+    <div className="rounded-lg border border-pink-500/30 bg-pink-500/5 p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-pink-700 dark:text-pink-300">
+          Faixa gestacional
+        </h3>
+        <span className="text-[10px] text-muted-foreground">
+          Total {totalQtd} mães · {formatBRLShort(totalValor)}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        {grupos.map((g) => (
+          <div key={g.label} className="rounded-md border border-border/60 bg-card/60 p-2.5">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {g.label}
+            </div>
+            <div className="text-lg font-bold tabular-nums text-pink-700 dark:text-pink-300">
+              {g.qtd}
+            </div>
+            <div className="text-[11px] text-muted-foreground tabular-nums">
+              {formatBRLShort(g.valor)}
+            </div>
+          </div>
+        ))}
+      </div>
+      {semInfo > 0 && (
+        <p className="text-[10px] text-muted-foreground italic">
+          {semInfo} {semInfo === 1 ? "mãe sem" : "mães sem"} mês gestacional informado
+        </p>
+      )}
     </div>
   );
 }

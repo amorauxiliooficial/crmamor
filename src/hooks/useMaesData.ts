@@ -12,6 +12,7 @@ export interface MaeProcessoComAtividade extends MaeProcesso {
 // Map database status to display status with emoji
 export const mapDbStatusToDisplay = (status: string): StatusProcesso => {
   const statusMap: Record<string, StatusProcesso> = {
+    "Gestantes em Maturação": "🤰 Gestantes em Maturação",
     "Pendência Documental": "⚠️ Pendência Documental",
     "Elegível (Análise Positiva)": "🟡 Elegível (Análise Positiva)",
     "Aguardando Análise INSS": "⏳ Aguardando Análise INSS",

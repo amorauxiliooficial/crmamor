@@ -8,6 +8,7 @@ export const DEFAULT_TAXA_PAGAMENTO = 0.75;
 
 // Probabilidades por fase (sem emoji)
 export const PROBABILIDADE_FASE: Record<string, number> = {
+  "Gestantes em Maturação": 0.2,
   "Pendência Documental": 0.35,
   "Elegível (Análise Positiva)": 0.6,
   "Aguardando Análise INSS": 0.75,
@@ -22,6 +23,7 @@ export const PROBABILIDADE_FASE: Record<string, number> = {
 
 // Ordem de exibição no funil (com emoji do display)
 export const FASES_FUNIL: StatusProcesso[] = [
+  "🤰 Gestantes em Maturação",
   "⚠️ Pendência Documental",
   "🟡 Elegível (Análise Positiva)",
   "⏳ Aguardando Análise INSS",
