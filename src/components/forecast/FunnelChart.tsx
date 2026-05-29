@@ -10,6 +10,7 @@ interface FunnelChartProps {
 }
 
 const FASE_TONE: Record<string, string> = {
+  "Gestantes em Maturação": "rosa",
   "Pendência Documental": "amarelo",
   "Elegível (Análise Positiva)": "verde",
   "Aguardando Análise INSS": "azul",
@@ -25,6 +26,7 @@ const TONE_GRADIENT: Record<string, { from: string; to: string }> = {
   laranja: { from: "hsl(25 95% 58%)", to: "hsl(20 90% 48%)" },
   vermelho: { from: "hsl(0 84% 60%)", to: "hsl(0 72% 50%)" },
   azul: { from: "hsl(199 89% 55%)", to: "hsl(201 90% 42%)" },
+  rosa: { from: "hsl(330 81% 65%)", to: "hsl(333 71% 50%)" },
   cinza: { from: "hsl(215 16% 55%)", to: "hsl(215 19% 35%)" },
 };
 
