@@ -1,4 +1,4 @@
-import { AlertTriangle, ShieldAlert } from "lucide-react";
+import { AlertTriangle, ShieldAlert, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RiskBannerProps {
@@ -6,9 +6,10 @@ interface RiskBannerProps {
   fasesCriticas: number;
   gapMeta: number;
   formatBRL: (n: number) => string;
+  gestantesCriticas?: number;
 }
 
-export function RiskBanner({ valorRisco, fasesCriticas, gapMeta, formatBRL }: RiskBannerProps) {
+export function RiskBanner({ valorRisco, fasesCriticas, gapMeta, formatBRL, gestantesCriticas = 0 }: RiskBannerProps) {
   const hasRisk = valorRisco > 0 || fasesCriticas > 0;
 
   return (
