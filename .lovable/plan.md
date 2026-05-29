@@ -1,26 +1,65 @@
-## Mudanças na Conferência INSS
+# Forecast Pipeline — Nova Modelagem
 
-### 1. Incluir mães "Aprovada" na lista
-Em `src/pages/Conferencia.tsx`:
-- Trocar o filtro `eq("status_processo", "Em Análise")` por `in("status_processo", ["Em Análise", "Aprovada"])`.
-- Buscar também `senha_gov` no select de `mae_processo`.
-- Propagar `senha_gov` na interface `MaeEmAnalise` e nos handlers que abrem o `ConferenciaDialog`.
-- Mostrar um pequeno badge/etiqueta na linha (tabela e card mobile) indicando o status (Em Análise / Aprovada) para o atendente saber qual fluxo está conferindo.
+## Visão geral
 
-Observação: o intervalo de 2 dias e a lógica de "pendente / em dia" continuam iguais para os dois status.
+Refatorar `ForecastDashboard.tsx` para um layout tipo **cockpit executivo** com foco em **risco**, mantendo intactos hook, cálculos e dados (`usePipelineForecast`).
 
-### 2. Copiar CPF e Senha Gov.br no diálogo de conferência
-Em `src/components/conferencia/ConferenciaDialog.tsx`:
-- Aceitar novas props: `cpf: string` e `senhaGov?: string | null`.
-- Logo abaixo do nome da mãe, adicionar dois "chips" / linhas com:
-  - **CPF**: valor formatado (XXX.XXX.XXX-XX) + botão ícone `Copy` que copia o CPF limpo (via `navigator.clipboard`) e dispara um `toast` de sucesso.
-  - **Senha Gov.br**: valor + botão `Copy` (mesmo padrão usado em `MaeDetailDialog`/`SenhaGovCard`). Se `senhaGov` estiver vazio, mostrar texto "Senha não cadastrada" e desabilitar o botão.
-- Usar os mesmos estilos do design system (tokens primary/muted, ícone `Copy` do lucide-react). Sem cores hard-coded.
+## Estrutura da tela
 
-Em `src/pages/Conferencia.tsx`:
-- Passar `cpf={selectedMae.cpf}` e `senhaGov={selectedMae.senha_gov}` ao renderizar o `ConferenciaDialog`.
+```text
+┌──────────────────────────────────────────────────────────────┐
+│  Header: título + status "ao vivo" + Premissas               │
+├──────────────────────────────────────────────────────────────┤
+│  Faixa de alerta (banner) — Risco total destacado            │
+│  Ex: "R$ 84k em risco · 3 fases acima do limite"             │
+├──────────────────────────────────────┬───────────────────────┤
+│                                      │  SIDEBAR INSIGHTS     │
+│   FUNIL VERTICAL (SVG real)          │                       │
+│   - Forma de funil de verdade        │  ▸ Top 3 Riscos       │
+│   - Cada fase = trapézio horizontal  │    (fase, valor, %)   │
+│     com largura proporcional         │                       │
+│   - Cor semântica por risco          │  ▸ Próximas conversões│
+│   - Hover destaca + mostra detalhes  │    (curto prazo)      │
+│   - Label lateral: fase, qtd,        │                       │
+│     bruto, ajustado, prob.           │  ▸ Gap vs Meta        │
+│                                      │    por fase (lista)   │
+│                                      │                       │
+│                                      │  ▸ KPIs compactos     │
+│                                      │    Bruto / Ajustado / │
+│                                      │    Curto Prazo        │
+├──────────────────────────────────────┴───────────────────────┤
+│  Tabela analítica (mantida, mais enxuta)                     │
+└──────────────────────────────────────────────────────────────┘
+```
 
-### Resumo técnico
-- Arquivos editados: `src/pages/Conferencia.tsx`, `src/components/conferencia/ConferenciaDialog.tsx`.
-- Sem alterações de banco / RLS / edge functions.
-- Mantém mobile-first (chips empilham em telas pequenas).
+## Princípios visuais
+
+- **Risco como protagonista**: banner superior + sidebar dedicada destacam inadimplência, renegociação e gaps de meta antes de qualquer outro número.
+- **Funil real em SVG**: trapézios encaixados verticalmente formando o contorno clássico de funil (não mais blocos retangulares centralizados). Largura do trapézio = `valorBruto / maxBruto`.
+- **Sidebar fixa à direita** (desktop) com 4 blocos: Top Riscos, Próximas Conversões, Gap por Fase, KPIs compactos.
+- **Mobile**: sidebar vira seção empilhada abaixo do funil; funil mantém forma mas reduz altura.
+
+## Componentes (frontend apenas)
+
+1. `ForecastDashboard.tsx` — refatorado, orquestra layout grid `lg:grid-cols-[1fr_340px]`.
+2. `components/forecast/RiskBanner.tsx` — faixa superior com valor em risco, contagem de fases críticas, ícone pulsante.
+3. `components/forecast/FunnelSVG.tsx` — SVG do funil vertical, trapézios proporcionais, tooltip on hover, animação de entrada por fase.
+4. `components/forecast/InsightsSidebar.tsx` — agrupa Top Riscos, Próximas Conversões, Gap por Fase, KPIs compactos.
+5. `components/forecast/InsightBlock.tsx` — bloco reutilizável (título + lista de linhas com label/valor/cor).
+
+## Detalhes técnicos
+
+- **Sem mudanças** em `usePipelineForecast.ts`, banco, tipos ou rotas.
+- Cálculos derivados (já disponíveis no hook): `risco`, `curtoPrazo`, `fases[].valorAjustado`, `gapMeta`.
+- Top Riscos = fases com tone `vermelho` ou `laranja`, ordenadas por `valorBruto` desc, top 3.
+- Próximas Conversões = fases `Aprovada` + `Aguardando Análise INSS`, ordenadas por `valorAjustado`.
+- Gap por Fase = `(valorBruto * 0.8 * taxaPagamento) - valorAjustado`, mostra só fases com gap positivo.
+- SVG funil: cada fase renderiza um `<polygon>` trapezoidal; coordenadas calculadas a partir das larguras proporcionais acumuladas verticalmente.
+- Tokens semânticos do design system (verde/âmbar/vermelho via HSL em `index.css`) — sem cores hardcoded.
+- Mobile-first: grid colapsa para uma coluna abaixo de `lg`.
+
+## Fora de escopo
+
+- Novas tabelas, hooks, edge functions.
+- Alterações em fases do funil ou probabilidades.
+- Gráficos de tendência histórica (não há dado temporal hoje).
