@@ -28,8 +28,8 @@ export const FASES_FUNIL: StatusProcesso[] = [
   "🤝 Renegociação",
   "⚖️ Recurso / Judicial",
   "💳 Inadimplência",
-  "📦 Processo Encerrado",
 ];
+
 
 const stripEmoji = (s: string) => {
   const parts = s.split(" ");
