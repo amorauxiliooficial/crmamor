@@ -10,6 +10,7 @@ import { useMaesData } from "@/hooks/useMaesData";
 import { useMaesFaseInfo, useTempoMedioPorFase } from "@/hooks/useMaeStatusHistory";
 import { MaeDetailDialog } from "@/components/mae/MaeDetailDialog";
 import type { MaeProcesso } from "@/types/mae";
+import { calcularMesGravidez } from "@/lib/gestacaoUtils";
 
 interface FaseDrillDownSheetProps {
   fase: FaseForecast | null;
