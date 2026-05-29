@@ -270,7 +270,7 @@ export default function ForecastDashboard() {
           />
         </section>
 
-        {/* 2. FUNIL — protagonista */}
+        {/* 2. FUNIL FINANCEIRO VISUAL — protagonista */}
         <section>
           <Card className="border-border/60 overflow-hidden">
             <CardContent className="p-4 md:p-6 space-y-4">
@@ -283,11 +283,11 @@ export default function ForecastDashboard() {
                     </h2>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Largura proporcional ao valor bruto · barra interna mostra atual vs meta saudável
+                    Largura proporcional ao valor bruto · topo = maior volume · base = menor volume
                   </p>
                 </div>
                 <div className="flex items-center gap-3 text-[11px]">
-                  {(["verde", "amarelo", "laranja", "vermelho", "azul", "cinza"] as const).map(
+                  {(["verde", "amarelo", "laranja", "vermelho", "azul"] as const).map(
                     (t) => (
                       <button
                         key={t}
@@ -307,86 +307,103 @@ export default function ForecastDashboard() {
                 </div>
               </div>
 
-              <div className="space-y-2.5">
+              <div className="relative flex flex-col items-center">
+                {/* Linhas guia do funil */}
+                <div className="absolute inset-x-0 top-0 bottom-0 flex justify-center pointer-events-none">
+                  <svg className="h-full w-full max-w-3xl" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="funnelGuide" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--border))" stopOpacity="0.4" />
+                        <stop offset="100%" stopColor="hsl(var(--border))" stopOpacity="0.1" />
+                      </linearGradient>
+                    </defs>
+                    <polygon
+                      points="0,0 100%,0 70%,100% 30%,100%"
+                      fill="url(#funnelGuide)"
+                      className="hidden md:block"
+                    />
+                  </svg>
+                </div>
+
                 {forecast.fases.map((f, idx) => {
                   const tone = FASE_TONE[f.faseKey] ?? "cinza";
-                  const widthPct = Math.max((f.valorBruto / maxBruto) * 100, 8);
-                  const ajustadoPct =
-                    f.valorBruto > 0 ? (f.valorAjustado / f.valorBruto) * 100 : 0;
+                  const widthPct = Math.max((f.valorBruto / maxBruto) * 100, 14);
                   const isFiltered = filterTone && filterTone !== tone;
+                  const isLast = idx === forecast.fases.length - 1;
 
                   return (
-                    <div
-                      key={f.fase}
-                      className={cn(
-                        "group relative transition-all duration-300",
-                        isFiltered && "opacity-30"
-                      )}
-                      style={{
-                        animation: `fade-in 0.4s ease-out ${idx * 40}ms both`,
-                      }}
-                    >
-                      <div className="flex items-stretch gap-3">
-                        {/* índice */}
-                        <div className="hidden md:flex shrink-0 w-8 items-center justify-center text-xs font-bold text-muted-foreground tabular-nums">
-                          {String(idx + 1).padStart(2, "0")}
-                        </div>
-
-                        {/* bloco do funil */}
-                        <div className="flex-1 min-w-0">
+                    <div key={f.fase} className="w-full flex flex-col items-center z-10">
+                      {/* Bloco do funil */}
+                      <div
+                        className={cn(
+                          "group relative transition-all duration-300",
+                          isFiltered && "opacity-20 scale-95"
+                        )}
+                        style={{
+                          width: `${widthPct}%`,
+                          minWidth: "min(100%, 200px)",
+                          animation: `fade-in 0.4s ease-out ${idx * 60}ms both`,
+                        }}
+                      >
+                        <div
+                          className={cn(
+                            "relative overflow-hidden rounded-xl ring-1 transition-all duration-300",
+                            "hover:shadow-2xl hover:-translate-y-0.5",
+                            TONE_RING[tone]
+                          )}
+                        >
+                          {/* gradient bg */}
                           <div
                             className={cn(
-                              "relative overflow-hidden rounded-xl ring-1 transition-all duration-300",
-                              "hover:scale-[1.005] hover:shadow-xl",
-                              TONE_RING[tone]
+                              "absolute inset-0 bg-gradient-to-r opacity-95",
+                              TONE_BG[tone]
                             )}
-                            style={{ width: `${widthPct}%`, minWidth: "min(100%, 280px)" }}
-                          >
-                            {/* gradient bg */}
-                            <div
-                              className={cn(
-                                "absolute inset-0 bg-gradient-to-r opacity-95",
-                                TONE_BG[tone]
-                              )}
-                            />
-                            {/* shimmer hover */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                          />
+                          {/* shimmer hover */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
 
-                            <div className="relative p-3 md:p-4 text-white">
-                              <div className="flex items-start justify-between gap-3 flex-wrap">
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm md:text-base font-bold truncate drop-shadow-sm">
-                                      {f.fase}
-                                    </span>
-                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-white/20 backdrop-blur">
-                                      {(f.probabilidade * 100).toFixed(0)}%
-                                    </span>
-                                  </div>
-                                  <div className="text-[11px] text-white/80 mt-0.5">
-                                    {f.quantidade} {f.quantidade === 1 ? "mãe" : "mães"} · bruto{" "}
-                                    {formatBRLShort(f.valorBruto)}
-                                  </div>
+                          <div className="relative p-3 md:p-4 text-white">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm md:text-base font-bold truncate drop-shadow-sm">
+                                    {f.fase}
+                                  </span>
+                                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-white/20 backdrop-blur">
+                                    {(f.probabilidade * 100).toFixed(0)}%
+                                  </span>
                                 </div>
-                                <div className="text-right shrink-0">
-                                  <div className="text-base md:text-lg font-bold tabular-nums drop-shadow-sm">
-                                    {formatBRLShort(f.valorAjustado)}
-                                  </div>
-                                  <div className="text-[10px] text-white/80">ajustado</div>
+                                <div className="text-[11px] text-white/80 mt-0.5">
+                                  {f.quantidade} {f.quantidade === 1 ? "mãe" : "mães"} · bruto{" "}
+                                  {formatBRLShort(f.valorBruto)}
                                 </div>
                               </div>
-
-                              {/* barra atual vs meta */}
-                              <div className="mt-3 h-1.5 rounded-full bg-white/20 overflow-hidden">
-                                <div
-                                  className="h-full bg-white/90 transition-all duration-700"
-                                  style={{ width: `${ajustadoPct}%` }}
-                                />
+                              <div className="text-right shrink-0">
+                                <div className="text-base md:text-lg font-bold tabular-nums drop-shadow-sm">
+                                  {formatBRLShort(f.valorAjustado)}
+                                </div>
+                                <div className="text-[10px] text-white/80">ajustado</div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
+
+                      {/* Conector entre blocos */}
+                      {!isLast && (
+                        <div className="flex flex-col items-center py-1">
+                          <div className="w-px h-3 bg-gradient-to-b from-border/60 to-border/20" />
+                          <svg
+                            width="16"
+                            height="8"
+                            viewBox="0 0 16 8"
+                            fill="none"
+                            className="text-muted-foreground/30"
+                          >
+                            <path d="M8 8L0 0H16L8 8Z" fill="currentColor" />
+                          </svg>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
