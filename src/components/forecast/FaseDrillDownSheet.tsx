@@ -10,6 +10,7 @@ import { useMaesData } from "@/hooks/useMaesData";
 import { useMaesFaseInfo, useTempoMedioPorFase } from "@/hooks/useMaeStatusHistory";
 import { MaeDetailDialog } from "@/components/mae/MaeDetailDialog";
 import type { MaeProcesso } from "@/types/mae";
+import { calcularMesGravidez } from "@/lib/gestacaoUtils";
 
 interface FaseDrillDownSheetProps {
   fase: FaseForecast | null;
@@ -223,14 +224,12 @@ function FaixasGestacionais({
   ticketMedio: number;
   formatBRLShort: (n: number) => string;
 }) {
+  const mesesPorMae = maes.map((m) => ({ mae: m, mes: calcularMesGravidez(m) }));
   const grupos = FAIXAS.map((f) => {
-    const lista = maes.filter((m) => {
-      const mes = m.mes_gestacao ?? 0;
-      return mes >= f.min && mes <= f.max;
-    });
+    const lista = mesesPorMae.filter(({ mes }) => mes !== null && mes >= f.min && mes <= f.max);
     return { ...f, qtd: lista.length, valor: lista.length * ticketMedio };
   });
-  const semInfo = maes.filter((m) => !m.mes_gestacao).length;
+  const semInfo = mesesPorMae.filter((x) => x.mes === null).length;
   const totalQtd = maes.length;
   const totalValor = totalQtd * ticketMedio;
 
