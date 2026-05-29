@@ -73,6 +73,7 @@ export interface DecisaoProcesso {
 }
 
 export const STATUS_ORDER: StatusProcesso[] = [
+  "🤰 Gestantes em Maturação",
   "⚠️ Pendência Documental",
   "🟡 Elegível (Análise Positiva)",
   "⏳ Aguardando Análise INSS",
@@ -86,6 +87,7 @@ export const STATUS_ORDER: StatusProcesso[] = [
 ];
 
 export const STATUS_COLORS: Record<StatusProcesso, string> = {
+  "🤰 Gestantes em Maturação": "bg-muted/60",
   "⚠️ Pendência Documental": "bg-muted/60",
   "🟡 Elegível (Análise Positiva)": "bg-muted/60",
   "⏳ Aguardando Análise INSS": "bg-muted/60",
@@ -100,6 +102,7 @@ export const STATUS_COLORS: Record<StatusProcesso, string> = {
 
 // Thin top-bar accent colors per status (used as border-top on column headers)
 export const STATUS_BAR_COLORS: Record<StatusProcesso, string> = {
+  "🤰 Gestantes em Maturação": "border-t-pink-500/60",
   "⚠️ Pendência Documental": "border-t-amber-500/60",
   "🟡 Elegível (Análise Positiva)": "border-t-primary/60",
   "⏳ Aguardando Análise INSS": "border-t-sky-500/50",
@@ -114,6 +117,7 @@ export const STATUS_BAR_COLORS: Record<StatusProcesso, string> = {
 
 // Prazos de follow-up para exibição na UI (em dias)
 export const FOLLOWUP_PRAZO_LABELS: Record<StatusProcesso, string> = {
+  "🤰 Gestantes em Maturação": "1x/mês",
   "⚠️ Pendência Documental": "1x/semana",
   "🟡 Elegível (Análise Positiva)": "1x/semana",
   "⏳ Aguardando Análise INSS": "15 dias",
