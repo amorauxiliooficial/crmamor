@@ -2443,7 +2443,7 @@ export type Database = {
       status_processo:
         | "Entrada de Documentos"
         | "Em Análise"
-        | "Gestantes 1 a 7 meses"
+        | "Gestantes 1 a 8 meses"
         | "Gestantes em Maturação"
         | "Entradas do Mês"
         | "Pendência Documental"
@@ -2639,7 +2639,7 @@ export const Constants = {
       status_processo: [
         "Entrada de Documentos",
         "Em Análise",
-        "Gestantes 1 a 7 meses",
+        "Gestantes 1 a 8 meses",
         "Gestantes em Maturação",
         "Entradas do Mês",
         "Pendência Documental",

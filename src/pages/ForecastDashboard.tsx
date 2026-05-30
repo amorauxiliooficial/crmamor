@@ -31,7 +31,7 @@ const formatBRLShort = (n: number) => {
 };
 
 const FASE_TONE: Record<string, string> = {
-  "Gestantes 1 a 7 meses": "rosa",
+  "Gestantes 1 a 8 meses": "rosa",
   "Entradas do Mês": "amarelo",
   "Aguardando Análise INSS": "azul",
   "Aprovada": "verde",

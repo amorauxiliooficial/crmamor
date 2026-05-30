@@ -37,7 +37,7 @@ export function FaseDrillDownSheet({ fase, open, onOpenChange, formatBRL, format
     const matches = (statusRaw: string) => {
       const status = statusRaw || "";
       const key = status.split(" ").slice(1).join(" ") || status;
-      if (fase.faseKey === "Gestantes 1 a 7 meses") return key === "Gestantes 1 a 7 meses" || key === "Gestantes em Maturação";
+      if (fase.faseKey === "Gestantes 1 a 8 meses") return key === "Gestantes 1 a 8 meses" || key === "Gestantes em Maturação";
       if (fase.faseKey === "Entradas do Mês") return key === "Entradas do Mês" || key === "Pendência Documental" || key === "Elegível";
       return status === fase.fase;
     };
@@ -116,8 +116,8 @@ export function FaseDrillDownSheet({ fase, open, onOpenChange, formatBRL, format
             </div>
           )}
 
-          {/* Agrupamento por faixa gestacional - apenas para Gestantes 1 a 7 meses */}
-          {fase.faseKey === "Gestantes 1 a 7 meses" && (
+          {/* Agrupamento por faixa gestacional - apenas para Gestantes 1 a 8 meses */}
+          {fase.faseKey === "Gestantes 1 a 8 meses" && (
             <FaixasGestacionais maes={maesDaFase} ticketMedio={fase.ticketMedio} formatBRLShort={formatBRLShort} />
           )}
 

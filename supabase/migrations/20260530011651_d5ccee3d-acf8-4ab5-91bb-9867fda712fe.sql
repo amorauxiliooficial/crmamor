@@ -1,0 +1,1 @@
+ALTER TYPE public.status_processo RENAME VALUE 'Gestantes 1 a 7 meses' TO 'Gestantes 1 a 8 meses';
