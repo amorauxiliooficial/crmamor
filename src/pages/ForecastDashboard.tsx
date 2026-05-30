@@ -31,8 +31,8 @@ const formatBRLShort = (n: number) => {
 };
 
 const FASE_TONE: Record<string, string> = {
-  "Pendência Documental": "amarelo",
-  "Elegível (Análise Positiva)": "verde",
+  "Gestantes 1 a 7 meses": "rosa",
+  "Entradas do Mês": "amarelo",
   "Aguardando Análise INSS": "azul",
   "Aprovada": "verde",
 };
