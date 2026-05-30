@@ -35,9 +35,6 @@ const FASE_TONE: Record<string, string> = {
   "Elegível (Análise Positiva)": "verde",
   "Aguardando Análise INSS": "azul",
   "Aprovada": "verde",
-  "Renegociação": "laranja",
-  "Inadimplência": "vermelho",
-  "Recurso / Judicial": "vermelho",
 };
 
 const TONE_DOT: Record<string, string> = {

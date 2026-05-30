@@ -18,9 +18,6 @@ const FASE_TONE: Record<string, Tone> = {
   "Elegível (Análise Positiva)": "verde",
   "Aguardando Análise INSS": "azul",
   "Aprovada": "verde",
-  "Renegociação": "laranja",
-  "Inadimplência": "vermelho",
-  "Recurso / Judicial": "vermelho",
 };
 
 // Classes Tailwind por tom — apenas semáforo/destaque, fundo do card permanece neutro

@@ -4,9 +4,6 @@ import type { PipelineForecast, FaseForecast } from "@/hooks/usePipelineForecast
 
 const FASE_TONE: Record<string, string> = {
   "Pendência Documental": "amarelo",
-  "Renegociação": "laranja",
-  "Inadimplência": "vermelho",
-  "Recurso / Judicial": "vermelho",
 };
 
 interface InsightsSidebarProps {
