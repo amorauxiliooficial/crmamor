@@ -1,57 +1,63 @@
-# Plano: preview real do Modo TV no forecast
+# Plano: camada "tecnológica" no Modo TV
 
-Vou substituir a ideia de mockup interrompido por um preview navegável de verdade dentro do sistema, usando o visual que já existe hoje.
+Adicionar elementos de painel/telemetria à tela `/forecast/tv` sem quebrar o visual atual.
 
-## O que vou construir
+## 1. Ambiente (fundo da tela)
 
-1. Criar uma nova tela `/forecast/tv`
-   - Tela pensada para TV/monitor
-   - Mesmo tema atual do sistema: carvão, magenta, bordas sutis, Poppins + JetBrains Mono
-   - Sem estética sci-fi exagerada
+- Grid técnico sutil: linhas finas em magenta 4% de opacidade cobrindo o fundo inteiro
+- Scanline horizontal animada bem leve, atravessando a tela a cada ~15s
+- Glow pulsante atrás do número grande de gap (respira lentamente)
 
-2. Montar a hierarquia visual focada em meta
-   - Hero principal com “quanto falta para bater a meta”
-   - Barra de progresso da meta total
-   - Leitura imediata de realizado, meta e projeção
+## 2. Header com telemetria ao vivo
 
-3. Destacar as 4 etapas do funil
-   - Gestantes
-   - Entradas do Mês
-   - Aguardando Análise INSS
-   - Aprovada
-   
-   Cada etapa terá:
-   - quantidade atual
-   - valor atual
-   - meta da etapa
-   - quanto falta para bater a meta
-   - percentual de atingimento
+- Relógio digital em fonte mono, atualizando a cada segundo
+- LED verde piscando a cada sincronização do Realtime
+- Texto "última atualização há Xs" ao lado, em mono cinza
+- Rodapé fino na base: `SYS · FORECAST v1 · LIVE` em mono discreto
 
-4. Dar acesso fácil ao preview
-   - Adicionar um botão “Modo TV” na página `/forecast`
-   - Abrir a rota nova para você visualizar imediatamente
+## 3. Hero da meta
 
-## Direção visual
+- Número grande do gap com animação de contagem (count-up) ao mudar
+- Linha tracejada sobre a barra de progresso marcando onde a projeção do mês vai chegar
+- Badge de status do ritmo:
+  - ACELERANDO (verde) se projeção ≥ meta
+  - NO RITMO (âmbar) se projeção entre 90% e 100%
+  - ATRASADO (magenta) se projeção < 90%
+- Linha "ETA da meta no ritmo atual: DD/MM" calculada a partir da run-rate
 
-- Mantém os tokens já existentes do sistema
-- Cards no padrão atual, sem tabelas densas
-- Contraste forte no número principal de gap
-- Destaque magenta para o que falta atingir
-- Verde apenas onde já estiver batido ou muito próximo
+## 4. Cards das 4 fases
 
-## Arquivos que devo mexer
+- Mini sparkline embaixo do número grande (últimos 7 dias da fase)
+- Delta vs ontem: `▲ +2 mães` ou `▼ −1 mãe` em verde/vermelho
+- Velocidade: badge em mono `+R$ 4,2k / 24h`
+- Anel de progresso circular fino ao redor do número de mães
 
-- `src/App.tsx`
-- `src/pages/ForecastDashboard.tsx`
-- `src/pages/ForecastTV.tsx` (novo)
+## 5. Detalhes finos
+
+- Corner brackets discretos nas pontas dos cards (estilo HUD)
+- Animação count-up nos valores R$
+- Tabular-nums já está em uso, manter
+
+## Fora de escopo desta etapa
+
+- Ticker rotativo de mães próximas de aprovar (precisa de query nova)
+- Som ou alertas sonoros
+- Comparação mês a mês
+
+## Arquivos afetados
+
+- `src/pages/ForecastTV.tsx` (principal)
+- Possíveis utilitários novos em `src/components/forecast/tv/` para sparkline, corner brackets e count-up
+
+## Dependências de dados
+
+- Sparkline e delta vs ontem precisam de histórico de quantidade por fase por dia.
+- **Decisão necessária:** começar com dados simulados/derivados do estado atual ou já criar a base de histórico real (snapshot diário via cron ou agregação de `mae_status_history`)?
 
 ## Detalhes técnicos
 
-- Vou reaproveitar `usePipelineForecast()` para usar os dados reais já calculados
-- Não preciso mexer no backend nem nas regras de negócio
-- O cálculo de gap, meta e atingimento virá da estrutura atual do forecast
-- A tela será otimizada para leitura rápida em viewport larga
-
-## Resultado esperado
-
-Você vai conseguir entrar no preview real do Modo TV e avaliar o layout antes de qualquer refinamento visual adicional.
+- Animações via Tailwind keyframes (já existem fade/scale) + CSS puro para scanline e pulso
+- Count-up com hook próprio (requestAnimationFrame), sem libs novas
+- Sparkline em SVG inline, sem dependências
+- Grid de fundo via `background-image` linear-gradient repetido
+- Tudo permanece em tokens do design system (magenta, charcoal, mono)
