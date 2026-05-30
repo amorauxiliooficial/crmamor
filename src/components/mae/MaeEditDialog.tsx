@@ -87,7 +87,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     data_evento: "",
     data_evento_tipo: "none" as "none" | "Parto (real)" | "DPP",
     categoria_previdenciaria: "Não informado" as "CLT" | "MEI" | "Contribuinte Individual" | "Desempregada" | "Não informado",
-    status_processo: "⚠️ Pendência Documental" as StatusProcesso,
+    status_processo: "📥 Entradas do Mês" as StatusProcesso,
     protocolo_inss: "",
     parcelas: "",
     contrato_assinado: false,
@@ -218,9 +218,10 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     setIsLoading(true);
     
     const dbStatusValue = mapDisplayStatusToDb(formData.status_processo) as 
-      "Pendência Documental" | "Elegível (Análise Positiva)" | 
+      "Gestantes 1 a 7 meses" | "Entradas do Mês" |
       "Aguardando Análise INSS" | "Aprovada" | "Indeferida" | 
-      "Recurso / Judicial" | "Inadimplência" | "Processo Encerrado";
+      "Recurso / Judicial" | "Inadimplência" | "Renegociação" |
+      "Rescisão de Contrato" | "Processo Encerrado";
 
     // Build update object - sync primary phone to mae_processo
     const primaryPhone = phones.find((p) => p.isPrimary && p.value.replace(/\D/g, "").length >= 10);

@@ -9,12 +9,17 @@ export interface MaeProcessoComAtividade extends MaeProcesso {
   ultima_atividade_em?: string | null;
 }
 
-// Map database status to display status with emoji
+// Map database status to display status with emoji.
+// Old phases ("Gestantes em Maturação", "Pendência Documental",
+// "Elegível (Análise Positiva)") are remapped to the new unified phases so
+// any legacy row read from the DB continues to render correctly.
 export const mapDbStatusToDisplay = (status: string): StatusProcesso => {
   const statusMap: Record<string, StatusProcesso> = {
-    "Gestantes em Maturação": "🤰 Gestantes em Maturação",
-    "Pendência Documental": "⚠️ Pendência Documental",
-    "Elegível (Análise Positiva)": "🟡 Elegível (Análise Positiva)",
+    "Gestantes 1 a 7 meses": "🤰 Gestantes 1 a 7 meses",
+    "Gestantes em Maturação": "🤰 Gestantes 1 a 7 meses",
+    "Entradas do Mês": "📥 Entradas do Mês",
+    "Pendência Documental": "📥 Entradas do Mês",
+    "Elegível (Análise Positiva)": "📥 Entradas do Mês",
     "Aguardando Análise INSS": "⏳ Aguardando Análise INSS",
     "Aprovada": "✅ Aprovada",
     "Indeferida": "❌ Indeferida",
@@ -25,7 +30,7 @@ export const mapDbStatusToDisplay = (status: string): StatusProcesso => {
     "📄 Rescisão de Contrato": "📄 Rescisão de Contrato",
     "Processo Encerrado": "📦 Processo Encerrado",
   };
-  return statusMap[status] || ("⚠️ Pendência Documental" as StatusProcesso);
+  return statusMap[status] || ("📥 Entradas do Mês" as StatusProcesso);
 };
 
 // Map a single database item to MaeProcessoComAtividade

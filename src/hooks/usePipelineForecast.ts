@@ -8,18 +8,16 @@ export const DEFAULT_TAXA_PAGAMENTO = 0.75;
 
 // Probabilidades por fase (sem emoji)
 export const PROBABILIDADE_FASE: Record<string, number> = {
-  "Gestantes em Maturação": 0.2,
-  "Pendência Documental": 0.35,
-  "Elegível (Análise Positiva)": 0.6,
+  "Gestantes 1 a 7 meses": 0.2,
+  "Entradas do Mês": 0.5,
   "Aguardando Análise INSS": 0.75,
   "Aprovada": 0.95,
 };
 
 // Ordem de exibição no funil (com emoji do display)
 export const FASES_FUNIL: StatusProcesso[] = [
-  "🤰 Gestantes em Maturação",
-  "⚠️ Pendência Documental",
-  "🟡 Elegível (Análise Positiva)",
+  "🤰 Gestantes 1 a 7 meses",
+  "📥 Entradas do Mês",
   "⏳ Aguardando Análise INSS",
   "✅ Aprovada",
 ];
@@ -89,7 +87,7 @@ export function usePipelineForecast(): PipelineForecast {
       const valorAjustado = valorBruto * probabilidade * taxaFase;
 
       let risco: "verde" | "amarelo" | "vermelho" = "verde";
-      if (key === "Pendência Documental") risco = "amarelo";
+      if (key === "Entradas do Mês") risco = "amarelo";
 
       const gapValor = metaValor - valorBruto;
       const gapQuantidade = metaQuantidade - quantidade;
@@ -120,7 +118,7 @@ export function usePipelineForecast(): PipelineForecast {
       .reduce((a, f) => a + f.valorAjustado, 0);
 
     const risco = fases
-      .filter((f) => f.faseKey === "Pendência Documental")
+      .filter((f) => f.faseKey === "Entradas do Mês")
       .reduce((a, f) => a + f.valorAjustado, 0);
 
     const metaTotalValor = fases.reduce((a, f) => a + f.metaValor, 0);
