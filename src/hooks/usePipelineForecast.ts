@@ -89,7 +89,8 @@ export function usePipelineForecast(): PipelineForecast {
 
       const metaRow = metaByFase.get(key);
       const ticketMedio = metaRow?.ticket_medio ?? ticketMedioPadrao;
-      const metaValor = metaRow?.meta_valor ?? 0;
+      const metaQuantidadeVal = metaRow?.meta_quantidade ?? 0;
+      const metaValor = metaQuantidadeVal * (metaRow?.ticket_medio ?? ticketMedioPadrao);
       const metaQuantidade = metaRow?.meta_quantidade ?? 0;
 
       const valorBruto = quantidade * ticketMedio;
