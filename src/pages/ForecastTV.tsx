@@ -352,20 +352,61 @@ export default function ForecastTV() {
       : null;
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-background text-foreground p-4 flex flex-col gap-4">
+    <div
+      className="tv-root relative h-screen w-screen overflow-hidden bg-background text-foreground p-4 flex flex-col gap-4"
+      style={{
+        // Institutional executive palette — scoped to this page only.
+        // Deep midnight navy + champagne gold accent. Inspired by Bloomberg / FT terminals.
+        ["--background" as any]: "222 38% 7%",
+        ["--foreground" as any]: "40 25% 92%",
+        ["--card" as any]: "222 32% 10%",
+        ["--card-foreground" as any]: "40 25% 92%",
+        ["--popover" as any]: "222 32% 10%",
+        ["--popover-foreground" as any]: "40 25% 92%",
+        ["--primary" as any]: "40 55% 58%",            // champagne gold
+        ["--primary-foreground" as any]: "222 38% 7%",
+        ["--secondary" as any]: "222 25% 16%",
+        ["--secondary-foreground" as any]: "40 25% 92%",
+        ["--muted" as any]: "222 22% 14%",
+        ["--muted-foreground" as any]: "220 12% 62%",
+        ["--accent" as any]: "40 55% 58%",
+        ["--accent-foreground" as any]: "222 38% 7%",
+        ["--destructive" as any]: "0 65% 55%",
+        ["--destructive-foreground" as any]: "40 25% 96%",
+        ["--border" as any]: "222 22% 18%",
+        ["--input" as any]: "222 22% 18%",
+        ["--ring" as any]: "40 55% 58%",
+        fontFamily: "'Inter Tight', 'Inter', ui-sans-serif, system-ui, sans-serif",
+      }}
+    >
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Instrument+Serif&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+        .tv-root .font-sans { font-family: 'Inter Tight', 'Inter', ui-sans-serif, system-ui, sans-serif !important; font-feature-settings: 'ss01','cv11'; }
+        .tv-root .font-serif { font-family: 'Instrument Serif', 'Merriweather', ui-serif, Georgia, serif !important; font-weight: 400 !important; letter-spacing: -0.01em; }
+        .tv-root .font-mono { font-family: 'IBM Plex Mono', 'JetBrains Mono', ui-monospace, monospace !important; font-feature-settings: 'zero','ss02'; }
+        .tv-root { background: radial-gradient(ellipse at top, hsl(222 32% 11%) 0%, hsl(222 38% 6%) 70%); }
         @keyframes tv-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes tv-led { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
         @keyframes tv-aurora { 0%,100% { transform: translate3d(-6%, -4%, 0) scale(1); } 50% { transform: translate3d(6%, 4%, 0) scale(1.08); } }
         .tv-led { animation: tv-led 1.8s ease-in-out infinite; }
         .tv-aurora { animation: tv-aurora 80s ease-in-out infinite; }
+        /* Subtle film grain for editorial feel */
+        .tv-grain::before {
+          content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.04;
+          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+          mix-blend-mode: overlay;
+        }
       `}</style>
 
-      {/* Aurora background */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      {/* Aurora background — dual layer (cool navy glow + warm gold accent) */}
+      <div aria-hidden className="tv-grain pointer-events-none absolute inset-0 overflow-hidden">
         <div
-          className="tv-aurora absolute top-1/2 left-1/2 h-[90vh] w-[90vh] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl opacity-40"
-          style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.18), transparent 65%)" }}
+          className="tv-aurora absolute top-1/3 left-1/2 h-[80vh] w-[80vh] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl opacity-50"
+          style={{ background: "radial-gradient(circle, hsl(220 60% 40% / 0.25), transparent 65%)" }}
+        />
+        <div
+          className="absolute bottom-0 right-0 h-[60vh] w-[60vh] translate-x-1/4 translate-y-1/4 rounded-full blur-3xl opacity-30"
+          style={{ background: "radial-gradient(circle, hsl(40 55% 58% / 0.18), transparent 70%)" }}
         />
       </div>
 
