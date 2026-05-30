@@ -66,8 +66,23 @@ export function usePipelineForecast(): PipelineForecast {
     const ticketMedioPadrao = premissas?.ticket_medio_padrao ?? DEFAULT_TICKET_MEDIO;
     const taxaPagamento = premissas?.taxa_pagamento_padrao ?? DEFAULT_TAXA_PAGAMENTO;
 
-    const counts = new Map<string, number>();
-    for (const m of maes) counts.set(m.status_processo, (counts.get(m.status_processo) || 0) + 1);
+    // Mapeia status legados/agrupados para as fases visíveis do funil (MVP 1)
+    const statusToFase = (status: string): StatusProcesso | null => {
+      if (!status) return null;
+      const key = stripEmoji(status);
+      if (key === "Gestantes 1 a 7 meses" || key === "Gestantes em Maturação") return "🤰 Gestantes 1 a 7 meses";
+      if (key === "Entradas do Mês" || key === "Pendência Documental" || key === "Elegível") return "📥 Entradas do Mês";
+      if (key === "Aguardando Análise INSS") return "⏳ Aguardando Análise INSS";
+      if (key === "Aprovada") return "✅ Aprovada";
+      return null;
+    };
+
+    const counts = new Map<StatusProcesso, number>();
+    for (const m of maes) {
+      const fase = statusToFase(m.status_processo);
+      if (!fase) continue;
+      counts.set(fase, (counts.get(fase) || 0) + 1);
+    }
 
     const metaByFase = new Map(metas.map((m) => [m.status_processo, m]));
 
