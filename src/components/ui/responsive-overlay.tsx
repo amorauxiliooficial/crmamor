@@ -14,7 +14,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { cn } from "@/lib/utils";
 
 interface ResponsiveOverlayProps {
@@ -68,9 +68,9 @@ export const ResponsiveOverlay = forwardRef<HTMLDivElement, ResponsiveOverlayPro
               )}
             </SheetHeader>
 
-            <ScrollArea className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
               <div className="px-4 pb-4">{children}</div>
-            </ScrollArea>
+            </div>
 
             {footer && (
               <div className="border-t px-4 py-3 shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
@@ -97,9 +97,9 @@ export const ResponsiveOverlay = forwardRef<HTMLDivElement, ResponsiveOverlayPro
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
 
-          <ScrollArea className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
             <div className="px-6 pb-4">{children}</div>
-          </ScrollArea>
+          </div>
 
           {footer && (
             <div className="border-t px-6 py-4 shrink-0">{footer}</div>
