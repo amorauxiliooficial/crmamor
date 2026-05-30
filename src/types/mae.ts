@@ -1,5 +1,5 @@
 export type StatusProcesso =
-  | "🤰 Gestantes 1 a 7 meses"
+  | "🤰 Gestantes 1 a 8 meses"
   | "📥 Entradas do Mês"
   | "⏳ Aguardando Análise INSS"
   | "✅ Aprovada"
@@ -74,7 +74,7 @@ export interface DecisaoProcesso {
 }
 
 export const STATUS_ORDER: StatusProcesso[] = [
-  "🤰 Gestantes 1 a 7 meses",
+  "🤰 Gestantes 1 a 8 meses",
   "📥 Entradas do Mês",
   "⏳ Aguardando Análise INSS",
   "✅ Aprovada",
@@ -87,7 +87,7 @@ export const STATUS_ORDER: StatusProcesso[] = [
 ];
 
 export const STATUS_COLORS: Record<StatusProcesso, string> = {
-  "🤰 Gestantes 1 a 7 meses": "bg-muted/60",
+  "🤰 Gestantes 1 a 8 meses": "bg-muted/60",
   "📥 Entradas do Mês": "bg-muted/60",
   "⏳ Aguardando Análise INSS": "bg-muted/60",
   "✅ Aprovada": "bg-muted/60",
@@ -101,7 +101,7 @@ export const STATUS_COLORS: Record<StatusProcesso, string> = {
 
 // Thin top-bar accent colors per status (used as border-top on column headers)
 export const STATUS_BAR_COLORS: Record<StatusProcesso, string> = {
-  "🤰 Gestantes 1 a 7 meses": "border-t-pink-500/60",
+  "🤰 Gestantes 1 a 8 meses": "border-t-pink-500/60",
   "📥 Entradas do Mês": "border-t-amber-500/60",
   "⏳ Aguardando Análise INSS": "border-t-sky-500/50",
   "✅ Aprovada": "border-t-emerald-500/60",
@@ -115,7 +115,7 @@ export const STATUS_BAR_COLORS: Record<StatusProcesso, string> = {
 
 // Prazos de follow-up para exibição na UI (em dias)
 export const FOLLOWUP_PRAZO_LABELS: Record<StatusProcesso, string> = {
-  "🤰 Gestantes 1 a 7 meses": "1x/mês",
+  "🤰 Gestantes 1 a 8 meses": "1x/mês",
   "📥 Entradas do Mês": "1x/semana",
   "⏳ Aguardando Análise INSS": "15 dias",
   "✅ Aprovada": "1 dia",

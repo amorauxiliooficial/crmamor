@@ -53,7 +53,7 @@ export interface ComissaoResumoUsuario {
 const STATUS_MAP: Record<string, keyof ComissaoResumoUsuario> = {
   "Entrada de Documentos": "processos_entrada_documentos",
   "Em Análise": "processos_em_analise",
-  "Gestantes 1 a 7 meses": "processos_pendencia",
+  "Gestantes 1 a 8 meses": "processos_pendencia",
   "Entradas do Mês": "processos_elegiveis",
   // Compatibilidade com registros antigos (caso ainda existam)
   "Pendência Documental": "processos_pendencia",
