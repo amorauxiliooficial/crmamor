@@ -1,0 +1,1 @@
+ALTER TABLE public.forecast_metas_fase ADD COLUMN IF NOT EXISTS taxa_pagamento numeric;
