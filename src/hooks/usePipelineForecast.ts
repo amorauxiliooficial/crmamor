@@ -87,7 +87,7 @@ export function usePipelineForecast(): PipelineForecast {
       const valorAjustado = valorBruto * probabilidade * taxaFase;
 
       let risco: "verde" | "amarelo" | "vermelho" = "verde";
-      if (key === "Pendência Documental") risco = "amarelo";
+      if (key === "Entradas do Mês") risco = "amarelo";
 
       const gapValor = metaValor - valorBruto;
       const gapQuantidade = metaQuantidade - quantidade;
