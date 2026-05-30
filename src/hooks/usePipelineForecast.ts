@@ -13,12 +13,6 @@ export const PROBABILIDADE_FASE: Record<string, number> = {
   "Elegível (Análise Positiva)": 0.6,
   "Aguardando Análise INSS": 0.75,
   "Aprovada": 0.95,
-  "Renegociação": 0.5,
-  "Recurso / Judicial": 0.4,
-  "Inadimplência": 0.25,
-  "Rescisão de Contrato": 0.1,
-  "Processo Encerrado": 0,
-  "Indeferida": 0,
 };
 
 // Ordem de exibição no funil (com emoji do display)
@@ -28,9 +22,6 @@ export const FASES_FUNIL: StatusProcesso[] = [
   "🟡 Elegível (Análise Positiva)",
   "⏳ Aguardando Análise INSS",
   "✅ Aprovada",
-  "🤝 Renegociação",
-  "⚖️ Recurso / Judicial",
-  "💳 Inadimplência",
 ];
 
 export const stripEmoji = (s: string) => {
@@ -98,8 +89,7 @@ export function usePipelineForecast(): PipelineForecast {
       const valorAjustado = valorBruto * probabilidade * taxaFase;
 
       let risco: "verde" | "amarelo" | "vermelho" = "verde";
-      if (key === "Inadimplência" || key === "Recurso / Judicial") risco = "vermelho";
-      else if (key === "Renegociação" || key === "Pendência Documental") risco = "amarelo";
+      if (key === "Pendência Documental") risco = "amarelo";
 
       const gapValor = metaValor - valorBruto;
       const gapQuantidade = metaQuantidade - quantidade;
@@ -130,7 +120,7 @@ export function usePipelineForecast(): PipelineForecast {
       .reduce((a, f) => a + f.valorAjustado, 0);
 
     const risco = fases
-      .filter((f) => f.faseKey === "Inadimplência" || f.faseKey === "Renegociação")
+      .filter((f) => f.faseKey === "Pendência Documental")
       .reduce((a, f) => a + f.valorAjustado, 0);
 
     const metaTotalValor = fases.reduce((a, f) => a + f.metaValor, 0);
