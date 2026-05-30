@@ -83,7 +83,8 @@ export function useForecastMetas() {
             meta_valor: m.meta_valor,
             meta_quantidade: m.meta_quantidade,
             ticket_medio: m.ticket_medio,
-          })),
+            taxa_pagamento: m.taxa_pagamento,
+          })) as any,
           { onConflict: "status_processo" }
         );
       if (error) throw error;
