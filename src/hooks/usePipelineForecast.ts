@@ -89,12 +89,13 @@ export function usePipelineForecast(): PipelineForecast {
 
       const metaRow = metaByFase.get(key);
       const ticketMedio = metaRow?.ticket_medio ?? ticketMedioPadrao;
+      const taxaFase = metaRow?.taxa_pagamento ?? taxaPagamento;
       const metaQuantidadeVal = metaRow?.meta_quantidade ?? 0;
-      const metaValor = metaQuantidadeVal * (metaRow?.ticket_medio ?? ticketMedioPadrao);
+      const metaValor = metaQuantidadeVal * ticketMedio;
       const metaQuantidade = metaQuantidadeVal;
 
       const valorBruto = quantidade * ticketMedio;
-      const valorAjustado = valorBruto * probabilidade * taxaPagamento;
+      const valorAjustado = valorBruto * probabilidade * taxaFase;
 
       let risco: "verde" | "amarelo" | "vermelho" = "verde";
       if (key === "Inadimplência" || key === "Recurso / Judicial") risco = "vermelho";
