@@ -3,7 +3,7 @@ import { InsightBlock } from "./InsightBlock";
 import type { PipelineForecast, FaseForecast } from "@/hooks/usePipelineForecast";
 
 const FASE_TONE: Record<string, string> = {
-  "Pendência Documental": "amarelo",
+  "Entradas do Mês": "amarelo",
 };
 
 interface InsightsSidebarProps {
