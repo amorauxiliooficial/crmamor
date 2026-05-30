@@ -91,7 +91,7 @@ export function usePipelineForecast(): PipelineForecast {
       const ticketMedio = metaRow?.ticket_medio ?? ticketMedioPadrao;
       const metaQuantidadeVal = metaRow?.meta_quantidade ?? 0;
       const metaValor = metaQuantidadeVal * (metaRow?.ticket_medio ?? ticketMedioPadrao);
-      const metaQuantidade = metaRow?.meta_quantidade ?? 0;
+      const metaQuantidade = metaQuantidadeVal;
 
       const valorBruto = quantidade * ticketMedio;
       const valorAjustado = valorBruto * probabilidade * taxaPagamento;
