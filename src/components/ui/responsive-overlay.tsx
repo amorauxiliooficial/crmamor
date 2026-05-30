@@ -97,9 +97,9 @@ export const ResponsiveOverlay = forwardRef<HTMLDivElement, ResponsiveOverlayPro
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
 
-          <ScrollArea className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
             <div className="px-6 pb-4">{children}</div>
-          </ScrollArea>
+          </div>
 
           {footer && (
             <div className="border-t px-6 py-4 shrink-0">{footer}</div>
