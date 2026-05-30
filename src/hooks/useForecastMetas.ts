@@ -8,6 +8,7 @@ export interface MetaFase {
   meta_valor: number;
   meta_quantidade: number;
   ticket_medio: number | null;
+  taxa_pagamento: number | null;
 }
 
 export interface ForecastPremissas {
