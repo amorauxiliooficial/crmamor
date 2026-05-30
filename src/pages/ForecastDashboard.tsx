@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Loader2, Activity, Settings2 } from "lucide-react";
+import { ArrowLeft, Loader2, Activity, Settings2, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RiskBanner } from "@/components/forecast/RiskBanner";
 import { FunnelChart, atingimentoTextColor } from "@/components/forecast/FunnelChart";
@@ -108,12 +108,18 @@ export default function ForecastDashboard() {
               </p>
             </div>
           </div>
-          {isAdmin && (
-            <Button variant="outline" size="sm" onClick={() => setConfigOpen(true)}>
-              <Settings2 className="h-4 w-4 mr-2" />
-              Metas
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/forecast/tv")}>
+              <Monitor className="h-4 w-4 mr-2" />
+              Modo TV
             </Button>
-          )}
+            {isAdmin && (
+              <Button variant="outline" size="sm" onClick={() => setConfigOpen(true)}>
+                <Settings2 className="h-4 w-4 mr-2" />
+                Metas
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 

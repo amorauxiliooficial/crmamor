@@ -1,17 +1,57 @@
-## Bug: barra de rolagem do drill-down (e dialogs) não funciona
+# Plano: preview real do Modo TV no forecast
 
-Quando você clica numa etapa do funil e o painel abre, o conteúdo ultrapassa a altura disponível mas a roda do mouse / a barra de rolagem não respondem. O mesmo ocorre no dialog "Configurar Metas".
+Vou substituir a ideia de mockup interrompido por um preview navegável de verdade dentro do sistema, usando o visual que já existe hoje.
 
-### Causa
-O `ResponsiveOverlay` envolve o conteúdo num `ScrollArea` (Radix) dentro de um `DialogContent`/`SheetContent` que usa `flex flex-col overflow-hidden` + `flex-1 min-h-0`. Em alguns cenários (especialmente quando há grids/inputs aninhados), o viewport interno do Radix `ScrollArea` deixa de calcular altura corretamente — a área cresce além do container e o scroll nativo é bloqueado pelo `overflow-hidden` do pai.
+## O que vou construir
 
-### Fix (apenas frontend, sem mudar comportamento de outros componentes)
-Em `src/components/ui/responsive-overlay.tsx`:
+1. Criar uma nova tela `/forecast/tv`
+   - Tela pensada para TV/monitor
+   - Mesmo tema atual do sistema: carvão, magenta, bordas sutis, Poppins + JetBrains Mono
+   - Sem estética sci-fi exagerada
 
-- Substituir os dois `ScrollArea` (mobile Sheet e desktop Dialog) por um `<div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">`.
-- Manter o padding interno (`px-4 pb-4` / `px-6 pb-4`).
-- Manter `flex-col` + `min-h-0` + `overflow-hidden` no container externo para que o footer continue fixo.
+2. Montar a hierarquia visual focada em meta
+   - Hero principal com “quanto falta para bater a meta”
+   - Barra de progresso da meta total
+   - Leitura imediata de realizado, meta e projeção
 
-Isso usa scroll nativo, que funciona de forma confiável tanto no Sheet (mobile) quanto no Dialog (desktop), em todas as telas do app que usam `ResponsiveOverlay` (drill-down do Forecast, MetasFaseConfigDialog, e demais).
+3. Destacar as 4 etapas do funil
+   - Gestantes
+   - Entradas do Mês
+   - Aguardando Análise INSS
+   - Aprovada
+   
+   Cada etapa terá:
+   - quantidade atual
+   - valor atual
+   - meta da etapa
+   - quanto falta para bater a meta
+   - percentual de atingimento
 
-Sem migrações, sem mudança de lógica, sem alteração visual além do scrollbar ser o nativo do navegador.
+4. Dar acesso fácil ao preview
+   - Adicionar um botão “Modo TV” na página `/forecast`
+   - Abrir a rota nova para você visualizar imediatamente
+
+## Direção visual
+
+- Mantém os tokens já existentes do sistema
+- Cards no padrão atual, sem tabelas densas
+- Contraste forte no número principal de gap
+- Destaque magenta para o que falta atingir
+- Verde apenas onde já estiver batido ou muito próximo
+
+## Arquivos que devo mexer
+
+- `src/App.tsx`
+- `src/pages/ForecastDashboard.tsx`
+- `src/pages/ForecastTV.tsx` (novo)
+
+## Detalhes técnicos
+
+- Vou reaproveitar `usePipelineForecast()` para usar os dados reais já calculados
+- Não preciso mexer no backend nem nas regras de negócio
+- O cálculo de gap, meta e atingimento virá da estrutura atual do forecast
+- A tela será otimizada para leitura rápida em viewport larga
+
+## Resultado esperado
+
+Você vai conseguir entrar no preview real do Modo TV e avaliar o layout antes de qualquer refinamento visual adicional.
