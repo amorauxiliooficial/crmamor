@@ -68,9 +68,9 @@ export const ResponsiveOverlay = forwardRef<HTMLDivElement, ResponsiveOverlayPro
               )}
             </SheetHeader>
 
-            <ScrollArea className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
               <div className="px-4 pb-4">{children}</div>
-            </ScrollArea>
+            </div>
 
             {footer && (
               <div className="border-t px-4 py-3 shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
