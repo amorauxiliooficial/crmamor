@@ -118,7 +118,7 @@ export function usePipelineForecast(): PipelineForecast {
       .reduce((a, f) => a + f.valorAjustado, 0);
 
     const risco = fases
-      .filter((f) => f.faseKey === "Pendência Documental")
+      .filter((f) => f.faseKey === "Entradas do Mês")
       .reduce((a, f) => a + f.valorAjustado, 0);
 
     const metaTotalValor = fases.reduce((a, f) => a + f.metaValor, 0);
