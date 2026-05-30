@@ -8,6 +8,7 @@ export interface MetaFase {
   meta_valor: number;
   meta_quantidade: number;
   ticket_medio: number | null;
+  taxa_pagamento: number | null;
 }
 
 export interface ForecastPremissas {
@@ -24,13 +25,14 @@ export function useForecastMetas() {
     queryFn: async (): Promise<MetaFase[]> => {
       const { data, error } = await supabase
         .from("forecast_metas_fase")
-        .select("status_processo, meta_valor, meta_quantidade, ticket_medio");
+        .select("status_processo, meta_valor, meta_quantidade, ticket_medio, taxa_pagamento");
       if (error) throw error;
-      return (data || []).map((r) => ({
+      return (data || []).map((r: any) => ({
         status_processo: r.status_processo,
         meta_valor: Number(r.meta_valor) || 0,
         meta_quantidade: Number(r.meta_quantidade) || 0,
         ticket_medio: r.ticket_medio !== null ? Number(r.ticket_medio) : null,
+        taxa_pagamento: r.taxa_pagamento !== null && r.taxa_pagamento !== undefined ? Number(r.taxa_pagamento) : null,
       }));
     },
     staleTime: 60_000,
@@ -81,7 +83,8 @@ export function useForecastMetas() {
             meta_valor: m.meta_valor,
             meta_quantidade: m.meta_quantidade,
             ticket_medio: m.ticket_medio,
-          })),
+            taxa_pagamento: m.taxa_pagamento,
+          })) as any,
           { onConflict: "status_processo" }
         );
       if (error) throw error;

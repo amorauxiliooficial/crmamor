@@ -773,6 +773,7 @@ export type Database = {
           meta_quantidade: number
           meta_valor: number
           status_processo: string
+          taxa_pagamento: number | null
           ticket_medio: number | null
           updated_at: string
           updated_by: string | null
@@ -782,6 +783,7 @@ export type Database = {
           meta_quantidade?: number
           meta_valor?: number
           status_processo: string
+          taxa_pagamento?: number | null
           ticket_medio?: number | null
           updated_at?: string
           updated_by?: string | null
@@ -791,6 +793,7 @@ export type Database = {
           meta_quantidade?: number
           meta_valor?: number
           status_processo?: string
+          taxa_pagamento?: number | null
           ticket_medio?: number | null
           updated_at?: string
           updated_by?: string | null
