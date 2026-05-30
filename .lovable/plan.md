@@ -1,63 +1,71 @@
-# Plano: camada "tecnológica" no Modo TV
+# Plano: Modo TV — refinamento premium
 
-Adicionar elementos de painel/telemetria à tela `/forecast/tv` sem quebrar o visual atual.
+Inspiração: padrão Linear + Apple + Stripe — escuro, denso de informação onde precisa, generoso onde importa, motion lento e contido.
 
-## 1. Ambiente (fundo da tela)
+## 1. Remover a scanline
 
-- Grid técnico sutil: linhas finas em magenta 4% de opacidade cobrindo o fundo inteiro
-- Scanline horizontal animada bem leve, atravessando a tela a cada ~15s
-- Glow pulsante atrás do número grande de gap (respira lentamente)
+Sai a linha animada magenta atravessando a tela. Fica grid técnico (mais sutil ainda) e glow do hero.
 
-## 2. Header com telemetria ao vivo
+## 2. Fundo "aurora" (substitui a scanline)
 
-- Relógio digital em fonte mono, atualizando a cada segundo
-- LED verde piscando a cada sincronização do Realtime
-- Texto "última atualização há Xs" ao lado, em mono cinza
-- Rodapé fino na base: `SYS · FORECAST v1 · LIVE` em mono discreto
+- Camada de gradiente mesh: 2-3 manchas grandes desfocadas em magenta + carvão, posicionadas atrás do hero
+- Movimento lento (60s+), quase imperceptível, dá sensação de "vivo" sem distrair
+- Grid técnico vai pra 2% de opacidade, com vinheta radial mais forte para sumir nas bordas
+- Ruído fino monocromático (film grain) bem leve por cima de tudo — clássico premium
 
-## 3. Hero da meta
+## 3. Tipografia premium
 
-- Número grande do gap com animação de contagem (count-up) ao mudar
-- Linha tracejada sobre a barra de progresso marcando onde a projeção do mês vai chegar
-- Badge de status do ritmo:
-  - ACELERANDO (verde) se projeção ≥ meta
-  - NO RITMO (âmbar) se projeção entre 90% e 100%
-  - ATRASADO (magenta) se projeção < 90%
-- Linha "ETA da meta no ritmo atual: DD/MM" calculada a partir da run-rate
+- Número grande do gap em **Merriweather** (serif já no sistema) ao invés de mono — dá ar editorial, tipo Apple keynote
+- Subir tamanho do gap para `text-[10rem]` em telas grandes
+- Letter-spacing ajustado para negativo no display, kerning premium
+- Labels minúsculas em mono mantêm o lado técnico
 
-## 4. Cards das 4 fases
+## 4. Hierarquia + respiro
 
-- Mini sparkline embaixo do número grande (últimos 7 dias da fase)
-- Delta vs ontem: `▲ +2 mães` ou `▼ −1 mãe` em verde/vermelho
-- Velocidade: badge em mono `+R$ 4,2k / 24h`
-- Anel de progresso circular fino ao redor do número de mães
+- Hero ganha mais ar (padding maior, sem disputa com mini-cards do lado)
+- Mini-cards de "dias restantes / projeção / pipeline ajustado" viram uma **faixa horizontal fina** logo abaixo do hero, separada por divisores verticais, estilo barra de estatísticas de aeroporto/bolsa
+- 4 cards de fase ganham padding interno maior, sombra suave em vez de fundo tonal
 
-## 5. Detalhes finos
+## 5. Profundidade refinada
 
-- Corner brackets discretos nas pontas dos cards (estilo HUD)
-- Animação count-up nos valores R$
-- Tabular-nums já está em uso, manter
+- Cards com borda em **gradiente** (`border-image`) bem sutil — magenta no topo desvanecendo para transparente
+- Sombra realista em camadas (Linear-style): `0 1px 0 white/5, 0 10px 30px black/40`
+- Hover/destaque com leve elevação (sem escala, só shadow)
+- Glassmorphism no header e rodapé (já tem backdrop-blur, intensificar)
+
+## 6. Motion premium
+
+- Tudo com easing customizado (cubic-bezier suave, 600-900ms)
+- Hero entra com fade + leve subida 8px ao montar
+- Cards entram em cascata (stagger 80ms)
+- Barra de progresso anima da esquerda em 1.2s
+- Aurora respira em 60s loop
+
+## 7. Detalhes que comunicam "premium"
+
+- LED "AO VIVO" mais discreto: ponto verde minúsculo + texto fininho, sem badge cheio
+- Brackets nos cantos saem (eram HUD demais) — bordas finas em gradiente substituem
+- Rodapé técnico mantém, mas menor e mais espaçado
+- Status do ritmo vira chip único centralizado: linha fina + tipografia maiúscula com tracking generoso
 
 ## Fora de escopo desta etapa
 
-- Ticker rotativo de mães próximas de aprovar (precisa de query nova)
-- Som ou alertas sonoros
-- Comparação mês a mês
+- Não mexo no botão "Modo TV" do dashboard
+- Não toco em dados/backend (sparkline continua sintético até decidirmos)
+- Mantém estrutura: hero + faixa de stats + 4 cards de fase
 
-## Arquivos afetados
+## Arquivos
 
-- `src/pages/ForecastTV.tsx` (principal)
-- Possíveis utilitários novos em `src/components/forecast/tv/` para sparkline, corner brackets e count-up
-
-## Dependências de dados
-
-- Sparkline e delta vs ontem precisam de histórico de quantidade por fase por dia.
-- **Decisão necessária:** começar com dados simulados/derivados do estado atual ou já criar a base de histórico real (snapshot diário via cron ou agregação de `mae_status_history`)?
+- `src/pages/ForecastTV.tsx` (refatoração visual completa, mesma estrutura de dados)
 
 ## Detalhes técnicos
 
-- Animações via Tailwind keyframes (já existem fade/scale) + CSS puro para scanline e pulso
-- Count-up com hook próprio (requestAnimationFrame), sem libs novas
-- Sparkline em SVG inline, sem dependências
-- Grid de fundo via `background-image` linear-gradient repetido
-- Tudo permanece em tokens do design system (magenta, charcoal, mono)
+- Aurora via 2-3 `div` com `radial-gradient` + `blur-3xl` + animação CSS lenta
+- Film grain via SVG inline com `feTurbulence` aplicado como background fixo de baixíssima opacidade
+- Bordas em gradiente via `border-image` ou pseudo-elemento com `mask-composite`
+- Easing customizado declarado uma vez via classe utilitária inline
+- Sem libs novas, sem framer-motion adicional
+
+## Resultado esperado
+
+Sensação de "produto de empresa grande, atualizando ao vivo, com confiança" — menos arcade, mais sala de controle de companhia aérea/banco premium.
