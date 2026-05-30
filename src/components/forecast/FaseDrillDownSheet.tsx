@@ -32,10 +32,17 @@ export function FaseDrillDownSheet({ fase, open, onOpenChange, formatBRL, format
   const [search, setSearch] = useState("");
   const [selectedMae, setSelectedMae] = useState<MaeProcesso | null>(null);
 
-  const maesDaFase = useMemo(
-    () => (fase ? maes.filter((m) => m.status_processo === fase.fase) : []),
-    [maes, fase]
-  );
+  const maesDaFase = useMemo(() => {
+    if (!fase) return [];
+    const matches = (statusRaw: string) => {
+      const status = statusRaw || "";
+      const key = status.split(" ").slice(1).join(" ") || status;
+      if (fase.faseKey === "Gestantes 1 a 7 meses") return key === "Gestantes 1 a 7 meses" || key === "Gestantes em Maturação";
+      if (fase.faseKey === "Entradas do Mês") return key === "Entradas do Mês" || key === "Pendência Documental" || key === "Elegível";
+      return status === fase.fase;
+    };
+    return maes.filter((m) => matches(m.status_processo));
+  }, [maes, fase]);
 
   const ids = useMemo(() => maesDaFase.map((m) => m.id), [maesDaFase]);
   const { data: faseInfo } = useMaesFaseInfo(ids, fase?.fase ?? null);
