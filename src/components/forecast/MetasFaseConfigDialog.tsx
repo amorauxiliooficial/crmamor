@@ -121,22 +121,12 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
               const key = stripEmoji(fase);
               const row = rows.find((r) => r.status_processo === key);
               if (!row) return null;
+              const ticketEfetivo = row.ticket_medio ?? ticketPadrao;
+              const metaValorCalc = row.meta_quantidade * ticketEfetivo;
               return (
                 <div key={key} className="rounded-lg border border-border/60 p-3 space-y-2.5 bg-card/40">
                   <div className="text-sm font-semibold">{fase}</div>
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                        Meta valor (R$)
-                      </Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={row.meta_valor}
-                        onChange={(e) => updateRow(key, { meta_valor: Number(e.target.value) || 0 })}
-                        className="h-9 text-sm"
-                      />
-                    </div>
                     <div className="space-y-1">
                       <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
                         Meta qtd
@@ -145,7 +135,10 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
                         type="number"
                         min={0}
                         value={row.meta_quantidade}
-                        onChange={(e) => updateRow(key, { meta_quantidade: Number(e.target.value) || 0 })}
+                        onChange={(e) => {
+                          const qtd = Number(e.target.value) || 0;
+                          updateRow(key, { meta_quantidade: qtd, meta_valor: qtd * ticketEfetivo });
+                        }}
                         className="h-9 text-sm"
                       />
                     </div>
@@ -160,9 +153,23 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
                         value={row.ticket_medio ?? ""}
                         onChange={(e) => {
                           const v = e.target.value;
-                          updateRow(key, { ticket_medio: v === "" ? null : Number(v) || 0 });
+                          const ticket = v === "" ? null : Number(v) || 0;
+                          const ticketUsado = ticket ?? ticketPadrao;
+                          updateRow(key, { ticket_medio: ticket, meta_valor: row.meta_quantidade * ticketUsado });
                         }}
                         className="h-9 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        Meta valor (R$)
+                      </Label>
+                      <Input
+                        type="number"
+                        value={metaValorCalc}
+                        readOnly
+                        tabIndex={-1}
+                        className="h-9 text-sm bg-muted/40 cursor-not-allowed"
                       />
                     </div>
                   </div>
