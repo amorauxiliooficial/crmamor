@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePipelineForecast, type FaseForecast } from "@/hooks/usePipelineForecast";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import logoAam from "@/assets/logo-aam.png";
 
 const formatBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -17,11 +18,33 @@ const formatBRLShort = (n: number) => {
 
 const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
-const FASE_TONE: Record<string, { dot: string; bar: string; text: string }> = {
-  "Gestantes 1 a 8 meses": { dot: "bg-rose-400", bar: "bg-rose-400", text: "text-rose-400" },
-  "Entradas do Mês":      { dot: "bg-amber-400", bar: "bg-amber-400", text: "text-amber-400" },
-  "Aguardando Análise INSS": { dot: "bg-sky-400", bar: "bg-sky-400", text: "text-sky-400" },
-  "Aprovada":             { dot: "bg-emerald-400", bar: "bg-emerald-400", text: "text-emerald-400" },
+// Tons por fase usando exclusivamente tokens da marca (primary + foreground)
+// — sem rainbow. Hierarquia por opacidade.
+const FASE_TONE: Record<string, { dot: string; bar: string; text: string; accent: string }> = {
+  "Gestantes 1 a 8 meses": {
+    dot: "bg-muted-foreground/60",
+    bar: "bg-muted-foreground/60",
+    text: "text-muted-foreground",
+    accent: "hsl(var(--muted-foreground) / 0.5)",
+  },
+  "Entradas do Mês": {
+    dot: "bg-primary/50",
+    bar: "bg-primary/50",
+    text: "text-primary/70",
+    accent: "hsl(var(--primary) / 0.5)",
+  },
+  "Aguardando Análise INSS": {
+    dot: "bg-primary/80",
+    bar: "bg-primary/80",
+    text: "text-primary",
+    accent: "hsl(var(--primary) / 0.8)",
+  },
+  "Aprovada": {
+    dot: "bg-primary",
+    bar: "bg-primary",
+    text: "text-primary",
+    accent: "hsl(var(--primary))",
+  },
 };
 
 // ============ Hooks ============
@@ -58,7 +81,7 @@ function useCountUp(target: number, durationMs = 900) {
   return value;
 }
 
-// ============ UI ============
+// ============ UI primitives ============
 
 function Sparkline({ seed, colorClass }: { seed: number; colorClass: string }) {
   const N = 16;
@@ -93,6 +116,7 @@ function PhaseCard({ f, seed, index }: { f: FaseForecast; seed: number; index: n
   const faltaQtd = Math.max(0, f.gapQuantidade);
   const batida = hasMeta && f.gapValor <= 0;
   const deltaQtd = ((seed * 7) % 5) - 2;
+  const isHero = f.faseKey === "Aprovada";
 
   return (
     <div
@@ -106,13 +130,14 @@ function PhaseCard({ f, seed, index }: { f: FaseForecast; seed: number; index: n
           "inset 0 1px 0 0 hsl(0 0% 100% / 0.04), 0 1px 0 0 hsl(0 0% 100% / 0.03), 0 12px 32px -16px hsl(0 0% 0% / 0.45)",
       }}
     >
-      {/* gradient border via pseudo */}
+      {/* gradient border via pseudo — destaque maior só na fase de aprovação */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 rounded-2xl p-px"
         style={{
-          background:
-            "linear-gradient(180deg, hsl(var(--primary) / 0.35), hsl(var(--border) / 0.6) 30%, hsl(var(--border) / 0.3))",
+          background: isHero
+            ? "linear-gradient(180deg, hsl(var(--primary) / 0.7), hsl(var(--primary) / 0.2) 40%, hsl(var(--border) / 0.3))"
+            : "linear-gradient(180deg, hsl(var(--primary) / 0.25), hsl(var(--border) / 0.55) 35%, hsl(var(--border) / 0.25))",
           WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
           WebkitMaskComposite: "xor",
           maskComposite: "exclude",
@@ -122,14 +147,14 @@ function PhaseCard({ f, seed, index }: { f: FaseForecast; seed: number; index: n
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className={cn("h-1.5 w-1.5 rounded-full", tone.dot)} />
-          <span className="text-[10px] uppercase tracking-[0.22em] font-medium text-muted-foreground truncate">
+          <span className="font-sans text-[10px] uppercase tracking-[0.22em] font-medium text-muted-foreground truncate">
             {f.faseKey}
           </span>
         </div>
         <span
           className={cn(
             "font-mono text-[10px] tabular-nums",
-            deltaQtd >= 0 ? "text-emerald-400/80" : "text-rose-400/80"
+            deltaQtd >= 0 ? "text-primary/80" : "text-muted-foreground"
           )}
         >
           {deltaQtd >= 0 ? "+" : ""}{deltaQtd} · 24h
@@ -149,13 +174,19 @@ function PhaseCard({ f, seed, index }: { f: FaseForecast; seed: number; index: n
 
       <div className="mt-4 space-y-1.5">
         <div className="flex items-baseline justify-between">
-          <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Realizado</span>
+          <span className="font-sans text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Realizado</span>
           <span className="font-mono text-base font-medium tabular-nums">
             <CountUpNumber value={f.valorBruto} formatter={formatBRLShort} />
           </span>
         </div>
         <div className="flex items-baseline justify-between">
-          <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Meta</span>
+          <span className="font-sans text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Ticket médio</span>
+          <span className="font-mono text-xs text-muted-foreground tabular-nums">
+            {formatBRLShort(f.ticketMedio)}
+          </span>
+        </div>
+        <div className="flex items-baseline justify-between">
+          <span className="font-sans text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Meta</span>
           <span className="font-mono text-xs text-muted-foreground tabular-nums">
             {hasMeta ? formatBRLShort(f.metaValor) : "—"}
           </span>
@@ -166,22 +197,57 @@ function PhaseCard({ f, seed, index }: { f: FaseForecast; seed: number; index: n
         <div className="mt-5">
           <div className="h-[3px] w-full rounded-full bg-muted/60 overflow-hidden">
             <div
-              className={cn("h-full rounded-full", batida ? "bg-emerald-400" : tone.bar)}
+              className={cn("h-full rounded-full", tone.bar)}
               style={{ width: `${pct}%`, transition: `width 1200ms ${EASE}` }}
             />
           </div>
           <div className="mt-2 flex items-center justify-between text-[10px]">
             <span className="font-mono tabular-nums text-muted-foreground">{pct}%</span>
             {batida ? (
-              <span className="font-medium text-emerald-400">Meta batida</span>
+              <span className="font-mono uppercase tracking-[0.2em] text-primary font-medium">Meta batida</span>
             ) : (
-              <span className="font-mono tabular-nums text-primary/90">
+              <span className="font-mono tabular-nums text-foreground/80">
                 faltam {formatBRLShort(faltaValor)} · {faltaQtd}
               </span>
             )}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ============ KPI strip ============
+
+interface Kpi {
+  label: string;
+  value: string;
+  delta?: { dir: "up" | "down" | "flat"; text: string };
+}
+
+function KpiStrip({ items }: { items: Kpi[] }) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-5 divide-x divide-border/40 border-y border-border/40 bg-background/30 backdrop-blur-xl">
+      {items.map((s, i) => (
+        <div key={i} className="px-6 py-4">
+          <p className="font-sans text-[10px] uppercase tracking-[0.25em] text-muted-foreground">{s.label}</p>
+          <div className="mt-1 flex items-baseline gap-2">
+            <p className="font-mono tabular-nums text-2xl font-medium text-foreground">{s.value}</p>
+            {s.delta && (
+              <span
+                className={cn(
+                  "font-mono text-[10px] tabular-nums",
+                  s.delta.dir === "up" ? "text-primary" :
+                  s.delta.dir === "down" ? "text-muted-foreground" :
+                  "text-muted-foreground/70"
+                )}
+              >
+                {s.delta.dir === "up" ? "▲" : s.delta.dir === "down" ? "▼" : "·"} {s.delta.text}
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -196,6 +262,11 @@ export default function ForecastTV() {
 
   const [lastSync, setLastSync] = useState<Date>(() => new Date());
   useEffect(() => { setLastSync(new Date()); }, [forecast.pipelineBruto, forecast.totalMaes]);
+
+  // ID de sessão estável (4 chars) — sensação de painel corporativo
+  const sessionId = useMemo(() => {
+    return Math.random().toString(16).slice(2, 6).toUpperCase();
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -220,15 +291,17 @@ export default function ForecastTV() {
   const diasRestantes = Math.max(0, diasNoMes - diaAtual);
   const projecaoMes = diaAtual > 0 ? (realizado / diaAtual) * diasNoMes : 0;
   const projecaoPct = metaTotal > 0 ? Math.min(100, Math.round((projecaoMes / metaTotal) * 100)) : 0;
+  // "Pace" — onde deveríamos estar hoje (linear pelo dia do mês)
+  const pacePct = diasNoMes > 0 ? Math.round((diaAtual / diasNoMes) * 100) : 0;
 
   let ritmo: { label: string; color: string };
-  if (projecaoMes >= metaTotal) ritmo = { label: "ACELERANDO", color: "text-emerald-400" };
-  else if (projecaoMes >= metaTotal * 0.9) ritmo = { label: "NO RITMO", color: "text-amber-400" };
-  else ritmo = { label: "ATRASADO", color: "text-primary" };
+  if (projecaoMes >= metaTotal) ritmo = { label: "ACELERANDO", color: "text-primary" };
+  else if (projecaoMes >= metaTotal * 0.9) ritmo = { label: "NO RITMO", color: "text-foreground/80" };
+  else ritmo = { label: "ATRASADO", color: "text-muted-foreground" };
 
   const ritmoDiario = diaAtual > 0 ? realizado / diaAtual : 0;
   let etaLabel = "—";
-  if (metaBatida) etaLabel = "Meta batida";
+  if (metaBatida) etaLabel = "OK";
   else if (ritmoDiario > 0) {
     const dias = Math.ceil(gap / ritmoDiario);
     const eta = new Date(now);
@@ -236,8 +309,35 @@ export default function ForecastTV() {
     etaLabel = eta.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
   }
 
+  // Conversão Entradas → Aprovada (derivado)
+  const faseEntradas = forecast.fases.find(f => f.faseKey === "Entradas do Mês");
+  const faseAprovada = forecast.fases.find(f => f.faseKey === "Aprovada");
+  const conversao =
+    faseEntradas && faseEntradas.quantidade > 0 && faseAprovada
+      ? Math.round((faseAprovada.quantidade / faseEntradas.quantidade) * 100)
+      : null;
+
   const secondsSinceSync = Math.max(0, Math.round((now.getTime() - lastSync.getTime()) / 1000));
   const clockStr = now.toLocaleTimeString("pt-BR", { hour12: false });
+  const dateStr = now.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+  const tz = "BRT";
+
+  const kpis: Kpi[] = [
+    { label: "Dias restantes", value: String(diasRestantes) },
+    {
+      label: "Projeção do mês",
+      value: formatBRLShort(projecaoMes),
+      delta: projecaoMes >= metaTotal
+        ? { dir: "up", text: `+${projecaoPct - 100}% vs meta` }
+        : { dir: "down", text: `${projecaoPct - 100}% vs meta` },
+    },
+    { label: "Pipeline ajustado", value: formatBRLShort(forecast.pipelineAjustado) },
+    { label: "Ticket médio", value: formatBRLShort(forecast.ticketMedioPadrao) },
+    {
+      label: "Conversão E→A",
+      value: conversao !== null ? `${conversao}%` : "—",
+    },
+  ];
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-background flex flex-col text-foreground">
@@ -254,19 +354,19 @@ export default function ForecastTV() {
         .tv-fade-up { animation: tv-rise 800ms ${EASE} forwards; }
       `}</style>
 
-      {/* Aurora background */}
+      {/* Aurora background — magenta + carvão alinhados à marca */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
           className="tv-aurora-a absolute -top-1/3 -left-1/4 h-[80vh] w-[80vh] rounded-full blur-3xl opacity-50"
-          style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.35), transparent 60%)" }}
+          style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.32), transparent 60%)" }}
         />
         <div
           className="tv-aurora-b absolute -bottom-1/3 -right-1/4 h-[70vh] w-[70vh] rounded-full blur-3xl opacity-40"
-          style={{ background: "radial-gradient(circle, hsl(280 60% 40% / 0.25), transparent 60%)" }}
+          style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.18), transparent 60%)" }}
         />
         <div
-          className="tv-aurora-c absolute top-1/3 right-1/4 h-[50vh] w-[50vh] rounded-full blur-3xl opacity-30"
-          style={{ background: "radial-gradient(circle, hsl(220 60% 40% / 0.25), transparent 60%)" }}
+          className="tv-aurora-c absolute top-1/3 right-1/4 h-[50vh] w-[50vh] rounded-full blur-3xl opacity-25"
+          style={{ background: "radial-gradient(circle, hsl(var(--foreground) / 0.06), transparent 60%)" }}
         />
       </div>
 
@@ -291,28 +391,35 @@ export default function ForecastTV() {
         <rect width="100%" height="100%" filter="url(#tv-grain)" />
       </svg>
 
-      {/* Header */}
+      {/* Header institucional */}
       <header className="relative z-10 flex items-center justify-between px-8 py-4 border-b border-border/40 backdrop-blur-2xl bg-background/40">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/forecast")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
+          <img src={logoAam} alt="AAM" className="h-8 w-8 rounded-md object-contain opacity-90" />
+          <div className="hidden md:block h-8 w-px bg-border/60" />
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-sm font-medium tracking-[0.2em] uppercase text-muted-foreground">
-                Forecast · Modo TV
+              <h1 className="font-sans text-sm font-medium tracking-[0.2em] uppercase text-foreground/90">
+                Sala de Operações
               </h1>
-              <span className="inline-flex items-center gap-1.5 text-[10px] tracking-wider text-emerald-400/90">
-                <span className="h-1 w-1 rounded-full bg-emerald-400 tv-led" />
+              <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-wider text-primary">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary tv-led" />
                 AO VIVO
               </span>
             </div>
-            <p className="mt-0.5 text-[11px] text-muted-foreground/80 font-mono tabular-nums">
-              {forecast.totalMaes} mães · dia {diaAtual}/{diasNoMes} · sync há {secondsSinceSync}s
+            <p className="mt-0.5 font-mono text-[11px] text-muted-foreground/80 tabular-nums">
+              FORECAST v2.3 · SID {sessionId} · refresh 1s · sync há {secondsSinceSync}s
             </p>
           </div>
         </div>
-        <span className="font-mono tabular-nums text-xl tracking-wider text-foreground/90">{clockStr}</span>
+        <div className="text-right">
+          <p className="font-mono tabular-nums text-xl tracking-wider text-foreground/90">{clockStr}</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+            {dateStr} · {tz}
+          </p>
+        </div>
       </header>
 
       {/* Hero */}
@@ -320,10 +427,10 @@ export default function ForecastTV() {
         <div className="mx-auto max-w-[1600px]">
           <div className="flex items-center justify-center gap-3 mb-4">
             <span className="h-px w-12 bg-border" />
-            <span className="text-[10px] tracking-[0.35em] uppercase text-muted-foreground">
+            <span className="font-sans text-[10px] tracking-[0.35em] uppercase text-muted-foreground">
               {metaBatida ? "Meta do mês" : "Falta para a meta"}
             </span>
-            <span className={cn("text-[10px] tracking-[0.35em] uppercase font-medium", ritmo.color)}>
+            <span className={cn("font-sans text-[10px] tracking-[0.35em] uppercase font-medium", ritmo.color)}>
               · {ritmo.label}
             </span>
             <span className="h-px w-12 bg-border" />
@@ -334,38 +441,49 @@ export default function ForecastTV() {
               className={cn(
                 "font-serif font-normal leading-[0.95] tabular-nums",
                 "text-[clamp(5rem,14vw,11rem)] tracking-[-0.04em]",
-                metaBatida ? "text-emerald-400" : "text-foreground"
+                "text-foreground"
               )}
               style={{
-                textShadow: metaBatida
-                  ? "0 0 80px hsl(142 70% 45% / 0.25)"
-                  : "0 0 120px hsl(var(--primary) / 0.4)",
+                textShadow: "0 0 140px hsl(var(--primary) / 0.45)",
               }}
             >
               {metaBatida ? "Batida" : <CountUpNumber value={gap} formatter={formatBRLShort} />}
             </span>
           </div>
 
-          {/* Barra de progresso refinada */}
+          {/* Barra de meta com marcador de pace */}
           <div className="mx-auto mt-8 max-w-3xl">
-            <div className="relative h-[2px] w-full bg-border/60 overflow-visible">
+            <div className="relative h-[3px] w-full bg-border/60 overflow-visible rounded-full">
               <div
-                className={cn("absolute inset-y-0 left-0", metaBatida ? "bg-emerald-400" : "bg-primary")}
-                style={{ width: `${pctTotal}%`, transition: `width 1400ms ${EASE}` }}
+                className="absolute inset-y-0 left-0 bg-primary rounded-full"
+                style={{ width: `${pctTotal}%`, transition: `width 1400ms ${EASE}`, boxShadow: "0 0 20px hsl(var(--primary) / 0.5)" }}
               />
+              {/* marcador pace = "onde deveríamos estar hoje" */}
+              {!metaBatida && pacePct > 0 && pacePct < 100 && (
+                <div
+                  aria-hidden
+                  className="absolute -top-1.5 h-6 w-px bg-foreground/60"
+                  style={{ left: `${pacePct}%` }}
+                >
+                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground whitespace-nowrap">
+                    pace
+                  </span>
+                </div>
+              )}
+              {/* marcador projeção */}
               {!metaBatida && projecaoPct > 0 && projecaoPct < 100 && (
                 <div
                   aria-hidden
-                  className="absolute top-1/2 -translate-y-1/2 h-4 w-px bg-foreground/50"
+                  className="absolute -top-1.5 h-6 w-px bg-primary/70"
                   style={{ left: `${projecaoPct}%` }}
                 >
-                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground whitespace-nowrap">
+                  <span className="absolute top-7 left-1/2 -translate-x-1/2 font-mono text-[9px] uppercase tracking-[0.25em] text-primary/80 whitespace-nowrap">
                     projeção
                   </span>
                 </div>
               )}
             </div>
-            <div className="mt-3 flex items-center justify-between text-[11px] font-mono text-muted-foreground tabular-nums">
+            <div className="mt-3 flex items-center justify-between font-mono text-[11px] text-muted-foreground tabular-nums">
               <span>
                 <CountUpNumber value={realizado} formatter={formatBRLShort} /> de {formatBRLShort(metaTotal)}
               </span>
@@ -375,22 +493,10 @@ export default function ForecastTV() {
         </div>
       </section>
 
-      {/* Faixa de stats estilo aeroporto */}
+      {/* KPI strip executivo */}
       <section className="relative z-10 px-8">
         <div className="mx-auto max-w-[1600px]">
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border/40 border-y border-border/40 bg-background/30 backdrop-blur-xl">
-            {[
-              { label: "Dias restantes", value: String(diasRestantes), mono: true },
-              { label: "Projeção do mês", value: formatBRLShort(projecaoMes), mono: true, color: projecaoMes >= metaTotal ? "text-emerald-400" : undefined },
-              { label: "Pipeline ajustado", value: formatBRLShort(forecast.pipelineAjustado), mono: true },
-              { label: "ETA da meta", value: etaLabel, mono: true },
-            ].map((s, i) => (
-              <div key={i} className="px-6 py-4">
-                <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">{s.label}</p>
-                <p className={cn("mt-1 font-mono tabular-nums text-2xl font-medium", s.color)}>{s.value}</p>
-              </div>
-            ))}
-          </div>
+          <KpiStrip items={kpis} />
         </div>
       </section>
 
@@ -403,14 +509,17 @@ export default function ForecastTV() {
         </div>
       </section>
 
-      {/* Rodapé */}
-      <footer className="relative z-10 flex items-center justify-between px-8 py-3 border-t border-border/40 backdrop-blur-xl bg-background/40 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground/70">
-        <span>SYS · FORECAST · LIVE</span>
+      {/* Rodapé corporativo */}
+      <footer className="relative z-10 flex items-center justify-between gap-4 px-8 py-3 border-t border-border/40 backdrop-blur-xl bg-background/40 font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground/70">
         <span className="flex items-center gap-2">
-          <span className="h-1 w-1 rounded-full bg-emerald-400 tv-led" />
-          stream ok
+          <img src={logoAam} alt="" className="h-3.5 w-3.5 object-contain opacity-70" />
+          Amor Auxílio Maternidade · Painel de Comando
         </span>
-        <span>{now.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}</span>
+        <span className="hidden md:inline-flex items-center gap-2">
+          <span className="h-1 w-1 rounded-full bg-primary tv-led" />
+          ops · nominal
+        </span>
+        <span className="text-foreground/50">Dados internos · não compartilhar</span>
       </footer>
     </div>
   );
