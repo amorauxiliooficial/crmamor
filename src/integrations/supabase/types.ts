@@ -1029,6 +1029,7 @@ export type Database = {
           protocolo_inss: string | null
           segurada: string | null
           senha_gov: string | null
+          status_anterior: string | null
           status_processo: Database["public"]["Enums"]["status_processo"]
           telefone: string | null
           telefone_e164: string | null
@@ -1073,6 +1074,7 @@ export type Database = {
           protocolo_inss?: string | null
           segurada?: string | null
           senha_gov?: string | null
+          status_anterior?: string | null
           status_processo?: Database["public"]["Enums"]["status_processo"]
           telefone?: string | null
           telefone_e164?: string | null
@@ -1117,6 +1119,7 @@ export type Database = {
           protocolo_inss?: string | null
           segurada?: string | null
           senha_gov?: string | null
+          status_anterior?: string | null
           status_processo?: Database["public"]["Enums"]["status_processo"]
           telefone?: string | null
           telefone_e164?: string | null
@@ -2440,7 +2443,9 @@ export type Database = {
       status_processo:
         | "Entrada de Documentos"
         | "Em Análise"
+        | "Gestantes 1 a 7 meses"
         | "Gestantes em Maturação"
+        | "Entradas do Mês"
         | "Pendência Documental"
         | "Elegível (Análise Positiva)"
         | "Protocolo INSS"
@@ -2634,7 +2639,9 @@ export const Constants = {
       status_processo: [
         "Entrada de Documentos",
         "Em Análise",
+        "Gestantes 1 a 7 meses",
         "Gestantes em Maturação",
+        "Entradas do Mês",
         "Pendência Documental",
         "Elegível (Análise Positiva)",
         "Protocolo INSS",
