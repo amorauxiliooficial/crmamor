@@ -120,7 +120,7 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
       is_gestante: true,
       mes_gestacao: prospeccao.mes_gestacao || null,
       categoria_previdenciaria: "Não informado",
-      status_processo: "Pendência Documental",
+      status_processo: "Entradas do Mês",
       tipo_evento: "Parto",
       contrato_assinado: false,
       verificacao_duas_etapas: false,
