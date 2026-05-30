@@ -102,7 +102,7 @@ export function FunnelChart({ fases, onFaseClick, formatBRLShort, gestantesCriti
         const pct = Math.min(f.atingimentoPct, 1.5);
         const isHovered = hovered === idx;
         const width = Math.max(baseWidth - idx * shrinkStep, minWidth);
-        const showAlerta = f.faseKey === "Gestantes em Maturação" && gestantesCriticas > 0;
+        const showAlerta = f.faseKey === "Gestantes 1 a 7 meses" && gestantesCriticas > 0;
 
         return (
           <div key={f.fase} className="flex items-center gap-3">
