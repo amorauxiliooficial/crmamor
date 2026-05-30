@@ -1,71 +1,84 @@
-# Plano: Modo TV — refinamento premium
 
-Inspiração: padrão Linear + Apple + Stripe — escuro, denso de informação onde precisa, generoso onde importa, motion lento e contido.
+# Forecast TV — Padrão Corporativo AAM
 
-## 1. Remover a scanline
+Objetivo: transformar `/forecast/tv` em um painel que pareça de uma empresa grande (tipo war room da Bloomberg / Stripe / Linear), usando a identidade visual que já existe no resto do sistema. Vira referência prática: "é assim que a AAM mostra resultado".
 
-Sai a linha animada magenta atravessando a tela. Fica grid técnico (mais sutil ainda) e glow do hero.
+---
 
-## 2. Fundo "aurora" (substitui a scanline)
+## 1. Identidade visual (alinhar com o resto do app)
 
-- Camada de gradiente mesh: 2-3 manchas grandes desfocadas em magenta + carvão, posicionadas atrás do hero
-- Movimento lento (60s+), quase imperceptível, dá sensação de "vivo" sem distrair
-- Grid técnico vai pra 2% de opacidade, com vinheta radial mais forte para sumir nas bordas
-- Ruído fino monocromático (film grain) bem leve por cima de tudo — clássico premium
+Hoje o TV usa rose/amber/sky/emerald genéricos e `font-serif`. Vamos puxar o que já existe no `index.css`:
 
-## 3. Tipografia premium
+- **Cor primária**: Magenta AAM (`hsl(333 71% 50%)`) como única cor de marca. Aparece em: número do gap, barra de progresso da meta, "AO VIVO", acento da fase ativa.
+- **Tons de fase**: trocar rose/amber/sky/emerald por tokens semânticos do app (`--muted`, `--primary`, `--success` etc.) com opacidade. Mantém hierarquia sem ficar parecendo arco-íris.
+- **Tipografia**:
+  - Display (número do gap, métricas grandes) → **Merriweather** (já usado em headings premium do CRM).
+  - UI/labels → **Poppins**.
+  - Números, timestamps, IDs, deltas → **JetBrains Mono** (sensação de terminal financeiro).
+- **Logo AAM** discreto no header (canto esquerdo, ao lado de "Forecast · Modo TV"), reforçando que é um painel oficial da empresa.
 
-- Número grande do gap em **Merriweather** (serif já no sistema) ao invés de mono — dá ar editorial, tipo Apple keynote
-- Subir tamanho do gap para `text-[10rem]` em telas grandes
-- Letter-spacing ajustado para negativo no display, kerning premium
-- Labels minúsculas em mono mantêm o lado técnico
+## 2. Elementos novos de "empresa grande"
 
-## 4. Hierarquia + respiro
+Coisas que painéis corporativos sérios têm e que dão credibilidade:
 
-- Hero ganha mais ar (padding maior, sem disputa com mini-cards do lado)
-- Mini-cards de "dias restantes / projeção / pipeline ajustado" viram uma **faixa horizontal fina** logo abaixo do hero, separada por divisores verticais, estilo barra de estatísticas de aeroporto/bolsa
-- 4 cards de fase ganham padding interno maior, sombra suave em vez de fundo tonal
+### a) Cabeçalho institucional
+- Logo AAM + nome do painel + "Sala de Operações" (subtítulo).
+- Versão do painel + ID da sessão em mono (ex.: `FORECAST v2.3 · SID 8F2A`).
+- Timestamp completo com timezone (`30 mai 2026 · 14:32:07 BRT`).
+- "AO VIVO" com LED magenta pulsando + frequência de atualização (`refresh 30s`).
 
-## 5. Profundidade refinada
+### b) Barra de meta do mês (faltava)
+- Barra horizontal grande logo abaixo do hero: `realizado / meta` com % e ETA.
+- Marcador de "onde deveríamos estar hoje" (linha vertical pace) — visual de gestão por OKR.
 
-- Cards com borda em **gradiente** (`border-image`) bem sutil — magenta no topo desvanecendo para transparente
-- Sombra realista em camadas (Linear-style): `0 1px 0 white/5, 0 10px 30px black/40`
-- Hover/destaque com leve elevação (sem escala, só shadow)
-- Glassmorphism no header e rodapé (já tem backdrop-blur, intensificar)
+### c) Tira de KPIs executivos
+Trocar os 4 mini-cards atuais por uma régua editorial (estilo painel de aeroporto):
+- **Pipeline ajustado** (valor ponderado por probabilidade)
+- **Velocidade** (R$/dia nos últimos 7d) com delta vs 7d anteriores
+- **Conversão Entrada → Aprovada** (%)
+- **Tempo médio em análise INSS** (dias)
+- **Ticket médio** aprovado no mês
 
-## 6. Motion premium
+Cada KPI com mini-delta em mono (`▲ 12,4%` / `▼ 3,1%`) e cor semântica suave.
 
-- Tudo com easing customizado (cubic-bezier suave, 600-900ms)
-- Hero entra com fade + leve subida 8px ao montar
-- Cards entram em cascata (stagger 80ms)
-- Barra de progresso anima da esquerda em 1.2s
-- Aurora respira em 60s loop
+### d) Cards de fase (manter, refinar)
+- Borda gradiente sutil só na fase ativa/destaque.
+- Adicionar "responsável" implícito: contagem de mães + ticket médio da fase.
+- Sparkline em magenta translúcido (não 4 cores diferentes).
 
-## 7. Detalhes que comunicam "premium"
+### e) Rodapé corporativo
+- "Amor Auxílio Maternidade · Painel de Comando" + status do sistema (`ops · nominal`) + última sincronização.
+- Aviso: "Dados internos — não compartilhar".
 
-- LED "AO VIVO" mais discreto: ponto verde minúsculo + texto fininho, sem badge cheio
-- Brackets nos cantos saem (eram HUD demais) — bordas finas em gradiente substituem
-- Rodapé técnico mantém, mas menor e mais espaçado
-- Status do ritmo vira chip único centralizado: linha fina + tipografia maiúscula com tracking generoso
+### f) Rotação / modo apresentação (opcional, fora deste plano)
+Anotado para depois: rotação automática entre views (forecast → ranking → SLA). Não entra agora.
 
-## Fora de escopo desta etapa
+## 3. Movimento e ritmo
 
-- Não mexo no botão "Modo TV" do dashboard
-- Não toco em dados/backend (sparkline continua sintético até decidirmos)
-- Mantém estrutura: hero + faixa de stats + 4 cards de fase
+- Transição entre valores: 600ms `cubic-bezier(0.22, 1, 0.36, 1)` (já tem).
+- Aurora de fundo: manter, **trocar para magenta + carvão** (hoje usa magenta + charcoal genérico, vamos amarrar com `--primary` do tema).
+- Pulse do "AO VIVO": magenta, não verde — assina a marca.
+- Sem scanline (já removida).
 
-## Arquivos
+## 4. Escopo técnico
 
-- `src/pages/ForecastTV.tsx` (refatoração visual completa, mesma estrutura de dados)
+**Arquivo único**: `src/pages/ForecastTV.tsx`.
 
-## Detalhes técnicos
+- Substituir paleta hardcoded (`rose-400`, `amber-400`, etc.) por classes baseadas em tokens (`text-primary`, `text-muted-foreground`, `bg-primary/10`).
+- Trocar `font-serif` por `font-serif` confirmando que aponta pra Merriweather no `tailwind.config.ts` (verificar) e usar `font-mono` (JetBrains) nos números pequenos/deltas/timestamps.
+- Adicionar componentes locais:
+  - `<GoalBar realizado meta />`
+  - `<KpiStrip items={[...]} />` (5 KPIs)
+  - `<BrandHeader />` com logo
+  - `<BrandFooter />`
+- Importar logo de `src/assets/logo-aam.png` (verificar caminho real).
+- Cálculos dos novos KPIs (velocidade, conversão, ticket médio, tempo médio INSS) saem do mesmo `usePipelineForecast()` — se faltar campo, deixar placeholder com `—` e nota `// TODO: hook expor X` (sem mexer no hook agora).
 
-- Aurora via 2-3 `div` com `radial-gradient` + `blur-3xl` + animação CSS lenta
-- Film grain via SVG inline com `feTurbulence` aplicado como background fixo de baixíssima opacidade
-- Bordas em gradiente via `border-image` ou pseudo-elemento com `mask-composite`
-- Easing customizado declarado uma vez via classe utilitária inline
-- Sem libs novas, sem framer-motion adicional
+**Fora de escopo**:
+- Mudar dados/backend.
+- Rotação automática de views.
+- Criar um "modo TV" para outras telas (vira projeto separado depois).
 
-## Resultado esperado
+---
 
-Sensação de "produto de empresa grande, atualizando ao vivo, com confiança" — menos arcade, mais sala de controle de companhia aérea/banco premium.
+Confirma que faz sentido assim que eu implemento. Se quiser cortar algum item (ex.: KPI strip com 5 itens é muito), me diz qual fica de fora.
