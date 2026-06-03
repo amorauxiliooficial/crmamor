@@ -1,4 +1,4 @@
-import { MaeProcesso, StatusProcesso, STATUS_COLORS, STATUS_BAR_COLORS, FOLLOWUP_PRAZO_LABELS } from "@/types/mae";
+import { MaeProcesso, StatusProcesso, STATUS_COLORS, STATUS_BAR_COLORS, FOLLOWUP_PRAZO_LABELS, STATUS_NEXT_ACTION, isConcludedStage } from "@/types/mae";
 import { KanbanCard } from "./KanbanCard";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
