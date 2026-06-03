@@ -372,10 +372,24 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         </Button>
       </div>
 
+      {/* Active filter chip */}
+      {statusFilter && (
+        <div className="flex items-center">
+          <Badge
+            variant="secondary"
+            className="cursor-pointer hover:bg-muted text-xs gap-1"
+            onClick={() => setStatusFilter(null)}
+          >
+            <X className="h-3 w-3" />
+            Limpar filtro
+          </Badge>
+        </div>
+      )}
+
       {/* Content: Mobile cards vs Desktop table */}
       {isMobile ? (
         <IndicacaoMobileList
-          indicacoes={filteredIndicacoes}
+          indicacoes={displayedIndicacoes}
           selectedId={selectedIndicacao?.id}
           onSelect={handleRowClick}
         />
