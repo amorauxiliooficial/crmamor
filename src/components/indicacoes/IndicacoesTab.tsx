@@ -75,6 +75,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   const [localSearch, setLocalSearch] = useState("");
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
+  const [copiedNameId, setCopiedNameId] = useState<string | null>(null);
   const userId = user?.id;
 
   // Open indicacao from URL param
@@ -242,7 +243,15 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   const handleCopyPhone = async (phone: string, id: string) => {
     await navigator.clipboard.writeText(phone);
     setCopiedPhoneId(id);
+    toast({ title: "Telefone copiado" });
     setTimeout(() => setCopiedPhoneId(null), 2000);
+  };
+
+  const handleCopyName = async (name: string, id: string) => {
+    await navigator.clipboard.writeText(name);
+    setCopiedNameId(id);
+    toast({ title: "Nome copiado" });
+    setTimeout(() => setCopiedNameId(null), 2000);
   };
 
   const sanitizePhone = (phone: string | undefined | null): string => {
@@ -384,7 +393,33 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">{indicacao.nome_indicada}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-1">
+                          {indicacao.nome_indicada}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCopyName(indicacao.nome_indicada, indicacao.id);
+                                  }}
+                                >
+                                  {copiedNameId === indicacao.id ? (
+                                    <Check className="h-3 w-3 text-primary" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Copiar nome</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="secondary" className={`text-xs ${origemIndicacaoColors[origem]}`}>
                           {origem === "externa" && <ExternalLink className="h-3 w-3 mr-1" />}
