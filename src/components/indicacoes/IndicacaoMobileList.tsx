@@ -32,6 +32,25 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const duplicatePhones = useMemo(() => {
+    const counts = new Map<string, number>();
+    indicacoes.forEach((ind) => {
+      const p = ind.telefone_indicada?.replace(/\D/g, "") || "";
+      if (p) counts.set(p, (counts.get(p) || 0) + 1);
+    });
+    return new Set(
+      Array.from(counts.entries())
+        .filter(([, c]) => c > 1)
+        .map(([p]) => p)
+    );
+  }, [indicacoes]);
+
+  const isSelfReferral = (ind: Indicacao) => {
+    const a = ind.nome_indicada?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const b = ind.nome_indicadora?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    return a && b && a === b;
+  };
+
   if (indicacoes.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground text-sm">
