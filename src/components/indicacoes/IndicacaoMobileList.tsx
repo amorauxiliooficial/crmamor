@@ -116,7 +116,7 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
                 </div>
               </div>
 
-              {/* Row 2: Date + Motivo */}
+              {/* Row 2: Date + Motivo + Próximo passo */}
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <span>{format(parseISO(ind.data_indicacao), "dd/MM/yy", { locale: ptBR })}</span>
@@ -131,9 +131,17 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
                     );
                   })()}
                 </div>
-                {ind.motivo_abordagem && (
-                  <span className="text-[10px]">{motivoAbordagemLabels[ind.motivo_abordagem as keyof typeof motivoAbordagemLabels]}</span>
-                )}
+                <div className="flex items-center gap-2">
+                  {ind.motivo_abordagem && (
+                    <span className="text-[10px]">{motivoAbordagemLabels[ind.motivo_abordagem as keyof typeof motivoAbordagemLabels]}</span>
+                  )}
+                  <span className="text-[10px] italic">
+                    {ind.status_abordagem === "aguardando_aprovacao" && "Entrar em contato"}
+                    {ind.status_abordagem === "pendente" && "Retomar contato"}
+                    {ind.status_abordagem === "em_andamento" && "Acompanhar"}
+                    {ind.status_abordagem === "concluido" && "-"}
+                  </span>
+                </div>
               </div>
 
               {/* Row 3: Quick actions */}

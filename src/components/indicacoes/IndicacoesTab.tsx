@@ -247,6 +247,21 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     return a && b && a === b;
   };
 
+  const proximoPasso = (status: StatusAbordagem) => {
+    switch (status) {
+      case "aguardando_aprovacao":
+        return "Entrar em contato";
+      case "pendente":
+        return "Retomar contato";
+      case "em_andamento":
+        return "Acompanhar";
+      case "concluido":
+        return "-";
+      default:
+        return "-";
+    }
+  };
+
   const toggleSort = (col: "data" | "status") => {
     if (sortBy === col) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -540,13 +555,14 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                   </button>
                 </TableHead>
                 <TableHead>Motivo</TableHead>
+                <TableHead>Próximo passo</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {displayedIndicacoes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     Nenhuma indicação encontrada
                   </TableCell>
                 </TableRow>
@@ -678,6 +694,9 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                             ))}
                           </SelectContent>
                         </Select>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {proximoPasso(indicacao.status_abordagem)}
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
