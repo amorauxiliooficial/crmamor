@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { MaeProcesso, STATUS_ORDER, StatusProcesso, STATUS_COLORS, STATUS_NEXT_ACTION, isConcludedStage } from "@/types/mae";
+import { MaeProcesso, STATUS_ORDER, StatusProcesso, STATUS_COLORS, STATUS_NEXT_ACTION, isConcludedStage, isDeniedStage } from "@/types/mae";
 import { KanbanCard } from "./KanbanCard";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +49,7 @@ export function KanbanMobileList({
           const count = groupedMaes[status]?.length || 0;
           const isExpanded = expandedColumn === status;
           const concluded = isConcludedStage(status);
+          const denied = isDeniedStage(status);
 
           return (
             <button
@@ -61,10 +62,11 @@ export function KanbanMobileList({
                   ? "bg-primary text-primary-foreground border-primary shadow-md scale-105"
                   : "bg-card hover:bg-accent border-border",
                 STATUS_COLORS[status],
-                concluded && !isExpanded && "border-dashed border-muted-foreground/30 bg-muted/40 opacity-75"
+                concluded && !isExpanded && "border-dashed border-muted-foreground/30 bg-muted/40 opacity-75",
+                denied && !isExpanded && "border-dotted border-amber-600/30 bg-amber-500/5 opacity-80"
               )}
             >
-              <span className={cn("text-sm", concluded && !isExpanded && "opacity-70")}>{emoji}</span>
+              <span className={cn("text-sm", (concluded || denied) && !isExpanded && "opacity-70")}>{emoji}</span>
               <Badge 
                 variant={isExpanded ? "secondary" : "outline"} 
                 className={cn(

@@ -90,8 +90,17 @@ export const STATUS_ORDER: StatusProcesso[] = [
 // Every other stage is treated as ACTIVE ("Em andamento").
 export const CONCLUDED_STAGES: StatusProcesso[] = ["📦 Processo Encerrado"];
 
+// Stages considered "denied / closed without success" — also out of active funnel.
+export const DENIED_STAGES: StatusProcesso[] = ["❌ Indeferida"];
+
 export const isConcludedStage = (status: StatusProcesso) =>
   CONCLUDED_STAGES.includes(status);
+
+export const isDeniedStage = (status: StatusProcesso) =>
+  DENIED_STAGES.includes(status);
+
+export const isOutOfFunnel = (status: StatusProcesso) =>
+  isConcludedStage(status) || isDeniedStage(status);
 
 // Placeholder helper text shown under each column title (exact copy TBD).
 export const STATUS_NEXT_ACTION: Record<StatusProcesso, string> = {

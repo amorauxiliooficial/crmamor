@@ -1,4 +1,4 @@
-import { MaeProcesso, StatusProcesso, STATUS_COLORS, STATUS_BAR_COLORS, FOLLOWUP_PRAZO_LABELS, STATUS_NEXT_ACTION, isConcludedStage } from "@/types/mae";
+import { MaeProcesso, StatusProcesso, STATUS_COLORS, STATUS_BAR_COLORS, FOLLOWUP_PRAZO_LABELS, STATUS_NEXT_ACTION, isConcludedStage, isDeniedStage } from "@/types/mae";
 import { KanbanCard } from "./KanbanCard";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -32,6 +32,7 @@ export function KanbanColumn({
   const showFollowUp = followUpLabel && followUpLabel !== "—";
   const nextAction = STATUS_NEXT_ACTION[status];
   const concluded = isConcludedStage(status);
+  const denied = isDeniedStage(status);
 
   return (
     <div 
@@ -39,7 +40,8 @@ export function KanbanColumn({
         "flex h-full flex-shrink-0 flex-col rounded-lg border bg-card transition-all duration-200",
         isExpanded ? "w-[300px]" : "w-[48px] cursor-pointer",
         isDraggingOver && "ring-2 ring-primary bg-primary/5",
-        concluded && "border-dashed border-muted-foreground/30 bg-muted/30 opacity-80"
+        concluded && "border-dashed border-muted-foreground/30 bg-muted/30 opacity-80",
+        denied && "border-dotted border-amber-600/30 bg-amber-500/5 opacity-85"
       )}
       onClick={!isExpanded ? onToggleExpand : undefined}
     >
@@ -48,14 +50,15 @@ export function KanbanColumn({
           "flex items-center gap-2 border-b border-t-[3px] px-4 py-3 cursor-pointer",
           STATUS_BAR_COLORS[status],
           !isExpanded && "flex-col px-2 py-4",
-          concluded && "bg-muted/40"
+          concluded && "bg-muted/40",
+          denied && "bg-amber-500/5"
         )}
         onClick={isExpanded ? onToggleExpand : undefined}
       >
-        <span className={cn("text-lg", concluded && "opacity-70")}>{emoji}</span>
+        <span className={cn("text-lg", (concluded || denied) && "opacity-70")}>{emoji}</span>
         {isExpanded ? (
           <div className="flex-1 min-w-0">
-            <h3 className={cn("font-semibold text-sm", concluded && "text-muted-foreground")}>{statusLabel}</h3>
+            <h3 className={cn("font-semibold text-sm", concluded && "text-muted-foreground", denied && "text-amber-700/90 dark:text-amber-500/80")}>{statusLabel}</h3>
             {nextAction && (
               <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
                 {nextAction}
