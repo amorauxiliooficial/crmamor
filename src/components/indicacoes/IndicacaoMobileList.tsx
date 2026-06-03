@@ -8,6 +8,7 @@ import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { formatBrazilPhone } from "@/lib/formatBrazilPhone";
 
 interface IndicacaoMobileListProps {
   indicacoes: Indicacao[];
