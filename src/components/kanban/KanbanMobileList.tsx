@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { MaeProcesso, STATUS_ORDER, StatusProcesso, STATUS_COLORS, STATUS_NEXT_ACTION, isConcludedStage } from "@/types/mae";
+import { MaeProcesso, STATUS_ORDER, StatusProcesso, STATUS_COLORS, STATUS_NEXT_ACTION, isConcludedStage, isDeniedStage } from "@/types/mae";
 import { KanbanCard } from "./KanbanCard";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
