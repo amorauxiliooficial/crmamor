@@ -628,7 +628,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         {indicacao.telefone_indicada && (
                           <TooltipProvider>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 whitespace-nowrap">
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <a
@@ -670,7 +670,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           value={indicacao.status_abordagem}
                           onValueChange={(value) => handleStatusChange(indicacao.id, value as StatusAbordagem)}
                         >
-                          <SelectTrigger className="w-[150px] h-8 text-xs">
+                          <SelectTrigger className="w-[200px] h-8 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
