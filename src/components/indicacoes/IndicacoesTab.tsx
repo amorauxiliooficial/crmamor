@@ -77,6 +77,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   const [localSearch, setLocalSearch] = useState("");
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusAbordagem | null>(null);
   const userId = user?.id;
 
   // Open indicacao from URL param
