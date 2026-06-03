@@ -152,10 +152,23 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     if (data) setUserProfile(data);
   };
 
+  const fetchProfiles = async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .order("full_name", { ascending: true });
+    if (error) {
+      logError("fetch_profiles", error);
+    } else if (data) {
+      setProfiles(data as ProfileOption[]);
+    }
+  };
+
   useEffect(() => {
     if (userId) {
       fetchIndicacoes();
       fetchUserProfile();
+      fetchProfiles();
     }
   }, [userId]);
 
