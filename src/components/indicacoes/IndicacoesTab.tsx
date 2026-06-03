@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { IndicacaoDetailPanel } from "./IndicacaoDetailPanel";
 import { IndicacaoFormDialog } from "./IndicacaoFormDialog";
 import { IndicacaoMobileList } from "./IndicacaoMobileList";
+import { ConvertToProcessDialog, type FunilOption } from "./ConvertToProcessDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,6 +90,8 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [convertingId, setConvertingId] = useState<string | null>(null);
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+  const [convertTarget, setConvertTarget] = useState<Indicacao | null>(null);
   const [indicacoes, setIndicacoes] = useState<Indicacao[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIndicacao, setSelectedIndicacao] = useState<Indicacao | null>(null);
@@ -96,8 +99,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState("");
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
-  const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
-  const [copiedNameId, setCopiedNameId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<ProfileOption[]>([]);
   const userId = user?.id;
 
@@ -238,56 +240,58 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
 
   const handleStatusChange = async (indicacaoId: string, status: StatusAbordagem) => {
     const userName = userProfile?.full_name || user?.email || "Usuário";
+    const previous = indicacoes;
+    // Optimistic
+    setIndicacoes((prev) =>
+      prev.map((i) => (i.id === indicacaoId ? { ...i, status_abordagem: status } : i)),
+    );
 
     const { error } = await supabase.from("indicacoes").update({ status_abordagem: status }).eq("id", indicacaoId);
 
     if (error) {
+      setIndicacoes(previous);
       logError("update_status", error);
       toast({ variant: "destructive", title: "Erro ao atualizar", description: getUserFriendlyError(error) });
-    } else {
-      await supabase.from("acoes_indicacao").insert({
-        indicacao_id: indicacaoId,
-        tipo_acao: `Status: ${statusAbordagemLabels[status]}`,
-        observacao: `Por: ${userName}`,
-        user_id: user!.id,
-      });
-      toast({ title: "Status atualizado" });
-      fetchIndicacoes();
+      return;
     }
+    await supabase.from("acoes_indicacao").insert({
+      indicacao_id: indicacaoId,
+      tipo_acao: `Status: ${statusAbordagemLabels[status]}`,
+      observacao: `Por: ${userName}`,
+      user_id: user!.id,
+    });
+    toast({ title: "Status atualizado" });
   };
 
   const handleMotivoChange = async (indicacaoId: string, motivo: MotivoAbordagem) => {
     const userName = userProfile?.full_name || user?.email || "Usuário";
+    const previous = indicacoes;
+    setIndicacoes((prev) =>
+      prev.map((i) => (i.id === indicacaoId ? { ...i, motivo_abordagem: motivo } : i)),
+    );
 
     const { error } = await supabase.from("indicacoes").update({ motivo_abordagem: motivo }).eq("id", indicacaoId);
 
     if (error) {
+      setIndicacoes(previous);
       logError("update_motivo", error);
       toast({ variant: "destructive", title: "Erro ao atualizar", description: getUserFriendlyError(error) });
-    } else {
-      await supabase.from("acoes_indicacao").insert({
-        indicacao_id: indicacaoId,
-        tipo_acao: `Motivo: ${motivoAbordagemLabels[motivo]}`,
-        observacao: `Por: ${userName}`,
-        user_id: user!.id,
-      });
-      toast({ title: "Motivo atualizado" });
-      fetchIndicacoes();
+      return;
     }
+    await supabase.from("acoes_indicacao").insert({
+      indicacao_id: indicacaoId,
+      tipo_acao: `Motivo: ${motivoAbordagemLabels[motivo]}`,
+      observacao: `Por: ${userName}`,
+      user_id: user!.id,
+    });
+    toast({ title: "Motivo atualizado" });
   };
 
-  const handleCopyPhone = async (phone: string, id: string) => {
-    await navigator.clipboard.writeText(phone);
-    setCopiedPhoneId(id);
-    toast({ title: "Telefone copiado" });
-    setTimeout(() => setCopiedPhoneId(null), 2000);
-  };
-
-  const handleCopyName = async (name: string, id: string) => {
-    await navigator.clipboard.writeText(name);
-    setCopiedNameId(id);
-    toast({ title: "Nome copiado" });
-    setTimeout(() => setCopiedNameId(null), 2000);
+  const handleCopy = async (text: string, id: string, label: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    toast({ title: `${label} copiado` });
+    setTimeout(() => setCopiedId(null), 1500);
   };
 
   const sanitizePhone = (phone: string | undefined | null): string => {
@@ -331,12 +335,17 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     toast({ title: newUserId === user?.id ? "Você assumiu a indicação" : "Responsável atualizado" });
   };
 
-  const handleConvertToProcess = async (indicacao: Indicacao) => {
+  const openConvertDialog = (indicacao: Indicacao) => {
+    setConvertTarget(indicacao);
+    setConvertDialogOpen(true);
+  };
+
+  const handleConvertToProcess = async (indicacao: Indicacao, funil: FunilOption) => {
     if (!user) return;
     setConvertingId(indicacao.id);
 
     try {
-      // 1) Prevent duplicates: check existing process for this referral_id
+      // 1) Prevent duplicates
       const { data: existing, error: existingErr } = await supabase
         .from("mae_processo")
         .select("id")
@@ -355,7 +364,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         return;
       }
 
-      // 2) Insert new process at the first stage (default 'Entrada de Documentos')
+      // 2) Insert new process at chosen funil stage
       const normalized = formatBrazilPhone(indicacao.telefone_indicada);
       const telefoneE164 = normalized?.dial ? `+${normalized.dial}` : null;
 
@@ -369,6 +378,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
           user_id: user.id,
           origem: `Indicação${indicacao.nome_indicadora ? ` de ${indicacao.nome_indicadora}` : ""}`,
           referral_id: indicacao.id,
+          status_processo: funil,
         } as never)
         .select("id")
         .single();
@@ -379,7 +389,11 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         return;
       }
 
-      // 3) Mark referral as Convertido (do NOT delete)
+      // 3) Optimistic: mark referral convertido locally
+      setIndicacoes((prev) =>
+        prev.map((i) => (i.id === indicacao.id ? { ...i, status_abordagem: "convertido" } : i)),
+      );
+
       const { error: updateErr } = await supabase
         .from("indicacoes")
         .update({ status_abordagem: "convertido" })
@@ -390,17 +404,15 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         toast({ variant: "destructive", title: "Processo criado, mas status não atualizado", description: getUserFriendlyError(updateErr) });
       }
 
-      // Optional: log action
       await supabase.from("acoes_indicacao").insert({
         indicacao_id: indicacao.id,
         tipo_acao: "Convertida em Processo",
-        observacao: `Processo criado: ${newMae.id}`,
+        observacao: `Funil: ${funil} • Processo: ${newMae.id}`,
         user_id: user.id,
       });
 
-      toast({ title: "Indicação convertida", description: `${indicacao.nome_indicada} entrou no funil.` });
+      toast({ title: "Indicação convertida", description: `${indicacao.nome_indicada} entrou em "${funil}".` });
 
-      // 4) Redirect to funnel
       navigate(`/?view=kanban&mae=${newMae.id}`);
     } finally {
       setConvertingId(null);
@@ -508,21 +520,18 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Data</TableHead>
+                <TableHead className="w-[110px]">Data</TableHead>
                 <TableHead>Indicada</TableHead>
-                <TableHead>Origem</TableHead>
-                <TableHead>Telefone</TableHead>
                 <TableHead>Indicadora</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Motivo</TableHead>
-                <TableHead>Responsável</TableHead>
+                <TableHead className="w-[160px]">Status</TableHead>
+                <TableHead className="w-[210px]">Responsável</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredIndicacoes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     Nenhuma indicação encontrada
                   </TableCell>
                 </TableRow>
@@ -531,97 +540,132 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                   const origem = (indicacao.origem_indicacao || "interna") as OrigemIndicacao;
                   const phone = sanitizePhone(indicacao.telefone_indicada);
                   const formattedPhone = formatBrazilPhone(indicacao.telefone_indicada);
+                  const formattedIndicadora = formatBrazilPhone(indicacao.telefone_indicadora);
+                  const copyKeyName = `name-${indicacao.id}`;
+                  const copyKeyPhone = `phone-${indicacao.id}`;
+                  const copyKeyIndName = `indname-${indicacao.id}`;
+                  const copyKeyIndPhone = `indphone-${indicacao.id}`;
                   return (
                     <TableRow
                       key={indicacao.id}
                       className={`cursor-pointer hover:bg-muted/50 ${selectedIndicacao?.id === indicacao.id && panelOpen ? "bg-muted" : ""}`}
                       onClick={() => handleRowClick(indicacao)}
                     >
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap text-xs">
                         <div className="flex flex-col">
-                          <span>{format(parseISO(indicacao.data_indicacao), "dd/MM/yyyy", { locale: ptBR })}</span>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="font-medium">
+                            {format(parseISO(indicacao.data_indicacao), "dd/MM/yy", { locale: ptBR })}
+                          </span>
+                          <span className="text-muted-foreground">
                             {format(parseISO(indicacao.data_indicacao), "HH:mm", { locale: ptBR })}
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-1">
-                          {indicacao.nome_indicada}
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
+
+                      {/* INDICADA: nome + telefone empilhados, cada um com copy */}
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <span className="font-medium truncate">{indicacao.nome_indicada}</span>
+                            {origem === "externa" && (
+                              <Badge variant="outline" className="h-4 px-1 text-[9px] shrink-0">
+                                <ExternalLink className="h-2.5 w-2.5 mr-0.5" />
+                                Ext
+                              </Badge>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 shrink-0"
+                              onClick={() => handleCopy(indicacao.nome_indicada, copyKeyName, "Nome")}
+                              aria-label="Copiar nome"
+                            >
+                              {copiedId === copyKeyName ? (
+                                <Check className="h-3 w-3 text-primary" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                          {indicacao.telefone_indicada && (
+                            <div className="flex items-center gap-1 min-w-0">
+                              <span className="text-xs text-muted-foreground font-mono truncate">
+                                {formattedPhone?.display || indicacao.telefone_indicada}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 shrink-0"
+                                onClick={() =>
+                                  handleCopy(formattedPhone?.dial || indicacao.telefone_indicada!, copyKeyPhone, "Telefone")
+                                }
+                                aria-label="Copiar telefone"
+                              >
+                                {copiedId === copyKeyPhone ? (
+                                  <Check className="h-3 w-3 text-primary" />
+                                ) : (
+                                  <Copy className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      {/* INDICADORA: nome + telefone (referência p/ pagamento) */}
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        {indicacao.nome_indicadora || indicacao.telefone_indicadora ? (
+                          <div className="flex flex-col gap-0.5 min-w-0 text-xs">
+                            {indicacao.nome_indicadora && (
+                              <div className="flex items-center gap-1 min-w-0">
+                                <span className="truncate">{indicacao.nome_indicadora}</span>
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-6 w-6"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCopyName(indicacao.nome_indicada, indicacao.id);
-                                  }}
+                                  className="h-5 w-5 shrink-0"
+                                  onClick={() => handleCopy(indicacao.nome_indicadora!, copyKeyIndName, "Nome")}
+                                  aria-label="Copiar nome da indicadora"
                                 >
-                                  {copiedNameId === indicacao.id ? (
+                                  {copiedId === copyKeyIndName ? (
                                     <Check className="h-3 w-3 text-primary" />
                                   ) : (
                                     <Copy className="h-3 w-3" />
                                   )}
                                 </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Copiar nome</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className={`text-xs ${origemIndicacaoColors[origem]}`}>
-                          {origem === "externa" && <ExternalLink className="h-3 w-3 mr-1" />}
-                          {origemIndicacaoLabels[origem]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        {indicacao.telefone_indicada && (
-                          <TooltipProvider>
-                            <div className="flex items-center gap-1">
-                              <span className="text-sm text-muted-foreground">
-                                {formattedPhone?.display || indicacao.telefone_indicada}
-                              </span>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={() => handleCopyPhone(formattedPhone?.dial || indicacao.telefone_indicada!, indicacao.id)}
-                                  >
-                                    {copiedPhoneId === indicacao.id ? (
-                                      <Check className="h-3 w-3 text-primary" />
-                                    ) : (
-                                      <Copy className="h-3 w-3" />
-                                    )}
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Copiar telefone</TooltipContent>
-                              </Tooltip>
-                              {formattedPhone && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6"
-                                      onClick={() => window.open(`https://wa.me/${formattedPhone.dial}`, "_blank")}
-                                    >
-                                      <MessageSquare className="h-3 w-3 text-emerald-600" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Abrir WhatsApp</TooltipContent>
-                                </Tooltip>
-                              )}
-                            </div>
-                          </TooltipProvider>
+                              </div>
+                            )}
+                            {indicacao.telefone_indicadora && (
+                              <div className="flex items-center gap-1 min-w-0">
+                                <span className="text-muted-foreground font-mono truncate">
+                                  {formattedIndicadora?.display || indicacao.telefone_indicadora}
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 shrink-0"
+                                  onClick={() =>
+                                    handleCopy(
+                                      formattedIndicadora?.dial || indicacao.telefone_indicadora!,
+                                      copyKeyIndPhone,
+                                      "Telefone",
+                                    )
+                                  }
+                                  aria-label="Copiar telefone da indicadora"
+                                >
+                                  {copiedId === copyKeyIndPhone ? (
+                                    <Check className="h-3 w-3 text-primary" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell>{indicacao.nome_indicadora || "-"}</TableCell>
+
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <Select
                           value={indicacao.status_abordagem}
@@ -630,28 +674,14 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           <SelectTrigger className="w-[150px] h-8 text-xs">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-[100]">
                             {Object.entries(statusAbordagemLabels).map(([value, label]) => (
                               <SelectItem key={value} value={value}>{label}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <Select
-                          value={indicacao.motivo_abordagem || ""}
-                          onValueChange={(value) => handleMotivoChange(indicacao.id, value as MotivoAbordagem)}
-                        >
-                          <SelectTrigger className="w-[140px] h-8 text-xs">
-                            <SelectValue placeholder="Selecionar" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(motivoAbordagemLabels).map(([value, label]) => (
-                              <SelectItem key={value} value={value}>{label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
+
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         {(() => {
                           const assignedId = indicacao.assigned_user_id || null;
@@ -662,15 +692,15 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                             assigned?.full_name || assigned?.email || (assignedId ? "Usuário" : "Não atribuído");
                           const isMine = assignedId === user?.id;
                           return (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                               <Select
                                 value={assignedId ?? UNASSIGNED_VALUE}
                                 onValueChange={(value) =>
                                   handleAssignUser(indicacao.id, value === UNASSIGNED_VALUE ? null : value)
                                 }
                               >
-                                <SelectTrigger className="w-[180px] h-8 text-xs">
-                                  <div className="flex items-center gap-2 truncate">
+                                <SelectTrigger className="w-[150px] h-8 text-xs">
+                                  <div className="flex items-center gap-1.5 truncate">
                                     {assigned ? (
                                       <Avatar className="h-5 w-5">
                                         <AvatarFallback className="text-[10px]">
@@ -698,12 +728,12 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                                     <TooltipTrigger asChild>
                                       <Button
                                         variant="outline"
-                                        size="sm"
-                                        className="h-8 px-2"
+                                        size="icon"
+                                        className="h-8 w-8 shrink-0"
                                         onClick={() => handleAssignUser(indicacao.id, user.id)}
+                                        aria-label="Assumir"
                                       >
-                                        <UserCheck className="h-3.5 w-3.5 mr-1" />
-                                        Assumir
+                                        <UserCheck className="h-3.5 w-3.5" />
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>Assumir esta indicação</TooltipContent>
@@ -714,6 +744,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           );
                         })()}
                       </TableCell>
+
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -739,11 +770,26 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                               </>
                             )}
                             <DropdownMenuSeparator />
+                            {indicacao.motivo_abordagem ? (
+                              <DropdownMenuItem disabled>
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                Motivo: {motivoAbordagemLabels[indicacao.motivo_abordagem as MotivoAbordagem]}
+                              </DropdownMenuItem>
+                            ) : null}
+                            {(Object.entries(motivoAbordagemLabels) as [MotivoAbordagem, string][]).map(([value, label]) => (
+                              <DropdownMenuItem
+                                key={value}
+                                onClick={() => handleMotivoChange(indicacao.id, value)}
+                              >
+                                <span className="ml-6 text-xs">Definir motivo: {label}</span>
+                              </DropdownMenuItem>
+                            ))}
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem
                               disabled={convertingId === indicacao.id || indicacao.status_abordagem === "convertido"}
                               onSelect={(e) => {
                                 e.preventDefault();
-                                handleConvertToProcess(indicacao);
+                                openConvertDialog(indicacao);
                               }}
                             >
                               {convertingId === indicacao.id ? (
@@ -786,6 +832,17 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         onOpenChange={setFormDialogOpen}
         onSuccess={fetchIndicacoes}
       />
+
+      <ConvertToProcessDialog
+        indicacao={convertTarget}
+        open={convertDialogOpen}
+        onOpenChange={(open) => {
+          setConvertDialogOpen(open);
+          if (!open) setConvertTarget(null);
+        }}
+        onConfirm={handleConvertToProcess}
+      />
+
     </div>
   );
 }
