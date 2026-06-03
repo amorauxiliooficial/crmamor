@@ -2,6 +2,7 @@ import { Indicacao, statusAbordagemLabels, statusAbordagemColors, origemIndicaca
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MessageSquare, Phone, Copy, Check, ExternalLink, Eye, AlertCircle } from "lucide-react";
 import { format, parseISO, differenceInDays } from "date-fns";
@@ -13,9 +14,10 @@ interface IndicacaoMobileListProps {
   indicacoes: Indicacao[];
   selectedId?: string | null;
   onSelect: (indicacao: Indicacao) => void;
+  loading?: boolean;
 }
 
-export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: IndicacaoMobileListProps) {
+export function IndicacaoMobileList({ indicacoes, selectedId, onSelect, loading }: IndicacaoMobileListProps) {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -51,10 +53,37 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
     return a && b && a === b;
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Card key={`skel-${i}`}>
+            <CardContent className="p-3 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <div className="flex items-center gap-1 pt-1 border-t">
+                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-8 w-20" />
+                <div className="flex-1" />
+                <Skeleton className="h-8 w-20" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
   if (indicacoes.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground text-sm">
-        Nenhuma indicação encontrada
+        Nenhuma indicação encontrada — ajuste os filtros
       </div>
     );
   }

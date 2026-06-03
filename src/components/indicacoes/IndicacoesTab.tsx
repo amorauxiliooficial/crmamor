@@ -19,6 +19,7 @@ import {
 } from "@/types/indicacao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -348,13 +349,23 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     return phone.replace(/\D/g, "");
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const TableSkeleton = () => (
+    <>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <TableRow key={`skel-${i}`}>
+          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
 
   return (
     <div className="space-y-6">
@@ -524,6 +535,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
           indicacoes={displayedIndicacoes}
           selectedId={selectedIndicacao?.id}
           onSelect={handleRowClick}
+          loading={loading}
         />
       ) : (
         <div className="rounded-md border">
@@ -560,10 +572,12 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayedIndicacoes.length === 0 ? (
+              {loading ? (
+                <TableSkeleton />
+              ) : displayedIndicacoes.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    Nenhuma indicação encontrada
+                    Nenhuma indicação encontrada — ajuste os filtros
                   </TableCell>
                 </TableRow>
               ) : (
