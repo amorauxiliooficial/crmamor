@@ -832,6 +832,17 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         onOpenChange={setFormDialogOpen}
         onSuccess={fetchIndicacoes}
       />
+
+      <ConvertToProcessDialog
+        indicacao={convertTarget}
+        open={convertDialogOpen}
+        onOpenChange={(open) => {
+          setConvertDialogOpen(open);
+          if (!open) setConvertTarget(null);
+        }}
+        onConfirm={handleConvertToProcess}
+      />
+
     </div>
   );
 }
