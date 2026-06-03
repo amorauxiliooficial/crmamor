@@ -340,12 +340,15 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     setConvertDialogOpen(true);
   };
 
-  const handleConvertToProcess = async (indicacao: Indicacao, funil: FunilOption) => {
-    if (!user) return;
+  const handleConvertToProcess = async (
+    indicacao: Indicacao,
+    payload: import("./ConvertToProcessDialog").ConvertPayload,
+  ) => {
+    if (!user) throw new Error("Não autenticado");
     setConvertingId(indicacao.id);
 
     try {
-      // 1) Prevent duplicates
+      // 1) Prevent duplicates by referral
       const { data: existing, error: existingErr } = await supabase
         .from("mae_processo")
         .select("id")
@@ -355,7 +358,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
       if (existingErr) {
         logError("check_existing_process", existingErr);
         toast({ variant: "destructive", title: "Erro ao verificar", description: getUserFriendlyError(existingErr) });
-        return;
+        throw existingErr;
       }
 
       if (existing?.id) {
@@ -364,21 +367,33 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         return;
       }
 
-      // 2) Insert new process at chosen funil stage
-      const normalized = formatBrazilPhone(indicacao.telefone_indicada);
+      // 2) Prevent duplicate CPF
+      const { data: dupCpf } = await supabase
+        .from("mae_processo")
+        .select("id, nome_mae")
+        .eq("cpf", payload.cpf)
+        .maybeSingle();
+      if (dupCpf) {
+        toast({ variant: "destructive", title: "CPF já cadastrado", description: `Já existe um cadastro: ${dupCpf.nome_mae}` });
+        throw new Error("CPF já cadastrado");
+      }
+
+      // 3) Insert new process at chosen funil stage
+      const normalized = formatBrazilPhone(payload.telefone || indicacao.telefone_indicada);
       const telefoneE164 = normalized?.dial ? `+${normalized.dial}` : null;
 
       const { data: newMae, error: insertErr } = await supabase
         .from("mae_processo")
         .insert({
-          nome_mae: indicacao.nome_indicada,
-          telefone: telefoneE164 || indicacao.telefone_indicada || null,
+          nome_mae: payload.nome_mae,
+          telefone: telefoneE164 || payload.telefone || indicacao.telefone_indicada || null,
           telefone_e164: telefoneE164,
-          cpf: "",
+          cpf: payload.cpf,
+          senha_gov: payload.senha_gov,
           user_id: user.id,
           origem: `Indicação${indicacao.nome_indicadora ? ` de ${indicacao.nome_indicadora}` : ""}`,
           referral_id: indicacao.id,
-          status_processo: funil,
+          status_processo: payload.funil,
         } as never)
         .select("id")
         .single();
@@ -386,10 +401,10 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
       if (insertErr || !newMae) {
         logError("convert_indicacao_insert", insertErr);
         toast({ variant: "destructive", title: "Erro ao converter", description: getUserFriendlyError(insertErr) });
-        return;
+        throw insertErr || new Error("Falha ao criar processo");
       }
 
-      // 3) Optimistic: mark referral convertido locally
+      // 4) Optimistic: mark referral convertido locally
       setIndicacoes((prev) =>
         prev.map((i) => (i.id === indicacao.id ? { ...i, status_abordagem: "convertido" } : i)),
       );
@@ -407,17 +422,18 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
       await supabase.from("acoes_indicacao").insert({
         indicacao_id: indicacao.id,
         tipo_acao: "Convertida em Processo",
-        observacao: `Funil: ${funil} • Processo: ${newMae.id}`,
+        observacao: `Funil: ${payload.funil} • Processo: ${newMae.id}`,
         user_id: user.id,
       });
 
-      toast({ title: "Indicação convertida", description: `${indicacao.nome_indicada} entrou em "${funil}".` });
+      toast({ title: "Indicação convertida", description: `${payload.nome_mae} entrou em "${payload.funil}".` });
 
       navigate(`/?view=kanban&mae=${newMae.id}`);
     } finally {
       setConvertingId(null);
     }
   };
+
 
 
 
