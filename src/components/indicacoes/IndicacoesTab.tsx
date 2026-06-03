@@ -53,6 +53,9 @@ import {
   Copy,
   Check,
   X,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -78,6 +81,10 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusAbordagem | null>(null);
+  const [origemFilter, setOrigemFilter] = useState<"all" | OrigemIndicacao>("all");
+  const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "7" | "30">("all");
+  const [sortBy, setSortBy] = useState<"data" | "status">("data");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const userId = user?.id;
 
   // Open indicacao from URL param
@@ -182,9 +189,58 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   }, [filteredIndicacoes]);
 
   const displayedIndicacoes = useMemo(() => {
-    if (!statusFilter) return filteredIndicacoes;
-    return filteredIndicacoes.filter((i) => i.status_abordagem === statusFilter);
-  }, [filteredIndicacoes, statusFilter]);
+    let result = filteredIndicacoes;
+
+    if (statusFilter) {
+      result = result.filter((i) => i.status_abordagem === statusFilter);
+    }
+
+    if (origemFilter !== "all") {
+      result = result.filter((i) => (i.origem_indicacao || "interna") === origemFilter);
+    }
+
+    if (dateRangeFilter !== "all") {
+      const maxDays = dateRangeFilter === "7" ? 7 : 30;
+      const now = new Date();
+      result = result.filter((i) => {
+        const d = differenceInDays(now, parseISO(i.data_indicacao));
+        return d <= maxDays;
+      });
+    }
+
+    const statusOrder: Record<string, number> = {
+      aguardando_aprovacao: 0,
+      pendente: 1,
+      em_andamento: 2,
+      concluido: 3,
+    };
+
+    const sorted = [...result].sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "data") {
+        cmp = parseISO(a.data_indicacao).getTime() - parseISO(b.data_indicacao).getTime();
+      } else {
+        cmp = (statusOrder[a.status_abordagem] ?? 99) - (statusOrder[b.status_abordagem] ?? 99);
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+    return sorted;
+  }, [filteredIndicacoes, statusFilter, origemFilter, dateRangeFilter, sortBy, sortDir]);
+
+  const toggleSort = (col: "data" | "status") => {
+    if (sortBy === col) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(col);
+      setSortDir(col === "data" ? "desc" : "asc");
+    }
+  };
+
+  const SortIcon = ({ col }: { col: "data" | "status" }) => {
+    if (sortBy !== col) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
+  };
 
   const handleRowClick = (indicacao: Indicacao) => {
     setSelectedIndicacao(indicacao);
@@ -372,19 +428,61 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         </Button>
       </div>
 
-      {/* Active filter chip */}
-      {statusFilter && (
-        <div className="flex items-center">
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          value={statusFilter ?? "all"}
+          onValueChange={(v) => setStatusFilter(v === "all" ? null : (v as StatusAbordagem))}
+        >
+          <SelectTrigger className="w-full sm:w-[170px] h-9">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os status</SelectItem>
+            {Object.entries(statusAbordagemLabels).map(([value, label]) => (
+              <SelectItem key={value} value={value}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={origemFilter} onValueChange={(v) => setOrigemFilter(v as "all" | OrigemIndicacao)}>
+          <SelectTrigger className="w-full sm:w-[150px] h-9">
+            <SelectValue placeholder="Origem" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as origens</SelectItem>
+            <SelectItem value="externa">Externa</SelectItem>
+            <SelectItem value="interna">Interna</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={dateRangeFilter} onValueChange={(v) => setDateRangeFilter(v as "all" | "7" | "30")}>
+          <SelectTrigger className="w-full sm:w-[170px] h-9">
+            <SelectValue placeholder="Período" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tudo</SelectItem>
+            <SelectItem value="7">Últimos 7 dias</SelectItem>
+            <SelectItem value="30">Últimos 30 dias</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {(statusFilter || origemFilter !== "all" || dateRangeFilter !== "all") && (
           <Badge
             variant="secondary"
             className="cursor-pointer hover:bg-muted text-xs gap-1"
-            onClick={() => setStatusFilter(null)}
+            onClick={() => {
+              setStatusFilter(null);
+              setOrigemFilter("all");
+              setDateRangeFilter("all");
+            }}
           >
             <X className="h-3 w-3" />
-            Limpar filtro
+            Limpar filtros
           </Badge>
-        </div>
-      )}
+        )}
+      </div>
+
 
       {/* Content: Mobile cards vs Desktop table */}
       {isMobile ? (
@@ -398,12 +496,30 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Data</TableHead>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("data")}
+                    className="inline-flex items-center font-medium hover:text-foreground"
+                  >
+                    Data
+                    <SortIcon col="data" />
+                  </button>
+                </TableHead>
                 <TableHead>Indicada</TableHead>
                 <TableHead>Origem</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Indicadora</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("status")}
+                    className="inline-flex items-center font-medium hover:text-foreground"
+                  >
+                    Status
+                    <SortIcon col="status" />
+                  </button>
+                </TableHead>
                 <TableHead>Motivo</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
