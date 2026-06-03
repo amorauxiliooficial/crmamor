@@ -76,7 +76,29 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
               {/* Row 1: Name + Status */}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm truncate">{ind.nome_indicada}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-medium text-sm truncate">{ind.nome_indicada}</p>
+                    {isSelfReferral(ind) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700 text-[10px] px-1 py-0 h-5 shrink-0">
+                            Auto
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>Possível auto-indicação</TooltipContent>
+                      </Tooltip>
+                    )}
+                    {duplicatePhones.has(phone) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700 text-[10px] px-1 py-0 h-5 shrink-0">
+                            Dup
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>Telefone duplicado</TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
                   {ind.nome_indicadora && (
                     <p className="text-xs text-muted-foreground truncate">
                       por {ind.nome_indicadora}
