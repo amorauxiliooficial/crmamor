@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
+import { formatBrazilPhone } from "@/lib/formatBrazilPhone";
 import {
   Indicacao,
   StatusAbordagem,
@@ -379,6 +380,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                 filteredIndicacoes.map((indicacao) => {
                   const origem = (indicacao.origem_indicacao || "interna") as OrigemIndicacao;
                   const phone = sanitizePhone(indicacao.telefone_indicada);
+                  const formattedPhone = formatBrazilPhone(indicacao.telefone_indicada);
                   return (
                     <TableRow
                       key={indicacao.id}
@@ -430,27 +432,16 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                         {indicacao.telefone_indicada && (
                           <TooltipProvider>
                             <div className="flex items-center gap-1">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <a
-                                    href={`https://wa.me/${phone}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors text-sm"
-                                  >
-                                    <MessageSquare className="h-3 w-3" />
-                                    {indicacao.telefone_indicada}
-                                  </a>
-                                </TooltipTrigger>
-                                <TooltipContent>Abrir WhatsApp</TooltipContent>
-                              </Tooltip>
+                              <span className="text-sm text-muted-foreground">
+                                {formattedPhone?.display || indicacao.telefone_indicada}
+                              </span>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     className="h-6 w-6"
-                                    onClick={() => handleCopyPhone(indicacao.telefone_indicada!, indicacao.id)}
+                                    onClick={() => handleCopyPhone(formattedPhone?.dial || indicacao.telefone_indicada!, indicacao.id)}
                                   >
                                     {copiedPhoneId === indicacao.id ? (
                                       <Check className="h-3 w-3 text-primary" />
@@ -461,6 +452,21 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                                 </TooltipTrigger>
                                 <TooltipContent>Copiar telefone</TooltipContent>
                               </Tooltip>
+                              {formattedPhone && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={() => window.open(`https://wa.me/${formattedPhone.dial}`, "_blank")}
+                                    >
+                                      <MessageSquare className="h-3 w-3 text-emerald-600" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Abrir WhatsApp</TooltipContent>
+                                </Tooltip>
+                              )}
                             </div>
                           </TooltipProvider>
                         )}
@@ -510,7 +516,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                             </DropdownMenuItem>
                             {phone && (
                               <>
-                                <DropdownMenuItem onClick={() => window.open(`https://wa.me/${phone}`, "_blank")}>
+                                <DropdownMenuItem onClick={() => window.open(`https://wa.me/${formattedPhone?.dial || phone}`, "_blank")}>
                                   <MessageSquare className="h-4 w-4 mr-2" />
                                   WhatsApp
                                 </DropdownMenuItem>

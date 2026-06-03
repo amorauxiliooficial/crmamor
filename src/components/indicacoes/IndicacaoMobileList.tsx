@@ -8,6 +8,7 @@ import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { formatBrazilPhone } from "@/lib/formatBrazilPhone";
 
 interface IndicacaoMobileListProps {
   indicacoes: Indicacao[];
@@ -45,6 +46,7 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
       {indicacoes.map((ind) => {
         const origem = (ind.origem_indicacao || "interna") as OrigemIndicacao;
         const phone = sanitizePhone(ind.telefone_indicada);
+        const formattedPhone = formatBrazilPhone(ind.telefone_indicada);
         const isSelected = selectedId === ind.id;
 
         return (
@@ -83,7 +85,12 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
                 )}
               </div>
 
-              {/* Row 3: Quick actions */}
+              {/* Row 3: Phone + Quick actions */}
+              {formattedPhone && (
+                <div className="text-xs text-muted-foreground font-mono">
+                  {formattedPhone.display}
+                </div>
+              )}
               <div className="flex items-center gap-1 pt-1 border-t">
                 {phone && (
                   <TooltipProvider>
@@ -95,7 +102,7 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
                           className="h-8 gap-1.5 text-xs"
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.open(`https://wa.me/${phone}`, "_blank");
+                            window.open(`https://wa.me/${formattedPhone?.dial || phone}`, "_blank");
                           }}
                           aria-label="Abrir WhatsApp"
                         >
@@ -131,7 +138,7 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={(e) => handleCopyPhone(e, ind.telefone_indicada!, ind.id)}
+                          onClick={(e) => handleCopyPhone(e, formattedPhone?.dial || ind.telefone_indicada!, ind.id)}
                           aria-label="Copiar telefone"
                         >
                           {copiedId === ind.id ? (
