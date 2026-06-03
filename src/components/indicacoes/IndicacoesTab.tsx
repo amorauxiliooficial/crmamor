@@ -228,6 +228,25 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     return sorted;
   }, [filteredIndicacoes, statusFilter, origemFilter, dateRangeFilter, sortBy, sortDir]);
 
+  const duplicatePhones = useMemo(() => {
+    const counts = new Map<string, number>();
+    displayedIndicacoes.forEach((ind) => {
+      const p = ind.telefone_indicada?.replace(/\D/g, "") || "";
+      if (p) counts.set(p, (counts.get(p) || 0) + 1);
+    });
+    return new Set(
+      Array.from(counts.entries())
+        .filter(([, c]) => c > 1)
+        .map(([p]) => p)
+    );
+  }, [displayedIndicacoes]);
+
+  const isSelfReferral = (ind: Indicacao) => {
+    const a = ind.nome_indicada?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const b = ind.nome_indicadora?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    return a && b && a === b;
+  };
+
   const toggleSort = (col: "data" | "status") => {
     if (sortBy === col) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
