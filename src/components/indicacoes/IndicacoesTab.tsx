@@ -496,7 +496,16 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Data</TableHead>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("data")}
+                    className="inline-flex items-center font-medium hover:text-foreground"
+                  >
+                    Data
+                    <SortIcon col="data" />
+                  </button>
+                </TableHead>
                 <TableHead>Indicada</TableHead>
                 <TableHead>Origem</TableHead>
                 <TableHead>Telefone</TableHead>
