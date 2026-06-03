@@ -335,12 +335,17 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     toast({ title: newUserId === user?.id ? "Você assumiu a indicação" : "Responsável atualizado" });
   };
 
-  const handleConvertToProcess = async (indicacao: Indicacao) => {
+  const openConvertDialog = (indicacao: Indicacao) => {
+    setConvertTarget(indicacao);
+    setConvertDialogOpen(true);
+  };
+
+  const handleConvertToProcess = async (indicacao: Indicacao, funil: FunilOption) => {
     if (!user) return;
     setConvertingId(indicacao.id);
 
     try {
-      // 1) Prevent duplicates: check existing process for this referral_id
+      // 1) Prevent duplicates
       const { data: existing, error: existingErr } = await supabase
         .from("mae_processo")
         .select("id")
@@ -359,7 +364,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         return;
       }
 
-      // 2) Insert new process at the first stage (default 'Entrada de Documentos')
+      // 2) Insert new process at chosen funil stage
       const normalized = formatBrazilPhone(indicacao.telefone_indicada);
       const telefoneE164 = normalized?.dial ? `+${normalized.dial}` : null;
 
@@ -373,6 +378,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
           user_id: user.id,
           origem: `Indicação${indicacao.nome_indicadora ? ` de ${indicacao.nome_indicadora}` : ""}`,
           referral_id: indicacao.id,
+          status_processo: funil,
         } as never)
         .select("id")
         .single();
@@ -383,7 +389,11 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         return;
       }
 
-      // 3) Mark referral as Convertido (do NOT delete)
+      // 3) Optimistic: mark referral convertido locally
+      setIndicacoes((prev) =>
+        prev.map((i) => (i.id === indicacao.id ? { ...i, status_abordagem: "convertido" } : i)),
+      );
+
       const { error: updateErr } = await supabase
         .from("indicacoes")
         .update({ status_abordagem: "convertido" })
@@ -394,17 +404,15 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         toast({ variant: "destructive", title: "Processo criado, mas status não atualizado", description: getUserFriendlyError(updateErr) });
       }
 
-      // Optional: log action
       await supabase.from("acoes_indicacao").insert({
         indicacao_id: indicacao.id,
         tipo_acao: "Convertida em Processo",
-        observacao: `Processo criado: ${newMae.id}`,
+        observacao: `Funil: ${funil} • Processo: ${newMae.id}`,
         user_id: user.id,
       });
 
-      toast({ title: "Indicação convertida", description: `${indicacao.nome_indicada} entrou no funil.` });
+      toast({ title: "Indicação convertida", description: `${indicacao.nome_indicada} entrou em "${funil}".` });
 
-      // 4) Redirect to funnel
       navigate(`/?view=kanban&mae=${newMae.id}`);
     } finally {
       setConvertingId(null);
