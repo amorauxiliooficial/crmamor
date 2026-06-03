@@ -647,42 +647,40 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         {indicacao.telefone_indicada && (
-                          <TooltipProvider>
-                            <div className="flex items-center gap-1 whitespace-nowrap">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <a
-                                    href={`https://wa.me/${phone}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors text-sm"
-                                  >
-                                    <MessageSquare className="h-3 w-3" />
-                                    {indicacao.telefone_indicada}
-                                  </a>
-                                </TooltipTrigger>
-                                <TooltipContent>Abrir WhatsApp</TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    aria-label="Copiar telefone"
-                                    onClick={() => handleCopyPhone(indicacao.telefone_indicada!, indicacao.id)}
-                                  >
-                                    {copiedPhoneId === indicacao.id ? (
-                                      <Check className="h-3 w-3 text-primary" />
-                                    ) : (
-                                      <Copy className="h-3 w-3" />
-                                    )}
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Copiar telefone</TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </TooltipProvider>
+                          <div className="flex items-center gap-1 whitespace-nowrap">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a
+                                  href={`https://wa.me/${phone}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors text-sm"
+                                >
+                                  <MessageSquare className="h-3 w-3" />
+                                  {indicacao.telefone_indicada}
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent>Abrir WhatsApp</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  aria-label="Copiar telefone"
+                                  onClick={() => handleCopyPhone(indicacao.telefone_indicada!, indicacao.id)}
+                                >
+                                  {copiedPhoneId === indicacao.id ? (
+                                    <Check className="h-3 w-3 text-primary" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Copiar telefone</TooltipContent>
+                            </Tooltip>
+                          </div>
                         )}
                       </TableCell>
                       <TableCell>{indicacao.nome_indicadora || "-"}</TableCell>
