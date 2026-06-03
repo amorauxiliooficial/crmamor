@@ -555,13 +555,14 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                   </button>
                 </TableHead>
                 <TableHead>Motivo</TableHead>
+                <TableHead>Próximo passo</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {displayedIndicacoes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     Nenhuma indicação encontrada
                   </TableCell>
                 </TableRow>
