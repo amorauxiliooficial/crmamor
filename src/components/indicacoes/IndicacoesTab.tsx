@@ -771,6 +771,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
               )}
             </TableBody>
           </Table>
+          </TooltipProvider>
         </div>
       )}
 
