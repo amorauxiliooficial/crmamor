@@ -40,6 +40,7 @@ export interface Indicacao {
   proxima_acao_data?: string;
   proxima_acao_observacao?: string;
   origem_indicacao?: OrigemIndicacao;
+  assigned_user_id?: string | null;
   user_id: string;
   created_at: string;
   updated_at: string;
