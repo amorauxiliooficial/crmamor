@@ -695,7 +695,10 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {proximoPasso(indicacao.status_abordagem)}
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
