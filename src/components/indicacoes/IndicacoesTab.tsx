@@ -293,6 +293,42 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     return phone.replace(/\D/g, "");
   };
 
+  const handleAssignUser = async (indicacaoId: string, newUserId: string | null) => {
+    const previous = indicacoes;
+    // Optimistic update
+    setIndicacoes((prev) =>
+      prev.map((i) => (i.id === indicacaoId ? { ...i, assigned_user_id: newUserId } : i)),
+    );
+
+    const { error } = await supabase
+      .from("indicacoes")
+      .update({ assigned_user_id: newUserId } as never)
+      .eq("id", indicacaoId);
+
+    if (error) {
+      // Rollback
+      setIndicacoes(previous);
+      logError("update_assigned_user", error);
+      toast({ variant: "destructive", title: "Erro ao atribuir", description: getUserFriendlyError(error) });
+      return;
+    }
+
+    const assigneeName =
+      newUserId === null
+        ? "Ninguém"
+        : profiles.find((p) => p.id === newUserId)?.full_name ||
+          profiles.find((p) => p.id === newUserId)?.email ||
+          "Usuário";
+    const actorName = userProfile?.full_name || user?.email || "Usuário";
+    await supabase.from("acoes_indicacao").insert({
+      indicacao_id: indicacaoId,
+      tipo_acao: `Responsável: ${assigneeName}`,
+      observacao: `Por: ${actorName}`,
+      user_id: user!.id,
+    });
+    toast({ title: newUserId === user?.id ? "Você assumiu a indicação" : "Responsável atualizado" });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
