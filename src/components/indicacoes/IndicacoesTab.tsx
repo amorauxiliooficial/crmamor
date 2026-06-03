@@ -189,9 +189,58 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   }, [filteredIndicacoes]);
 
   const displayedIndicacoes = useMemo(() => {
-    if (!statusFilter) return filteredIndicacoes;
-    return filteredIndicacoes.filter((i) => i.status_abordagem === statusFilter);
-  }, [filteredIndicacoes, statusFilter]);
+    let result = filteredIndicacoes;
+
+    if (statusFilter) {
+      result = result.filter((i) => i.status_abordagem === statusFilter);
+    }
+
+    if (origemFilter !== "all") {
+      result = result.filter((i) => (i.origem_indicacao || "interna") === origemFilter);
+    }
+
+    if (dateRangeFilter !== "all") {
+      const maxDays = dateRangeFilter === "7" ? 7 : 30;
+      const now = new Date();
+      result = result.filter((i) => {
+        const d = differenceInDays(now, parseISO(i.data_indicacao));
+        return d <= maxDays;
+      });
+    }
+
+    const statusOrder: Record<string, number> = {
+      aguardando_aprovacao: 0,
+      pendente: 1,
+      em_andamento: 2,
+      concluido: 3,
+    };
+
+    const sorted = [...result].sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "data") {
+        cmp = parseISO(a.data_indicacao).getTime() - parseISO(b.data_indicacao).getTime();
+      } else {
+        cmp = (statusOrder[a.status_abordagem] ?? 99) - (statusOrder[b.status_abordagem] ?? 99);
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+    return sorted;
+  }, [filteredIndicacoes, statusFilter, origemFilter, dateRangeFilter, sortBy, sortDir]);
+
+  const toggleSort = (col: "data" | "status") => {
+    if (sortBy === col) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(col);
+      setSortDir(col === "data" ? "desc" : "asc");
+    }
+  };
+
+  const SortIcon = ({ col }: { col: "data" | "status" }) => {
+    if (sortBy !== col) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
+  };
 
   const handleRowClick = (indicacao: Indicacao) => {
     setSelectedIndicacao(indicacao);
