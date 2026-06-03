@@ -520,21 +520,18 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Data</TableHead>
+                <TableHead className="w-[110px]">Data</TableHead>
                 <TableHead>Indicada</TableHead>
-                <TableHead>Origem</TableHead>
-                <TableHead>Telefone</TableHead>
                 <TableHead>Indicadora</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Motivo</TableHead>
-                <TableHead>Responsável</TableHead>
+                <TableHead className="w-[160px]">Status</TableHead>
+                <TableHead className="w-[210px]">Responsável</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredIndicacoes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     Nenhuma indicação encontrada
                   </TableCell>
                 </TableRow>
@@ -543,97 +540,132 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                   const origem = (indicacao.origem_indicacao || "interna") as OrigemIndicacao;
                   const phone = sanitizePhone(indicacao.telefone_indicada);
                   const formattedPhone = formatBrazilPhone(indicacao.telefone_indicada);
+                  const formattedIndicadora = formatBrazilPhone(indicacao.telefone_indicadora);
+                  const copyKeyName = `name-${indicacao.id}`;
+                  const copyKeyPhone = `phone-${indicacao.id}`;
+                  const copyKeyIndName = `indname-${indicacao.id}`;
+                  const copyKeyIndPhone = `indphone-${indicacao.id}`;
                   return (
                     <TableRow
                       key={indicacao.id}
                       className={`cursor-pointer hover:bg-muted/50 ${selectedIndicacao?.id === indicacao.id && panelOpen ? "bg-muted" : ""}`}
                       onClick={() => handleRowClick(indicacao)}
                     >
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap text-xs">
                         <div className="flex flex-col">
-                          <span>{format(parseISO(indicacao.data_indicacao), "dd/MM/yyyy", { locale: ptBR })}</span>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="font-medium">
+                            {format(parseISO(indicacao.data_indicacao), "dd/MM/yy", { locale: ptBR })}
+                          </span>
+                          <span className="text-muted-foreground">
                             {format(parseISO(indicacao.data_indicacao), "HH:mm", { locale: ptBR })}
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-1">
-                          {indicacao.nome_indicada}
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
+
+                      {/* INDICADA: nome + telefone empilhados, cada um com copy */}
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <span className="font-medium truncate">{indicacao.nome_indicada}</span>
+                            {origem === "externa" && (
+                              <Badge variant="outline" className="h-4 px-1 text-[9px] shrink-0">
+                                <ExternalLink className="h-2.5 w-2.5 mr-0.5" />
+                                Ext
+                              </Badge>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 shrink-0"
+                              onClick={() => handleCopy(indicacao.nome_indicada, copyKeyName, "Nome")}
+                              aria-label="Copiar nome"
+                            >
+                              {copiedId === copyKeyName ? (
+                                <Check className="h-3 w-3 text-primary" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                          {indicacao.telefone_indicada && (
+                            <div className="flex items-center gap-1 min-w-0">
+                              <span className="text-xs text-muted-foreground font-mono truncate">
+                                {formattedPhone?.display || indicacao.telefone_indicada}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 shrink-0"
+                                onClick={() =>
+                                  handleCopy(formattedPhone?.dial || indicacao.telefone_indicada!, copyKeyPhone, "Telefone")
+                                }
+                                aria-label="Copiar telefone"
+                              >
+                                {copiedId === copyKeyPhone ? (
+                                  <Check className="h-3 w-3 text-primary" />
+                                ) : (
+                                  <Copy className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      {/* INDICADORA: nome + telefone (referência p/ pagamento) */}
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        {indicacao.nome_indicadora || indicacao.telefone_indicadora ? (
+                          <div className="flex flex-col gap-0.5 min-w-0 text-xs">
+                            {indicacao.nome_indicadora && (
+                              <div className="flex items-center gap-1 min-w-0">
+                                <span className="truncate">{indicacao.nome_indicadora}</span>
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-6 w-6"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCopyName(indicacao.nome_indicada, indicacao.id);
-                                  }}
+                                  className="h-5 w-5 shrink-0"
+                                  onClick={() => handleCopy(indicacao.nome_indicadora!, copyKeyIndName, "Nome")}
+                                  aria-label="Copiar nome da indicadora"
                                 >
-                                  {copiedNameId === indicacao.id ? (
+                                  {copiedId === copyKeyIndName ? (
                                     <Check className="h-3 w-3 text-primary" />
                                   ) : (
                                     <Copy className="h-3 w-3" />
                                   )}
                                 </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Copiar nome</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className={`text-xs ${origemIndicacaoColors[origem]}`}>
-                          {origem === "externa" && <ExternalLink className="h-3 w-3 mr-1" />}
-                          {origemIndicacaoLabels[origem]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        {indicacao.telefone_indicada && (
-                          <TooltipProvider>
-                            <div className="flex items-center gap-1">
-                              <span className="text-sm text-muted-foreground">
-                                {formattedPhone?.display || indicacao.telefone_indicada}
-                              </span>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={() => handleCopyPhone(formattedPhone?.dial || indicacao.telefone_indicada!, indicacao.id)}
-                                  >
-                                    {copiedPhoneId === indicacao.id ? (
-                                      <Check className="h-3 w-3 text-primary" />
-                                    ) : (
-                                      <Copy className="h-3 w-3" />
-                                    )}
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Copiar telefone</TooltipContent>
-                              </Tooltip>
-                              {formattedPhone && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6"
-                                      onClick={() => window.open(`https://wa.me/${formattedPhone.dial}`, "_blank")}
-                                    >
-                                      <MessageSquare className="h-3 w-3 text-emerald-600" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Abrir WhatsApp</TooltipContent>
-                                </Tooltip>
-                              )}
-                            </div>
-                          </TooltipProvider>
+                              </div>
+                            )}
+                            {indicacao.telefone_indicadora && (
+                              <div className="flex items-center gap-1 min-w-0">
+                                <span className="text-muted-foreground font-mono truncate">
+                                  {formattedIndicadora?.display || indicacao.telefone_indicadora}
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 shrink-0"
+                                  onClick={() =>
+                                    handleCopy(
+                                      formattedIndicadora?.dial || indicacao.telefone_indicadora!,
+                                      copyKeyIndPhone,
+                                      "Telefone",
+                                    )
+                                  }
+                                  aria-label="Copiar telefone da indicadora"
+                                >
+                                  {copiedId === copyKeyIndPhone ? (
+                                    <Check className="h-3 w-3 text-primary" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell>{indicacao.nome_indicadora || "-"}</TableCell>
+
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <Select
                           value={indicacao.status_abordagem}
@@ -642,28 +674,14 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           <SelectTrigger className="w-[150px] h-8 text-xs">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-[100]">
                             {Object.entries(statusAbordagemLabels).map(([value, label]) => (
                               <SelectItem key={value} value={value}>{label}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <Select
-                          value={indicacao.motivo_abordagem || ""}
-                          onValueChange={(value) => handleMotivoChange(indicacao.id, value as MotivoAbordagem)}
-                        >
-                          <SelectTrigger className="w-[140px] h-8 text-xs">
-                            <SelectValue placeholder="Selecionar" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(motivoAbordagemLabels).map(([value, label]) => (
-                              <SelectItem key={value} value={value}>{label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
+
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         {(() => {
                           const assignedId = indicacao.assigned_user_id || null;
@@ -674,15 +692,15 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                             assigned?.full_name || assigned?.email || (assignedId ? "Usuário" : "Não atribuído");
                           const isMine = assignedId === user?.id;
                           return (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                               <Select
                                 value={assignedId ?? UNASSIGNED_VALUE}
                                 onValueChange={(value) =>
                                   handleAssignUser(indicacao.id, value === UNASSIGNED_VALUE ? null : value)
                                 }
                               >
-                                <SelectTrigger className="w-[180px] h-8 text-xs">
-                                  <div className="flex items-center gap-2 truncate">
+                                <SelectTrigger className="w-[150px] h-8 text-xs">
+                                  <div className="flex items-center gap-1.5 truncate">
                                     {assigned ? (
                                       <Avatar className="h-5 w-5">
                                         <AvatarFallback className="text-[10px]">
@@ -710,12 +728,12 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                                     <TooltipTrigger asChild>
                                       <Button
                                         variant="outline"
-                                        size="sm"
-                                        className="h-8 px-2"
+                                        size="icon"
+                                        className="h-8 w-8 shrink-0"
                                         onClick={() => handleAssignUser(indicacao.id, user.id)}
+                                        aria-label="Assumir"
                                       >
-                                        <UserCheck className="h-3.5 w-3.5 mr-1" />
-                                        Assumir
+                                        <UserCheck className="h-3.5 w-3.5" />
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>Assumir esta indicação</TooltipContent>
@@ -726,6 +744,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           );
                         })()}
                       </TableCell>
+
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -751,11 +770,26 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                               </>
                             )}
                             <DropdownMenuSeparator />
+                            {indicacao.motivo_abordagem ? (
+                              <DropdownMenuItem disabled>
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                Motivo: {motivoAbordagemLabels[indicacao.motivo_abordagem as MotivoAbordagem]}
+                              </DropdownMenuItem>
+                            ) : null}
+                            {(Object.entries(motivoAbordagemLabels) as [MotivoAbordagem, string][]).map(([value, label]) => (
+                              <DropdownMenuItem
+                                key={value}
+                                onClick={() => handleMotivoChange(indicacao.id, value)}
+                              >
+                                <span className="ml-6 text-xs">Definir motivo: {label}</span>
+                              </DropdownMenuItem>
+                            ))}
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem
                               disabled={convertingId === indicacao.id || indicacao.status_abordagem === "convertido"}
                               onSelect={(e) => {
                                 e.preventDefault();
-                                handleConvertToProcess(indicacao);
+                                openConvertDialog(indicacao);
                               }}
                             >
                               {convertingId === indicacao.id ? (
