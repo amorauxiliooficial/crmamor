@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
+import { cn } from "@/lib/utils";
 import {
   Indicacao,
   StatusAbordagem,
@@ -51,6 +52,7 @@ import {
   Eye,
   Copy,
   Check,
+  X,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -75,6 +77,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   const [localSearch, setLocalSearch] = useState("");
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusAbordagem | null>(null);
   const userId = user?.id;
 
   // Open indicacao from URL param
@@ -178,6 +181,11 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     };
   }, [filteredIndicacoes]);
 
+  const displayedIndicacoes = useMemo(() => {
+    if (!statusFilter) return filteredIndicacoes;
+    return filteredIndicacoes.filter((i) => i.status_abordagem === statusFilter);
+  }, [filteredIndicacoes, statusFilter]);
+
   const handleRowClick = (indicacao: Indicacao) => {
     setSelectedIndicacao(indicacao);
     setPanelOpen(true);
@@ -262,7 +270,10 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card>
+        <Card
+          onClick={() => setStatusFilter(null)}
+          className="cursor-pointer transition-all hover:shadow-md"
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" />
@@ -273,7 +284,13 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
             <div className="text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card
+          onClick={() => setStatusFilter((prev) => (prev === "aguardando_aprovacao" ? null : "aguardando_aprovacao"))}
+          className={cn(
+            "cursor-pointer transition-all hover:shadow-md",
+            statusFilter === "aguardando_aprovacao" && "ring-2 ring-primary shadow-md"
+          )}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
@@ -285,7 +302,13 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
             {stats.externas > 0 && <p className="text-xs text-muted-foreground">{stats.externas} externas</p>}
           </CardContent>
         </Card>
-        <Card>
+        <Card
+          onClick={() => setStatusFilter((prev) => (prev === "pendente" ? null : "pendente"))}
+          className={cn(
+            "cursor-pointer transition-all hover:shadow-md",
+            statusFilter === "pendente" && "ring-2 ring-primary shadow-md"
+          )}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
@@ -296,7 +319,13 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
             <div className="text-2xl font-bold">{stats.pendentes}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card
+          onClick={() => setStatusFilter((prev) => (prev === "em_andamento" ? null : "em_andamento"))}
+          className={cn(
+            "cursor-pointer transition-all hover:shadow-md",
+            statusFilter === "em_andamento" && "ring-2 ring-primary shadow-md"
+          )}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <PlayCircle className="h-4 w-4 text-muted-foreground" />
@@ -307,7 +336,13 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
             <div className="text-2xl font-bold">{stats.emAndamento}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card
+          onClick={() => setStatusFilter((prev) => (prev === "concluido" ? null : "concluido"))}
+          className={cn(
+            "cursor-pointer transition-all hover:shadow-md",
+            statusFilter === "concluido" && "ring-2 ring-primary shadow-md"
+          )}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
@@ -337,10 +372,24 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         </Button>
       </div>
 
+      {/* Active filter chip */}
+      {statusFilter && (
+        <div className="flex items-center">
+          <Badge
+            variant="secondary"
+            className="cursor-pointer hover:bg-muted text-xs gap-1"
+            onClick={() => setStatusFilter(null)}
+          >
+            <X className="h-3 w-3" />
+            Limpar filtro
+          </Badge>
+        </div>
+      )}
+
       {/* Content: Mobile cards vs Desktop table */}
       {isMobile ? (
         <IndicacaoMobileList
-          indicacoes={filteredIndicacoes}
+          indicacoes={displayedIndicacoes}
           selectedId={selectedIndicacao?.id}
           onSelect={handleRowClick}
         />
@@ -360,14 +409,14 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredIndicacoes.length === 0 ? (
+              {displayedIndicacoes.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Nenhuma indicação encontrada
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredIndicacoes.map((indicacao) => {
+                displayedIndicacoes.map((indicacao) => {
                   const origem = (indicacao.origem_indicacao || "interna") as OrigemIndicacao;
                   const phone = sanitizePhone(indicacao.telefone_indicada);
                   return (
