@@ -247,6 +247,21 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     return a && b && a === b;
   };
 
+  const proximoPasso = (status: StatusAbordagem) => {
+    switch (status) {
+      case "aguardando_aprovacao":
+        return "Entrar em contato";
+      case "pendente":
+        return "Retomar contato";
+      case "em_andamento":
+        return "Acompanhar";
+      case "concluido":
+        return "-";
+      default:
+        return "-";
+    }
+  };
+
   const toggleSort = (col: "data" | "status") => {
     if (sortBy === col) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
