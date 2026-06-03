@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { IndicacaoDetailPanel } from "./IndicacaoDetailPanel";
 import { IndicacaoFormDialog } from "./IndicacaoFormDialog";
 import { IndicacaoMobileList } from "./IndicacaoMobileList";
+import { ConvertToProcessDialog, type FunilOption } from "./ConvertToProcessDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
