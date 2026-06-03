@@ -243,7 +243,15 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   const handleCopyPhone = async (phone: string, id: string) => {
     await navigator.clipboard.writeText(phone);
     setCopiedPhoneId(id);
+    toast({ title: "Telefone copiado" });
     setTimeout(() => setCopiedPhoneId(null), 2000);
+  };
+
+  const handleCopyName = async (name: string, id: string) => {
+    await navigator.clipboard.writeText(name);
+    setCopiedNameId(id);
+    toast({ title: "Nome copiado" });
+    setTimeout(() => setCopiedNameId(null), 2000);
   };
 
   const sanitizePhone = (phone: string | undefined | null): string => {
