@@ -96,6 +96,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
   const [copiedNameId, setCopiedNameId] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<ProfileOption[]>([]);
   const userId = user?.id;
 
   // Open indicacao from URL param
