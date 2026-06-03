@@ -409,14 +409,14 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredIndicacoes.length === 0 ? (
+              {displayedIndicacoes.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Nenhuma indicação encontrada
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredIndicacoes.map((indicacao) => {
+                displayedIndicacoes.map((indicacao) => {
                   const origem = (indicacao.origem_indicacao || "interna") as OrigemIndicacao;
                   const phone = sanitizePhone(indicacao.telefone_indicada);
                   return (
