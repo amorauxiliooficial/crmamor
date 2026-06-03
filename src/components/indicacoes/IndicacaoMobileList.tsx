@@ -2,6 +2,7 @@ import { Indicacao, statusAbordagemLabels, statusAbordagemColors, origemIndicaca
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MessageSquare, Phone, Copy, Check, ExternalLink, Eye, AlertCircle } from "lucide-react";
 import { format, parseISO, differenceInDays } from "date-fns";
