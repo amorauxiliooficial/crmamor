@@ -428,19 +428,61 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         </Button>
       </div>
 
-      {/* Active filter chip */}
-      {statusFilter && (
-        <div className="flex items-center">
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          value={statusFilter ?? "all"}
+          onValueChange={(v) => setStatusFilter(v === "all" ? null : (v as StatusAbordagem))}
+        >
+          <SelectTrigger className="w-full sm:w-[170px] h-9">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os status</SelectItem>
+            {Object.entries(statusAbordagemLabels).map(([value, label]) => (
+              <SelectItem key={value} value={value}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={origemFilter} onValueChange={(v) => setOrigemFilter(v as "all" | OrigemIndicacao)}>
+          <SelectTrigger className="w-full sm:w-[150px] h-9">
+            <SelectValue placeholder="Origem" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as origens</SelectItem>
+            <SelectItem value="externa">Externa</SelectItem>
+            <SelectItem value="interna">Interna</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={dateRangeFilter} onValueChange={(v) => setDateRangeFilter(v as "all" | "7" | "30")}>
+          <SelectTrigger className="w-full sm:w-[170px] h-9">
+            <SelectValue placeholder="Período" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tudo</SelectItem>
+            <SelectItem value="7">Últimos 7 dias</SelectItem>
+            <SelectItem value="30">Últimos 30 dias</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {(statusFilter || origemFilter !== "all" || dateRangeFilter !== "all") && (
           <Badge
             variant="secondary"
             className="cursor-pointer hover:bg-muted text-xs gap-1"
-            onClick={() => setStatusFilter(null)}
+            onClick={() => {
+              setStatusFilter(null);
+              setOrigemFilter("all");
+              setDateRangeFilter("all");
+            }}
           >
             <X className="h-3 w-3" />
-            Limpar filtro
+            Limpar filtros
           </Badge>
-        </div>
-      )}
+        )}
+      </div>
+
 
       {/* Content: Mobile cards vs Desktop table */}
       {isMobile ? (
