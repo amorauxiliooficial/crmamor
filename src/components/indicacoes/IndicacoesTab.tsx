@@ -54,7 +54,7 @@ import {
   Check,
   X,
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface IndicacoesTabProps {
