@@ -573,6 +573,68 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                         </Select>
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
+                        {(() => {
+                          const assignedId = indicacao.assigned_user_id || null;
+                          const assigned = assignedId
+                            ? profiles.find((p) => p.id === assignedId)
+                            : null;
+                          const assignedLabel =
+                            assigned?.full_name || assigned?.email || (assignedId ? "Usuário" : "Não atribuído");
+                          const isMine = assignedId === user?.id;
+                          return (
+                            <div className="flex items-center gap-2">
+                              <Select
+                                value={assignedId ?? UNASSIGNED_VALUE}
+                                onValueChange={(value) =>
+                                  handleAssignUser(indicacao.id, value === UNASSIGNED_VALUE ? null : value)
+                                }
+                              >
+                                <SelectTrigger className="w-[180px] h-8 text-xs">
+                                  <div className="flex items-center gap-2 truncate">
+                                    {assigned ? (
+                                      <Avatar className="h-5 w-5">
+                                        <AvatarFallback className="text-[10px]">
+                                          {getInitials(assigned.full_name, assigned.email)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                    ) : (
+                                      <UserX className="h-3.5 w-3.5 text-muted-foreground" />
+                                    )}
+                                    <span className="truncate">{assignedLabel}</span>
+                                  </div>
+                                </SelectTrigger>
+                                <SelectContent className="z-[100]">
+                                  <SelectItem value={UNASSIGNED_VALUE}>Não atribuído</SelectItem>
+                                  {profiles.map((p) => (
+                                    <SelectItem key={p.id} value={p.id}>
+                                      {p.full_name || p.email || "Usuário"}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {!isMine && user?.id && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 px-2"
+                                        onClick={() => handleAssignUser(indicacao.id, user.id)}
+                                      >
+                                        <UserCheck className="h-3.5 w-3.5 mr-1" />
+                                        Assumir
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Assumir esta indicação</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
