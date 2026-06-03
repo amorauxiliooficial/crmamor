@@ -1,0 +1,2 @@
+ALTER TABLE public.indicacoes ADD COLUMN IF NOT EXISTS assigned_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_indicacoes_assigned_user_id ON public.indicacoes(assigned_user_id);

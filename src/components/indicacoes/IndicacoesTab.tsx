@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Plus,
   Phone,
@@ -52,9 +53,27 @@ import {
   Eye,
   Copy,
   Check,
+  UserCheck,
+  UserX,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+interface ProfileOption {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
+
+const UNASSIGNED_VALUE = "__unassigned__";
+
+function getInitials(name: string | null | undefined, fallback?: string | null) {
+  const source = (name || fallback || "?").trim();
+  if (!source) return "?";
+  const parts = source.split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 interface IndicacoesTabProps {
   searchQuery?: string;
@@ -77,6 +96,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
   const [copiedNameId, setCopiedNameId] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<ProfileOption[]>([]);
   const userId = user?.id;
 
   // Open indicacao from URL param
@@ -132,10 +152,23 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     if (data) setUserProfile(data);
   };
 
+  const fetchProfiles = async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .order("full_name", { ascending: true });
+    if (error) {
+      logError("fetch_profiles", error);
+    } else if (data) {
+      setProfiles(data as ProfileOption[]);
+    }
+  };
+
   useEffect(() => {
     if (userId) {
       fetchIndicacoes();
       fetchUserProfile();
+      fetchProfiles();
     }
   }, [userId]);
 
@@ -260,6 +293,42 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     return phone.replace(/\D/g, "");
   };
 
+  const handleAssignUser = async (indicacaoId: string, newUserId: string | null) => {
+    const previous = indicacoes;
+    // Optimistic update
+    setIndicacoes((prev) =>
+      prev.map((i) => (i.id === indicacaoId ? { ...i, assigned_user_id: newUserId } : i)),
+    );
+
+    const { error } = await supabase
+      .from("indicacoes")
+      .update({ assigned_user_id: newUserId } as never)
+      .eq("id", indicacaoId);
+
+    if (error) {
+      // Rollback
+      setIndicacoes(previous);
+      logError("update_assigned_user", error);
+      toast({ variant: "destructive", title: "Erro ao atribuir", description: getUserFriendlyError(error) });
+      return;
+    }
+
+    const assigneeName =
+      newUserId === null
+        ? "Ninguém"
+        : profiles.find((p) => p.id === newUserId)?.full_name ||
+          profiles.find((p) => p.id === newUserId)?.email ||
+          "Usuário";
+    const actorName = userProfile?.full_name || user?.email || "Usuário";
+    await supabase.from("acoes_indicacao").insert({
+      indicacao_id: indicacaoId,
+      tipo_acao: `Responsável: ${assigneeName}`,
+      observacao: `Por: ${actorName}`,
+      user_id: user!.id,
+    });
+    toast({ title: newUserId === user?.id ? "Você assumiu a indicação" : "Responsável atualizado" });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -366,13 +435,14 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                 <TableHead>Indicadora</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Motivo</TableHead>
+                <TableHead>Responsável</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredIndicacoes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     Nenhuma indicação encontrada
                   </TableCell>
                 </TableRow>
@@ -501,6 +571,68 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                             ))}
                           </SelectContent>
                         </Select>
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        {(() => {
+                          const assignedId = indicacao.assigned_user_id || null;
+                          const assigned = assignedId
+                            ? profiles.find((p) => p.id === assignedId)
+                            : null;
+                          const assignedLabel =
+                            assigned?.full_name || assigned?.email || (assignedId ? "Usuário" : "Não atribuído");
+                          const isMine = assignedId === user?.id;
+                          return (
+                            <div className="flex items-center gap-2">
+                              <Select
+                                value={assignedId ?? UNASSIGNED_VALUE}
+                                onValueChange={(value) =>
+                                  handleAssignUser(indicacao.id, value === UNASSIGNED_VALUE ? null : value)
+                                }
+                              >
+                                <SelectTrigger className="w-[180px] h-8 text-xs">
+                                  <div className="flex items-center gap-2 truncate">
+                                    {assigned ? (
+                                      <Avatar className="h-5 w-5">
+                                        <AvatarFallback className="text-[10px]">
+                                          {getInitials(assigned.full_name, assigned.email)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                    ) : (
+                                      <UserX className="h-3.5 w-3.5 text-muted-foreground" />
+                                    )}
+                                    <span className="truncate">{assignedLabel}</span>
+                                  </div>
+                                </SelectTrigger>
+                                <SelectContent className="z-[100]">
+                                  <SelectItem value={UNASSIGNED_VALUE}>Não atribuído</SelectItem>
+                                  {profiles.map((p) => (
+                                    <SelectItem key={p.id} value={p.id}>
+                                      {p.full_name || p.email || "Usuário"}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {!isMine && user?.id && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 px-2"
+                                        onClick={() => handleAssignUser(indicacao.id, user.id)}
+                                      >
+                                        <UserCheck className="h-3.5 w-3.5 mr-1" />
+                                        Assumir
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Assumir esta indicação</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
