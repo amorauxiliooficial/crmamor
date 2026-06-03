@@ -1030,6 +1030,7 @@ export type Database = {
           precisa_das: boolean
           precisa_gps: string | null
           protocolo_inss: string | null
+          referral_id: string | null
           segurada: string | null
           senha_gov: string | null
           status_anterior: string | null
@@ -1075,6 +1076,7 @@ export type Database = {
           precisa_das?: boolean
           precisa_gps?: string | null
           protocolo_inss?: string | null
+          referral_id?: string | null
           segurada?: string | null
           senha_gov?: string | null
           status_anterior?: string | null
@@ -1120,6 +1122,7 @@ export type Database = {
           precisa_das?: boolean
           precisa_gps?: string | null
           protocolo_inss?: string | null
+          referral_id?: string | null
           segurada?: string | null
           senha_gov?: string | null
           status_anterior?: string | null
@@ -1132,7 +1135,15 @@ export type Database = {
           user_id?: string
           verificacao_duas_etapas?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "mae_processo_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "indicacoes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mae_status_history: {
         Row: {
