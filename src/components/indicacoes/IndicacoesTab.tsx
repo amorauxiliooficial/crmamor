@@ -240,56 +240,58 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
 
   const handleStatusChange = async (indicacaoId: string, status: StatusAbordagem) => {
     const userName = userProfile?.full_name || user?.email || "Usuário";
+    const previous = indicacoes;
+    // Optimistic
+    setIndicacoes((prev) =>
+      prev.map((i) => (i.id === indicacaoId ? { ...i, status_abordagem: status } : i)),
+    );
 
     const { error } = await supabase.from("indicacoes").update({ status_abordagem: status }).eq("id", indicacaoId);
 
     if (error) {
+      setIndicacoes(previous);
       logError("update_status", error);
       toast({ variant: "destructive", title: "Erro ao atualizar", description: getUserFriendlyError(error) });
-    } else {
-      await supabase.from("acoes_indicacao").insert({
-        indicacao_id: indicacaoId,
-        tipo_acao: `Status: ${statusAbordagemLabels[status]}`,
-        observacao: `Por: ${userName}`,
-        user_id: user!.id,
-      });
-      toast({ title: "Status atualizado" });
-      fetchIndicacoes();
+      return;
     }
+    await supabase.from("acoes_indicacao").insert({
+      indicacao_id: indicacaoId,
+      tipo_acao: `Status: ${statusAbordagemLabels[status]}`,
+      observacao: `Por: ${userName}`,
+      user_id: user!.id,
+    });
+    toast({ title: "Status atualizado" });
   };
 
   const handleMotivoChange = async (indicacaoId: string, motivo: MotivoAbordagem) => {
     const userName = userProfile?.full_name || user?.email || "Usuário";
+    const previous = indicacoes;
+    setIndicacoes((prev) =>
+      prev.map((i) => (i.id === indicacaoId ? { ...i, motivo_abordagem: motivo } : i)),
+    );
 
     const { error } = await supabase.from("indicacoes").update({ motivo_abordagem: motivo }).eq("id", indicacaoId);
 
     if (error) {
+      setIndicacoes(previous);
       logError("update_motivo", error);
       toast({ variant: "destructive", title: "Erro ao atualizar", description: getUserFriendlyError(error) });
-    } else {
-      await supabase.from("acoes_indicacao").insert({
-        indicacao_id: indicacaoId,
-        tipo_acao: `Motivo: ${motivoAbordagemLabels[motivo]}`,
-        observacao: `Por: ${userName}`,
-        user_id: user!.id,
-      });
-      toast({ title: "Motivo atualizado" });
-      fetchIndicacoes();
+      return;
     }
+    await supabase.from("acoes_indicacao").insert({
+      indicacao_id: indicacaoId,
+      tipo_acao: `Motivo: ${motivoAbordagemLabels[motivo]}`,
+      observacao: `Por: ${userName}`,
+      user_id: user!.id,
+    });
+    toast({ title: "Motivo atualizado" });
   };
 
-  const handleCopyPhone = async (phone: string, id: string) => {
-    await navigator.clipboard.writeText(phone);
-    setCopiedPhoneId(id);
-    toast({ title: "Telefone copiado" });
-    setTimeout(() => setCopiedPhoneId(null), 2000);
-  };
-
-  const handleCopyName = async (name: string, id: string) => {
-    await navigator.clipboard.writeText(name);
-    setCopiedNameId(id);
-    toast({ title: "Nome copiado" });
-    setTimeout(() => setCopiedNameId(null), 2000);
+  const handleCopy = async (text: string, id: string, label: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    toast({ title: `${label} copiado` });
+    setTimeout(() => setCopiedId(null), 1500);
   };
 
   const sanitizePhone = (phone: string | undefined | null): string => {
