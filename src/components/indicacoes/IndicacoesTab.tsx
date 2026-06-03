@@ -300,10 +300,14 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
 
   const handleStatusChange = async (indicacaoId: string, status: StatusAbordagem) => {
     const userName = userProfile?.full_name || user?.email || "Usuário";
+    const prev = indicacoes;
+    // Optimistic in-place update to avoid a full refetch + re-render of all rows
+    setIndicacoes((curr) => curr.map((i) => (i.id === indicacaoId ? { ...i, status_abordagem: status } : i)));
 
     const { error } = await supabase.from("indicacoes").update({ status_abordagem: status }).eq("id", indicacaoId);
 
     if (error) {
+      setIndicacoes(prev);
       logError("update_status", error);
       toast({ variant: "destructive", title: "Erro ao atualizar", description: getUserFriendlyError(error) });
     } else {
@@ -314,16 +318,18 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         user_id: user!.id,
       });
       toast({ title: "Status atualizado" });
-      fetchIndicacoes();
     }
   };
 
   const handleMotivoChange = async (indicacaoId: string, motivo: MotivoAbordagem) => {
     const userName = userProfile?.full_name || user?.email || "Usuário";
+    const prev = indicacoes;
+    setIndicacoes((curr) => curr.map((i) => (i.id === indicacaoId ? { ...i, motivo_abordagem: motivo } : i)));
 
     const { error } = await supabase.from("indicacoes").update({ motivo_abordagem: motivo }).eq("id", indicacaoId);
 
     if (error) {
+      setIndicacoes(prev);
       logError("update_motivo", error);
       toast({ variant: "destructive", title: "Erro ao atualizar", description: getUserFriendlyError(error) });
     } else {
@@ -334,7 +340,6 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         user_id: user!.id,
       });
       toast({ title: "Motivo atualizado" });
-      fetchIndicacoes();
     }
   };
 
