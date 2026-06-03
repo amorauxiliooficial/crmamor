@@ -17,7 +17,7 @@ interface IndicacaoMobileListProps {
   loading?: boolean;
 }
 
-export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: IndicacaoMobileListProps) {
+export function IndicacaoMobileList({ indicacoes, selectedId, onSelect, loading }: IndicacaoMobileListProps) {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
