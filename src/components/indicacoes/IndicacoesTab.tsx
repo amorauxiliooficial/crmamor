@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
+import { formatBrazilPhone } from "@/lib/formatBrazilPhone";
 import {
   Indicacao,
   StatusAbordagem,
