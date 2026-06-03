@@ -578,7 +578,31 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           })()}
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">{indicacao.nome_indicada}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span>{indicacao.nome_indicada}</span>
+                          {isSelfReferral(indicacao) && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700 text-[10px] px-1 py-0 h-5 cursor-help shrink-0">
+                                  Auto
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>Possível auto-indicação</TooltipContent>
+                            </Tooltip>
+                          )}
+                          {duplicatePhones.has(phone) && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700 text-[10px] px-1 py-0 h-5 cursor-help shrink-0">
+                                  Dup
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>Telefone duplicado</TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="secondary" className={`text-xs ${origemIndicacaoColors[origem]}`}>
                           {origem === "externa" && <ExternalLink className="h-3 w-3 mr-1" />}
