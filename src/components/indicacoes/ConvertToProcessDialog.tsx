@@ -123,7 +123,11 @@ export function ConvertToProcessDialog({ indicacao, open, onOpenChange, onConfir
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent
+        className="sm:max-w-lg"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Converter em processo</DialogTitle>
           <DialogDescription>
