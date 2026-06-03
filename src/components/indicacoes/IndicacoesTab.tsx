@@ -81,6 +81,10 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusAbordagem | null>(null);
+  const [origemFilter, setOrigemFilter] = useState<"all" | OrigemIndicacao>("all");
+  const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "7" | "30">("all");
+  const [sortBy, setSortBy] = useState<"data" | "status">("data");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const userId = user?.id;
 
   // Open indicacao from URL param
