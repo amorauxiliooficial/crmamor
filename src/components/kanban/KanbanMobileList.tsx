@@ -89,13 +89,18 @@ export function KanbanMobileList({
       {expandedColumn ? (
         <div className="flex-1 overflow-hidden animate-fade-in">
           <div className={cn(
-            "px-3 py-2 border-b flex items-center gap-2",
+            "px-3 py-2 border-b flex items-start gap-2",
             STATUS_COLORS[expandedColumn]
           )}>
             <span className="text-lg">{expandedColumn.split(" ")[0]}</span>
-            <h3 className="font-semibold text-sm">
-              {expandedColumn.split(" ").slice(1).join(" ")}
-            </h3>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-sm">
+                {expandedColumn.split(" ").slice(1).join(" ")}
+              </h3>
+              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                {STATUS_NEXT_ACTION[expandedColumn]}
+              </p>
+            </div>
             <Badge variant="secondary" className="ml-auto">
               {groupedMaes[expandedColumn]?.length || 0} processos
             </Badge>
