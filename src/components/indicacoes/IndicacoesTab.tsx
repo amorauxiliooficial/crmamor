@@ -663,6 +663,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                                     variant="ghost"
                                     size="icon"
                                     className="h-6 w-6"
+                                    aria-label="Copiar telefone"
                                     onClick={() => handleCopyPhone(indicacao.telefone_indicada!, indicacao.id)}
                                   >
                                     {copiedPhoneId === indicacao.id ? (
