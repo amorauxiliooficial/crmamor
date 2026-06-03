@@ -54,7 +54,7 @@ import {
   Check,
   X,
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface IndicacoesTabProps {
@@ -431,6 +431,16 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           <span className="text-xs text-muted-foreground">
                             {format(parseISO(indicacao.data_indicacao), "HH:mm", { locale: ptBR })}
                           </span>
+                          {(indicacao.status_abordagem === "pendente" || indicacao.status_abordagem === "aguardando_aprovacao") && (() => {
+                            const dias = differenceInDays(new Date(), parseISO(indicacao.data_indicacao));
+                            const cor = dias > 14 ? "text-red-600 dark:text-red-400" : dias > 7 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground";
+                            return (
+                              <span className={cn("text-xs flex items-center gap-1", cor)}>
+                                {dias > 14 && <AlertCircle className="h-3 w-3" />}
+                                há {dias} {dias === 1 ? "dia" : "dias"}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </TableCell>
                       <TableCell className="font-medium">{indicacao.nome_indicada}</TableCell>
