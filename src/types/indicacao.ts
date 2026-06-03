@@ -54,7 +54,7 @@ export const statusAbordagemLabels: Record<StatusAbordagem, string> = {
 
 export const statusAbordagemColors: Record<StatusAbordagem, string> = {
   aguardando_aprovacao: "bg-secondary text-secondary-foreground",
-  pendente: "bg-muted text-foreground",
+  pendente: "bg-muted text-muted-foreground",
   em_andamento: "bg-accent text-accent-foreground",
   concluido: "bg-secondary text-secondary-foreground",
 };
@@ -65,8 +65,8 @@ export const origemIndicacaoLabels: Record<OrigemIndicacao, string> = {
 };
 
 export const origemIndicacaoColors: Record<OrigemIndicacao, string> = {
-  interna: "bg-muted text-foreground",
-  externa: "bg-primary text-primary-foreground",
+  interna: "bg-muted text-muted-foreground",
+  externa: "bg-primary/20 text-primary",
 };
 
 export const motivoAbordagemLabels: Record<MotivoAbordagem, string> = {

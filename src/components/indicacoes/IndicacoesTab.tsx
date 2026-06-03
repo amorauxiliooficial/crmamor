@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
-import { cn } from "@/lib/utils";
 import {
   Indicacao,
   StatusAbordagem,
@@ -19,7 +18,6 @@ import {
 } from "@/types/indicacao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -53,12 +51,8 @@ import {
   Eye,
   Copy,
   Check,
-  X,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
 } from "lucide-react";
-import { format, parseISO, differenceInDays } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface IndicacoesTabProps {
@@ -81,11 +75,6 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
   const [localSearch, setLocalSearch] = useState("");
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusAbordagem | null>(null);
-  const [origemFilter, setOrigemFilter] = useState<"all" | OrigemIndicacao>("all");
-  const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "7" | "30">("all");
-  const [sortBy, setSortBy] = useState<"data" | "status">("data");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const userId = user?.id;
 
   // Open indicacao from URL param
@@ -189,94 +178,6 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     };
   }, [filteredIndicacoes]);
 
-  const displayedIndicacoes = useMemo(() => {
-    let result = filteredIndicacoes;
-
-    if (statusFilter) {
-      result = result.filter((i) => i.status_abordagem === statusFilter);
-    }
-
-    if (origemFilter !== "all") {
-      result = result.filter((i) => (i.origem_indicacao || "interna") === origemFilter);
-    }
-
-    if (dateRangeFilter !== "all") {
-      const maxDays = dateRangeFilter === "7" ? 7 : 30;
-      const now = new Date();
-      result = result.filter((i) => {
-        const d = differenceInDays(now, parseISO(i.data_indicacao));
-        return d <= maxDays;
-      });
-    }
-
-    const statusOrder: Record<string, number> = {
-      aguardando_aprovacao: 0,
-      pendente: 1,
-      em_andamento: 2,
-      concluido: 3,
-    };
-
-    const sorted = [...result].sort((a, b) => {
-      let cmp = 0;
-      if (sortBy === "data") {
-        cmp = parseISO(a.data_indicacao).getTime() - parseISO(b.data_indicacao).getTime();
-      } else {
-        cmp = (statusOrder[a.status_abordagem] ?? 99) - (statusOrder[b.status_abordagem] ?? 99);
-      }
-      return sortDir === "asc" ? cmp : -cmp;
-    });
-
-    return sorted;
-  }, [filteredIndicacoes, statusFilter, origemFilter, dateRangeFilter, sortBy, sortDir]);
-
-  const duplicatePhones = useMemo(() => {
-    const counts = new Map<string, number>();
-    displayedIndicacoes.forEach((ind) => {
-      const p = ind.telefone_indicada?.replace(/\D/g, "") || "";
-      if (p) counts.set(p, (counts.get(p) || 0) + 1);
-    });
-    return new Set(
-      Array.from(counts.entries())
-        .filter(([, c]) => c > 1)
-        .map(([p]) => p)
-    );
-  }, [displayedIndicacoes]);
-
-  const isSelfReferral = (ind: Indicacao) => {
-    const a = ind.nome_indicada?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    const b = ind.nome_indicadora?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    return a && b && a === b;
-  };
-
-  const proximoPasso = (status: StatusAbordagem) => {
-    switch (status) {
-      case "aguardando_aprovacao":
-        return "Entrar em contato";
-      case "pendente":
-        return "Retomar contato";
-      case "em_andamento":
-        return "Acompanhar";
-      case "concluido":
-        return "-";
-      default:
-        return "-";
-    }
-  };
-
-  const toggleSort = (col: "data" | "status") => {
-    if (sortBy === col) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortBy(col);
-      setSortDir(col === "data" ? "desc" : "asc");
-    }
-  };
-
-  const SortIcon = ({ col }: { col: "data" | "status" }) => {
-    if (sortBy !== col) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
-    return sortDir === "asc" ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
-  };
-
   const handleRowClick = (indicacao: Indicacao) => {
     setSelectedIndicacao(indicacao);
     setPanelOpen(true);
@@ -300,14 +201,10 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
 
   const handleStatusChange = async (indicacaoId: string, status: StatusAbordagem) => {
     const userName = userProfile?.full_name || user?.email || "Usuário";
-    const prev = indicacoes;
-    // Optimistic in-place update to avoid a full refetch + re-render of all rows
-    setIndicacoes((curr) => curr.map((i) => (i.id === indicacaoId ? { ...i, status_abordagem: status } : i)));
 
     const { error } = await supabase.from("indicacoes").update({ status_abordagem: status }).eq("id", indicacaoId);
 
     if (error) {
-      setIndicacoes(prev);
       logError("update_status", error);
       toast({ variant: "destructive", title: "Erro ao atualizar", description: getUserFriendlyError(error) });
     } else {
@@ -318,18 +215,16 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         user_id: user!.id,
       });
       toast({ title: "Status atualizado" });
+      fetchIndicacoes();
     }
   };
 
   const handleMotivoChange = async (indicacaoId: string, motivo: MotivoAbordagem) => {
     const userName = userProfile?.full_name || user?.email || "Usuário";
-    const prev = indicacoes;
-    setIndicacoes((curr) => curr.map((i) => (i.id === indicacaoId ? { ...i, motivo_abordagem: motivo } : i)));
 
     const { error } = await supabase.from("indicacoes").update({ motivo_abordagem: motivo }).eq("id", indicacaoId);
 
     if (error) {
-      setIndicacoes(prev);
       logError("update_motivo", error);
       toast({ variant: "destructive", title: "Erro ao atualizar", description: getUserFriendlyError(error) });
     } else {
@@ -340,6 +235,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         user_id: user!.id,
       });
       toast({ title: "Motivo atualizado" });
+      fetchIndicacoes();
     }
   };
 
@@ -354,32 +250,19 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     return phone.replace(/\D/g, "");
   };
 
-  const TableSkeleton = () => (
-    <>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <TableRow key={`skel-${i}`}>
-          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-36" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-        </TableRow>
-      ))}
-    </>
-  );
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card
-          onClick={() => setStatusFilter(null)}
-          className="cursor-pointer transition-all hover:shadow-md"
-        >
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" />
@@ -390,13 +273,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
             <div className="text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
-        <Card
-          onClick={() => setStatusFilter((prev) => (prev === "aguardando_aprovacao" ? null : "aguardando_aprovacao"))}
-          className={cn(
-            "cursor-pointer transition-all hover:shadow-md",
-            statusFilter === "aguardando_aprovacao" && "ring-2 ring-primary shadow-md"
-          )}
-        >
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
@@ -408,13 +285,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
             {stats.externas > 0 && <p className="text-xs text-muted-foreground">{stats.externas} externas</p>}
           </CardContent>
         </Card>
-        <Card
-          onClick={() => setStatusFilter((prev) => (prev === "pendente" ? null : "pendente"))}
-          className={cn(
-            "cursor-pointer transition-all hover:shadow-md",
-            statusFilter === "pendente" && "ring-2 ring-primary shadow-md"
-          )}
-        >
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
@@ -425,13 +296,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
             <div className="text-2xl font-bold">{stats.pendentes}</div>
           </CardContent>
         </Card>
-        <Card
-          onClick={() => setStatusFilter((prev) => (prev === "em_andamento" ? null : "em_andamento"))}
-          className={cn(
-            "cursor-pointer transition-all hover:shadow-md",
-            statusFilter === "em_andamento" && "ring-2 ring-primary shadow-md"
-          )}
-        >
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <PlayCircle className="h-4 w-4 text-muted-foreground" />
@@ -442,13 +307,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
             <div className="text-2xl font-bold">{stats.emAndamento}</div>
           </CardContent>
         </Card>
-        <Card
-          onClick={() => setStatusFilter((prev) => (prev === "concluido" ? null : "concluido"))}
-          className={cn(
-            "cursor-pointer transition-all hover:shadow-md",
-            statusFilter === "concluido" && "ring-2 ring-primary shadow-md"
-          )}
-        >
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
@@ -478,116 +337,37 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         </Button>
       </div>
 
-      {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Select
-          value={statusFilter ?? "all"}
-          onValueChange={(v) => setStatusFilter(v === "all" ? null : (v as StatusAbordagem))}
-        >
-          <SelectTrigger className="w-full sm:w-[170px] h-9">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            {Object.entries(statusAbordagemLabels).map(([value, label]) => (
-              <SelectItem key={value} value={value}>{label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={origemFilter} onValueChange={(v) => setOrigemFilter(v as "all" | OrigemIndicacao)}>
-          <SelectTrigger className="w-full sm:w-[150px] h-9">
-            <SelectValue placeholder="Origem" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as origens</SelectItem>
-            <SelectItem value="externa">Externa</SelectItem>
-            <SelectItem value="interna">Interna</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={dateRangeFilter} onValueChange={(v) => setDateRangeFilter(v as "all" | "7" | "30")}>
-          <SelectTrigger className="w-full sm:w-[170px] h-9">
-            <SelectValue placeholder="Período" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tudo</SelectItem>
-            <SelectItem value="7">Últimos 7 dias</SelectItem>
-            <SelectItem value="30">Últimos 30 dias</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {(statusFilter || origemFilter !== "all" || dateRangeFilter !== "all") && (
-          <Badge
-            variant="secondary"
-            className="cursor-pointer hover:bg-muted text-xs gap-1"
-            onClick={() => {
-              setStatusFilter(null);
-              setOrigemFilter("all");
-              setDateRangeFilter("all");
-            }}
-          >
-            <X className="h-3 w-3" />
-            Limpar filtros
-          </Badge>
-        )}
-      </div>
-
-
       {/* Content: Mobile cards vs Desktop table */}
       {isMobile ? (
         <IndicacaoMobileList
-          indicacoes={displayedIndicacoes}
+          indicacoes={filteredIndicacoes}
           selectedId={selectedIndicacao?.id}
           onSelect={handleRowClick}
-          loading={loading}
         />
       ) : (
         <div className="rounded-md border">
-          <TooltipProvider>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>
-                  <button
-                    type="button"
-                    onClick={() => toggleSort("data")}
-                    className="inline-flex items-center font-medium hover:text-foreground"
-                  >
-                    Data
-                    <SortIcon col="data" />
-                  </button>
-                </TableHead>
+                <TableHead>Data</TableHead>
                 <TableHead>Indicada</TableHead>
                 <TableHead>Origem</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Indicadora</TableHead>
-                <TableHead>
-                  <button
-                    type="button"
-                    onClick={() => toggleSort("status")}
-                    className="inline-flex items-center font-medium hover:text-foreground"
-                  >
-                    Status
-                    <SortIcon col="status" />
-                  </button>
-                </TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Motivo</TableHead>
-                <TableHead>Próximo passo</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
-                <TableSkeleton />
-              ) : displayedIndicacoes.length === 0 ? (
+              {filteredIndicacoes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    Nenhuma indicação encontrada — ajuste os filtros
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    Nenhuma indicação encontrada
                   </TableCell>
                 </TableRow>
               ) : (
-                displayedIndicacoes.map((indicacao) => {
+                filteredIndicacoes.map((indicacao) => {
                   const origem = (indicacao.origem_indicacao || "interna") as OrigemIndicacao;
                   const phone = sanitizePhone(indicacao.telefone_indicada);
                   return (
@@ -602,43 +382,9 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           <span className="text-xs text-muted-foreground">
                             {format(parseISO(indicacao.data_indicacao), "HH:mm", { locale: ptBR })}
                           </span>
-                          {(indicacao.status_abordagem === "pendente" || indicacao.status_abordagem === "aguardando_aprovacao") && (() => {
-                            const dias = differenceInDays(new Date(), parseISO(indicacao.data_indicacao));
-                            const cor = dias > 14 ? "text-red-600 dark:text-red-400" : dias > 7 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground";
-                            return (
-                              <span className={cn("text-xs flex items-center gap-1", cor)}>
-                                {dias > 14 && <AlertCircle className="h-3 w-3" />}
-                                há {dias} {dias === 1 ? "dia" : "dias"}
-                              </span>
-                            );
-                          })()}
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span>{indicacao.nome_indicada}</span>
-                          {isSelfReferral(indicacao) && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700 text-[10px] px-1 py-0 h-5 cursor-help shrink-0">
-                                  Auto
-                                </Badge>
-                              </TooltipTrigger>
-                              <TooltipContent>Possível auto-indicação</TooltipContent>
-                            </Tooltip>
-                          )}
-                          {duplicatePhones.has(phone) && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700 text-[10px] px-1 py-0 h-5 cursor-help shrink-0">
-                                  Dup
-                                </Badge>
-                              </TooltipTrigger>
-                              <TooltipContent>Telefone duplicado</TooltipContent>
-                            </Tooltip>
-                          )}
-                        </div>
-                      </TableCell>
+                      <TableCell className="font-medium">{indicacao.nome_indicada}</TableCell>
                       <TableCell>
                         <Badge variant="secondary" className={`text-xs ${origemIndicacaoColors[origem]}`}>
                           {origem === "externa" && <ExternalLink className="h-3 w-3 mr-1" />}
@@ -647,40 +393,41 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         {indicacao.telefone_indicada && (
-                          <div className="flex items-center gap-1 whitespace-nowrap">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <a
-                                  href={`https://wa.me/${phone}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors text-sm"
-                                >
-                                  <MessageSquare className="h-3 w-3" />
-                                  {indicacao.telefone_indicada}
-                                </a>
-                              </TooltipTrigger>
-                              <TooltipContent>Abrir WhatsApp</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  aria-label="Copiar telefone"
-                                  onClick={() => handleCopyPhone(indicacao.telefone_indicada!, indicacao.id)}
-                                >
-                                  {copiedPhoneId === indicacao.id ? (
-                                    <Check className="h-3 w-3 text-primary" />
-                                  ) : (
-                                    <Copy className="h-3 w-3" />
-                                  )}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Copiar telefone</TooltipContent>
-                            </Tooltip>
-                          </div>
+                          <TooltipProvider>
+                            <div className="flex items-center gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <a
+                                    href={`https://wa.me/${phone}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors text-sm"
+                                  >
+                                    <MessageSquare className="h-3 w-3" />
+                                    {indicacao.telefone_indicada}
+                                  </a>
+                                </TooltipTrigger>
+                                <TooltipContent>Abrir WhatsApp</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => handleCopyPhone(indicacao.telefone_indicada!, indicacao.id)}
+                                  >
+                                    {copiedPhoneId === indicacao.id ? (
+                                      <Check className="h-3 w-3 text-primary" />
+                                    ) : (
+                                      <Copy className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copiar telefone</TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </TooltipProvider>
                         )}
                       </TableCell>
                       <TableCell>{indicacao.nome_indicadora || "-"}</TableCell>
@@ -689,7 +436,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           value={indicacao.status_abordagem}
                           onValueChange={(value) => handleStatusChange(indicacao.id, value as StatusAbordagem)}
                         >
-                          <SelectTrigger className="w-[200px] h-8 text-xs">
+                          <SelectTrigger className="w-[150px] h-8 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -714,13 +461,10 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                        {proximoPasso(indicacao.status_abordagem)}
-                      </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Mais ações">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -769,7 +513,6 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
               )}
             </TableBody>
           </Table>
-          </TooltipProvider>
         </div>
       )}
 
