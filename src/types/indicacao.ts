@@ -2,7 +2,8 @@ export type StatusAbordagem =
   | "pendente" 
   | "em_andamento" 
   | "concluido"
-  | "aguardando_aprovacao";
+  | "aguardando_aprovacao"
+  | "convertido";
 
 export type OrigemIndicacao = "interna" | "externa";
 
@@ -51,6 +52,7 @@ export const statusAbordagemLabels: Record<StatusAbordagem, string> = {
   pendente: "Pendente",
   em_andamento: "Em Andamento",
   concluido: "Concluído",
+  convertido: "Convertido",
 };
 
 export const statusAbordagemColors: Record<StatusAbordagem, string> = {
@@ -58,6 +60,7 @@ export const statusAbordagemColors: Record<StatusAbordagem, string> = {
   pendente: "bg-muted text-muted-foreground",
   em_andamento: "bg-accent text-accent-foreground",
   concluido: "bg-secondary text-secondary-foreground",
+  convertido: "bg-primary/20 text-primary",
 };
 
 export const origemIndicacaoLabels: Record<OrigemIndicacao, string> = {
