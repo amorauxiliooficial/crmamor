@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { MaeProcesso, STATUS_ORDER, StatusProcesso, STATUS_COLORS } from "@/types/mae";
+import { MaeProcesso, STATUS_ORDER, StatusProcesso, STATUS_COLORS, STATUS_NEXT_ACTION, isConcludedStage } from "@/types/mae";
 import { KanbanCard } from "./KanbanCard";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +48,7 @@ export function KanbanMobileList({
           const emoji = status.split(" ")[0];
           const count = groupedMaes[status]?.length || 0;
           const isExpanded = expandedColumn === status;
+          const concluded = isConcludedStage(status);
 
           return (
             <button
@@ -59,10 +60,11 @@ export function KanbanMobileList({
                 isExpanded
                   ? "bg-primary text-primary-foreground border-primary shadow-md scale-105"
                   : "bg-card hover:bg-accent border-border",
-                STATUS_COLORS[status]
+                STATUS_COLORS[status],
+                concluded && !isExpanded && "border-dashed border-muted-foreground/30 bg-muted/40 opacity-75"
               )}
             >
-              <span className="text-sm">{emoji}</span>
+              <span className={cn("text-sm", concluded && !isExpanded && "opacity-70")}>{emoji}</span>
               <Badge 
                 variant={isExpanded ? "secondary" : "outline"} 
                 className={cn(
@@ -87,13 +89,18 @@ export function KanbanMobileList({
       {expandedColumn ? (
         <div className="flex-1 overflow-hidden animate-fade-in">
           <div className={cn(
-            "px-3 py-2 border-b flex items-center gap-2",
+            "px-3 py-2 border-b flex items-start gap-2",
             STATUS_COLORS[expandedColumn]
           )}>
             <span className="text-lg">{expandedColumn.split(" ")[0]}</span>
-            <h3 className="font-semibold text-sm">
-              {expandedColumn.split(" ").slice(1).join(" ")}
-            </h3>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-sm">
+                {expandedColumn.split(" ").slice(1).join(" ")}
+              </h3>
+              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                {STATUS_NEXT_ACTION[expandedColumn]}
+              </p>
+            </div>
             <Badge variant="secondary" className="ml-auto">
               {groupedMaes[expandedColumn]?.length || 0} processos
             </Badge>

@@ -86,6 +86,27 @@ export const STATUS_ORDER: StatusProcesso[] = [
   "📦 Processo Encerrado",
 ];
 
+// Stages considered "concluded/archived" for display purposes only.
+// Every other stage is treated as ACTIVE ("Em andamento").
+export const CONCLUDED_STAGES: StatusProcesso[] = ["📦 Processo Encerrado"];
+
+export const isConcludedStage = (status: StatusProcesso) =>
+  CONCLUDED_STAGES.includes(status);
+
+// Placeholder helper text shown under each column title (exact copy TBD).
+export const STATUS_NEXT_ACTION: Record<StatusProcesso, string> = {
+  "🤰 Gestantes 1 a 8 meses": "Ação: ...",
+  "📥 Entradas do Mês": "Ação: ...",
+  "⏳ Aguardando Análise INSS": "Ação: ...",
+  "✅ Aprovada": "Ação: ...",
+  "❌ Indeferida": "Ação: ...",
+  "⚖️ Recurso / Judicial": "Ação: ...",
+  "💳 Inadimplência": "Ação: ...",
+  "🤝 Renegociação": "Ação: ...",
+  "📄 Rescisão de Contrato": "Ação: ...",
+  "📦 Processo Encerrado": "Ação: ...",
+};
+
 export const STATUS_COLORS: Record<StatusProcesso, string> = {
   "🤰 Gestantes 1 a 8 meses": "bg-muted/60",
   "📥 Entradas do Mês": "bg-muted/60",

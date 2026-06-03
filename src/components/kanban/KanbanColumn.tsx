@@ -1,4 +1,4 @@
-import { MaeProcesso, StatusProcesso, STATUS_COLORS, STATUS_BAR_COLORS, FOLLOWUP_PRAZO_LABELS } from "@/types/mae";
+import { MaeProcesso, StatusProcesso, STATUS_COLORS, STATUS_BAR_COLORS, FOLLOWUP_PRAZO_LABELS, STATUS_NEXT_ACTION, isConcludedStage } from "@/types/mae";
 import { KanbanCard } from "./KanbanCard";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -30,13 +30,16 @@ export function KanbanColumn({
   const emoji = status.split(" ")[0];
   const followUpLabel = FOLLOWUP_PRAZO_LABELS[status];
   const showFollowUp = followUpLabel && followUpLabel !== "—";
+  const nextAction = STATUS_NEXT_ACTION[status];
+  const concluded = isConcludedStage(status);
 
   return (
     <div 
       className={cn(
         "flex h-full flex-shrink-0 flex-col rounded-lg border bg-card transition-all duration-200",
         isExpanded ? "w-[300px]" : "w-[48px] cursor-pointer",
-        isDraggingOver && "ring-2 ring-primary bg-primary/5"
+        isDraggingOver && "ring-2 ring-primary bg-primary/5",
+        concluded && "border-dashed border-muted-foreground/30 bg-muted/30 opacity-80"
       )}
       onClick={!isExpanded ? onToggleExpand : undefined}
     >
@@ -44,14 +47,20 @@ export function KanbanColumn({
         className={cn(
           "flex items-center gap-2 border-b border-t-[3px] px-4 py-3 cursor-pointer",
           STATUS_BAR_COLORS[status],
-          !isExpanded && "flex-col px-2 py-4"
+          !isExpanded && "flex-col px-2 py-4",
+          concluded && "bg-muted/40"
         )}
         onClick={isExpanded ? onToggleExpand : undefined}
       >
-        <span className="text-lg">{emoji}</span>
+        <span className={cn("text-lg", concluded && "opacity-70")}>{emoji}</span>
         {isExpanded ? (
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm">{statusLabel}</h3>
+            <h3 className={cn("font-semibold text-sm", concluded && "text-muted-foreground")}>{statusLabel}</h3>
+            {nextAction && (
+              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                {nextAction}
+              </p>
+            )}
             {showFollowUp && (
               <div className="flex items-center gap-1 mt-0.5">
                 <Clock className="h-3 w-3 text-muted-foreground" />
