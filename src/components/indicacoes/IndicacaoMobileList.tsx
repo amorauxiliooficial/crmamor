@@ -77,7 +77,19 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
 
               {/* Row 2: Date + Motivo */}
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{format(parseISO(ind.data_indicacao), "dd/MM/yy", { locale: ptBR })}</span>
+                <div className="flex items-center gap-2">
+                  <span>{format(parseISO(ind.data_indicacao), "dd/MM/yy", { locale: ptBR })}</span>
+                  {(ind.status_abordagem === "pendente" || ind.status_abordagem === "aguardando_aprovacao") && (() => {
+                    const dias = differenceInDays(new Date(), parseISO(ind.data_indicacao));
+                    const cor = dias > 14 ? "text-red-600 dark:text-red-400" : dias > 7 ? "text-amber-600 dark:text-amber-400" : "";
+                    return (
+                      <span className={`flex items-center gap-0.5 ${cor}`}>
+                        {dias > 14 && <AlertCircle className="h-3 w-3" />}
+                        há {dias} {dias === 1 ? "dia" : "dias"}
+                      </span>
+                    );
+                  })()}
+                </div>
                 {ind.motivo_abordagem && (
                   <span className="text-[10px]">{motivoAbordagemLabels[ind.motivo_abordagem as keyof typeof motivoAbordagemLabels]}</span>
                 )}
