@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
+import { cn } from "@/lib/utils";
 import {
   Indicacao,
   StatusAbordagem,
@@ -51,6 +52,7 @@ import {
   Eye,
   Copy,
   Check,
+  X,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
