@@ -1,12 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Archive } from "lucide-react";
+import { Users, Archive, XCircle } from "lucide-react";
 
 interface OperationsPanelProps {
   totalMaes: number;
   filteredCount: number;
   emAndamento: number;
   concluidos: number;
+  encerradosSemExito: number;
 }
 
 export function OperationsPanel({
@@ -14,14 +15,15 @@ export function OperationsPanel({
   filteredCount,
   emAndamento,
   concluidos,
+  encerradosSemExito,
 }: OperationsPanelProps) {
   return (
     <div className="space-y-3">
-      <Card className="border-border/50 max-w-xs">
+      <Card className="border-border/50 max-w-md">
         <CardContent className="p-4">
-          <div className="flex items-end gap-4">
+          <div className="flex items-end gap-4 flex-wrap">
             {/* Primary - Em andamento */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-[120px]">
               <div className="flex items-center gap-1.5 mb-1">
                 <Users className="h-4 w-4 text-primary" />
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
@@ -33,7 +35,6 @@ export function OperationsPanel({
               </p>
             </div>
 
-            {/* Divider */}
             <div className="h-10 w-px bg-border/60" aria-hidden="true" />
 
             {/* Secondary - Concluídos */}
@@ -46,6 +47,21 @@ export function OperationsPanel({
               </div>
               <p className="text-lg font-semibold tabular-nums leading-none text-muted-foreground">
                 {concluidos}
+              </p>
+            </div>
+
+            <div className="h-10 w-px bg-border/60" aria-hidden="true" />
+
+            {/* Tertiary - Encerrados sem êxito */}
+            <div className="flex-shrink-0">
+              <div className="flex items-center gap-1 mb-1">
+                <XCircle className="h-3 w-3 text-amber-600 dark:text-amber-500/80" />
+                <p className="text-[10px] text-amber-700/80 dark:text-amber-500/80 uppercase tracking-wider">
+                  Sem êxito
+                </p>
+              </div>
+              <p className="text-lg font-semibold tabular-nums leading-none text-amber-700/90 dark:text-amber-500/80">
+                {encerradosSemExito}
               </p>
             </div>
           </div>
