@@ -48,6 +48,7 @@ export function KanbanMobileList({
           const emoji = status.split(" ")[0];
           const count = groupedMaes[status]?.length || 0;
           const isExpanded = expandedColumn === status;
+          const concluded = isConcludedStage(status);
 
           return (
             <button
@@ -59,10 +60,11 @@ export function KanbanMobileList({
                 isExpanded
                   ? "bg-primary text-primary-foreground border-primary shadow-md scale-105"
                   : "bg-card hover:bg-accent border-border",
-                STATUS_COLORS[status]
+                STATUS_COLORS[status],
+                concluded && !isExpanded && "border-dashed border-muted-foreground/30 bg-muted/40 opacity-75"
               )}
             >
-              <span className="text-sm">{emoji}</span>
+              <span className={cn("text-sm", concluded && !isExpanded && "opacity-70")}>{emoji}</span>
               <Badge 
                 variant={isExpanded ? "secondary" : "outline"} 
                 className={cn(
