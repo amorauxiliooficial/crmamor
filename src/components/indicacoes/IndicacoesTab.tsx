@@ -331,6 +331,84 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     toast({ title: newUserId === user?.id ? "Você assumiu a indicação" : "Responsável atualizado" });
   };
 
+  const handleConvertToProcess = async (indicacao: Indicacao) => {
+    if (!user) return;
+    setConvertingId(indicacao.id);
+
+    try {
+      // 1) Prevent duplicates: check existing process for this referral_id
+      const { data: existing, error: existingErr } = await supabase
+        .from("mae_processo")
+        .select("id")
+        .eq("referral_id" as never, indicacao.id as never)
+        .maybeSingle();
+
+      if (existingErr) {
+        logError("check_existing_process", existingErr);
+        toast({ variant: "destructive", title: "Erro ao verificar", description: getUserFriendlyError(existingErr) });
+        return;
+      }
+
+      if (existing?.id) {
+        toast({ title: "Já convertida", description: "Esta indicação já tem um processo." });
+        navigate(`/?view=kanban&mae=${existing.id}`);
+        return;
+      }
+
+      // 2) Insert new process at the first stage (default 'Entrada de Documentos')
+      const normalized = formatBrazilPhone(indicacao.telefone_indicada);
+      const telefoneE164 = normalized?.dial ? `+${normalized.dial}` : null;
+
+      const { data: newMae, error: insertErr } = await supabase
+        .from("mae_processo")
+        .insert({
+          nome_mae: indicacao.nome_indicada,
+          telefone: telefoneE164 || indicacao.telefone_indicada || null,
+          telefone_e164: telefoneE164,
+          cpf: "",
+          user_id: user.id,
+          origem: `Indicação${indicacao.nome_indicadora ? ` de ${indicacao.nome_indicadora}` : ""}`,
+          referral_id: indicacao.id,
+        } as never)
+        .select("id")
+        .single();
+
+      if (insertErr || !newMae) {
+        logError("convert_indicacao_insert", insertErr);
+        toast({ variant: "destructive", title: "Erro ao converter", description: getUserFriendlyError(insertErr) });
+        return;
+      }
+
+      // 3) Mark referral as Convertido (do NOT delete)
+      const { error: updateErr } = await supabase
+        .from("indicacoes")
+        .update({ status_abordagem: "convertido" })
+        .eq("id", indicacao.id);
+
+      if (updateErr) {
+        logError("convert_indicacao_update_status", updateErr);
+        toast({ variant: "destructive", title: "Processo criado, mas status não atualizado", description: getUserFriendlyError(updateErr) });
+      }
+
+      // Optional: log action
+      await supabase.from("acoes_indicacao").insert({
+        indicacao_id: indicacao.id,
+        tipo_acao: "Convertida em Processo",
+        observacao: `Processo criado: ${newMae.id}`,
+        user_id: user.id,
+      });
+
+      toast({ title: "Indicação convertida", description: `${indicacao.nome_indicada} entrou no funil.` });
+
+      // 4) Redirect to funnel
+      navigate(`/?view=kanban&mae=${newMae.id}`);
+    } finally {
+      setConvertingId(null);
+    }
+  };
+
+
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
