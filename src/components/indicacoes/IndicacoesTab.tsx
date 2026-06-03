@@ -535,6 +535,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
           indicacoes={displayedIndicacoes}
           selectedId={selectedIndicacao?.id}
           onSelect={handleRowClick}
+          loading={loading}
         />
       ) : (
         <div className="rounded-md border">
