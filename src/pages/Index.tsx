@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useMaesData, MaeProcessoComAtividade } from "@/hooks/useMaesData";
-import { MaeProcesso, StatusProcesso, STATUS_ORDER, isConcludedStage } from "@/types/mae";
+import { MaeProcesso, StatusProcesso, STATUS_ORDER, isConcludedStage, isDeniedStage, isOutOfFunnel } from "@/types/mae";
 import { Loader2, LayoutGrid, Baby, ClipboardCheck, DollarSign, UserPlus, MessageSquare, Target } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
