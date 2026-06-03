@@ -740,13 +740,18 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                             )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedIndicacao(indicacao);
-                                setPanelOpen(true);
+                              disabled={convertingId === indicacao.id || indicacao.status_abordagem === "convertido"}
+                              onSelect={(e) => {
+                                e.preventDefault();
+                                handleConvertToProcess(indicacao);
                               }}
                             >
-                              <UserPlus className="h-4 w-4 mr-2" />
-                              Converter em Processo
+                              {convertingId === indicacao.id ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <UserPlus className="h-4 w-4 mr-2" />
+                              )}
+                              {indicacao.status_abordagem === "convertido" ? "Já convertida" : "Converter em Processo"}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => {
