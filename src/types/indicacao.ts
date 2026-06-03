@@ -2,7 +2,8 @@ export type StatusAbordagem =
   | "pendente" 
   | "em_andamento" 
   | "concluido"
-  | "aguardando_aprovacao";
+  | "aguardando_aprovacao"
+  | "convertido";
 
 export type OrigemIndicacao = "interna" | "externa";
 
