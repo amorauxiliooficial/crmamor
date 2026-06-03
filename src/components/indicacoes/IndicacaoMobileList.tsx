@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { MessageSquare, Phone, Copy, Check, ExternalLink, Eye, AlertCircle } from "lucide-react";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 interface IndicacaoMobileListProps {
@@ -30,6 +30,25 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
     setCopiedId(id);
     toast({ title: "Copiado!", description: "Telefone copiado." });
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const duplicatePhones = useMemo(() => {
+    const counts = new Map<string, number>();
+    indicacoes.forEach((ind) => {
+      const p = ind.telefone_indicada?.replace(/\D/g, "") || "";
+      if (p) counts.set(p, (counts.get(p) || 0) + 1);
+    });
+    return new Set(
+      Array.from(counts.entries())
+        .filter(([, c]) => c > 1)
+        .map(([p]) => p)
+    );
+  }, [indicacoes]);
+
+  const isSelfReferral = (ind: Indicacao) => {
+    const a = ind.nome_indicada?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const b = ind.nome_indicadora?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    return a && b && a === b;
   };
 
   if (indicacoes.length === 0) {
@@ -57,7 +76,29 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
               {/* Row 1: Name + Status */}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm truncate">{ind.nome_indicada}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-medium text-sm truncate">{ind.nome_indicada}</p>
+                    {isSelfReferral(ind) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700 text-[10px] px-1 py-0 h-5 shrink-0">
+                            Auto
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>Possível auto-indicação</TooltipContent>
+                      </Tooltip>
+                    )}
+                    {duplicatePhones.has(phone) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700 text-[10px] px-1 py-0 h-5 shrink-0">
+                            Dup
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>Telefone duplicado</TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
                   {ind.nome_indicadora && (
                     <p className="text-xs text-muted-foreground truncate">
                       por {ind.nome_indicadora}
