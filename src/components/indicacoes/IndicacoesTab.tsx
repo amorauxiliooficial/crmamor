@@ -572,10 +572,12 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayedIndicacoes.length === 0 ? (
+              {loading ? (
+                <TableSkeleton />
+              ) : displayedIndicacoes.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    Nenhuma indicação encontrada
+                    Nenhuma indicação encontrada — ajuste os filtros
                   </TableCell>
                 </TableRow>
               ) : (
