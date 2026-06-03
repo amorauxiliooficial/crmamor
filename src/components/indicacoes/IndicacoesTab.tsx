@@ -181,6 +181,11 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     };
   }, [filteredIndicacoes]);
 
+  const displayedIndicacoes = useMemo(() => {
+    if (!statusFilter) return filteredIndicacoes;
+    return filteredIndicacoes.filter((i) => i.status_abordagem === statusFilter);
+  }, [filteredIndicacoes, statusFilter]);
+
   const handleRowClick = (indicacao: Indicacao) => {
     setSelectedIndicacao(indicacao);
     setPanelOpen(true);
