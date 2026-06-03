@@ -46,6 +46,7 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
       {indicacoes.map((ind) => {
         const origem = (ind.origem_indicacao || "interna") as OrigemIndicacao;
         const phone = sanitizePhone(ind.telefone_indicada);
+        const formattedPhone = formatBrazilPhone(ind.telefone_indicada);
         const isSelected = selectedId === ind.id;
 
         return (
