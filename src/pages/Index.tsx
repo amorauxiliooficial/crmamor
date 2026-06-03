@@ -208,6 +208,8 @@ export default function Index() {
           <OperationsPanel
             totalMaes={maes.length}
             filteredCount={filteredMaes.length}
+            emAndamento={maes.filter((m) => !isConcludedStage(m.status_processo)).length}
+            concluidos={maes.filter((m) => isConcludedStage(m.status_processo)).length}
           />
         )}
 
