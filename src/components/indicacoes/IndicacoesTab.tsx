@@ -544,6 +544,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
         />
       ) : (
         <div className="rounded-md border">
+          <TooltipProvider>
           <Table>
             <TableHeader>
               <TableRow>
