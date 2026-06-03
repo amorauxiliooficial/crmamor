@@ -14,6 +14,7 @@ interface IndicacaoMobileListProps {
   indicacoes: Indicacao[];
   selectedId?: string | null;
   onSelect: (indicacao: Indicacao) => void;
+  loading?: boolean;
 }
 
 export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: IndicacaoMobileListProps) {
