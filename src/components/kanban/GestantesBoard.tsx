@@ -4,48 +4,16 @@ import { KanbanCard } from "./KanbanCard";
 import { cn } from "@/lib/utils";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useMemo } from "react";
-import { differenceInMonths, parseISO } from "date-fns";
 import { Baby, Bell } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { GestantesNotificacao } from "@/components/gestantes/GestantesNotificacao";
+import { calcularMesGravidez } from "@/lib/gestacaoUtils";
 
 interface GestantesBoardProps {
   maes: MaeProcesso[];
   onCardClick: (mae: MaeProcesso) => void;
   onRefresh?: () => void;
-}
-
-// Calculate pregnancy month based on DPP (expected delivery date) or manual setting
-function calcularMesGravidez(mae: MaeProcesso): number | null {
-  // Se tem mês manual definido, usa ele
-  if (mae.mes_gestacao !== null && mae.mes_gestacao !== undefined) {
-    return mae.mes_gestacao;
-  }
-  
-  // Caso contrário, calcula baseado na DPP
-  const dataEvento = mae.data_evento;
-  const dataEventoTipo = mae.data_evento_tipo;
-  
-  if (!dataEvento || dataEventoTipo !== "DPP") return null;
-  
-  const dpp = parseISO(dataEvento);
-  const hoje = new Date();
-  
-  // Se DPP passou há mais de 30 dias, provavelmente bebê já nasceu
-  const diasDesdePartio = Math.floor((hoje.getTime() - dpp.getTime()) / (1000 * 60 * 60 * 24));
-  if (diasDesdePartio > 30) return null;
-  
-  // Se DPP passou recentemente (até 30 dias), considera 9º mês
-  if (dpp < hoje) return 9;
-  
-  // Calculate months until delivery
-  const mesesAteParto = differenceInMonths(dpp, hoje);
-  
-  // Pregnancy is ~9 months, so current month = 9 - months until delivery
-  const mesGravidez = Math.max(1, Math.min(9, 9 - mesesAteParto));
-  
-  return mesGravidez;
 }
 
 export function GestantesBoard({ maes, onCardClick, onRefresh }: GestantesBoardProps) {

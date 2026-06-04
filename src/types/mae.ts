@@ -48,6 +48,7 @@ export interface MaeProcesso {
   is_gestante: boolean;
   mes_gestacao?: number | null;
   data_ultima_atualizacao: string;
+  created_at?: string;
   link_documentos?: string | null;
   cep?: string | null;
   precisa_das: boolean;

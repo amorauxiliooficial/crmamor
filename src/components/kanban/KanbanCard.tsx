@@ -4,12 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, FileText, Baby, FolderOpen, AlertTriangle, FileWarning, KeyRound, Flame } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
-import { differenceInDays, differenceInMonths, parseISO } from "date-fns";
+import { differenceInDays, parseISO } from "date-fns";
 import { FollowUpBadge } from "@/components/atividades/FollowUpBadge";
 import { useFollowUpStatus } from "@/hooks/useAtividades";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { calcularMesGravidez } from "@/lib/gestacaoUtils";
 
 interface KanbanCardProps {
   mae: MaeProcesso & { ultima_atividade_em?: string | null };
@@ -17,26 +18,6 @@ interface KanbanCardProps {
   isDragging?: boolean;
   onOpenAtividades?: () => void;
   hasUnreadAlert?: boolean;
-}
-
-function calcularMesGravidez(mae: MaeProcesso): number | null {
-  if (!mae.is_gestante) return null;
-  
-  if (mae.mes_gestacao !== null && mae.mes_gestacao !== undefined) {
-    return mae.mes_gestacao;
-  }
-  
-  if (!mae.data_evento || mae.data_evento_tipo !== "DPP") return null;
-  
-  const dpp = parseISO(mae.data_evento);
-  const hoje = new Date();
-  
-  const diasDesdePartio = Math.floor((hoje.getTime() - dpp.getTime()) / (1000 * 60 * 60 * 24));
-  if (diasDesdePartio > 30) return null;
-  if (dpp < hoje) return 9;
-  
-  const mesesAteParto = differenceInMonths(dpp, hoje);
-  return Math.max(1, Math.min(9, 9 - mesesAteParto));
 }
 
 /** Retorna true se a gestante está a ≤30 dias do parto (DPP) — hora de gerar o DAS */
