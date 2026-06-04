@@ -22,6 +22,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { calcularMesGestacaoProspeccao } from "@/lib/gestacaoUtils";
 
 interface ProspeccaoDetailPanelProps {
   prospeccao: Prospeccao | null;
