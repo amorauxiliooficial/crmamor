@@ -297,10 +297,21 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                           );
                         })()}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className={`text-xs ${statusProspeccaoColors[p.status]}`}>
-                          {statusProspeccaoLabels[p.status]}
-                        </Badge>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Select
+                          value={p.status}
+                          onValueChange={(v) => handleStatusChange(p.id, v as StatusProspeccao)}
+                          disabled={updatingStatusId === p.id}
+                        >
+                          <SelectTrigger className={`h-7 w-[140px] text-xs border-0 ${statusProspeccaoColors[p.status]}`}>
+                            <SelectValue>{statusProspeccaoLabels[p.status]}</SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(statusProspeccaoLabels).map(([v, l]) => (
+                              <SelectItem key={v} value={v}>{l}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-sm">{format(parseISO(p.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
                     </TableRow>
