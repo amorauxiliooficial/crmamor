@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MessageSquare, Phone, Eye } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { calcularMesGestacaoProspeccao } from "@/lib/gestacaoUtils";
 
 interface ProspeccaoMobileListProps {
   items: Prospeccao[];
