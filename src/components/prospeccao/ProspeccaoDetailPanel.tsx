@@ -22,6 +22,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { calcularMesGestacaoProspeccao } from "@/lib/gestacaoUtils";
 
 interface ProspeccaoDetailPanelProps {
   prospeccao: Prospeccao | null;
@@ -165,8 +166,10 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
   if (!prospeccao) return null;
 
   const isConverted = prospeccao.status === "convertido";
-  const mesGestacao = formData.mes_gestacao;
+  const mesGestacaoBase = formData.mes_gestacao;
+  const mesGestacao = calcularMesGestacaoProspeccao(mesGestacaoBase ?? null, prospeccao.created_at);
   const isProxima = mesGestacao != null && mesGestacao >= 7;
+  const mesAvancou = mesGestacao != null && mesGestacaoBase != null && mesGestacao !== mesGestacaoBase;
 
   const origemLabels: Record<string, string> = {
     chatbot: "Chatbot",
@@ -284,7 +287,14 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
           {/* Gestacao + Status */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Mês Gestação</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-xs font-medium text-muted-foreground">Mês Gestação</Label>
+                {mesGestacao != null && (
+                  <span className="text-[10px] font-medium text-primary">
+                    Atual: {mesGestacao}º mês{mesAvancou ? ` (base ${mesGestacaoBase}º)` : ""}
+                  </span>
+                )}
+              </div>
               <Select
                 value={formData.mes_gestacao ? String(formData.mes_gestacao) : "none"}
                 onValueChange={(v) => setFormData({ ...formData, mes_gestacao: v === "none" ? null : parseInt(v) })}
