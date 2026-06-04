@@ -91,7 +91,10 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
     novos: filtered.filter((p) => p.status === "novo").length,
     emContato: filtered.filter((p) => p.status === "em_contato").length,
     qualificados: filtered.filter((p) => p.status === "qualificado").length,
-    proximas: items.filter((p) => p.mes_gestacao != null && p.mes_gestacao >= 7).length,
+    proximas: items.filter((p) => {
+      const m = calcularMesGestacaoProspeccao(p.mes_gestacao, p.created_at);
+      return m != null && m >= 7;
+    }).length,
   }), [filtered, items]);
 
   const handleRowClick = (p: Prospeccao) => {
