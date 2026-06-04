@@ -111,6 +111,28 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleCopyName = async (e: React.MouseEvent, name: string, id: string) => {
+    e.stopPropagation();
+    await navigator.clipboard.writeText(name);
+    setCopiedNameId(id);
+    setTimeout(() => setCopiedNameId(null), 2000);
+  };
+
+  const handleStatusChange = async (id: string, newStatus: StatusProspeccao) => {
+    setUpdatingStatusId(id);
+    const prev = items;
+    setItems((curr) => curr.map((it) => (it.id === id ? { ...it, status: newStatus } : it)));
+    const { error } = await supabase.from("prospeccao" as any).update({ status: newStatus }).eq("id", id);
+    if (error) {
+      setItems(prev);
+      logError("update_prospeccao_status", error);
+      toast({ variant: "destructive", title: "Erro ao atualizar status", description: getUserFriendlyError(error) });
+    } else {
+      toast({ title: "Status atualizado", description: statusProspeccaoLabels[newStatus] });
+    }
+    setUpdatingStatusId(null);
+  };
+
   const sanitizePhone = (phone: string | undefined | null): string => {
     if (!phone) return "";
     return phone.replace(/\D/g, "");
