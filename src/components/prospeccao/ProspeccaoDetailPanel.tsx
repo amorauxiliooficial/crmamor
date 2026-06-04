@@ -166,8 +166,10 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
   if (!prospeccao) return null;
 
   const isConverted = prospeccao.status === "convertido";
-  const mesGestacao = formData.mes_gestacao;
+  const mesGestacaoBase = formData.mes_gestacao;
+  const mesGestacao = calcularMesGestacaoProspeccao(mesGestacaoBase ?? null, prospeccao.created_at);
   const isProxima = mesGestacao != null && mesGestacao >= 7;
+  const mesAvancou = mesGestacao != null && mesGestacaoBase != null && mesGestacao !== mesGestacaoBase;
 
   const origemLabels: Record<string, string> = {
     chatbot: "Chatbot",
