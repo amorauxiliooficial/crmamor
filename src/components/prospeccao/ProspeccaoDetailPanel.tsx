@@ -287,14 +287,7 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
           {/* Gestacao + Status */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <Label className="text-xs font-medium text-muted-foreground">Mês Gestação</Label>
-                {mesGestacao != null && (
-                  <span className="text-[10px] font-medium text-primary">
-                    Atual: {mesGestacao}º mês{mesAvancou ? ` (base ${mesGestacaoBase}º)` : ""}
-                  </span>
-                )}
-              </div>
+              <Label className="text-xs font-medium text-muted-foreground">Mês Gestação</Label>
               <Select
                 value={formData.mes_gestacao ? String(formData.mes_gestacao) : "none"}
                 onValueChange={(v) => setFormData({ ...formData, mes_gestacao: v === "none" ? null : parseInt(v) })}
