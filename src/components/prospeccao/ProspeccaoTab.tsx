@@ -19,6 +19,7 @@ import { ProspeccaoMobileList } from "./ProspeccaoMobileList";
 import { Plus, Search, Users, Clock, CheckCircle, Loader2, MessageSquare, Phone, Copy, Check, Upload, Target, Baby } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { calcularMesGestacaoProspeccao } from "@/lib/gestacaoUtils";
 
 interface ProspeccaoTabProps {
   searchQuery?: string;
