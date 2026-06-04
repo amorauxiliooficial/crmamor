@@ -69,7 +69,10 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
       result = result.filter((p) => p.status === statusFilter);
     }
     if (proximaFilter) {
-      result = result.filter((p) => p.mes_gestacao != null && p.mes_gestacao >= 7);
+      result = result.filter((p) => {
+        const m = calcularMesGestacaoProspeccao(p.mes_gestacao, p.created_at);
+        return m != null && m >= 7;
+      });
     }
     const q = removeAccents((searchQuery || localSearch).toLowerCase().trim());
     if (q) {
