@@ -74,7 +74,7 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
 
   const handleCopyPhone = async () => {
     if (!prospeccao?.telefone) return;
-    await navigator.clipboard.writeText(prospeccao.telefone);
+    await navigator.clipboard.writeText(`+55 ${prospeccao.telefone}`);
     setCopiedPhone(true);
     setTimeout(() => setCopiedPhone(false), 2000);
   };

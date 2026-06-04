@@ -104,7 +104,7 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
 
   const handleCopyPhone = async (e: React.MouseEvent, phone: string, id: string) => {
     e.stopPropagation();
-    await navigator.clipboard.writeText(phone);
+    await navigator.clipboard.writeText(`+55 ${phone}`);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
@@ -203,7 +203,7 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors text-sm">
-                                    <MessageSquare className="h-3 w-3" />{p.telefone}
+                                    <MessageSquare className="h-3 w-3" />+55 {p.telefone}
                                   </a>
                                 </TooltipTrigger>
                                 <TooltipContent>Abrir WhatsApp</TooltipContent>
