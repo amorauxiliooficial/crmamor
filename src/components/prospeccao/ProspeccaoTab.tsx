@@ -219,7 +219,26 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                   const phone = sanitizePhone(p.telefone_e164 || p.telefone);
                   return (
                     <TableRow key={p.id} className={`cursor-pointer hover:bg-muted/50 ${selected?.id === p.id && panelOpen ? "bg-muted" : ""}`} onClick={() => handleRowClick(p)}>
-                      <TableCell className="font-medium">{p.nome}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-1 group">
+                          <span>{p.nome}</span>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => handleCopyName(e, p.nome, p.id)}
+                                >
+                                  {copiedNameId === p.id ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Copiar nome</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         {p.telefone && (
                           <TooltipProvider>
