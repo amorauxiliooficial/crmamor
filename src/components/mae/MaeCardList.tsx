@@ -14,7 +14,7 @@ import {
   FileWarning,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
-import { format, parseISO, differenceInMonths, differenceInDays } from "date-fns";
+import { format, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   DropdownMenu,
@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { calcularMesGravidez } from "@/lib/gestacaoUtils";
 
 interface MaeCardListProps {
   maes: MaeProcesso[];
@@ -37,19 +38,6 @@ const copyToClipboard = async (text: string, label: string) => {
     toast.error("Erro ao copiar");
   }
 };
-
-function calcularMesGravidez(mae: MaeProcesso): number | null {
-  if (!mae.is_gestante) return null;
-  if (mae.mes_gestacao !== null && mae.mes_gestacao !== undefined) {
-    return mae.mes_gestacao;
-  }
-  if (!mae.data_evento || mae.data_evento_tipo !== "DPP") return null;
-  const dpp = parseISO(mae.data_evento);
-  const hoje = new Date();
-  if (dpp < hoje) return null;
-  const mesesAteParto = differenceInMonths(dpp, hoje);
-  return Math.max(1, Math.min(9, 9 - mesesAteParto));
-}
 
 function verificarDAS(mae: MaeProcesso): boolean {
   if (!mae.is_gestante || !mae.data_evento || mae.data_evento_tipo !== "DPP") return false;
