@@ -197,7 +197,13 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
 
       {/* Content */}
       {isMobile ? (
-        <ProspeccaoMobileList items={filtered} selectedId={selected?.id} onSelect={handleRowClick} />
+        <ProspeccaoMobileList
+          items={filtered}
+          selectedId={selected?.id}
+          onSelect={handleRowClick}
+          onStatusChange={handleStatusChange}
+          updatingStatusId={updatingStatusId}
+        />
       ) : (
         <div className="rounded-md border">
           <Table>
