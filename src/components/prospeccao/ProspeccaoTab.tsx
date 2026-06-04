@@ -39,6 +39,8 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
   const [localSearch, setLocalSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedNameId, setCopiedNameId] = useState<string | null>(null);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const [proximaFilter, setProximaFilter] = useState(false);
 
   const fetchData = async () => {
@@ -107,6 +109,28 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
     await navigator.clipboard.writeText(`+55 ${phone}`);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleCopyName = async (e: React.MouseEvent, name: string, id: string) => {
+    e.stopPropagation();
+    await navigator.clipboard.writeText(name);
+    setCopiedNameId(id);
+    setTimeout(() => setCopiedNameId(null), 2000);
+  };
+
+  const handleStatusChange = async (id: string, newStatus: StatusProspeccao) => {
+    setUpdatingStatusId(id);
+    const prev = items;
+    setItems((curr) => curr.map((it) => (it.id === id ? { ...it, status: newStatus } : it)));
+    const { error } = await supabase.from("prospeccao" as any).update({ status: newStatus }).eq("id", id);
+    if (error) {
+      setItems(prev);
+      logError("update_prospeccao_status", error);
+      toast({ variant: "destructive", title: "Erro ao atualizar status", description: getUserFriendlyError(error) });
+    } else {
+      toast({ title: "Status atualizado", description: statusProspeccaoLabels[newStatus] });
+    }
+    setUpdatingStatusId(null);
   };
 
   const sanitizePhone = (phone: string | undefined | null): string => {
@@ -195,7 +219,26 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                   const phone = sanitizePhone(p.telefone_e164 || p.telefone);
                   return (
                     <TableRow key={p.id} className={`cursor-pointer hover:bg-muted/50 ${selected?.id === p.id && panelOpen ? "bg-muted" : ""}`} onClick={() => handleRowClick(p)}>
-                      <TableCell className="font-medium">{p.nome}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-1 group">
+                          <span>{p.nome}</span>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => handleCopyName(e, p.nome, p.id)}
+                                >
+                                  {copiedNameId === p.id ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Copiar nome</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         {p.telefone && (
                           <TooltipProvider>
@@ -254,10 +297,21 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                           );
                         })()}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className={`text-xs ${statusProspeccaoColors[p.status]}`}>
-                          {statusProspeccaoLabels[p.status]}
-                        </Badge>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Select
+                          value={p.status}
+                          onValueChange={(v) => handleStatusChange(p.id, v as StatusProspeccao)}
+                          disabled={updatingStatusId === p.id}
+                        >
+                          <SelectTrigger className={`h-7 w-[140px] text-xs border-0 ${statusProspeccaoColors[p.status]}`}>
+                            <SelectValue>{statusProspeccaoLabels[p.status]}</SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(statusProspeccaoLabels).map(([v, l]) => (
+                              <SelectItem key={v} value={v}>{l}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-sm">{format(parseISO(p.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
                     </TableRow>
