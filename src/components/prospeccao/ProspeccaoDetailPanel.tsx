@@ -300,6 +300,11 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
                   ))}
                 </SelectContent>
               </Select>
+              {mesGestacao != null && mesAvancou && (
+                <p className="text-[10px] text-primary font-medium">
+                  Hoje: {mesGestacao}º mês
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Status</Label>
