@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { MaeProcesso } from "@/types/mae";
 import { supabase } from "@/integrations/supabase/client";
-import { differenceInMonths, parseISO, format } from "date-fns";
+import { parseISO, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, CheckCircle2, Clock, User, Calendar, AlertTriangle, History } from "lucide-react";
 import { VerificacaoGestanteDialog } from "./VerificacaoGestanteDialog";
 import { cn } from "@/lib/utils";
+import { calcularMesGravidez } from "@/lib/gestacaoUtils";
 
 interface GestantesNotificacaoProps {
   maes: MaeProcesso[];
@@ -22,34 +23,6 @@ interface VerificacaoRecord {
   verificado_em: string;
   atualizacao_realizada: string;
   observacoes: string | null;
-}
-
-function calcularMesGravidez(mae: MaeProcesso): number | null {
-  // Se tem mês manual definido, usa ele
-  if (mae.mes_gestacao !== null && mae.mes_gestacao !== undefined) {
-    return mae.mes_gestacao;
-  }
-  
-  // Caso contrário, calcula baseado na DPP
-  const dataEvento = mae.data_evento;
-  const dataEventoTipo = mae.data_evento_tipo;
-  
-  if (!dataEvento || dataEventoTipo !== "DPP") return null;
-  
-  const dpp = parseISO(dataEvento);
-  const hoje = new Date();
-  
-  // Se DPP passou há mais de 30 dias, provavelmente bebê já nasceu
-  const diasDesdePartio = Math.floor((hoje.getTime() - dpp.getTime()) / (1000 * 60 * 60 * 24));
-  if (diasDesdePartio > 30) return null;
-  
-  // Se DPP passou recentemente (até 30 dias), considera 9º mês
-  if (dpp < hoje) return 9;
-  
-  const mesesAteParto = differenceInMonths(dpp, hoje);
-  const mesGravidez = Math.max(1, Math.min(9, 9 - mesesAteParto));
-  
-  return mesGravidez;
 }
 
 export function GestantesNotificacao({ maes, onRefresh }: GestantesNotificacaoProps) {
