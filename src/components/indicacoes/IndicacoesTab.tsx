@@ -59,6 +59,7 @@ import {
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatTimeSince, getLeadHeat, leadHeatClasses, leadHeatLabels } from "@/lib/leadTimeUtils";
 
 interface ProfileOption {
   id: string;
@@ -175,6 +176,13 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
       fetchProfiles();
     }
   }, [userId]);
+
+  // Tick every 60s so "tempo com responsável" badge stays fresh
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const removeAccents = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
