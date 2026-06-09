@@ -3,12 +3,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { MessageSquare, Phone, Eye, Copy, Check } from "lucide-react";
+import { MessageSquare, Phone, Eye, Copy, Check, Clock, UserCheck, UserX, AlertTriangle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { calcularMesGestacaoProspeccao } from "@/lib/gestacaoUtils";
-import { useState } from "react";
+import { formatTimeSince, getLeadHeat, leadHeatClasses, leadHeatLabels } from "@/lib/leadTimeUtils";
+import { useEffect, useState } from "react";
+
+interface ProfileOption {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
 
 interface ProspeccaoMobileListProps {
   items: Prospeccao[];
@@ -16,7 +24,20 @@ interface ProspeccaoMobileListProps {
   onSelect: (p: Prospeccao) => void;
   onStatusChange?: (id: string, status: StatusProspeccao) => void;
   updatingStatusId?: string | null;
+  profiles?: ProfileOption[];
+  currentUserId?: string;
+  onAssign?: (id: string, userId: string | null) => void;
 }
+
+function getInitials(name: string | null | undefined, fallback?: string | null) {
+  const source = (name || fallback || "?").trim();
+  if (!source) return "?";
+  const parts = source.split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+const UNASSIGNED_VALUE = "__unassigned__";
 
 export function ProspeccaoMobileList({
   items,
@@ -24,9 +45,18 @@ export function ProspeccaoMobileList({
   onSelect,
   onStatusChange,
   updatingStatusId,
+  profiles = [],
+  currentUserId,
+  onAssign,
 }: ProspeccaoMobileListProps) {
   const [copiedNameId, setCopiedNameId] = useState<string | null>(null);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const sanitizePhone = (phone: string | undefined | null): string => {
     if (!phone) return "";
