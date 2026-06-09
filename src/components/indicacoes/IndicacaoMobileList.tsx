@@ -3,12 +3,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { MessageSquare, Phone, Copy, Check, ExternalLink, Eye } from "lucide-react";
+import { MessageSquare, Phone, Copy, Check, ExternalLink, Eye, Clock } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { formatBrazilPhone } from "@/lib/formatBrazilPhone";
+import { formatTimeSince, getLeadHeat, leadHeatClasses, leadHeatLabels } from "@/lib/leadTimeUtils";
 
 interface IndicacaoMobileListProps {
   indicacoes: Indicacao[];
@@ -19,6 +20,12 @@ interface IndicacaoMobileListProps {
 export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: IndicacaoMobileListProps) {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const sanitizePhone = (phone: string | undefined | null): string => {
     if (!phone) return "";
@@ -77,9 +84,20 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
                 </div>
               </div>
 
-              {/* Row 2: Date + Motivo */}
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
+              {/* Row 2: Date + Tempo com responsável + Motivo */}
+              <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                 <span>{format(parseISO(ind.data_indicacao), "dd/MM/yy", { locale: ptBR })}</span>
+                {(() => {
+                  const heat = ind.assigned_user_id ? getLeadHeat(ind.assigned_at) : null;
+                  const t = ind.assigned_user_id ? formatTimeSince(ind.assigned_at) : null;
+                  if (!heat || !t) return null;
+                  return (
+                    <Badge variant="outline" className={`h-5 px-1.5 text-[10px] gap-1 border ${leadHeatClasses[heat]}`}>
+                      <Clock className="h-2.5 w-2.5" />
+                      {t} · {leadHeatLabels[heat]}
+                    </Badge>
+                  );
+                })()}
                 {ind.motivo_abordagem && (
                   <span className="text-[10px]">{motivoAbordagemLabels[ind.motivo_abordagem as keyof typeof motivoAbordagemLabels]}</span>
                 )}
