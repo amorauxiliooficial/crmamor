@@ -721,52 +721,76 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           const assignedLabel =
                             assigned?.full_name || assigned?.email || (assignedId ? "Usuário" : "Não atribuído");
                           const isMine = assignedId === user?.id;
+                          const heat = assignedId ? getLeadHeat(indicacao.assigned_at) : null;
+                          const timeWith = assignedId ? formatTimeSince(indicacao.assigned_at) : null;
                           return (
-                            <div className="flex items-center gap-1.5">
-                              <Select
-                                value={assignedId ?? UNASSIGNED_VALUE}
-                                onValueChange={(value) =>
-                                  handleAssignUser(indicacao.id, value === UNASSIGNED_VALUE ? null : value)
-                                }
-                              >
-                                <SelectTrigger className="w-[150px] h-8 text-xs">
-                                  <div className="flex items-center gap-1.5 truncate">
-                                    {assigned ? (
-                                      <Avatar className="h-5 w-5">
-                                        <AvatarFallback className="text-[10px]">
-                                          {getInitials(assigned.full_name, assigned.email)}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                    ) : (
-                                      <UserX className="h-3.5 w-3.5 text-muted-foreground" />
-                                    )}
-                                    <span className="truncate">{assignedLabel}</span>
-                                  </div>
-                                </SelectTrigger>
-                                <SelectContent className="z-[100]">
-                                  <SelectItem value={UNASSIGNED_VALUE}>Não atribuído</SelectItem>
-                                  {profiles.map((p) => (
-                                    <SelectItem key={p.id} value={p.id}>
-                                      {p.full_name || p.email || "Usuário"}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              {!isMine && user?.id && (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5">
+                                <Select
+                                  value={assignedId ?? UNASSIGNED_VALUE}
+                                  onValueChange={(value) =>
+                                    handleAssignUser(indicacao.id, value === UNASSIGNED_VALUE ? null : value)
+                                  }
+                                >
+                                  <SelectTrigger className="w-[150px] h-8 text-xs">
+                                    <div className="flex items-center gap-1.5 truncate">
+                                      {assigned ? (
+                                        <Avatar className="h-5 w-5">
+                                          <AvatarFallback className="text-[10px]">
+                                            {getInitials(assigned.full_name, assigned.email)}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                      ) : (
+                                        <UserX className="h-3.5 w-3.5 text-muted-foreground" />
+                                      )}
+                                      <span className="truncate">{assignedLabel}</span>
+                                    </div>
+                                  </SelectTrigger>
+                                  <SelectContent className="z-[100]">
+                                    <SelectItem value={UNASSIGNED_VALUE}>Não atribuído</SelectItem>
+                                    {profiles.map((p) => (
+                                      <SelectItem key={p.id} value={p.id}>
+                                        {p.full_name || p.email || "Usuário"}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {!isMine && user?.id && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          size="icon"
+                                          className="h-8 w-8 shrink-0"
+                                          onClick={() => handleAssignUser(indicacao.id, user.id)}
+                                          aria-label="Assumir"
+                                        >
+                                          <UserCheck className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Assumir esta indicação</TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                              {heat && timeWith && (
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Button
+                                      <Badge
                                         variant="outline"
-                                        size="icon"
-                                        className="h-8 w-8 shrink-0"
-                                        onClick={() => handleAssignUser(indicacao.id, user.id)}
-                                        aria-label="Assumir"
+                                        className={`h-5 px-1.5 text-[10px] font-medium border ${leadHeatClasses[heat]} w-fit gap-1`}
                                       >
-                                        <UserCheck className="h-3.5 w-3.5" />
-                                      </Button>
+                                        <Clock className="h-2.5 w-2.5" />
+                                        {timeWith} · {leadHeatLabels[heat]}
+                                      </Badge>
                                     </TooltipTrigger>
-                                    <TooltipContent>Assumir esta indicação</TooltipContent>
+                                    <TooltipContent>
+                                      Atribuído há {timeWith} •{" "}
+                                      {indicacao.assigned_at &&
+                                        format(parseISO(indicacao.assigned_at), "dd/MM/yy HH:mm", { locale: ptBR })}
+                                    </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
                               )}
@@ -774,6 +798,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           );
                         })()}
                       </TableCell>
+
 
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
