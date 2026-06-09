@@ -346,17 +346,21 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                   const timeWith = p.assigned_user_id ? formatTimeSince(p.assigned_at) : null;
                   const isUnassigned = !p.assigned_user_id && isActiveProspeccao(p.status);
                   return (
-                    <TableRow key={p.id} className={`cursor-pointer hover:bg-muted/50 ${selected?.id === p.id && panelOpen ? "bg-muted" : ""} ${isUnassigned ? "bg-primary/5" : ""}`} onClick={() => handleRowClick(p)}>
-                      <TableCell className="font-medium">
+                    <TableRow
+                      key={p.id}
+                      className={`cursor-pointer hover:bg-muted/50 ${selected?.id === p.id && panelOpen ? "bg-muted" : ""}`}
+                      onClick={() => handleRowClick(p)}
+                    >
+                      <TableCell className={`font-medium relative ${isUnassigned ? "border-l-4 border-l-primary" : heat === "cold" ? "border-l-4 border-l-destructive" : heat === "cooling" ? "border-l-4 border-l-orange-500" : ""}`}>
                         <div className="flex items-center gap-1 group">
-                          <span>{p.nome}</span>
+                          <span className="truncate">{p.nome}</span>
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                                   onClick={(e) => handleCopyName(e, p.nome, p.id)}
                                 >
                                   {copiedNameId === p.id ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
@@ -367,21 +371,21 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                           </TooltipProvider>
                         </div>
                       </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
+                      <TableCell onClick={(e) => e.stopPropagation()} className="whitespace-nowrap">
                         {p.telefone && (
                           <TooltipProvider>
                             <div className="flex items-center gap-1">
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors text-sm">
-                                    <MessageSquare className="h-3 w-3" />+55 {p.telefone}
+                                  <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors text-sm whitespace-nowrap">
+                                    <MessageSquare className="h-3 w-3 shrink-0" />+55 {p.telefone}
                                   </a>
                                 </TooltipTrigger>
                                 <TooltipContent>Abrir WhatsApp</TooltipContent>
                               </Tooltip>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => handleCopyPhone(e, p.telefone, p.id)}>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={(e) => handleCopyPhone(e, p.telefone, p.id)}>
                                     {copiedId === p.id ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
                                   </Button>
                                 </TooltipTrigger>
@@ -391,12 +395,12 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                           </TooltipProvider>
                         )}
                       </TableCell>
-                      <TableCell className="max-w-[200px]">
+                      <TableCell className="max-w-[220px]">
                         {p.observacoes ? (
                           <TooltipProvider delayDuration={200}>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="text-xs text-muted-foreground line-clamp-2 cursor-help block leading-relaxed">
+                                <span className="text-xs text-muted-foreground truncate cursor-help block">
                                   {p.observacoes}
                                 </span>
                               </TooltipTrigger>
@@ -409,17 +413,15 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                           <span className="text-xs text-muted-foreground/40">—</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap">
                         {(() => {
                           const mesAtual = calcularMesGestacaoProspeccao(p.mes_gestacao, p.created_at);
-                          if (!mesAtual) return "-";
+                          if (!mesAtual) return <span className="text-muted-foreground/40">—</span>;
                           return (
                             <div className="flex items-center gap-1">
-                              <span>{mesAtual}º mês</span>
+                              <span className="text-sm">{mesAtual}º</span>
                               {mesAtual >= 7 && (
-                                <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 h-5 ${mesAtual >= 8 ? "bg-pink-200 text-pink-800 dark:bg-pink-900/40 dark:text-pink-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"}`}>
-                                  ⏳ {mesAtual >= 8 ? "Urgente" : "Próxima"}
-                                </Badge>
+                                <span title={mesAtual >= 8 ? "Urgente" : "Próxima"} className={`inline-block h-2 w-2 rounded-full ${mesAtual >= 8 ? "bg-pink-500" : "bg-amber-500"}`} />
                               )}
                             </div>
                           );
@@ -431,7 +433,7 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                           onValueChange={(v) => handleStatusChange(p.id, v as StatusProspeccao)}
                           disabled={updatingStatusId === p.id}
                         >
-                          <SelectTrigger className={`h-7 w-[140px] text-xs border-0 ${statusProspeccaoColors[p.status]}`}>
+                          <SelectTrigger className={`h-7 w-[130px] text-xs border-0 ${statusProspeccaoColors[p.status]}`}>
                             <SelectValue>{statusProspeccaoLabels[p.status]}</SelectValue>
                           </SelectTrigger>
                           <SelectContent>
@@ -442,24 +444,40 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                         </Select>
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5">
+                          {isUnassigned && user?.id ? (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="h-8 px-2 text-xs gap-1.5"
+                              onClick={() => handleAssignUser(p.id, user.id)}
+                            >
+                              <UserCheck className="h-3.5 w-3.5" />
+                              Assumir
+                            </Button>
+                          ) : (
                             <Select
                               value={p.assigned_user_id ?? UNASSIGNED_VALUE}
                               onValueChange={(v) => handleAssignUser(p.id, v === UNASSIGNED_VALUE ? null : v)}
                             >
-                              <SelectTrigger className="w-[150px] h-8 text-xs">
+                              <SelectTrigger className="w-[170px] h-8 text-xs">
                                 <div className="flex items-center gap-1.5 truncate">
                                   {assigned ? (
-                                    <Avatar className="h-5 w-5">
+                                    <Avatar className="h-5 w-5 shrink-0">
                                       <AvatarFallback className="text-[10px]">
                                         {getInitials(assigned.full_name, assigned.email)}
                                       </AvatarFallback>
                                     </Avatar>
                                   ) : (
-                                    <UserX className="h-3.5 w-3.5 text-primary" />
+                                    <UserX className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                                   )}
                                   <span className="truncate">{assignedLabel}</span>
+                                  {heat && timeWith && (
+                                    <span className={`ml-auto inline-flex items-center gap-1 text-[10px] font-medium pl-1.5 pr-1 py-0.5 rounded ${leadHeatClasses[heat]}`}>
+                                      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                                      {timeWith}
+                                    </span>
+                                  )}
                                 </div>
                               </SelectTrigger>
                               <SelectContent className="z-[100]">
@@ -471,51 +489,13 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                                 ))}
                               </SelectContent>
                             </Select>
-                            {!isMine && user?.id && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant={isUnassigned ? "default" : "outline"}
-                                      size="icon"
-                                      className="h-8 w-8 shrink-0"
-                                      onClick={() => handleAssignUser(p.id, user.id)}
-                                      aria-label="Assumir"
-                                    >
-                                      <UserCheck className="h-3.5 w-3.5" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Assumir esta prospecção</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </div>
-                          {heat && timeWith ? (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge variant="outline" className={`h-5 px-1.5 text-[10px] font-medium border w-fit gap-1 ${leadHeatClasses[heat]}`}>
-                                    <Clock className="h-2.5 w-2.5" />
-                                    {timeWith} · {leadHeatLabels[heat]}
-                                  </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  Atribuído há {timeWith}
-                                  {p.assigned_at && ` • ${format(parseISO(p.assigned_at), "dd/MM/yy HH:mm", { locale: ptBR })}`}
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          ) : isUnassigned ? (
-                            <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-medium border w-fit gap-1 bg-primary/15 text-primary border-primary/40">
-                              <AlertTriangle className="h-2.5 w-2.5" />
-                              Prioridade — assumir
-                            </Badge>
-                          ) : null}
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm">{format(parseISO(p.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{format(parseISO(p.created_at), "dd/MM/yy", { locale: ptBR })}</TableCell>
                     </TableRow>
                   );
+
                 })
               )}
             </TableBody>
