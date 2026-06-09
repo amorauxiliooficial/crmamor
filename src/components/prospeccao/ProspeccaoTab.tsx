@@ -315,6 +315,9 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
           onSelect={handleRowClick}
           onStatusChange={handleStatusChange}
           updatingStatusId={updatingStatusId}
+          profiles={profiles}
+          currentUserId={user?.id}
+          onAssign={handleAssignUser}
         />
       ) : (
         <div className="rounded-md border">
