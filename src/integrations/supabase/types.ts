@@ -1671,6 +1671,8 @@ export type Database = {
       }
       prospeccao: {
         Row: {
+          assigned_at: string | null
+          assigned_user_id: string | null
           created_at: string | null
           id: string
           mae_processo_id: string | null
@@ -1687,6 +1689,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_at?: string | null
+          assigned_user_id?: string | null
           created_at?: string | null
           id?: string
           mae_processo_id?: string | null
@@ -1703,6 +1707,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_at?: string | null
+          assigned_user_id?: string | null
           created_at?: string | null
           id?: string
           mae_processo_id?: string | null
