@@ -114,6 +114,11 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
         return m != null && m >= 7;
       });
     }
+    if (semDonoFilter) {
+      result = result.filter(
+        (p) => !p.assigned_user_id && p.status !== "convertido" && p.status !== "sem_interesse",
+      );
+    }
     const q = removeAccents((searchQuery || localSearch).toLowerCase().trim());
     if (q) {
       result = result.filter((p) => {
@@ -123,8 +128,19 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
         return name.includes(q) || (qDigits.length > 0 && phone.includes(qDigits));
       });
     }
-    return result;
-  }, [items, searchQuery, localSearch, selectedUserId, statusFilter, proximaFilter]);
+    // Ordering: sem dono primeiro, depois mais quente -> mais frio para priorizar
+    const heatOrder: Record<string, number> = { fresh: 1, warm: 2, cooling: 3, cold: 4 };
+    return [...result].sort((a, b) => {
+      const aHas = a.assigned_user_id ? 1 : 0;
+      const bHas = b.assigned_user_id ? 1 : 0;
+      if (aHas !== bHas) return aHas - bHas; // sem dono (0) primeiro
+      const ah = getLeadHeat(a.assigned_at) || "fresh";
+      const bh = getLeadHeat(b.assigned_at) || "fresh";
+      return heatOrder[ah] - heatOrder[bh];
+    });
+  }, [items, searchQuery, localSearch, selectedUserId, statusFilter, proximaFilter, semDonoFilter]);
+
+  const isActiveProspeccao = (s: StatusProspeccao) => s !== "convertido" && s !== "sem_interesse";
 
   const stats = useMemo(() => ({
     total: filtered.length,
@@ -134,6 +150,12 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
     proximas: items.filter((p) => {
       const m = calcularMesGestacaoProspeccao(p.mes_gestacao, p.created_at);
       return m != null && m >= 7;
+    }).length,
+    semDono: items.filter((p) => !p.assigned_user_id && isActiveProspeccao(p.status)).length,
+    esfriando: items.filter((p) => {
+      if (!p.assigned_user_id || !isActiveProspeccao(p.status)) return false;
+      const h = getLeadHeat(p.assigned_at);
+      return h === "cooling" || h === "cold";
     }).length,
   }), [filtered, items]);
 
@@ -169,6 +191,30 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
       toast({ title: "Status atualizado", description: statusProspeccaoLabels[newStatus] });
     }
     setUpdatingStatusId(null);
+  };
+
+  const handleAssignUser = async (id: string, newUserId: string | null) => {
+    const prev = items;
+    const nowIso = new Date().toISOString();
+    const newAssignedAt = newUserId ? nowIso : null;
+    setItems((curr) =>
+      curr.map((it) =>
+        it.id === id ? { ...it, assigned_user_id: newUserId, assigned_at: newAssignedAt } : it,
+      ),
+    );
+    const { error } = await supabase
+      .from("prospeccao" as any)
+      .update({ assigned_user_id: newUserId, assigned_at: newAssignedAt })
+      .eq("id", id);
+    if (error) {
+      setItems(prev);
+      logError("assign_prospeccao", error);
+      toast({ variant: "destructive", title: "Erro ao atribuir", description: getUserFriendlyError(error) });
+      return;
+    }
+    toast({
+      title: newUserId === user?.id ? "Você assumiu a prospecção" : newUserId ? "Responsável atualizado" : "Responsável removido",
+    });
   };
 
   const sanitizePhone = (phone: string | undefined | null): string => {
