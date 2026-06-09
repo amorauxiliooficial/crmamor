@@ -438,6 +438,78 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                           </SelectContent>
                         </Select>
                       </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5">
+                            <Select
+                              value={p.assigned_user_id ?? UNASSIGNED_VALUE}
+                              onValueChange={(v) => handleAssignUser(p.id, v === UNASSIGNED_VALUE ? null : v)}
+                            >
+                              <SelectTrigger className="w-[150px] h-8 text-xs">
+                                <div className="flex items-center gap-1.5 truncate">
+                                  {assigned ? (
+                                    <Avatar className="h-5 w-5">
+                                      <AvatarFallback className="text-[10px]">
+                                        {getInitials(assigned.full_name, assigned.email)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  ) : (
+                                    <UserX className="h-3.5 w-3.5 text-primary" />
+                                  )}
+                                  <span className="truncate">{assignedLabel}</span>
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent className="z-[100]">
+                                <SelectItem value={UNASSIGNED_VALUE}>Sem dono</SelectItem>
+                                {profiles.map((pr) => (
+                                  <SelectItem key={pr.id} value={pr.id}>
+                                    {pr.full_name || pr.email || "Usuário"}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {!isMine && user?.id && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant={isUnassigned ? "default" : "outline"}
+                                      size="icon"
+                                      className="h-8 w-8 shrink-0"
+                                      onClick={() => handleAssignUser(p.id, user.id)}
+                                      aria-label="Assumir"
+                                    >
+                                      <UserCheck className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Assumir esta prospecção</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
+                          {heat && timeWith ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className={`h-5 px-1.5 text-[10px] font-medium border w-fit gap-1 ${leadHeatClasses[heat]}`}>
+                                    <Clock className="h-2.5 w-2.5" />
+                                    {timeWith} · {leadHeatLabels[heat]}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  Atribuído há {timeWith}
+                                  {p.assigned_at && ` • ${format(parseISO(p.assigned_at), "dd/MM/yy HH:mm", { locale: ptBR })}`}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : isUnassigned ? (
+                            <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-medium border w-fit gap-1 bg-primary/15 text-primary border-primary/40">
+                              <AlertTriangle className="h-2.5 w-2.5" />
+                              Prioridade — assumir
+                            </Badge>
+                          ) : null}
+                        </div>
+                      </TableCell>
                       <TableCell className="whitespace-nowrap text-sm">{format(parseISO(p.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
                     </TableRow>
                   );
