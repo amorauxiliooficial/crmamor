@@ -3,12 +3,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { MessageSquare, Phone, Eye, Copy, Check } from "lucide-react";
+import { MessageSquare, Phone, Eye, Copy, Check, Clock, UserCheck, UserX, AlertTriangle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { calcularMesGestacaoProspeccao } from "@/lib/gestacaoUtils";
-import { useState } from "react";
+import { formatTimeSince, getLeadHeat, leadHeatClasses, leadHeatLabels } from "@/lib/leadTimeUtils";
+import { useEffect, useState } from "react";
+
+interface ProfileOption {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
 
 interface ProspeccaoMobileListProps {
   items: Prospeccao[];
@@ -16,7 +24,20 @@ interface ProspeccaoMobileListProps {
   onSelect: (p: Prospeccao) => void;
   onStatusChange?: (id: string, status: StatusProspeccao) => void;
   updatingStatusId?: string | null;
+  profiles?: ProfileOption[];
+  currentUserId?: string;
+  onAssign?: (id: string, userId: string | null) => void;
 }
+
+function getInitials(name: string | null | undefined, fallback?: string | null) {
+  const source = (name || fallback || "?").trim();
+  if (!source) return "?";
+  const parts = source.split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+const UNASSIGNED_VALUE = "__unassigned__";
 
 export function ProspeccaoMobileList({
   items,
@@ -24,9 +45,18 @@ export function ProspeccaoMobileList({
   onSelect,
   onStatusChange,
   updatingStatusId,
+  profiles = [],
+  currentUserId,
+  onAssign,
 }: ProspeccaoMobileListProps) {
   const [copiedNameId, setCopiedNameId] = useState<string | null>(null);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const sanitizePhone = (phone: string | undefined | null): string => {
     if (!phone) return "";
@@ -56,8 +86,15 @@ export function ProspeccaoMobileList({
       {items.map((p) => {
         const phone = sanitizePhone(p.telefone_e164 || p.telefone);
         const mesAtual = calcularMesGestacaoProspeccao(p.mes_gestacao, p.created_at);
+        const assigned = p.assigned_user_id ? profiles.find((pr) => pr.id === p.assigned_user_id) : null;
+        const assignedLabel = assigned?.full_name || assigned?.email || (p.assigned_user_id ? "Usuário" : "Sem dono");
+        const isMine = p.assigned_user_id === currentUserId;
+        const heat = p.assigned_user_id ? getLeadHeat(p.assigned_at) : null;
+        const timeWith = p.assigned_user_id ? formatTimeSince(p.assigned_at) : null;
+        const isActive = p.status !== "convertido" && p.status !== "sem_interesse";
+        const isUnassigned = !p.assigned_user_id && isActive;
         return (
-          <Card key={p.id} className={`cursor-pointer transition-colors ${selectedId === p.id ? "ring-2 ring-primary" : ""}`} onClick={() => onSelect(p)}>
+          <Card key={p.id} className={`cursor-pointer transition-colors ${selectedId === p.id ? "ring-2 ring-primary" : ""} ${isUnassigned ? "border-primary/50 bg-primary/5" : ""}`} onClick={() => onSelect(p)}>
             <CardContent className="p-3 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
@@ -114,9 +151,63 @@ export function ProspeccaoMobileList({
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
+              {onAssign && (
+                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={p.assigned_user_id ?? UNASSIGNED_VALUE}
+                    onValueChange={(v) => onAssign(p.id, v === UNASSIGNED_VALUE ? null : v)}
+                  >
+                    <SelectTrigger className="h-7 text-[11px] flex-1">
+                      <div className="flex items-center gap-1.5 truncate">
+                        {assigned ? (
+                          <Avatar className="h-4 w-4">
+                            <AvatarFallback className="text-[9px]">
+                              {getInitials(assigned.full_name, assigned.email)}
+                            </AvatarFallback>
+                          </Avatar>
+                        ) : (
+                          <UserX className="h-3 w-3 text-primary" />
+                        )}
+                        <span className="truncate">{assignedLabel}</span>
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="z-[100]">
+                      <SelectItem value={UNASSIGNED_VALUE}>Sem dono</SelectItem>
+                      {profiles.map((pr) => (
+                        <SelectItem key={pr.id} value={pr.id}>
+                          {pr.full_name || pr.email || "Usuário"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!isMine && currentUserId && (
+                    <Button
+                      variant={isUnassigned ? "default" : "outline"}
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      onClick={() => onAssign(p.id, currentUserId)}
+                      aria-label="Assumir"
+                    >
+                      <UserCheck className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              )}
+              <div className="flex items-center justify-between text-xs text-muted-foreground gap-2">
                 <span>{format(parseISO(p.created_at), "dd/MM/yy", { locale: ptBR })}</span>
-                <span>{p.origem || "chatbot"}</span>
+                {heat && timeWith ? (
+                  <Badge variant="outline" className={`h-5 px-1.5 text-[10px] gap-1 border ${leadHeatClasses[heat]}`}>
+                    <Clock className="h-2.5 w-2.5" />
+                    {timeWith} · {leadHeatLabels[heat]}
+                  </Badge>
+                ) : isUnassigned ? (
+                  <Badge variant="outline" className="h-5 px-1.5 text-[10px] gap-1 border bg-primary/15 text-primary border-primary/40">
+                    <AlertTriangle className="h-2.5 w-2.5" />
+                    Prioridade
+                  </Badge>
+                ) : (
+                  <span>{p.origem || "chatbot"}</span>
+                )}
               </div>
               <div className="flex items-center gap-1 pt-1 border-t">
                 {phone && (
