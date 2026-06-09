@@ -1,46 +1,71 @@
-import { differenceInMinutes, differenceInHours, differenceInDays, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
 
 /**
- * Formata o tempo desde uma data ISO em formato curto (ex: "2h", "3d", "1sem").
+ * Calcula minutos úteis entre duas datas, excluindo sábados e domingos integralmente.
+ * Trabalha sobre intervalos por dia: se o dia é fim de semana, ignora; senão soma os minutos do dia.
+ */
+function businessMinutesBetween(start: Date, end: Date): number {
+  if (end <= start) return 0;
+  let total = 0;
+  const cursor = new Date(start);
+
+  while (cursor < end) {
+    const dayEnd = new Date(cursor);
+    dayEnd.setHours(23, 59, 59, 999);
+    const sliceEnd = dayEnd < end ? dayEnd : end;
+    const day = cursor.getDay(); // 0=dom, 6=sáb
+    if (day !== 0 && day !== 6) {
+      total += Math.floor((sliceEnd.getTime() - cursor.getTime()) / 60000);
+    }
+    // Próximo dia 00:00
+    const next = new Date(cursor);
+    next.setDate(next.getDate() + 1);
+    next.setHours(0, 0, 0, 0);
+    cursor.setTime(next.getTime());
+  }
+  return total;
+}
+
+/**
+ * Formata o tempo útil desde uma data ISO (ignora sábados/domingos).
  */
 export function formatTimeSince(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const date = parseISO(iso);
-  const now = new Date();
+  const minutes = businessMinutesBetween(date, new Date());
 
-  const minutes = differenceInMinutes(now, date);
   if (minutes < 1) return "agora";
   if (minutes < 60) return `${minutes}min`;
 
-  const hours = differenceInHours(now, date);
+  const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h`;
 
-  const days = differenceInDays(now, date);
-  if (days < 7) return `${days}d`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d úteis`;
 
-  const weeks = Math.floor(days / 7);
+  const weeks = Math.floor(days / 5); // 5 dias úteis por semana
   if (weeks < 4) return `${weeks}sem`;
 
-  const months = Math.floor(days / 30);
+  const months = Math.floor(days / 22); // ~22 dias úteis por mês
   return `${months}m`;
 }
 
 /**
- * Define cor/urgência do lead com base em horas desde atribuição:
- * - < 4h  : verde (fresco)
- * - 4-24h : amarelo (atenção)
- * - 1-3d  : laranja (esfriando)
- * - > 3d  : vermelho (frio)
+ * Define cor/urgência baseado em HORAS ÚTEIS (excluindo fim de semana):
+ * - < 4h  : fresco
+ * - 4-24h : atenção (até 1 dia útil)
+ * - 24-48h: esfriando (1-2 dias úteis)
+ * - > 48h : frio (+ de 2 dias úteis)
  */
 export type LeadHeat = "fresh" | "warm" | "cooling" | "cold";
 
 export function getLeadHeat(iso: string | null | undefined): LeadHeat | null {
   if (!iso) return null;
   const date = parseISO(iso);
-  const hours = differenceInHours(new Date(), date);
+  const hours = businessMinutesBetween(date, new Date()) / 60;
   if (hours < 4) return "fresh";
   if (hours < 24) return "warm";
-  if (hours < 72) return "cooling";
+  if (hours < 48) return "cooling";
   return "cold";
 }
 
