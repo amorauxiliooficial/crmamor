@@ -59,6 +59,7 @@ import {
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatTimeSince, getLeadHeat, leadHeatClasses, leadHeatLabels } from "@/lib/leadTimeUtils";
 
 interface ProfileOption {
   id: string;
@@ -176,6 +177,13 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
     }
   }, [userId]);
 
+  // Tick every 60s so "tempo com responsável" badge stays fresh
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const removeAccents = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   const filteredIndicacoes = useMemo(() => {
@@ -207,6 +215,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
 
   const stats = useMemo(() => {
     const d = filteredIndicacoes;
+    const isActive = (s: StatusAbordagem) => s !== "concluido" && s !== "convertido";
     return {
       total: d.length,
       aguardandoAprovacao: d.filter((i) => i.status_abordagem === "aguardando_aprovacao").length,
@@ -214,6 +223,11 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
       emAndamento: d.filter((i) => i.status_abordagem === "em_andamento").length,
       concluidos: d.filter((i) => i.status_abordagem === "concluido").length,
       externas: d.filter((i) => i.origem_indicacao === "externa").length,
+      esfriando: d.filter((i) => {
+        if (!isActive(i.status_abordagem) || !i.assigned_user_id) return false;
+        const h = getLeadHeat(i.assigned_at);
+        return h === "cooling" || h === "cold";
+      }).length,
     };
   }, [filteredIndicacoes]);
 
@@ -301,14 +315,20 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
 
   const handleAssignUser = async (indicacaoId: string, newUserId: string | null) => {
     const previous = indicacoes;
+    const nowIso = new Date().toISOString();
+    const newAssignedAt = newUserId ? nowIso : null;
     // Optimistic update
     setIndicacoes((prev) =>
-      prev.map((i) => (i.id === indicacaoId ? { ...i, assigned_user_id: newUserId } : i)),
+      prev.map((i) =>
+        i.id === indicacaoId
+          ? { ...i, assigned_user_id: newUserId, assigned_at: newAssignedAt }
+          : i,
+      ),
     );
 
     const { error } = await supabase
       .from("indicacoes")
-      .update({ assigned_user_id: newUserId } as never)
+      .update({ assigned_user_id: newUserId, assigned_at: newAssignedAt } as never)
       .eq("id", indicacaoId);
 
     if (error) {
@@ -503,6 +523,18 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.concluidos}</div>
+          </CardContent>
+        </Card>
+        <Card className={stats.esfriando > 0 ? "border-destructive/40" : ""}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Clock className={`h-4 w-4 ${stats.esfriando > 0 ? "text-destructive" : "text-muted-foreground"}`} />
+              Esfriando
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${stats.esfriando > 0 ? "text-destructive" : ""}`}>{stats.esfriando}</div>
+            <p className="text-xs text-muted-foreground">+ de 1 dia com o responsável</p>
           </CardContent>
         </Card>
       </div>
@@ -707,52 +739,76 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           const assignedLabel =
                             assigned?.full_name || assigned?.email || (assignedId ? "Usuário" : "Não atribuído");
                           const isMine = assignedId === user?.id;
+                          const heat = assignedId ? getLeadHeat(indicacao.assigned_at) : null;
+                          const timeWith = assignedId ? formatTimeSince(indicacao.assigned_at) : null;
                           return (
-                            <div className="flex items-center gap-1.5">
-                              <Select
-                                value={assignedId ?? UNASSIGNED_VALUE}
-                                onValueChange={(value) =>
-                                  handleAssignUser(indicacao.id, value === UNASSIGNED_VALUE ? null : value)
-                                }
-                              >
-                                <SelectTrigger className="w-[150px] h-8 text-xs">
-                                  <div className="flex items-center gap-1.5 truncate">
-                                    {assigned ? (
-                                      <Avatar className="h-5 w-5">
-                                        <AvatarFallback className="text-[10px]">
-                                          {getInitials(assigned.full_name, assigned.email)}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                    ) : (
-                                      <UserX className="h-3.5 w-3.5 text-muted-foreground" />
-                                    )}
-                                    <span className="truncate">{assignedLabel}</span>
-                                  </div>
-                                </SelectTrigger>
-                                <SelectContent className="z-[100]">
-                                  <SelectItem value={UNASSIGNED_VALUE}>Não atribuído</SelectItem>
-                                  {profiles.map((p) => (
-                                    <SelectItem key={p.id} value={p.id}>
-                                      {p.full_name || p.email || "Usuário"}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              {!isMine && user?.id && (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5">
+                                <Select
+                                  value={assignedId ?? UNASSIGNED_VALUE}
+                                  onValueChange={(value) =>
+                                    handleAssignUser(indicacao.id, value === UNASSIGNED_VALUE ? null : value)
+                                  }
+                                >
+                                  <SelectTrigger className="w-[150px] h-8 text-xs">
+                                    <div className="flex items-center gap-1.5 truncate">
+                                      {assigned ? (
+                                        <Avatar className="h-5 w-5">
+                                          <AvatarFallback className="text-[10px]">
+                                            {getInitials(assigned.full_name, assigned.email)}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                      ) : (
+                                        <UserX className="h-3.5 w-3.5 text-muted-foreground" />
+                                      )}
+                                      <span className="truncate">{assignedLabel}</span>
+                                    </div>
+                                  </SelectTrigger>
+                                  <SelectContent className="z-[100]">
+                                    <SelectItem value={UNASSIGNED_VALUE}>Não atribuído</SelectItem>
+                                    {profiles.map((p) => (
+                                      <SelectItem key={p.id} value={p.id}>
+                                        {p.full_name || p.email || "Usuário"}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {!isMine && user?.id && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          size="icon"
+                                          className="h-8 w-8 shrink-0"
+                                          onClick={() => handleAssignUser(indicacao.id, user.id)}
+                                          aria-label="Assumir"
+                                        >
+                                          <UserCheck className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Assumir esta indicação</TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                              {heat && timeWith && (
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Button
+                                      <Badge
                                         variant="outline"
-                                        size="icon"
-                                        className="h-8 w-8 shrink-0"
-                                        onClick={() => handleAssignUser(indicacao.id, user.id)}
-                                        aria-label="Assumir"
+                                        className={`h-5 px-1.5 text-[10px] font-medium border ${leadHeatClasses[heat]} w-fit gap-1`}
                                       >
-                                        <UserCheck className="h-3.5 w-3.5" />
-                                      </Button>
+                                        <Clock className="h-2.5 w-2.5" />
+                                        {timeWith} · {leadHeatLabels[heat]}
+                                      </Badge>
                                     </TooltipTrigger>
-                                    <TooltipContent>Assumir esta indicação</TooltipContent>
+                                    <TooltipContent>
+                                      Atribuído há {timeWith} •{" "}
+                                      {indicacao.assigned_at &&
+                                        format(parseISO(indicacao.assigned_at), "dd/MM/yy HH:mm", { locale: ptBR })}
+                                    </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
                               )}
@@ -760,6 +816,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           );
                         })()}
                       </TableCell>
+
 
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>

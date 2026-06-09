@@ -868,6 +868,7 @@ export type Database = {
       }
       indicacoes: {
         Row: {
+          assigned_at: string | null
           assigned_user_id: string | null
           created_at: string
           data_indicacao: string
@@ -887,6 +888,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_at?: string | null
           assigned_user_id?: string | null
           created_at?: string
           data_indicacao?: string
@@ -906,6 +908,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_at?: string | null
           assigned_user_id?: string | null
           created_at?: string
           data_indicacao?: string
