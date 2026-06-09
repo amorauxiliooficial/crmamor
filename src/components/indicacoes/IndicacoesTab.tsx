@@ -215,6 +215,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
 
   const stats = useMemo(() => {
     const d = filteredIndicacoes;
+    const isActive = (s: StatusAbordagem) => s !== "concluido" && s !== "convertido";
     return {
       total: d.length,
       aguardandoAprovacao: d.filter((i) => i.status_abordagem === "aguardando_aprovacao").length,
@@ -222,6 +223,11 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
       emAndamento: d.filter((i) => i.status_abordagem === "em_andamento").length,
       concluidos: d.filter((i) => i.status_abordagem === "concluido").length,
       externas: d.filter((i) => i.origem_indicacao === "externa").length,
+      esfriando: d.filter((i) => {
+        if (!isActive(i.status_abordagem) || !i.assigned_user_id) return false;
+        const h = getLeadHeat(i.assigned_at);
+        return h === "cooling" || h === "cold";
+      }).length,
     };
   }, [filteredIndicacoes]);
 
@@ -517,6 +523,18 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.concluidos}</div>
+          </CardContent>
+        </Card>
+        <Card className={stats.esfriando > 0 ? "border-destructive/40" : ""}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Clock className={`h-4 w-4 ${stats.esfriando > 0 ? "text-destructive" : "text-muted-foreground"}`} />
+              Esfriando
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${stats.esfriando > 0 ? "text-destructive" : ""}`}>{stats.esfriando}</div>
+            <p className="text-xs text-muted-foreground">+ de 1 dia com o responsável</p>
           </CardContent>
         </Card>
       </div>
