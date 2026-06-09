@@ -326,17 +326,24 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                 <TableHead>Observações</TableHead>
                 <TableHead>Mês</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="w-[220px]">Responsável</TableHead>
                 <TableHead>Data</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhuma prospecção encontrada</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhuma prospecção encontrada</TableCell></TableRow>
               ) : (
                 filtered.map((p) => {
                   const phone = sanitizePhone(p.telefone_e164 || p.telefone);
+                  const assigned = p.assigned_user_id ? profiles.find((pr) => pr.id === p.assigned_user_id) : null;
+                  const assignedLabel = assigned?.full_name || assigned?.email || (p.assigned_user_id ? "Usuário" : "Sem dono");
+                  const isMine = p.assigned_user_id === user?.id;
+                  const heat = p.assigned_user_id ? getLeadHeat(p.assigned_at) : null;
+                  const timeWith = p.assigned_user_id ? formatTimeSince(p.assigned_at) : null;
+                  const isUnassigned = !p.assigned_user_id && isActiveProspeccao(p.status);
                   return (
-                    <TableRow key={p.id} className={`cursor-pointer hover:bg-muted/50 ${selected?.id === p.id && panelOpen ? "bg-muted" : ""}`} onClick={() => handleRowClick(p)}>
+                    <TableRow key={p.id} className={`cursor-pointer hover:bg-muted/50 ${selected?.id === p.id && panelOpen ? "bg-muted" : ""} ${isUnassigned ? "bg-primary/5" : ""}`} onClick={() => handleRowClick(p)}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-1 group">
                           <span>{p.nome}</span>
