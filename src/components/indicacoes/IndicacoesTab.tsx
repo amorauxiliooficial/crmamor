@@ -301,14 +301,20 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
 
   const handleAssignUser = async (indicacaoId: string, newUserId: string | null) => {
     const previous = indicacoes;
+    const nowIso = new Date().toISOString();
+    const newAssignedAt = newUserId ? nowIso : null;
     // Optimistic update
     setIndicacoes((prev) =>
-      prev.map((i) => (i.id === indicacaoId ? { ...i, assigned_user_id: newUserId } : i)),
+      prev.map((i) =>
+        i.id === indicacaoId
+          ? { ...i, assigned_user_id: newUserId, assigned_at: newAssignedAt }
+          : i,
+      ),
     );
 
     const { error } = await supabase
       .from("indicacoes")
-      .update({ assigned_user_id: newUserId } as never)
+      .update({ assigned_user_id: newUserId, assigned_at: newAssignedAt } as never)
       .eq("id", indicacaoId);
 
     if (error) {
