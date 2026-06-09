@@ -60,6 +60,15 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
   const [copiedNameId, setCopiedNameId] = useState<string | null>(null);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const [proximaFilter, setProximaFilter] = useState(false);
+  const [semDonoFilter, setSemDonoFilter] = useState(false);
+  const [profiles, setProfiles] = useState<ProfileOption[]>([]);
+
+  // Tick every 60s so heat badge refreshes
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const fetchData = async () => {
     if (!user?.id) return;
@@ -74,8 +83,19 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
     setLoading(false);
   };
 
+  const fetchProfiles = async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .order("full_name", { ascending: true });
+    if (!error && data) setProfiles(data as ProfileOption[]);
+  };
+
   useEffect(() => {
-    if (user?.id) fetchData();
+    if (user?.id) {
+      fetchData();
+      fetchProfiles();
+    }
   }, [user?.id]);
 
   const removeAccents = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
