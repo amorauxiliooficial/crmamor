@@ -18,6 +18,8 @@ export interface Prospeccao {
   proxima_acao?: string | null;
   proxima_acao_data?: string | null;
   mae_processo_id?: string | null;
+  assigned_user_id?: string | null;
+  assigned_at?: string | null;
   user_id: string;
   created_at: string;
   updated_at: string;
