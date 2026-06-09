@@ -86,8 +86,15 @@ export function ProspeccaoMobileList({
       {items.map((p) => {
         const phone = sanitizePhone(p.telefone_e164 || p.telefone);
         const mesAtual = calcularMesGestacaoProspeccao(p.mes_gestacao, p.created_at);
+        const assigned = p.assigned_user_id ? profiles.find((pr) => pr.id === p.assigned_user_id) : null;
+        const assignedLabel = assigned?.full_name || assigned?.email || (p.assigned_user_id ? "Usuário" : "Sem dono");
+        const isMine = p.assigned_user_id === currentUserId;
+        const heat = p.assigned_user_id ? getLeadHeat(p.assigned_at) : null;
+        const timeWith = p.assigned_user_id ? formatTimeSince(p.assigned_at) : null;
+        const isActive = p.status !== "convertido" && p.status !== "sem_interesse";
+        const isUnassigned = !p.assigned_user_id && isActive;
         return (
-          <Card key={p.id} className={`cursor-pointer transition-colors ${selectedId === p.id ? "ring-2 ring-primary" : ""}`} onClick={() => onSelect(p)}>
+          <Card key={p.id} className={`cursor-pointer transition-colors ${selectedId === p.id ? "ring-2 ring-primary" : ""} ${isUnassigned ? "border-primary/50 bg-primary/5" : ""}`} onClick={() => onSelect(p)}>
             <CardContent className="p-3 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
