@@ -11,15 +11,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProspeccaoDetailPanel } from "./ProspeccaoDetailPanel";
 import { ProspeccaoFormDialog } from "./ProspeccaoFormDialog";
 import { ImportProspeccaoDialog } from "./ImportProspeccaoDialog";
 import { ProspeccaoMobileList } from "./ProspeccaoMobileList";
-import { Plus, Search, Users, Clock, CheckCircle, Loader2, MessageSquare, Phone, Copy, Check, Upload, Target, Baby } from "lucide-react";
+import { Plus, Search, Users, Clock, CheckCircle, Loader2, MessageSquare, Phone, Copy, Check, Upload, Target, Baby, UserX, UserCheck, AlertTriangle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { calcularMesGestacaoProspeccao } from "@/lib/gestacaoUtils";
+import { formatTimeSince, getLeadHeat, leadHeatClasses, leadHeatLabels } from "@/lib/leadTimeUtils";
+
+interface ProfileOption {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
+
+const UNASSIGNED_VALUE = "__unassigned__";
+
+function getInitials(name: string | null | undefined, fallback?: string | null) {
+  const source = (name || fallback || "?").trim();
+  if (!source) return "?";
+  const parts = source.split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 interface ProspeccaoTabProps {
   searchQuery?: string;
