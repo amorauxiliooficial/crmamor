@@ -229,7 +229,7 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Users className="h-4 w-4 text-primary" />Total</CardTitle></CardHeader>
           <CardContent><div className="text-2xl font-bold">{stats.total}</div></CardContent>
@@ -246,9 +246,37 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><CheckCircle className="h-4 w-4 text-muted-foreground" />Qualificados</CardTitle></CardHeader>
           <CardContent><div className="text-2xl font-bold">{stats.qualificados}</div></CardContent>
         </Card>
-        <Card className={proximaFilter ? "ring-1 ring-primary" : ""} onClick={() => setProximaFilter(!proximaFilter)} role="button">
+        <Card className={proximaFilter ? "ring-1 ring-primary cursor-pointer" : "cursor-pointer"} onClick={() => setProximaFilter(!proximaFilter)} role="button">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Baby className="h-4 w-4 text-pink-500" />7+ meses</CardTitle></CardHeader>
           <CardContent><div className="text-2xl font-bold">{stats.proximas}</div></CardContent>
+        </Card>
+        <Card
+          role="button"
+          onClick={() => setSemDonoFilter(!semDonoFilter)}
+          className={`cursor-pointer transition ${semDonoFilter ? "ring-2 ring-primary" : ""} ${stats.semDono > 0 ? "border-primary/50" : ""}`}
+        >
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <UserX className={`h-4 w-4 ${stats.semDono > 0 ? "text-primary" : "text-muted-foreground"}`} />
+              Sem dono
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${stats.semDono > 0 ? "text-primary" : ""}`}>{stats.semDono}</div>
+            <p className="text-[10px] text-muted-foreground">Clique para priorizar</p>
+          </CardContent>
+        </Card>
+        <Card className={stats.esfriando > 0 ? "border-destructive/40" : ""}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <AlertTriangle className={`h-4 w-4 ${stats.esfriando > 0 ? "text-destructive" : "text-muted-foreground"}`} />
+              Esfriando
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${stats.esfriando > 0 ? "text-destructive" : ""}`}>{stats.esfriando}</div>
+            <p className="text-[10px] text-muted-foreground">+ 1 dia útil parado</p>
+          </CardContent>
         </Card>
       </div>
 
