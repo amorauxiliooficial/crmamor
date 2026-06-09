@@ -151,9 +151,63 @@ export function ProspeccaoMobileList({
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
+              {onAssign && (
+                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={p.assigned_user_id ?? UNASSIGNED_VALUE}
+                    onValueChange={(v) => onAssign(p.id, v === UNASSIGNED_VALUE ? null : v)}
+                  >
+                    <SelectTrigger className="h-7 text-[11px] flex-1">
+                      <div className="flex items-center gap-1.5 truncate">
+                        {assigned ? (
+                          <Avatar className="h-4 w-4">
+                            <AvatarFallback className="text-[9px]">
+                              {getInitials(assigned.full_name, assigned.email)}
+                            </AvatarFallback>
+                          </Avatar>
+                        ) : (
+                          <UserX className="h-3 w-3 text-primary" />
+                        )}
+                        <span className="truncate">{assignedLabel}</span>
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="z-[100]">
+                      <SelectItem value={UNASSIGNED_VALUE}>Sem dono</SelectItem>
+                      {profiles.map((pr) => (
+                        <SelectItem key={pr.id} value={pr.id}>
+                          {pr.full_name || pr.email || "Usuário"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!isMine && currentUserId && (
+                    <Button
+                      variant={isUnassigned ? "default" : "outline"}
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      onClick={() => onAssign(p.id, currentUserId)}
+                      aria-label="Assumir"
+                    >
+                      <UserCheck className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              )}
+              <div className="flex items-center justify-between text-xs text-muted-foreground gap-2">
                 <span>{format(parseISO(p.created_at), "dd/MM/yy", { locale: ptBR })}</span>
-                <span>{p.origem || "chatbot"}</span>
+                {heat && timeWith ? (
+                  <Badge variant="outline" className={`h-5 px-1.5 text-[10px] gap-1 border ${leadHeatClasses[heat]}`}>
+                    <Clock className="h-2.5 w-2.5" />
+                    {timeWith} · {leadHeatLabels[heat]}
+                  </Badge>
+                ) : isUnassigned ? (
+                  <Badge variant="outline" className="h-5 px-1.5 text-[10px] gap-1 border bg-primary/15 text-primary border-primary/40">
+                    <AlertTriangle className="h-2.5 w-2.5" />
+                    Prioridade
+                  </Badge>
+                ) : (
+                  <span>{p.origem || "chatbot"}</span>
+                )}
               </div>
               <div className="flex items-center gap-1 pt-1 border-t">
                 {phone && (
