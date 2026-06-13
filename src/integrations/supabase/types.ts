@@ -1045,6 +1045,7 @@ export type Database = {
           ultima_atividade_em: string | null
           user_id: string
           verificacao_duas_etapas: boolean
+          zap_card_id: string | null
         }
         Insert: {
           categoria_previdenciaria?: Database["public"]["Enums"]["categoria_previdenciaria"]
@@ -1091,6 +1092,7 @@ export type Database = {
           ultima_atividade_em?: string | null
           user_id: string
           verificacao_duas_etapas?: boolean
+          zap_card_id?: string | null
         }
         Update: {
           categoria_previdenciaria?: Database["public"]["Enums"]["categoria_previdenciaria"]
@@ -1137,6 +1139,7 @@ export type Database = {
           ultima_atividade_em?: string | null
           user_id?: string
           verificacao_duas_etapas?: boolean
+          zap_card_id?: string | null
         }
         Relationships: [
           {
