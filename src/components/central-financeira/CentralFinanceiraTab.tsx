@@ -22,6 +22,7 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
   const { maes, loading } = useMaesData();
   const [localSearch, setLocalSearch] = useState("");
   const [selectedMae, setSelectedMae] = useState<MaeProcesso | null>(null);
+  const [bancosOpen, setBancosOpen] = useState(false);
 
   // Only approved mothers
   const aprovadas = useMemo(
