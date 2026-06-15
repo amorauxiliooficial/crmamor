@@ -26,12 +26,10 @@ import {
   FolderOpen,
   Eye,
   EyeOff,
-  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
-import { CentralFinanceiraDialog } from "@/components/central-financeira/CentralFinanceiraDialog";
 
 interface MaeDetailDialogProps {
   mae: MaeProcesso | null;
