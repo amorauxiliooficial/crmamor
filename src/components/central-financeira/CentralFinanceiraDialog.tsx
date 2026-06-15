@@ -49,7 +49,8 @@ const fmtDate = (d: string | null | undefined) => {
   }
 };
 
-export function CentralFinanceiraDialog({ mae, open, onOpenChange }: Props) {
+export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inline = false }: Props) {
+  const isActive = inline || open;
   const {
     central,
     parcelas,
