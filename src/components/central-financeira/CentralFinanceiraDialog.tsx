@@ -484,7 +484,6 @@ Qualquer dúvida estamos à disposição!`;
             </div>
           </DialogContent>
         </Dialog>
-      </div>
     </>
   );
 
