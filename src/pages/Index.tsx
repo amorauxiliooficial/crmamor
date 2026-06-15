@@ -259,7 +259,7 @@ export default function Index() {
               )}
 
               {currentView === "pagamentos" && (
-                <PagamentosTab searchQuery={searchQuery} selectedUserId={undefined} />
+                <CentralFinanceiraTab searchQuery={searchQuery} selectedUserId={undefined} />
               )}
 
               {currentView === "indicacoes" && (
