@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useCentralFinanceira, type ParcelaBeneficio, type BoletoAmor } from "@/hooks/useCentralFinanceira";
+import { useBancos } from "@/hooks/useBancos";
 import type { MaeProcesso } from "@/types/mae";
 import { Copy, Plus, Trash2, AlertTriangle, FileText, History, Calculator, Wallet, FileCheck2 } from "lucide-react";
 import { toast } from "sonner";
@@ -64,6 +65,8 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
     deleteBoleto,
     salvarComunicado,
   } = useCentralFinanceira(isActive ? mae?.id ?? null : null);
+
+  const { bancos: bancosLista } = useBancos();
 
   const [comunicadoOpen, setComunicadoOpen] = useState(false);
   const [comunicadoTexto, setComunicadoTexto] = useState("");
@@ -260,7 +263,19 @@ Qualquer dúvida estamos à disposição!`;
                 <CardTitle className="text-base">Dados do saque</CardTitle>
               </CardHeader>
               <CardContent className="grid md:grid-cols-2 gap-3">
-                <FieldInput label="Banco" value={central?.banco_saque ?? ""} onSave={(v) => updateCentral.mutate({ banco_saque: v })} />
+                <div>
+                  <Label className="text-xs text-muted-foreground">Banco</Label>
+                  <Select value={central?.banco_saque ?? ""} onValueChange={(v) => updateCentral.mutate({ banco_saque: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o banco" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[100]">
+                      {bancosLista.map((b) => (
+                        <SelectItem key={b.id} value={b.nome}>{b.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <FieldInput label="Agência" value={central?.agencia_saque ?? ""} onSave={(v) => updateCentral.mutate({ agencia_saque: v })} />
                 <div className="md:col-span-2">
                   <FieldInput label="Endereço" value={central?.endereco_saque ?? ""} onSave={(v) => updateCentral.mutate({ endereco_saque: v })} />
