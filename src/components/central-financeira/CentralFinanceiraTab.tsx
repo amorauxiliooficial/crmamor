@@ -4,9 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, Wallet, Search, Loader2, ArrowLeft } from "lucide-react";
+import { DollarSign, Wallet, Search, Loader2, ArrowLeft, Building2 } from "lucide-react";
 import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
 import { CentralFinanceiraDialog } from "@/components/central-financeira/CentralFinanceiraDialog";
+import { BancosDialog } from "@/components/pagamentos/BancosDialog";
 import { useMaesData } from "@/hooks/useMaesData";
 import { formatCpf } from "@/lib/formatters";
 import type { MaeProcesso } from "@/types/mae";
@@ -21,6 +22,7 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
   const { maes, loading } = useMaesData();
   const [localSearch, setLocalSearch] = useState("");
   const [selectedMae, setSelectedMae] = useState<MaeProcesso | null>(null);
+  const [bancosOpen, setBancosOpen] = useState(false);
 
   // Only approved mothers
   const aprovadas = useMemo(
@@ -78,6 +80,10 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                   />
                 </div>
                 <Badge variant="outline">{filteredMaes.length} aprovadas</Badge>
+                <Button variant="outline" size="sm" onClick={() => setBancosOpen(true)} className="gap-1.5">
+                  <Building2 className="h-4 w-4" />
+                  Gerenciar bancos
+                </Button>
               </div>
 
               {loading ? (
@@ -122,6 +128,8 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
           )}
         </TabsContent>
       </Tabs>
+
+      <BancosDialog open={bancosOpen} onOpenChange={setBancosOpen} />
     </div>
   );
 }
