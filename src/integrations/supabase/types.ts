@@ -257,7 +257,7 @@ export type Database = {
         Row: {
           cidade: string | null
           created_at: string
-          endereco: string
+          endereco: string | null
           id: string
           nome: string
           uf: string | null
@@ -266,7 +266,7 @@ export type Database = {
         Insert: {
           cidade?: string | null
           created_at?: string
-          endereco: string
+          endereco?: string | null
           id?: string
           nome: string
           uf?: string | null
@@ -275,7 +275,7 @@ export type Database = {
         Update: {
           cidade?: string | null
           created_at?: string
-          endereco?: string
+          endereco?: string | null
           id?: string
           nome?: string
           uf?: string | null
