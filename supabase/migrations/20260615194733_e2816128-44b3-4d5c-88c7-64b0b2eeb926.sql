@@ -1,0 +1,1 @@
+ALTER TABLE public.bancos ALTER COLUMN endereco DROP NOT NULL;

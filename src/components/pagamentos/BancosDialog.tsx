@@ -38,34 +38,25 @@ export function BancosDialog({ open, onOpenChange }: BancosDialogProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const [nome, setNome] = useState("");
-  const [endereco, setEndereco] = useState("");
-  const [cidade, setCidade] = useState("");
-  const [uf, setUf] = useState("");
 
   const resetForm = () => {
     setNome("");
-    setEndereco("");
-    setCidade("");
-    setUf("");
     setEditingId(null);
     setShowForm(false);
   };
 
   const handleEdit = (banco: typeof bancos[0]) => {
     setNome(banco.nome);
-    setEndereco(banco.endereco);
-    setCidade(banco.cidade || "");
-    setUf(banco.uf || "");
     setEditingId(banco.id);
     setShowForm(true);
   };
 
   const handleSave = async () => {
-    if (!nome.trim() || !endereco.trim()) {
+    if (!nome.trim()) {
       toast({
         variant: "destructive",
-        title: "Campos obrigatórios",
-        description: "Nome e endereço são obrigatórios",
+        title: "Campo obrigatório",
+        description: "Nome do banco é obrigatório",
       });
       return;
     }
@@ -76,12 +67,7 @@ export function BancosDialog({ open, onOpenChange }: BancosDialogProps) {
       if (editingId) {
         const { error } = await supabase
           .from("bancos")
-          .update({
-            nome: nome.trim(),
-            endereco: endereco.trim(),
-            cidade: cidade.trim() || null,
-            uf: uf.trim().toUpperCase() || null,
-          })
+          .update({ nome: nome.trim() })
           .eq("id", editingId);
 
         if (error) throw error;
@@ -89,9 +75,6 @@ export function BancosDialog({ open, onOpenChange }: BancosDialogProps) {
       } else {
         const { error } = await supabase.from("bancos").insert({
           nome: nome.trim(),
-          endereco: endereco.trim(),
-          cidade: cidade.trim() || null,
-          uf: uf.trim().toUpperCase() || null,
         });
 
         if (error) throw error;
@@ -152,40 +135,13 @@ export function BancosDialog({ open, onOpenChange }: BancosDialogProps) {
             {showForm && (
               <Card>
                 <CardContent className="p-4 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <Label>Nome do Banco *</Label>
-                      <Input
-                        value={nome}
-                        onChange={(e) => setNome(e.target.value)}
-                        placeholder="Ex: Banco do Brasil - Agência Centro"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Label>Endereço Completo *</Label>
-                      <Input
-                        value={endereco}
-                        onChange={(e) => setEndereco(e.target.value)}
-                        placeholder="Ex: Rua das Flores, 123 - Centro"
-                      />
-                    </div>
-                    <div>
-                      <Label>Cidade</Label>
-                      <Input
-                        value={cidade}
-                        onChange={(e) => setCidade(e.target.value)}
-                        placeholder="Ex: São Paulo"
-                      />
-                    </div>
-                    <div>
-                      <Label>UF</Label>
-                      <Input
-                        value={uf}
-                        onChange={(e) => setUf(e.target.value)}
-                        placeholder="Ex: SP"
-                        maxLength={2}
-                      />
-                    </div>
+                  <div>
+                    <Label>Nome do Banco *</Label>
+                    <Input
+                      value={nome}
+                      onChange={(e) => setNome(e.target.value)}
+                      placeholder="Ex: Banco do Brasil"
+                    />
                   </div>
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={resetForm}>
@@ -212,14 +168,9 @@ export function BancosDialog({ open, onOpenChange }: BancosDialogProps) {
               <div className="space-y-2">
                 {bancos.map((banco) => (
                   <Card key={banco.id}>
-                    <CardContent className="p-3 flex items-start justify-between">
+                    <CardContent className="p-3 flex items-center justify-between">
                       <div className="min-w-0">
                         <h4 className="font-medium">{banco.nome}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {banco.endereco}
-                          {banco.cidade && ` - ${banco.cidade}`}
-                          {banco.uf && `/${banco.uf}`}
-                        </p>
                       </div>
                       <div className="flex gap-1 shrink-0">
                         <Button
