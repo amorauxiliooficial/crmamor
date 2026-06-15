@@ -54,7 +54,6 @@ export function MaeDetailDialog({
   onEdit,
 }: MaeDetailDialogProps) {
   const [documentosDialogOpen, setDocumentosDialogOpen] = useState(false);
-  const [centralOpen, setCentralOpen] = useState(false);
 
   if (!mae) return null;
 
