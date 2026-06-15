@@ -70,7 +70,7 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
             <Badge variant="outline">{filteredMaes.length} mães</Badge>
           </div>
 
-          {maesQuery.isLoading ? (
+          {loading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
@@ -92,7 +92,7 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <h3 className="font-semibold text-sm truncate">
-                          {mae.nome_completo}
+                          {mae.nome_mae}
                         </h3>
                         <p className="text-xs text-muted-foreground font-mono">
                           {mae.cpf ? formatCpf(mae.cpf) : "—"}
