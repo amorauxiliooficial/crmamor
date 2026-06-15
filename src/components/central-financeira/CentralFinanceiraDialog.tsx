@@ -66,6 +66,8 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
     salvarComunicado,
   } = useCentralFinanceira(isActive ? mae?.id ?? null : null);
 
+  const { bancos: bancosLista } = useBancos();
+
   const [comunicadoOpen, setComunicadoOpen] = useState(false);
   const [comunicadoTexto, setComunicadoTexto] = useState("");
 
