@@ -46,7 +46,7 @@ const navigationItems = [
   { id: "table", label: "Tabela", icon: List },
   { id: "gestantes", label: "Gestantes", icon: Baby },
   { id: "conferencia", label: "Conferência INSS", icon: ClipboardCheck },
-  { id: "pagamentos", label: "Pagamentos", icon: DollarSign },
+  { id: "pagamentos", label: "Central Financeira", icon: DollarSign },
   { id: "indicacoes", label: "Indicações", icon: UserPlus },
   { id: "marketing", label: "Marketing", icon: Megaphone, isPage: true },
   

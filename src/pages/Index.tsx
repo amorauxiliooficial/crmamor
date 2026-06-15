@@ -34,7 +34,7 @@ import { MaeEditDialog } from "@/components/mae/MaeEditDialog";
 import { AtividadesTab } from "@/components/atividades/AtividadesTab";
 import { CrmTab } from "@/components/atividades/CrmTab";
 import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
-import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
+import { CentralFinanceiraTab } from "@/components/central-financeira/CentralFinanceiraTab";
 import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
 import { ChatPanel } from "@/components/atendimento/ChatPanel";
 import { ProspeccaoTab } from "@/components/prospeccao/ProspeccaoTab";
@@ -189,7 +189,7 @@ export default function Index() {
               </TabsTrigger>
               <TabsTrigger value="pagamentos" className="gap-1.5 text-xs">
                 <DollarSign className="h-3.5 w-3.5" />
-                Pagamentos
+                Central Financeira
               </TabsTrigger>
               <TabsTrigger value="indicacoes" className="gap-1.5 text-xs">
                 <UserPlus className="h-3.5 w-3.5" />
@@ -259,7 +259,7 @@ export default function Index() {
               )}
 
               {currentView === "pagamentos" && (
-                <PagamentosTab searchQuery={searchQuery} selectedUserId={undefined} />
+                <CentralFinanceiraTab searchQuery={searchQuery} selectedUserId={undefined} />
               )}
 
               {currentView === "indicacoes" && (
