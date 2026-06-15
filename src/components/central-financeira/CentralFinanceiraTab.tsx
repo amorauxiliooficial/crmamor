@@ -128,6 +128,8 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
           )}
         </TabsContent>
       </Tabs>
+
+      <BancosDialog open={bancosOpen} onOpenChange={setBancosOpen} />
     </div>
   );
 }
