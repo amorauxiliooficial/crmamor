@@ -80,6 +80,10 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                   />
                 </div>
                 <Badge variant="outline">{filteredMaes.length} aprovadas</Badge>
+                <Button variant="outline" size="sm" onClick={() => setBancosOpen(true)} className="gap-1.5">
+                  <Building2 className="h-4 w-4" />
+                  Gerenciar bancos
+                </Button>
               </div>
 
               {loading ? (
