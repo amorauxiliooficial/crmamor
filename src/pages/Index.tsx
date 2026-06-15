@@ -34,7 +34,7 @@ import { MaeEditDialog } from "@/components/mae/MaeEditDialog";
 import { AtividadesTab } from "@/components/atividades/AtividadesTab";
 import { CrmTab } from "@/components/atividades/CrmTab";
 import { ConferenciaTab } from "@/components/conferencia/ConferenciaTab";
-import { PagamentosTab } from "@/components/pagamentos/PagamentosTab";
+import { CentralFinanceiraTab } from "@/components/central-financeira/CentralFinanceiraTab";
 import { IndicacoesTab } from "@/components/indicacoes/IndicacoesTab";
 import { ChatPanel } from "@/components/atendimento/ChatPanel";
 import { ProspeccaoTab } from "@/components/prospeccao/ProspeccaoTab";
