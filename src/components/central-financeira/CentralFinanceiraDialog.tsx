@@ -209,23 +209,28 @@ Qualquer dúvida estamos à disposição!`;
 
   if (!mae) return null;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl w-[98vw] max-h-[95vh] overflow-hidden p-0">
-        <DialogHeader className="px-6 pt-6 pb-2">
-          <DialogTitle className="flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-primary" />
-            Central Financeira da Amor — {mae.nome_mae}
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Calculadora, projeção de saque, boletos e comunicados da mãe.
-          </p>
-        </DialogHeader>
+  const body = (
+    <>
+      <div className={inline ? "mb-4" : "px-6 pt-6 pb-2"}>
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <Wallet className="h-5 w-5 text-primary" />
+          Central Financeira da Amor — {mae.nome_mae}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Calculadora, projeção de saque, boletos e comunicados da mãe.
+        </p>
+      </div>
 
-        <div className="grid lg:grid-cols-[1fr_360px] gap-4 px-6 pb-6 overflow-y-auto max-h-[calc(95vh-80px)]">
-          {/* PRINCIPAL */}
-          <div className="space-y-4">
-            {/* Dados da cliente */}
+      <div
+        className={
+          inline
+            ? "grid lg:grid-cols-[1fr_360px] gap-4"
+            : "grid lg:grid-cols-[1fr_360px] gap-4 px-6 pb-6 overflow-y-auto max-h-[calc(95vh-80px)]"
+        }
+      >
+        {/* PRINCIPAL */}
+        <div className="space-y-4">
+          {/* Dados da cliente */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Dados da cliente</CardTitle>
