@@ -124,27 +124,30 @@ serve(async (req) => {
     const emailRaw = typeof contact.email === "string" ? contact.email.trim() : null;
     const email = emailRaw && emailRaw.length > 0 ? emailRaw : null;
 
+    const ZAP_FIELD_CPF = "6a2ca27150034cd0193fc5a2";
+    const ZAP_FIELD_SENHA_GOV = "6a2ca23a50034cd0193fc0de";
+    const ZAP_FIELD_MES_GESTACAO = "6a2ca2c98bf457bc11b8b6f8";
+
     const additionalFields: AnyObj = card.additionalFields ?? {};
     console.log("ZAP additionalFields:", JSON.stringify(additionalFields));
 
-    const cpfRaw = firstDefined(additionalFields, ["cpf", "CPF"]);
+    const cpfRaw = additionalFields[ZAP_FIELD_CPF];
     let cpf = cpfRaw !== undefined ? String(cpfRaw).replace(/\D/g, "") : "";
     if (cpf.length !== 11) {
       cpf = "";
     }
 
-    const senhaGovRaw = firstDefined(additionalFields, ["senha_gov", "Senha Gov", "senhaGov"]);
+    const senhaGovRaw = additionalFields[ZAP_FIELD_SENHA_GOV];
     const senhaGov = senhaGovRaw !== undefined ? String(senhaGovRaw).trim() : null;
-
-    const gestanteRaw = firstDefined(additionalFields, ["gestante", "Gestante"]);
-    const isGestante = gestanteRaw !== undefined ? toBool(gestanteRaw) : false;
 
     const valorRaw = firstDefined(additionalFields, ["valor", "value"]);
     const valor = valorRaw !== undefined ? toNumber(valorRaw) : null;
 
-    const mesGestacaoRaw = firstDefined(additionalFields, ["mes_gestacao", "Mês de gestação"]);
+    const mesGestacaoRaw = additionalFields[ZAP_FIELD_MES_GESTACAO];
     const mesGestacaoNum = mesGestacaoRaw !== undefined ? toNumber(mesGestacaoRaw) : null;
     const mesGestacao = mesGestacaoNum !== null && mesGestacaoNum >= 1 && mesGestacaoNum <= 10 ? Math.round(mesGestacaoNum) : null;
+
+    const isGestante = mesGestacao !== null;
 
     if (!name) {
       console.error("zap-handoff: missing name in payload");
