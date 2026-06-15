@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useBancos } from "@/hooks/useBancos";
-import { Loader2,urban, Plus, Trash2, Building2, Edit } from "lucide-react";
+import { Loader2, Plus, Trash2, Building2, Edit } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -26,7 +26,7 @@ import {
 
 interface BancosDialogProps {
   open: boolean;
-  onOpen in: (open: boolean) => void;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function BancosDialog({ open, onOpenChange }: BancosDialogProps) {
