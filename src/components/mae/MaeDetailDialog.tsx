@@ -26,10 +26,12 @@ import {
   FolderOpen,
   Eye,
   EyeOff,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
+import { CentralFinanceiraDialog } from "@/components/central-financeira/CentralFinanceiraDialog";
 
 interface MaeDetailDialogProps {
   mae: MaeProcesso | null;
@@ -54,6 +56,7 @@ export function MaeDetailDialog({
   onEdit,
 }: MaeDetailDialogProps) {
   const [documentosDialogOpen, setDocumentosDialogOpen] = useState(false);
+  const [centralOpen, setCentralOpen] = useState(false);
 
   if (!mae) return null;
 
@@ -132,16 +135,29 @@ export function MaeDetailDialog({
                 <Badge variant="secondary">Contrato Assinado</Badge>
               )}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDocumentosDialogOpen(true)}
-              className="gap-2"
-            >
-              <FolderOpen className="h-4 w-4" />
-              Documentos
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCentralOpen(true)}
+                className="gap-2"
+              >
+                <Wallet className="h-4 w-4" />
+                Central Financeira
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDocumentosDialogOpen(true)}
+                className="gap-2"
+              >
+                <FolderOpen className="h-4 w-4" />
+                Documentos
+              </Button>
+            </div>
           </div>
+
+          <CentralFinanceiraDialog mae={mae} open={centralOpen} onOpenChange={setCentralOpen} />
 
           <Separator />
 
