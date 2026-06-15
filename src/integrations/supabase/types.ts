@@ -283,6 +283,211 @@ export type Database = {
         }
         Relationships: []
       }
+      boletos_amor: {
+        Row: {
+          central_id: string
+          created_at: string
+          id: string
+          numero_boleto: string | null
+          observacoes: string | null
+          status: string
+          updated_at: string
+          valor: number | null
+          vencimento: string | null
+        }
+        Insert: {
+          central_id: string
+          created_at?: string
+          id?: string
+          numero_boleto?: string | null
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number | null
+          vencimento?: string | null
+        }
+        Update: {
+          central_id?: string
+          created_at?: string
+          id?: string
+          numero_boleto?: string | null
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number | null
+          vencimento?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boletos_amor_central_id_fkey"
+            columns: ["central_id"]
+            isOneToOne: false
+            referencedRelation: "central_financeira"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      central_alteracoes_log: {
+        Row: {
+          campo: string
+          central_id: string
+          created_at: string
+          entidade: string
+          id: string
+          mae_id: string
+          user_id: string | null
+          valor_anterior: string | null
+          valor_novo: string | null
+        }
+        Insert: {
+          campo: string
+          central_id: string
+          created_at?: string
+          entidade: string
+          id?: string
+          mae_id: string
+          user_id?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Update: {
+          campo?: string
+          central_id?: string
+          created_at?: string
+          entidade?: string
+          id?: string
+          mae_id?: string
+          user_id?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "central_alteracoes_log_central_id_fkey"
+            columns: ["central_id"]
+            isOneToOne: false
+            referencedRelation: "central_financeira"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "central_alteracoes_log_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      central_comunicados_historico: {
+        Row: {
+          central_id: string
+          created_at: string
+          id: string
+          mae_id: string
+          texto: string
+          user_id: string | null
+          valores_snapshot: Json
+        }
+        Insert: {
+          central_id: string
+          created_at?: string
+          id?: string
+          mae_id: string
+          texto: string
+          user_id?: string | null
+          valores_snapshot?: Json
+        }
+        Update: {
+          central_id?: string
+          created_at?: string
+          id?: string
+          mae_id?: string
+          texto?: string
+          user_id?: string | null
+          valores_snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "central_comunicados_historico_central_id_fkey"
+            columns: ["central_id"]
+            isOneToOne: false
+            referencedRelation: "central_financeira"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "central_comunicados_historico_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      central_financeira: {
+        Row: {
+          agencia_saque: string | null
+          banco_saque: string | null
+          created_at: string
+          created_by: string | null
+          data_saque: string | null
+          endereco_saque: string | null
+          horario_saque: string | null
+          id: string
+          mae_id: string
+          numero_beneficio: string | null
+          observacao_saque: string | null
+          observacoes_valores_futuros: string | null
+          percentual_honorarios: number | null
+          taxa_administrativa: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          agencia_saque?: string | null
+          banco_saque?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_saque?: string | null
+          endereco_saque?: string | null
+          horario_saque?: string | null
+          id?: string
+          mae_id: string
+          numero_beneficio?: string | null
+          observacao_saque?: string | null
+          observacoes_valores_futuros?: string | null
+          percentual_honorarios?: number | null
+          taxa_administrativa?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          agencia_saque?: string | null
+          banco_saque?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_saque?: string | null
+          endereco_saque?: string | null
+          horario_saque?: string | null
+          id?: string
+          mae_id?: string
+          numero_beneficio?: string | null
+          observacao_saque?: string | null
+          observacoes_valores_futuros?: string | null
+          percentual_honorarios?: number | null
+          taxa_administrativa?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "central_financeira_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: true
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       channels: {
         Row: {
           active: boolean
@@ -1405,6 +1610,47 @@ export type Database = {
             columns: ["mae_id"]
             isOneToOne: false
             referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parcelas_beneficio: {
+        Row: {
+          central_id: string
+          created_at: string
+          data_parcela: string | null
+          id: string
+          numero_parcela: number
+          status: string
+          updated_at: string
+          valor: number | null
+        }
+        Insert: {
+          central_id: string
+          created_at?: string
+          data_parcela?: string | null
+          id?: string
+          numero_parcela: number
+          status?: string
+          updated_at?: string
+          valor?: number | null
+        }
+        Update: {
+          central_id?: string
+          created_at?: string
+          data_parcela?: string | null
+          id?: string
+          numero_parcela?: number
+          status?: string
+          updated_at?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcelas_beneficio_central_id_fkey"
+            columns: ["central_id"]
+            isOneToOne: false
+            referencedRelation: "central_financeira"
             referencedColumns: ["id"]
           },
         ]
