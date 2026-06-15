@@ -216,6 +216,7 @@ serve(async (req) => {
       .from("mae_processo")
       .insert({
         nome_mae: name,
+        email,
         telefone: phone,
         telefone_e164: telefoneE164,
         cpf,
