@@ -139,15 +139,6 @@ export function MaeDetailDialog({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCentralOpen(true)}
-                className="gap-2"
-              >
-                <Wallet className="h-4 w-4" />
-                Central Financeira
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
                 onClick={() => setDocumentosDialogOpen(true)}
                 className="gap-2"
               >
@@ -157,7 +148,6 @@ export function MaeDetailDialog({
             </div>
           </div>
 
-          <CentralFinanceiraDialog mae={mae} open={centralOpen} onOpenChange={setCentralOpen} />
 
           <Separator />
 
