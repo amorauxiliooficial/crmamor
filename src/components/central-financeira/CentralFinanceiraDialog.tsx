@@ -17,8 +17,9 @@ import { formatCpf } from "@/lib/formatters";
 
 interface Props {
   mae: MaeProcesso | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  inline?: boolean;
 }
 
 const PARCELA_STATUS = [
