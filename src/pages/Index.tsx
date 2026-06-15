@@ -189,7 +189,7 @@ export default function Index() {
               </TabsTrigger>
               <TabsTrigger value="pagamentos" className="gap-1.5 text-xs">
                 <DollarSign className="h-3.5 w-3.5" />
-                Pagamentos
+                Central Financeira
               </TabsTrigger>
               <TabsTrigger value="indicacoes" className="gap-1.5 text-xs">
                 <UserPlus className="h-3.5 w-3.5" />
