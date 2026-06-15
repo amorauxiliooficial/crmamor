@@ -484,6 +484,18 @@ Qualquer dúvida estamos à disposição!`;
             </div>
           </DialogContent>
         </Dialog>
+      </div>
+    </>
+  );
+
+  if (inline) {
+    return <div className="w-full">{body}</div>;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-7xl w-[98vw] max-h-[95vh] overflow-hidden p-0">
+        {body}
       </DialogContent>
     </Dialog>
   );
