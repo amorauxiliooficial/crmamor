@@ -17,8 +17,9 @@ import { formatCpf } from "@/lib/formatters";
 
 interface Props {
   mae: MaeProcesso | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  inline?: boolean;
 }
 
 const PARCELA_STATUS = [
@@ -48,7 +49,8 @@ const fmtDate = (d: string | null | undefined) => {
   }
 };
 
-export function CentralFinanceiraDialog({ mae, open, onOpenChange }: Props) {
+export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inline = false }: Props) {
+  const isActive = inline || open;
   const {
     central,
     parcelas,
@@ -61,7 +63,7 @@ export function CentralFinanceiraDialog({ mae, open, onOpenChange }: Props) {
     upsertBoleto,
     deleteBoleto,
     salvarComunicado,
-  } = useCentralFinanceira(open ? mae?.id ?? null : null);
+  } = useCentralFinanceira(isActive ? mae?.id ?? null : null);
 
   const [comunicadoOpen, setComunicadoOpen] = useState(false);
   const [comunicadoTexto, setComunicadoTexto] = useState("");
@@ -207,23 +209,28 @@ Qualquer dúvida estamos à disposição!`;
 
   if (!mae) return null;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl w-[98vw] max-h-[95vh] overflow-hidden p-0">
-        <DialogHeader className="px-6 pt-6 pb-2">
-          <DialogTitle className="flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-primary" />
-            Central Financeira da Amor — {mae.nome_mae}
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Calculadora, projeção de saque, boletos e comunicados da mãe.
-          </p>
-        </DialogHeader>
+  const body = (
+    <>
+      <div className={inline ? "mb-4" : "px-6 pt-6 pb-2"}>
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <Wallet className="h-5 w-5 text-primary" />
+          Central Financeira da Amor — {mae.nome_mae}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Calculadora, projeção de saque, boletos e comunicados da mãe.
+        </p>
+      </div>
 
-        <div className="grid lg:grid-cols-[1fr_360px] gap-4 px-6 pb-6 overflow-y-auto max-h-[calc(95vh-80px)]">
-          {/* PRINCIPAL */}
-          <div className="space-y-4">
-            {/* Dados da cliente */}
+      <div
+        className={
+          inline
+            ? "grid lg:grid-cols-[1fr_360px] gap-4"
+            : "grid lg:grid-cols-[1fr_360px] gap-4 px-6 pb-6 overflow-y-auto max-h-[calc(95vh-80px)]"
+        }
+      >
+        {/* PRINCIPAL */}
+        <div className="space-y-4">
+          {/* Dados da cliente */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Dados da cliente</CardTitle>
@@ -477,6 +484,17 @@ Qualquer dúvida estamos à disposição!`;
             </div>
           </DialogContent>
         </Dialog>
+    </>
+  );
+
+  if (inline) {
+    return <div className="w-full">{body}</div>;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-7xl w-[98vw] max-h-[95vh] overflow-hidden p-0">
+        {body}
       </DialogContent>
     </Dialog>
   );
