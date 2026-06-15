@@ -90,53 +90,56 @@ serve(async (req) => {
     const body: AnyObj = await req.json();
     console.log("ZAP webhook payload:", JSON.stringify(body));
 
-    // Custom fields object (try common names)
-    const customFields: AnyObj =
-      (firstDefined(body, ["custom_fields", "fields", "campos", "card.custom_fields", "card.fields", "data.custom_fields", "data.fields"]) as AnyObj) || {};
-    if (customFields && Object.keys(customFields).length > 0) {
-      console.log("ZAP custom fields:", JSON.stringify(customFields));
+    // Event type guard
+    if (body.type && body.type !== "crm_card_moved") {
+      console.log("zap-handoff: ignored, type =", body.type);
+      return new Response(JSON.stringify({ ignored: true, reason: "event_type" }), {
+        status: 200,
+        headers: jsonHeaders,
+      });
     }
 
+    const card: AnyObj = body.card ?? {};
+
     // Stage filter: only proceed if stage contains "contrato fechado" (case-insensitive)
-    const stageRaw = firstDefined(body, ["stage", "stage_name", "column", "status", "card.stage", "data.stage"]);
-    const stage = typeof stageRaw === "string" ? stageRaw : (stageRaw && typeof stageRaw === "object" ? String((stageRaw as AnyObj).name ?? "") : String(stageRaw ?? ""));
-    if (!stage.toLowerCase().includes("contrato fechado")) {
-      console.log("zap-handoff: ignored, stage =", stage);
+    const stageName = typeof card.stage?.name === "string" ? card.stage.name : "";
+    if (!stageName.toLowerCase().includes("contrato fechado")) {
+      console.log("zap-handoff: ignored, stage =", stageName);
       return new Response(JSON.stringify({ ignored: true, reason: "stage_not_contrato_fechado" }), {
         status: 200,
         headers: jsonHeaders,
       });
     }
 
-    // Defensive extraction (also look inside custom fields)
-    const pick = (paths: string[], cfKeys: string[] = []): unknown => {
-      const fromBody = firstDefined(body, paths);
-      if (fromBody !== undefined) return fromBody;
-      return firstDefined(customFields, cfKeys);
-    };
+    const cardId = typeof card.cardId === "string" ? card.cardId.trim() : null;
 
-    const cardIdRaw = pick(["id", "card_id", "card.id", "data.card.id"]);
-    const cardId = cardIdRaw !== undefined ? String(cardIdRaw) : null;
+    const contacts = Array.isArray(card.contacts) ? card.contacts : [];
+    const contact: AnyObj = contacts[0] ?? {};
 
-    const nameRaw = pick(["name", "contact_name", "card.name", "contact.name"], ["name", "nome"]);
-    const name = typeof nameRaw === "string" ? nameRaw.trim() : "";
+    const title = typeof card.title === "string" ? card.title.trim() : "";
+    const name = title || (typeof contact.name === "string" ? contact.name.trim() : "");
 
-    const phoneRaw = pick(["phone", "whatsapp", "telefone", "contact.phone", "card.phone"], ["phone", "whatsapp", "telefone"]);
-    const phone = phoneRaw !== undefined ? String(phoneRaw).trim() : "";
+    const phone = typeof contact.chatId === "string" ? contact.chatId.trim() : "";
 
-    const cpfRaw = pick(["cpf", "CPF"], ["cpf", "CPF"]);
+    const emailRaw = typeof contact.email === "string" ? contact.email.trim() : null;
+    const email = emailRaw && emailRaw.length > 0 ? emailRaw : null;
+
+    const additionalFields: AnyObj = card.additionalFields ?? {};
+    console.log("ZAP additionalFields:", JSON.stringify(additionalFields));
+
+    const cpfRaw = firstDefined(additionalFields, ["cpf", "CPF"]);
     const cpf = cpfRaw !== undefined ? String(cpfRaw).replace(/\D/g, "") : "";
 
-    const senhaGovRaw = pick(["senha_gov", "Senha Gov", "senhaGov"], ["senha_gov", "Senha Gov", "senhaGov"]);
+    const senhaGovRaw = firstDefined(additionalFields, ["senha_gov", "Senha Gov", "senhaGov"]);
     const senhaGov = senhaGovRaw !== undefined ? String(senhaGovRaw).trim() : null;
 
-    const gestanteRaw = pick(["gestante", "Gestante"], ["gestante", "Gestante"]);
+    const gestanteRaw = firstDefined(additionalFields, ["gestante", "Gestante"]);
     const isGestante = gestanteRaw !== undefined ? toBool(gestanteRaw) : false;
 
-    const valorRaw = pick(["valor", "value", "amount"], ["valor", "value", "amount"]);
+    const valorRaw = firstDefined(additionalFields, ["valor", "value"]);
     const valor = valorRaw !== undefined ? toNumber(valorRaw) : null;
 
-    const mesGestacaoRaw = pick(["mes_gestacao", "Mês de gestação"], ["mes_gestacao", "Mês de gestação"]);
+    const mesGestacaoRaw = firstDefined(additionalFields, ["mes_gestacao", "Mês de gestação"]);
     const mesGestacaoNum = mesGestacaoRaw !== undefined ? toNumber(mesGestacaoRaw) : null;
     const mesGestacao = mesGestacaoNum !== null && mesGestacaoNum >= 1 && mesGestacaoNum <= 10 ? Math.round(mesGestacaoNum) : null;
 
