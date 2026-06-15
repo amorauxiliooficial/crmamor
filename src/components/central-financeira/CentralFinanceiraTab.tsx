@@ -18,8 +18,7 @@ interface Props {
 
 export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
   const [subTab, setSubTab] = useState("pagamentos");
-  const { maesQuery } = useMaesData();
-  const maes = (maesQuery.data || []) as MaeProcesso[];
+  const { maes, loading } = useMaesData();
   const [localSearch, setLocalSearch] = useState("");
   const [selectedMae, setSelectedMae] = useState<MaeProcesso | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -29,7 +28,7 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
     if (!q) return maes;
     return maes.filter(
       (m) =>
-        m.nome_completo?.toLowerCase().includes(q) ||
+        m.nome_mae?.toLowerCase().includes(q) ||
         (m.cpf || "").replace(/\D/g, "").includes(q.replace(/\D/g, ""))
     );
   }, [maes, localSearch, searchQuery]);
