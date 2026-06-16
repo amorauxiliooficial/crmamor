@@ -1,0 +1,1 @@
+DELETE FROM public.mae_processo WHERE id='204431c9-281b-4275-bb77-7abf81ec9dd4';
