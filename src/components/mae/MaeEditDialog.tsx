@@ -547,7 +547,12 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                     <SelectItem value="Guarda judicial">Guarda judicial</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+          </div>
+
+          {/* Endereço */}
+          <AddressFields value={address} onChange={setAddress} />
+
+
               <div className="space-y-2">
                 <Label htmlFor="data_evento">Data do Evento</Label>
                 <Input
