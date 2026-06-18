@@ -1,84 +1,75 @@
 
-# Forecast TV — Padrão Corporativo AAM
+# Histórico de Observações da Mãe
 
-Objetivo: transformar `/forecast/tv` em um painel que pareça de uma empresa grande (tipo war room da Bloomberg / Stripe / Linear), usando a identidade visual que já existe no resto do sistema. Vira referência prática: "é assim que a AAM mostra resultado".
+Substituir o campo único "Observações" (texto solto + modal) por um **histórico cronológico de anotações** exibido direto na tela de detalhes da mãe, sem abrir modal.
 
----
+## O que muda na experiência
 
-## 1. Identidade visual (alinhar com o resto do app)
+1. **Sem modal**: bloco "Observações & Histórico" passa a ficar embutido na própria página de detalhes da mãe (logo abaixo dos dados, como na imagem que você mandou), expandindo conforme o histórico cresce.
+2. **Cada anotação é uma entrada independente** com:
+   - Texto da observação
+   - Autor (atendente que escreveu)
+   - Data e hora exatas
+   - Tag/categoria (Ligação, WhatsApp, Documento, Reunião, Outro)
+   - Indicador "📌 Fixada" quando marcada como importante
+3. **Campo de nova anotação** sempre visível no topo: caixa de texto + seletor de categoria + botão "Adicionar". Nada sobrescreve o histórico — cada clique gera nova entrada com timestamp.
+4. **Anotações fixadas aparecem no topo** (acima do feed cronológico), com destaque visual, para informações críticas que o time precisa ver primeiro.
+5. **Editar / excluir** com log: ao editar, fica registrado "editado por X em DD/MM HH:MM"; ao excluir, soft-delete preservando o registro de quem apagou.
+6. **Busca e filtros** no topo do histórico:
+   - Campo de busca textual
+   - Filtro por categoria (tags)
+   - Filtro por autor
+   - Filtro por período (data inicial/final)
 
-Hoje o TV usa rose/amber/sky/emerald genéricos e `font-serif`. Vamos puxar o que já existe no `index.css`:
+## Layout proposto (inline, sem modal)
 
-- **Cor primária**: Magenta AAM (`hsl(333 71% 50%)`) como única cor de marca. Aparece em: número do gap, barra de progresso da meta, "AO VIVO", acento da fase ativa.
-- **Tons de fase**: trocar rose/amber/sky/emerald por tokens semânticos do app (`--muted`, `--primary`, `--success` etc.) com opacidade. Mantém hierarquia sem ficar parecendo arco-íris.
-- **Tipografia**:
-  - Display (número do gap, métricas grandes) → **Merriweather** (já usado em headings premium do CRM).
-  - UI/labels → **Poppins**.
-  - Números, timestamps, IDs, deltas → **JetBrains Mono** (sensação de terminal financeiro).
-- **Logo AAM** discreto no header (canto esquerdo, ao lado de "Forecast · Modo TV"), reforçando que é um painel oficial da empresa.
+```text
+┌─ Observações & Histórico ──────────────────────────┐
+│ [+ Nova anotação ▾ Categoria ] [Adicionar]        │
+│                                                    │
+│ 🔎 Buscar...  [Categoria ▾] [Autor ▾] [Período ▾] │
+│                                                    │
+│ ── 📌 Fixadas ─────────────────────────────────── │
+│ 📌 [WhatsApp] Cliente confirmou docs              │
+│    Maria Silva · 18/06/2026 14:32     [✏️] [🗑️] │
+│                                                    │
+│ ── Histórico ──────────────────────────────────── │
+│ [Ligação] Liguei para cliente dia 19/04           │
+│    João · 17/06/2026 09:15 (editado)  [✏️] [🗑️] │
+│ [Documento] Recebi CNIS por e-mail                │
+│    Ana · 15/06/2026 16:40             [✏️] [🗑️] │
+│ ...                                                │
+└────────────────────────────────────────────────────┘
+```
 
-## 2. Elementos novos de "empresa grande"
+Antes de salvar uma edição/exclusão, mostro um pequeno preview/confirmação (atendendo seu pedido de "ver a tela antes de alterar").
 
-Coisas que painéis corporativos sérios têm e que dão credibilidade:
+## Migração dos dados atuais
 
-### a) Cabeçalho institucional
-- Logo AAM + nome do painel + "Sala de Operações" (subtítulo).
-- Versão do painel + ID da sessão em mono (ex.: `FORECAST v2.3 · SID 8F2A`).
-- Timestamp completo com timezone (`30 mai 2026 · 14:32:07 BRT`).
-- "AO VIVO" com LED magenta pulsando + frequência de atualização (`refresh 30s`).
+O texto atual no campo `observacoes` da `mae_processo` será convertido automaticamente em **uma primeira entrada de histórico** por mãe, com:
+- Categoria: "Importado"
+- Autor: "Sistema" (já que não temos o autor original)
+- Data: `data_ultima_atualizacao` da mãe
+Assim nada se perde.
 
-### b) Barra de meta do mês (faltava)
-- Barra horizontal grande logo abaixo do hero: `realizado / meta` com % e ETA.
-- Marcador de "onde deveríamos estar hoje" (linha vertical pace) — visual de gestão por OKR.
+## Detalhes técnicos
 
-### c) Tira de KPIs executivos
-Trocar os 4 mini-cards atuais por uma régua editorial (estilo painel de aeroporto):
-- **Pipeline ajustado** (valor ponderado por probabilidade)
-- **Velocidade** (R$/dia nos últimos 7d) com delta vs 7d anteriores
-- **Conversão Entrada → Aprovada** (%)
-- **Tempo médio em análise INSS** (dias)
-- **Ticket médio** aprovado no mês
+- **Nova tabela** `mae_observacoes`:
+  - `mae_id` (FK), `autor_id` (FK profiles), `autor_nome` (snapshot),
+  - `texto`, `categoria` (enum: ligacao, whatsapp, documento, reuniao, importado, outro),
+  - `fixada` (bool), `editada_em`, `editada_por`,
+  - `excluida_em`, `excluida_por` (soft delete),
+  - `created_at`, `updated_at`.
+  - RLS: leitura para `authenticated` (mantém "todo mundo vê tudo"); insert/update apenas pelo próprio autor ou admin; service_role total.
+  - GRANTs padrão (`authenticated`, `service_role`).
+  - Trigger `update_mae_ultima_atividade` reaproveitada para refletir atividade na mãe.
+- **Backfill** via migration: insere 1 linha em `mae_observacoes` para cada `mae_processo` com `observacoes` não vazio.
+- **Componente novo** `src/components/mae/ObservacoesHistorico.tsx` (inline, sem Dialog), substituindo o uso atual do modal de observações dentro de `MaeDetailDialog`/`MaeEditDialog`.
+- Hooks: `useMaeObservacoes(maeId)` com React Query + realtime subscription, seguindo o padrão já usado no projeto.
+- Campo legado `mae_processo.observacoes` permanece por enquanto (apenas leitura, oculto da UI) para não quebrar nada — pode ser removido depois.
 
-Cada KPI com mini-delta em mono (`▲ 12,4%` / `▼ 3,1%`) e cor semântica suave.
+## Fora de escopo (posso fazer depois se quiser)
 
-### d) Cards de fase (manter, refinar)
-- Borda gradiente sutil só na fase ativa/destaque.
-- Adicionar "responsável" implícito: contagem de mães + ticket médio da fase.
-- Sparkline em magenta translúcido (não 4 cores diferentes).
-
-### e) Rodapé corporativo
-- "Amor Auxílio Maternidade · Painel de Comando" + status do sistema (`ops · nominal`) + última sincronização.
-- Aviso: "Dados internos — não compartilhar".
-
-### f) Rotação / modo apresentação (opcional, fora deste plano)
-Anotado para depois: rotação automática entre views (forecast → ranking → SLA). Não entra agora.
-
-## 3. Movimento e ritmo
-
-- Transição entre valores: 600ms `cubic-bezier(0.22, 1, 0.36, 1)` (já tem).
-- Aurora de fundo: manter, **trocar para magenta + carvão** (hoje usa magenta + charcoal genérico, vamos amarrar com `--primary` do tema).
-- Pulse do "AO VIVO": magenta, não verde — assina a marca.
-- Sem scanline (já removida).
-
-## 4. Escopo técnico
-
-**Arquivo único**: `src/pages/ForecastTV.tsx`.
-
-- Substituir paleta hardcoded (`rose-400`, `amber-400`, etc.) por classes baseadas em tokens (`text-primary`, `text-muted-foreground`, `bg-primary/10`).
-- Trocar `font-serif` por `font-serif` confirmando que aponta pra Merriweather no `tailwind.config.ts` (verificar) e usar `font-mono` (JetBrains) nos números pequenos/deltas/timestamps.
-- Adicionar componentes locais:
-  - `<GoalBar realizado meta />`
-  - `<KpiStrip items={[...]} />` (5 KPIs)
-  - `<BrandHeader />` com logo
-  - `<BrandFooter />`
-- Importar logo de `src/assets/logo-aam.png` (verificar caminho real).
-- Cálculos dos novos KPIs (velocidade, conversão, ticket médio, tempo médio INSS) saem do mesmo `usePipelineForecast()` — se faltar campo, deixar placeholder com `—` e nota `// TODO: hook expor X` (sem mexer no hook agora).
-
-**Fora de escopo**:
-- Mudar dados/backend.
-- Rotação automática de views.
-- Criar um "modo TV" para outras telas (vira projeto separado depois).
-
----
-
-Confirma que faz sentido assim que eu implemento. Se quiser cortar algum item (ex.: KPI strip com 5 itens é muito), me diz qual fica de fora.
+- Anexar arquivos/imagens nas anotações
+- Menções @atendente com notificação
+- Exportar histórico em PDF
