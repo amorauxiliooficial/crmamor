@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
+import { ObservacoesHistorico } from "@/components/mae/ObservacoesHistorico";
 
 interface MaeDetailDialogProps {
   mae: MaeProcesso | null;
