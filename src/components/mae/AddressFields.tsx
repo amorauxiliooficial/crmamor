@@ -78,8 +78,8 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
         <MapPin className="h-4 w-4" />
         Endereço
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-        <div className="space-y-2 md:col-span-2">
+      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+        <div className="space-y-1.5 col-span-2">
           <Label htmlFor="cep">CEP</Label>
           <div className="relative">
             <Input
@@ -96,11 +96,11 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
             )}
           </div>
           <p className="text-[10px] text-muted-foreground">
-            Digite o CEP para preencher automaticamente
+            Digite o CEP para preencher
           </p>
         </div>
 
-        <div className="space-y-2 md:col-span-3">
+        <div className="space-y-1.5 col-span-2 sm:col-span-3">
           <Label htmlFor="endereco">Rua / Logradouro</Label>
           <Input
             id="endereco"
@@ -111,7 +111,7 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
           />
         </div>
 
-        <div className="space-y-2 md:col-span-1">
+        <div className="space-y-1.5 col-span-2 sm:col-span-1">
           <Label htmlFor="numero">Número</Label>
           <Input
             id="numero"
@@ -122,7 +122,7 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
           />
         </div>
 
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-1.5 col-span-2 sm:col-span-3">
           <Label htmlFor="complemento">Complemento</Label>
           <Input
             id="complemento"
@@ -133,7 +133,7 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
           />
         </div>
 
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-1.5 col-span-2 sm:col-span-3">
           <Label htmlFor="bairro">Bairro</Label>
           <Input
             id="bairro"
@@ -144,7 +144,7 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
           />
         </div>
 
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-1.5 col-span-2 sm:col-span-4">
           <Label htmlFor="cidade">Cidade</Label>
           <Input
             id="cidade"
@@ -155,7 +155,7 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
           />
         </div>
 
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-1.5 col-span-2 sm:col-span-2">
           <Label htmlFor="uf">UF</Label>
           <Select
             value={value.uf}
