@@ -35,6 +35,7 @@ const formatCep = (raw: string) => {
 
 export function AddressFields({ value, onChange, disabled }: AddressFieldsProps) {
   const [loading, setLoading] = useState(false);
+  const [cepGenerico, setCepGenerico] = useState(false);
 
   const lookupCep = async (cepRaw: string) => {
     const digits = cepRaw.replace(/\D/g, "");
@@ -45,8 +46,11 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
       const data = await res.json();
       if (data?.erro) {
         toast.error("CEP não encontrado");
+        setCepGenerico(false);
         return;
       }
+      const generico = !data.logradouro && !data.bairro;
+      setCepGenerico(generico);
       onChange({
         ...value,
         cep: formatCep(digits),
@@ -55,7 +59,11 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
         cidade: data.localidade || value.cidade,
         uf: data.uf || value.uf,
       });
-      toast.success("Endereço preenchido pelo CEP");
+      if (generico) {
+        toast.warning("CEP único da cidade — preencha rua e bairro manualmente");
+      } else {
+        toast.success("Endereço preenchido pelo CEP");
+      }
     } catch {
       toast.error("Erro ao buscar CEP");
     } finally {
@@ -69,6 +77,8 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
     const digits = formatted.replace(/\D/g, "");
     if (digits.length === 8) {
       lookupCep(digits);
+    } else {
+      setCepGenerico(false);
     }
   };
 
@@ -101,13 +111,17 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
         </div>
 
         <div className="space-y-1.5 col-span-2 sm:col-span-3">
-          <Label htmlFor="endereco">Rua / Logradouro</Label>
+          <Label htmlFor="endereco">
+            Rua / Logradouro
+            {cepGenerico && <span className="text-amber-500 ml-1">*</span>}
+          </Label>
           <Input
             id="endereco"
             value={value.endereco}
             onChange={(e) => onChange({ ...value, endereco: e.target.value })}
-            placeholder="Preenchido pelo CEP"
+            placeholder={cepGenerico ? "Digite a rua" : "Preenchido pelo CEP"}
             disabled={disabled}
+            className={cepGenerico && !value.endereco ? "border-amber-500" : ""}
           />
         </div>
 
@@ -134,13 +148,17 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
         </div>
 
         <div className="space-y-1.5 col-span-2 sm:col-span-3">
-          <Label htmlFor="bairro">Bairro</Label>
+          <Label htmlFor="bairro">
+            Bairro
+            {cepGenerico && <span className="text-amber-500 ml-1">*</span>}
+          </Label>
           <Input
             id="bairro"
             value={value.bairro}
             onChange={(e) => onChange({ ...value, bairro: e.target.value })}
-            placeholder="Preenchido pelo CEP"
+            placeholder={cepGenerico ? "Digite o bairro" : "Preenchido pelo CEP"}
             disabled={disabled}
+            className={cepGenerico && !value.bairro ? "border-amber-500" : ""}
           />
         </div>
 
