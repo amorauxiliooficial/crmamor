@@ -14,6 +14,7 @@ import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { normalizePhoneToE164BR } from "@/lib/phoneUtils";
 import { PhoneContactsEditor, PhoneEntry } from "@/components/mae/PhoneContactsEditor";
 import { useMotherContactActions } from "@/hooks/useMotherContacts";
+import { AddressFields, AddressValue, emptyAddress } from "@/components/mae/AddressFields";
 
 interface MaeFormDialogProps {
   open: boolean;
@@ -117,6 +118,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [phones, setPhones] = useState<PhoneEntry[]>([{ value: "", isPrimary: true }]);
+  const [address, setAddress] = useState<AddressValue>(emptyAddress);
   const { addContact } = useMotherContactActions();
 
   const [formData, setFormData] = useState<MaeFormData>(getEmptyFormData);
@@ -126,6 +128,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
     if (open) {
       setFormData(getEmptyFormData());
       setPhones([{ value: "", isPrimary: true }]);
+      setAddress(emptyAddress());
     }
   }, [open]);
 
@@ -207,7 +210,13 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
       data_evento_tipo: formData.data_evento_tipo === "none" ? "" : formData.data_evento_tipo,
       categoria_previdenciaria: formData.categoria_previdenciaria,
       contrato_assinado: formData.contrato_assinado,
-      uf: formData.uf || null,
+      uf: address.uf || formData.uf || null,
+      cep: address.cep || null,
+      endereco: address.endereco || null,
+      numero: address.numero || null,
+      complemento: address.complemento || null,
+      bairro: address.bairro || null,
+      cidade: address.cidade || null,
       origem: formData.origem || null,
       observacoes: formData.observacoes || null,
       senha_gov: formData.senha_gov || null,
@@ -332,22 +341,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
                   placeholder="email@exemplo.com"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="uf">UF</Label>
-                <Select
-                  value={formData.uf}
-                  onValueChange={(value) => setFormData({ ...formData, uf: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {UF_OPTIONS.map((uf) => (
-                      <SelectItem key={uf} value={uf}>{uf}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* UF agora vive dentro da seção de Endereço abaixo */}
               <div className="space-y-2">
                 <Label htmlFor="origem">Origem</Label>
                 <Input
@@ -403,7 +397,12 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
                     <SelectItem value="Guarda judicial">Guarda judicial</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+          </div>
+
+          {/* Endereço */}
+          <AddressFields value={address} onChange={setAddress} />
+
+
               <div className="space-y-2">
                 <Label htmlFor="data_evento">Data do Evento</Label>
                 <Input

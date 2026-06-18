@@ -52,6 +52,11 @@ export interface MaeProcesso {
   created_at?: string;
   link_documentos?: string | null;
   cep?: string | null;
+  endereco?: string | null;
+  numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
   precisa_das: boolean;
   das_concluido: boolean;
   ja_trabalhou?: boolean;

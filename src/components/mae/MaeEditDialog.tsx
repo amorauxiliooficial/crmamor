@@ -18,6 +18,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { MultiAtendentesSelect } from "@/components/mae/MultiAtendentesSelect";
 import { PhoneContactsEditor, PhoneEntry } from "@/components/mae/PhoneContactsEditor";
 import { useMotherContacts, useMotherContactActions } from "@/hooks/useMotherContacts";
+import { AddressFields, AddressValue, emptyAddress } from "@/components/mae/AddressFields";
 
 interface MaeEditDialogProps {
   mae: MaeProcesso | null;
@@ -50,6 +51,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
   const [selectedAtendentes, setSelectedAtendentes] = useState<string[]>([]);
   const [originalAtendentes, setOriginalAtendentes] = useState<string[]>([]);
   const [phones, setPhones] = useState<PhoneEntry[]>([]);
+  const [address, setAddress] = useState<AddressValue>(emptyAddress);
 
   // Load existing contacts
   const { data: existingContacts } = useMotherContacts(mae?.id ?? null);
@@ -180,6 +182,15 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       });
       // Always set selectedUserId when mae data loads
       setSelectedUserId(mae.user_id || "");
+      setAddress({
+        cep: mae.cep || "",
+        endereco: (mae as any).endereco || "",
+        numero: (mae as any).numero || "",
+        complemento: (mae as any).complemento || "",
+        bairro: (mae as any).bairro || "",
+        cidade: (mae as any).cidade || "",
+        uf: mae.uf || "",
+      });
     }
   }, [mae, open]);
 
@@ -246,7 +257,13 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       contrato_assinado: formData.contrato_assinado,
       segurada: formData.segurada || null,
       precisa_gps: formData.precisa_gps || null,
-      uf: formData.uf || null,
+      uf: address.uf || formData.uf || null,
+      cep: address.cep || null,
+      endereco: address.endereco || null,
+      numero: address.numero || null,
+      complemento: address.complemento || null,
+      bairro: address.bairro || null,
+      cidade: address.cidade || null,
       origem: formData.origem || null,
       observacoes: formData.observacoes || null,
       senha_gov: formData.senha_gov || null,
@@ -475,22 +492,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                   placeholder="email@exemplo.com"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="uf">UF</Label>
-                <Select
-                  value={formData.uf}
-                  onValueChange={(value) => setFormData({ ...formData, uf: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {UF_OPTIONS.map((uf) => (
-                      <SelectItem key={uf} value={uf}>{uf}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* UF agora vive dentro da seção de Endereço abaixo */}
               <div className="space-y-2">
                 <Label htmlFor="origem">Origem</Label>
                 <Input
@@ -545,7 +547,12 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                     <SelectItem value="Guarda judicial">Guarda judicial</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+          </div>
+
+          {/* Endereço */}
+          <AddressFields value={address} onChange={setAddress} />
+
+
               <div className="space-y-2">
                 <Label htmlFor="data_evento">Data do Evento</Label>
                 <Input

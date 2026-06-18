@@ -1262,8 +1262,11 @@ export type Database = {
       }
       mae_processo: {
         Row: {
+          bairro: string | null
           categoria_previdenciaria: Database["public"]["Enums"]["categoria_previdenciaria"]
           cep: string | null
+          cidade: string | null
+          complemento: string | null
           contato_nome_1: string | null
           contato_nome_2: string | null
           contato_nome_3: string | null
@@ -1280,6 +1283,7 @@ export type Database = {
             | null
           data_ultima_atualizacao: string
           email: string | null
+          endereco: string | null
           id: string
           is_gestante: boolean
           ja_trabalhou: boolean | null
@@ -1287,6 +1291,7 @@ export type Database = {
           link_documentos: string | null
           mes_gestacao: number | null
           nome_mae: string
+          numero: string | null
           observacoes: string | null
           origem: string | null
           parcelas: string | null
@@ -1309,8 +1314,11 @@ export type Database = {
           zap_card_id: string | null
         }
         Insert: {
+          bairro?: string | null
           categoria_previdenciaria?: Database["public"]["Enums"]["categoria_previdenciaria"]
           cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
           contato_nome_1?: string | null
           contato_nome_2?: string | null
           contato_nome_3?: string | null
@@ -1327,6 +1335,7 @@ export type Database = {
             | null
           data_ultima_atualizacao?: string
           email?: string | null
+          endereco?: string | null
           id?: string
           is_gestante?: boolean
           ja_trabalhou?: boolean | null
@@ -1334,6 +1343,7 @@ export type Database = {
           link_documentos?: string | null
           mes_gestacao?: number | null
           nome_mae: string
+          numero?: string | null
           observacoes?: string | null
           origem?: string | null
           parcelas?: string | null
@@ -1356,8 +1366,11 @@ export type Database = {
           zap_card_id?: string | null
         }
         Update: {
+          bairro?: string | null
           categoria_previdenciaria?: Database["public"]["Enums"]["categoria_previdenciaria"]
           cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
           contato_nome_1?: string | null
           contato_nome_2?: string | null
           contato_nome_3?: string | null
@@ -1374,6 +1387,7 @@ export type Database = {
             | null
           data_ultima_atualizacao?: string
           email?: string | null
+          endereco?: string | null
           id?: string
           is_gestante?: boolean
           ja_trabalhou?: boolean | null
@@ -1381,6 +1395,7 @@ export type Database = {
           link_documentos?: string | null
           mes_gestacao?: number | null
           nome_mae?: string
+          numero?: string | null
           observacoes?: string | null
           origem?: string | null
           parcelas?: string | null
