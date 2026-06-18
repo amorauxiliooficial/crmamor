@@ -236,6 +236,56 @@ export function MaeDetailDialog({
             </>
           )}
 
+          {/* Endereço */}
+          {(() => {
+            const a = mae as any;
+            const enderecoCompleto = buildEnderecoCompleto({
+              cep: mae.cep ?? undefined,
+              endereco: a.endereco,
+              numero: a.numero,
+              complemento: a.complemento,
+              bairro: a.bairro,
+              cidade: a.cidade,
+              uf: mae.uf,
+            });
+            if (!enderecoCompleto) return null;
+            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
+            return (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Endereço
+                    </h4>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 gap-1.5 text-xs"
+                        onClick={() => copyToClipboard(enderecoCompleto, "Endereço")}
+                      >
+                        <Copy className="h-3 w-3" /> Copiar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 gap-1.5 text-xs"
+                        asChild
+                      >
+                        <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-3 w-3" /> Mapa
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{enderecoCompleto}</p>
+                </div>
+              </>
+            );
+          })()}
+
           {/* Observações & Histórico */}
           <Separator />
           <ObservacoesHistorico maeId={mae.id} />
