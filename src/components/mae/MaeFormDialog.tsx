@@ -118,6 +118,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [phones, setPhones] = useState<PhoneEntry[]>([{ value: "", isPrimary: true }]);
+  const [address, setAddress] = useState<AddressValue>(emptyAddress);
   const { addContact } = useMotherContactActions();
 
   const [formData, setFormData] = useState<MaeFormData>(getEmptyFormData);
