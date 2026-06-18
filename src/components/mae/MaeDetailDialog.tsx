@@ -31,6 +31,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
 import { ObservacoesHistorico } from "@/components/mae/ObservacoesHistorico";
+import { buildEnderecoCompleto } from "@/components/mae/AddressFields";
+import { ExternalLink } from "lucide-react";
 
 interface MaeDetailDialogProps {
   mae: MaeProcesso | null;
