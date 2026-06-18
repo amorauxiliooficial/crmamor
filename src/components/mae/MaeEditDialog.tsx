@@ -51,6 +51,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
   const [selectedAtendentes, setSelectedAtendentes] = useState<string[]>([]);
   const [originalAtendentes, setOriginalAtendentes] = useState<string[]>([]);
   const [phones, setPhones] = useState<PhoneEntry[]>([]);
+  const [address, setAddress] = useState<AddressValue>(emptyAddress);
 
   // Load existing contacts
   const { data: existingContacts } = useMotherContacts(mae?.id ?? null);
