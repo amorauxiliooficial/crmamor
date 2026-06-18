@@ -450,6 +450,10 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
             </div>
           </div>
 
+          {/* Endereço */}
+          <AddressFields value={address} onChange={setAddress} />
+
+
           {/* Gestante */}
           <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg">
             <div>
