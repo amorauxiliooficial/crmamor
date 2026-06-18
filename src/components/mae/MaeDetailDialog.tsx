@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
+import { ObservacoesHistorico } from "@/components/mae/ObservacoesHistorico";
 
 interface MaeDetailDialogProps {
   mae: MaeProcesso | null;
@@ -233,21 +234,9 @@ export function MaeDetailDialog({
             </>
           )}
 
-          {/* Observações */}
-          {mae.observacoes && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <h4 className="font-semibold flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  Observações
-                </h4>
-                <p className="text-sm bg-accent/50 p-3 rounded-lg">
-                  {mae.observacoes}
-                </p>
-              </div>
-            </>
-          )}
+          {/* Observações & Histórico */}
+          <Separator />
+          <ObservacoesHistorico maeId={mae.id} />
 
           {/* Metadata */}
           <Separator />

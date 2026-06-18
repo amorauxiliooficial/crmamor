@@ -1204,6 +1204,62 @@ export type Database = {
           },
         ]
       }
+      mae_observacoes: {
+        Row: {
+          autor_id: string | null
+          autor_nome: string
+          categoria: Database["public"]["Enums"]["observacao_categoria"]
+          created_at: string
+          editada_em: string | null
+          editada_por: string | null
+          excluida_em: string | null
+          excluida_por: string | null
+          fixada: boolean
+          id: string
+          mae_id: string
+          texto: string
+          updated_at: string
+        }
+        Insert: {
+          autor_id?: string | null
+          autor_nome?: string
+          categoria?: Database["public"]["Enums"]["observacao_categoria"]
+          created_at?: string
+          editada_em?: string | null
+          editada_por?: string | null
+          excluida_em?: string | null
+          excluida_por?: string | null
+          fixada?: boolean
+          id?: string
+          mae_id: string
+          texto: string
+          updated_at?: string
+        }
+        Update: {
+          autor_id?: string | null
+          autor_nome?: string
+          categoria?: Database["public"]["Enums"]["observacao_categoria"]
+          created_at?: string
+          editada_em?: string | null
+          editada_por?: string | null
+          excluida_em?: string | null
+          excluida_por?: string | null
+          fixada?: boolean
+          id?: string
+          mae_id?: string
+          texto?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mae_observacoes_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mae_processo: {
         Row: {
           categoria_previdenciaria: Database["public"]["Enums"]["categoria_previdenciaria"]
@@ -2706,6 +2762,13 @@ export type Database = {
         | "correcao_dados"
         | "atualizacao_cnis"
         | "solicitacao_manual"
+      observacao_categoria:
+        | "ligacao"
+        | "whatsapp"
+        | "documento"
+        | "reuniao"
+        | "importado"
+        | "outro"
       resultado_final: "APROVADA" | "REPROVADA"
       status_pre_analise:
         | "aprovada"
@@ -2901,6 +2964,14 @@ export const Constants = {
         "correcao_dados",
         "atualizacao_cnis",
         "solicitacao_manual",
+      ],
+      observacao_categoria: [
+        "ligacao",
+        "whatsapp",
+        "documento",
+        "reuniao",
+        "importado",
+        "outro",
       ],
       resultado_final: ["APROVADA", "REPROVADA"],
       status_pre_analise: [
