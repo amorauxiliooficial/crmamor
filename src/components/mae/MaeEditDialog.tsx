@@ -220,7 +220,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     const dbStatusValue = mapDisplayStatusToDb(formData.status_processo) as 
       "Gestantes 1 a 8 meses" | "Entradas do Mês" |
       "Aguardando Análise INSS" | "Aprovada" | "Indeferida" | 
-      "Recurso / Judicial" | "Inadimplência" | "Renegociação" |
+      "Recurso / Judicial" | "Inadimplência" | "Negativação" | "Renegociação" |
       "Rescisão de Contrato" | "Processo Encerrado";
 
     // Build update object - sync primary phone to mae_processo
