@@ -341,22 +341,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
                   placeholder="email@exemplo.com"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="uf">UF</Label>
-                <Select
-                  value={formData.uf}
-                  onValueChange={(value) => setFormData({ ...formData, uf: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {UF_OPTIONS.map((uf) => (
-                      <SelectItem key={uf} value={uf}>{uf}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* UF agora vive dentro da seção de Endereço abaixo */}
               <div className="space-y-2">
                 <Label htmlFor="origem">Origem</Label>
                 <Input
