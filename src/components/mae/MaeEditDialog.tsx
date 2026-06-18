@@ -18,6 +18,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { MultiAtendentesSelect } from "@/components/mae/MultiAtendentesSelect";
 import { PhoneContactsEditor, PhoneEntry } from "@/components/mae/PhoneContactsEditor";
 import { useMotherContacts, useMotherContactActions } from "@/hooks/useMotherContacts";
+import { AddressFields, AddressValue, emptyAddress } from "@/components/mae/AddressFields";
 
 interface MaeEditDialogProps {
   mae: MaeProcesso | null;
