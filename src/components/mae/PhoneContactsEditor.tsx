@@ -20,7 +20,12 @@ interface PhoneContactsEditorProps {
 }
 
 const formatPhone = (value: string) => {
-  const numbers = value.replace(/\D/g, "").slice(0, 11);
+  let numbers = value.replace(/\D/g, "");
+  // Strip Brazil country code if pasted (e.g., "+55 83 ...")
+  if (numbers.length >= 12 && numbers.startsWith("55")) {
+    numbers = numbers.slice(2);
+  }
+  numbers = numbers.slice(0, 11);
   if (numbers.length <= 10) {
     return numbers
       .replace(/(\d{2})(\d)/, "($1) $2")
