@@ -83,6 +83,7 @@ export const STATUS_ORDER: StatusProcesso[] = [
   "❌ Indeferida",
   "⚖️ Recurso / Judicial",
   "💳 Inadimplência",
+  "🚫 Negativação",
   "🤝 Renegociação",
   "📄 Rescisão de Contrato",
   "📦 Processo Encerrado",
