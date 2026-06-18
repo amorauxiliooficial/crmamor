@@ -118,9 +118,11 @@ export default function Index() {
 
   const handleStatusChange = useCallback(
     async (maeId: string, newStatus: StatusProcesso) => {
-      // Map display status to db status (remove emoji prefix)
+      // Map display status to db status (remove emoji prefix).
+      // Exception: "📄 Rescisão de Contrato" is stored WITH the emoji in the DB enum.
       const parts = newStatus.split(" ");
-      const dbStatus = parts.length > 1 ? parts.slice(1).join(" ") : newStatus;
+      let dbStatus = parts.length > 1 ? parts.slice(1).join(" ") : newStatus;
+      if (dbStatus === "Rescisão de Contrato") dbStatus = "📄 Rescisão de Contrato";
       const updatePayload = {
         status_processo: dbStatus,
         data_ultima_atualizacao: new Date().toISOString(),
