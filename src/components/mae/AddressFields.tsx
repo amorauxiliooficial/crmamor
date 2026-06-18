@@ -35,6 +35,7 @@ const formatCep = (raw: string) => {
 
 export function AddressFields({ value, onChange, disabled }: AddressFieldsProps) {
   const [loading, setLoading] = useState(false);
+  const [cepGenerico, setCepGenerico] = useState(false);
 
   const lookupCep = async (cepRaw: string) => {
     const digits = cepRaw.replace(/\D/g, "");
@@ -45,8 +46,11 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
       const data = await res.json();
       if (data?.erro) {
         toast.error("CEP não encontrado");
+        setCepGenerico(false);
         return;
       }
+      const generico = !data.logradouro && !data.bairro;
+      setCepGenerico(generico);
       onChange({
         ...value,
         cep: formatCep(digits),
@@ -55,7 +59,11 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
         cidade: data.localidade || value.cidade,
         uf: data.uf || value.uf,
       });
-      toast.success("Endereço preenchido pelo CEP");
+      if (generico) {
+        toast.warning("CEP único da cidade — preencha rua e bairro manualmente");
+      } else {
+        toast.success("Endereço preenchido pelo CEP");
+      }
     } catch {
       toast.error("Erro ao buscar CEP");
     } finally {
@@ -69,6 +77,8 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
     const digits = formatted.replace(/\D/g, "");
     if (digits.length === 8) {
       lookupCep(digits);
+    } else {
+      setCepGenerico(false);
     }
   };
 
