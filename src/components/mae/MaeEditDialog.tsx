@@ -600,6 +600,11 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
             </div>
           </div>
 
+          {/* Endereço */}
+          <AddressFields value={address} onChange={setAddress} />
+
+
+
           {/* INSS */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
