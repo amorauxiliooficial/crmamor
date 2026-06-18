@@ -32,8 +32,10 @@ const UF_OPTIONS = [
   "SP", "SE", "TO"
 ];
 
-// Map display status (with emoji) to db status (without emoji)
+// Map display status (with emoji) to db status.
+// Most DB enum values are stored without emoji, but Rescisão is stored with it.
 const mapDisplayStatusToDb = (status: StatusProcesso): string => {
+  if (status === "📄 Rescisão de Contrato") return status;
   return status.split(" ").slice(1).join(" ") || status;
 };
 
@@ -221,7 +223,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       "Gestantes 1 a 8 meses" | "Entradas do Mês" |
       "Aguardando Análise INSS" | "Aprovada" | "Indeferida" | 
       "Recurso / Judicial" | "Inadimplência" | "Negativação" | "Renegociação" |
-      "Rescisão de Contrato" | "Processo Encerrado";
+      "📄 Rescisão de Contrato" | "Processo Encerrado";
 
     // Build update object - sync primary phone to mae_processo
     const primaryPhone = phones.find((p) => p.isPrimary && p.value.replace(/\D/g, "").length >= 10);
