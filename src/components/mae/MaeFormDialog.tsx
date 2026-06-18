@@ -14,6 +14,7 @@ import { getUserFriendlyError, logError } from "@/lib/errorHandler";
 import { normalizePhoneToE164BR } from "@/lib/phoneUtils";
 import { PhoneContactsEditor, PhoneEntry } from "@/components/mae/PhoneContactsEditor";
 import { useMotherContactActions } from "@/hooks/useMotherContacts";
+import { AddressFields, AddressValue, emptyAddress } from "@/components/mae/AddressFields";
 
 interface MaeFormDialogProps {
   open: boolean;
