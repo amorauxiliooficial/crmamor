@@ -182,6 +182,15 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       });
       // Always set selectedUserId when mae data loads
       setSelectedUserId(mae.user_id || "");
+      setAddress({
+        cep: mae.cep || "",
+        endereco: (mae as any).endereco || "",
+        numero: (mae as any).numero || "",
+        complemento: (mae as any).complemento || "",
+        bairro: (mae as any).bairro || "",
+        cidade: (mae as any).cidade || "",
+        uf: mae.uf || "",
+      });
     }
   }, [mae, open]);
 
