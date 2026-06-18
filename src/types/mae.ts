@@ -6,6 +6,7 @@ export type StatusProcesso =
   | "❌ Indeferida"
   | "⚖️ Recurso / Judicial"
   | "💳 Inadimplência"
+  | "🚫 Negativação"
   | "🤝 Renegociação"
   | "📄 Rescisão de Contrato"
   | "📦 Processo Encerrado";
