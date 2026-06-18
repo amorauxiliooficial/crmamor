@@ -128,6 +128,7 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
     if (open) {
       setFormData(getEmptyFormData());
       setPhones([{ value: "", isPrimary: true }]);
+      setAddress(emptyAddress());
     }
   }, [open]);
 
