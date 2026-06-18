@@ -111,13 +111,17 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
         </div>
 
         <div className="space-y-1.5 col-span-2 sm:col-span-3">
-          <Label htmlFor="endereco">Rua / Logradouro</Label>
+          <Label htmlFor="endereco">
+            Rua / Logradouro
+            {cepGenerico && <span className="text-amber-500 ml-1">*</span>}
+          </Label>
           <Input
             id="endereco"
             value={value.endereco}
             onChange={(e) => onChange({ ...value, endereco: e.target.value })}
-            placeholder="Preenchido pelo CEP"
+            placeholder={cepGenerico ? "Digite a rua" : "Preenchido pelo CEP"}
             disabled={disabled}
+            className={cepGenerico && !value.endereco ? "border-amber-500" : ""}
           />
         </div>
 
@@ -144,13 +148,17 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
         </div>
 
         <div className="space-y-1.5 col-span-2 sm:col-span-3">
-          <Label htmlFor="bairro">Bairro</Label>
+          <Label htmlFor="bairro">
+            Bairro
+            {cepGenerico && <span className="text-amber-500 ml-1">*</span>}
+          </Label>
           <Input
             id="bairro"
             value={value.bairro}
             onChange={(e) => onChange({ ...value, bairro: e.target.value })}
-            placeholder="Preenchido pelo CEP"
+            placeholder={cepGenerico ? "Digite o bairro" : "Preenchido pelo CEP"}
             disabled={disabled}
+            className={cepGenerico && !value.bairro ? "border-amber-500" : ""}
           />
         </div>
 
