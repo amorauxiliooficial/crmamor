@@ -106,7 +106,7 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
             id="endereco"
             value={value.endereco}
             onChange={(e) => onChange({ ...value, endereco: e.target.value })}
-            placeholder="Av. Brasil"
+            placeholder="Preenchido pelo CEP"
             disabled={disabled}
           />
         </div>
@@ -117,7 +117,7 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
             id="numero"
             value={value.numero}
             onChange={(e) => onChange({ ...value, numero: e.target.value })}
-            placeholder="123"
+            placeholder="Nº"
             disabled={disabled}
           />
         </div>
@@ -128,7 +128,7 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
             id="complemento"
             value={value.complemento}
             onChange={(e) => onChange({ ...value, complemento: e.target.value })}
-            placeholder="Apto, bloco..."
+            placeholder="Apto, bloco (opcional)"
             disabled={disabled}
           />
         </div>
@@ -139,7 +139,7 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
             id="bairro"
             value={value.bairro}
             onChange={(e) => onChange({ ...value, bairro: e.target.value })}
-            placeholder="Centro"
+            placeholder="Preenchido pelo CEP"
             disabled={disabled}
           />
         </div>
@@ -150,7 +150,7 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
             id="cidade"
             value={value.cidade}
             onChange={(e) => onChange({ ...value, cidade: e.target.value })}
-            placeholder="São Paulo"
+            placeholder="Preenchido pelo CEP"
             disabled={disabled}
           />
         </div>
