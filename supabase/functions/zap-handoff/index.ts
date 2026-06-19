@@ -282,7 +282,7 @@ serve(async (req) => {
       });
     }
 
-    const incomplete = cpf === "" || senhaGov === null;
+    const incomplete = cpf === null || senhaGov === null;
     console.log("zap-handoff: created mae_processo", newMae.id, "incomplete:", incomplete);
 
     return new Response(JSON.stringify({ success: true, id: newMae.id, incomplete }), {
