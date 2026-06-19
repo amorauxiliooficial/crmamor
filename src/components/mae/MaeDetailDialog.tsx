@@ -292,8 +292,13 @@ export function MaeDetailDialog({
 
           {/* Metadata */}
           <Separator />
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
             <span>Origem: {mae.origem || "Não informado"}</span>
+            {(mae as any).etiqueta && (
+              <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 font-medium">
+                Etiqueta: {(mae as any).etiqueta}
+              </span>
+            )}
             <span>
               Última atualização: {formatDate(mae.data_ultima_atualizacao)}
             </span>
