@@ -261,6 +261,7 @@ serve(async (req) => {
         precisa_das: false,
         das_concluido: false,
         origem: "Zap Responder",
+        etiqueta,
         observacoes,
         zap_card_id: cardId,
         user_id: systemUserId,
