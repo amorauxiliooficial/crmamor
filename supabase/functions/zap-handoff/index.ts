@@ -252,7 +252,9 @@ serve(async (req) => {
         is_gestante: isGestante,
         mes_gestacao: mesGestacao,
         categoria_previdenciaria: "Não informado",
-        status_processo: "Entradas do Mês",
+        status_processo: isGestante && mesGestacao !== null && mesGestacao <= 8
+          ? "Gestantes 1 a 8 meses"
+          : "Entradas do Mês",
         tipo_evento: "Parto",
         contrato_assinado: true,
         verificacao_duas_etapas: false,
