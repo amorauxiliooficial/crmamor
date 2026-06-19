@@ -149,6 +149,30 @@ serve(async (req) => {
 
     const isGestante = mesGestacao !== null;
 
+    // Etiqueta: extrai do payload (tags do card ou campo "etiqueta"/"tag" em additionalFields)
+    let etiqueta: string | null = null;
+    const rawTags = card.tags ?? card.labels ?? card.etiquetas;
+    if (Array.isArray(rawTags) && rawTags.length > 0) {
+      etiqueta = rawTags
+        .map((t: any) => (typeof t === "string" ? t : t?.name ?? t?.label ?? t?.title))
+        .filter((s: any) => typeof s === "string" && s.trim().length > 0)
+        .join(", ") || null;
+    } else if (typeof rawTags === "string" && rawTags.trim()) {
+      etiqueta = rawTags.trim();
+    }
+    if (!etiqueta) {
+      const fromFields = firstDefined(additionalFields, ["etiqueta", "Etiqueta", "tag", "Tag", "label"]);
+      if (typeof fromFields === "string" && fromFields.trim()) {
+        etiqueta = fromFields.trim();
+      } else if (Array.isArray(fromFields) && fromFields.length > 0) {
+        etiqueta = fromFields
+          .map((t: any) => (typeof t === "string" ? t : t?.name ?? t?.label))
+          .filter((s: any) => typeof s === "string" && s.trim().length > 0)
+          .join(", ") || null;
+      }
+    }
+    console.log("ZAP etiqueta extraída:", etiqueta);
+
     if (!name) {
       console.error("zap-handoff: missing name in payload");
       return new Response(JSON.stringify({ error: "Nome não encontrado no payload" }), {
