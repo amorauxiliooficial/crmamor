@@ -132,10 +132,8 @@ serve(async (req) => {
     console.log("ZAP additionalFields:", JSON.stringify(additionalFields));
 
     const cpfRaw = additionalFields[ZAP_FIELD_CPF];
-    let cpf = cpfRaw !== undefined ? String(cpfRaw).replace(/\D/g, "") : "";
-    if (cpf.length !== 11) {
-      cpf = "";
-    }
+    const cpfDigits = cpfRaw !== undefined ? String(cpfRaw).replace(/\D/g, "") : "";
+    const cpf: string | null = cpfDigits.length === 11 ? cpfDigits : null;
 
     const senhaGovRaw = additionalFields[ZAP_FIELD_SENHA_GOV];
     const senhaGov = senhaGovRaw !== undefined ? String(senhaGovRaw).trim() : null;
