@@ -221,6 +221,17 @@ export default function ForecastTV() {
     if (!authLoading && !user) navigate("/auth");
   }, [user, authLoading, navigate]);
 
+  // Ordena fases por pior atingimento (foco em ação) — DEVE vir antes de qualquer early return
+  const fasesOrdenadas = useMemo(() => {
+    return [...forecast.fases].sort((a, b) => {
+      const aHas = a.metaValor > 0;
+      const bHas = b.metaValor > 0;
+      if (aHas && !bHas) return -1;
+      if (!aHas && bHas) return 1;
+      return a.atingimentoPct - b.atingimentoPct;
+    });
+  }, [forecast.fases]);
+
   if (authLoading || forecast.loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -249,17 +260,6 @@ export default function ForecastTV() {
     faseEntradas && faseEntradas.quantidade > 0 && faseAprovada
       ? Math.round((faseAprovada.quantidade / faseEntradas.quantidade) * 100)
       : null;
-
-  // Ordena fases por pior atingimento (foco em ação)
-  const fasesOrdenadas = useMemo(() => {
-    return [...forecast.fases].sort((a, b) => {
-      const aHas = a.metaValor > 0;
-      const bHas = b.metaValor > 0;
-      if (aHas && !bHas) return -1;
-      if (!aHas && bHas) return 1;
-      return a.atingimentoPct - b.atingimentoPct;
-    });
-  }, [forecast.fases]);
 
   const clockStr = now.toLocaleTimeString("pt-BR", { hour12: false });
   const dateStr = now.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "long" });
