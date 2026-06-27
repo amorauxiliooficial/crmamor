@@ -310,7 +310,15 @@ export default function ForecastDashboard() {
 
             {/* 5 - COMO BATER A META */}
             <Section id="meta" label="Como bater a meta" sub="Composição sugerida para o gap">
-              <BaterMetaCard composicao={executivo.composicao} formatBRL={formatBRL} />
+              <BaterMetaCard
+                composicao={executivo.composicao}
+                metaMes={executivo.kpis.metaMes}
+                receitaPrevista={executivo.receitaPrevistaMes}
+                receitaRecebida={executivo.receitaRecebidaMes}
+                formatBRL={formatBRL}
+                onEditMeta={() => setMetaFinOpen(true)}
+                canEdit={isAdmin}
+              />
             </Section>
 
             {/* 6 + 7 - ENTRADAS / RECEBIMENTOS */}
@@ -349,6 +357,7 @@ export default function ForecastDashboard() {
       />
 
       <MetasFaseConfigDialog open={configOpen} onOpenChange={setConfigOpen} />
+      <MetaFinanceiraDialog open={metaFinOpen} onOpenChange={setMetaFinOpen} />
     </div>
   );
 }
