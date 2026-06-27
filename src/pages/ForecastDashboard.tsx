@@ -41,6 +41,7 @@ import { CarteiraDonutCard } from "@/components/forecast/CarteiraDonutCard";
 import { BaterMetaCard } from "@/components/forecast/BaterMetaCard";
 import { RecebimentosPanels } from "@/components/forecast/RecebimentosPanels";
 import { InsightsPanel, type InsightItem } from "@/components/forecast/InsightsPanel";
+import { MetaFinanceiraDialog } from "@/components/forecast/MetaFinanceiraDialog";
 import type { FaseForecast } from "@/hooks/usePipelineForecast";
 
 const formatBRL = (n: number) =>
@@ -102,6 +103,7 @@ export default function ForecastDashboard() {
   const [selectedFase, setSelectedFase] = useState<FaseForecast | null>(null);
   const [drillOpen, setDrillOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
+  const [metaFinOpen, setMetaFinOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("resumo");
 
   useEffect(() => {
@@ -308,7 +310,15 @@ export default function ForecastDashboard() {
 
             {/* 5 - COMO BATER A META */}
             <Section id="meta" label="Como bater a meta" sub="Composição sugerida para o gap">
-              <BaterMetaCard composicao={executivo.composicao} formatBRL={formatBRL} />
+              <BaterMetaCard
+                composicao={executivo.composicao}
+                metaMes={executivo.kpis.metaMes}
+                receitaPrevista={executivo.receitaPrevistaMes}
+                receitaRecebida={executivo.receitaRecebidaMes}
+                formatBRL={formatBRL}
+                onEditMeta={() => setMetaFinOpen(true)}
+                canEdit={isAdmin}
+              />
             </Section>
 
             {/* 6 + 7 - ENTRADAS / RECEBIMENTOS */}
@@ -347,6 +357,7 @@ export default function ForecastDashboard() {
       />
 
       <MetasFaseConfigDialog open={configOpen} onOpenChange={setConfigOpen} />
+      <MetaFinanceiraDialog open={metaFinOpen} onOpenChange={setMetaFinOpen} />
     </div>
   );
 }
