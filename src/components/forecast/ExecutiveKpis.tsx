@@ -61,6 +61,7 @@ export function ExecutiveKpis({ kpis, formatBRL, onCardClick }: Props) {
       trend: kpis.deltaPrevistoPct,
     },
     {
+      id: "recebida",
       label: "Receita Recebida",
       value: kpis.receitaRecebidaMes,
       icon: CircleDollarSign,
@@ -69,6 +70,7 @@ export function ExecutiveKpis({ kpis, formatBRL, onCardClick }: Props) {
       trend: kpis.deltaRecebidoPct,
     },
     {
+      id: "meta",
       label: "Meta do Mês",
       value: kpis.metaMes,
       icon: Target,
@@ -76,6 +78,7 @@ export function ExecutiveKpis({ kpis, formatBRL, onCardClick }: Props) {
       hint: kpis.metaMes > 0 ? `${atingimento.toFixed(0)}% recebido` : "sem meta configurada",
     },
     {
+      id: "gap",
       label: "Gap p/ Meta",
       value: Math.abs(kpis.gapPrevisto),
       icon: TrendingDown,
@@ -90,6 +93,7 @@ export function ExecutiveKpis({ kpis, formatBRL, onCardClick }: Props) {
       hintTone: kpis.gapPrevisto > 0 ? "danger" : "success",
     },
     {
+      id: "saldo",
       label: "Saldo Operacional",
       value: kpis.saldoOperacional,
       icon: Wallet,
@@ -108,7 +112,11 @@ export function ExecutiveKpis({ kpis, formatBRL, onCardClick }: Props) {
         return (
           <Card
             key={c.label}
-            className="border-border/60 hover:border-border transition-colors hover:shadow-sm"
+            onClick={onCardClick ? () => onCardClick(c.id) : undefined}
+            className={cn(
+              "border-border/60 transition-all",
+              onCardClick && "cursor-pointer hover:border-primary/50 hover:shadow-md hover:-translate-y-0.5",
+            )}
           >
             <CardContent className="p-5 space-y-3">
               <div className="flex items-center justify-between">
