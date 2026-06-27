@@ -19,9 +19,10 @@ interface Props {
   metaMes: number;
   formatBRL: (n: number) => string;
   formatBRLShort: (n: number) => string;
+  onMonthClick?: (month: ForecastMesItem) => void;
 }
 
-export function ForecastChart({ data, metaMes, formatBRL, formatBRLShort }: Props) {
+export function ForecastChart({ data, metaMes, formatBRL, formatBRLShort, onMonthClick }: Props) {
   const mediaTotal = data.length ? data.reduce((a, b) => a + b.total, 0) / data.length : 0;
   const mesesRisco = data.filter((d) => d.abaixoMeta).length;
 
