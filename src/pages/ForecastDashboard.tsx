@@ -41,6 +41,7 @@ import { CarteiraDonutCard } from "@/components/forecast/CarteiraDonutCard";
 import { BaterMetaCard } from "@/components/forecast/BaterMetaCard";
 import { RecebimentosPanels } from "@/components/forecast/RecebimentosPanels";
 import { InsightsPanel, type InsightItem } from "@/components/forecast/InsightsPanel";
+import { MetaFinanceiraDialog } from "@/components/forecast/MetaFinanceiraDialog";
 import type { FaseForecast } from "@/hooks/usePipelineForecast";
 
 const formatBRL = (n: number) =>
