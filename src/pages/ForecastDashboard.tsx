@@ -383,7 +383,7 @@ export default function ForecastDashboard() {
                 receitaPrevista={executivo.receitaPrevistaMes}
                 receitaRecebida={executivo.receitaRecebidaMes}
                 formatBRL={formatBRL}
-                onEditMeta={() => setMetaFinOpen(true)}
+                onEditMeta={() => setConfigOpen(true)}
                 canEdit={isAdmin}
               />
             </Section>
