@@ -325,7 +325,55 @@ export function useExecutiveForecast(refDate: Date) {
     // primeiro mês em risco (entre os 5 próximos)
     const mesRisco = proximos6.find((p) => p.abaixoMeta) ?? null;
 
+    // ---- Insights automáticos (derivados, sem mock) ----
+    const insights: { id: string; tipo: "positivo" | "alerta" | "risco" | "info"; titulo: string; descricao: string }[] = [];
+    if (metaMes > 0) {
+      const atingidoPct = ((receitaRecebidaMes + receitaPrevistaMes) / metaMes) * 100;
+      insights.push({
+        id: "atingimento-meta",
+        tipo: atingidoPct >= 100 ? "positivo" : atingidoPct >= 80 ? "info" : "alerta",
+        titulo: `Atingimento da meta: ${atingidoPct.toFixed(0)}%`,
+        descricao:
+          atingidoPct >= 100
+            ? "Meta do mês já coberta entre recebido e previsto."
+            : `Faltam R$ ${gapPrevisto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} para bater a meta.`,
+      });
+    }
+    if (deltaRecebidoPct !== 0) {
+      insights.push({
+        id: "delta-recebido",
+        tipo: deltaRecebidoPct >= 0 ? "positivo" : "alerta",
+        titulo: `Receita recebida ${deltaRecebidoPct >= 0 ? "+" : ""}${deltaRecebidoPct.toFixed(1)}% vs mês anterior`,
+        descricao: "Comparação automática com o mesmo recorte do mês anterior.",
+      });
+    }
+    if (mesRisco) {
+      insights.push({
+        id: "mes-risco",
+        tipo: "risco",
+        titulo: `Risco em ${mesRisco.label}`,
+        descricao: `Projeção (R$ ${mesRisco.total.toLocaleString("pt-BR")}) abaixo de 80% da meta.`,
+      });
+    }
+    if (saldoOperacional < 0) {
+      insights.push({
+        id: "saldo-negativo",
+        tipo: "risco",
+        titulo: "Saldo operacional negativo",
+        descricao: `Despesas do mês superam o recebido em R$ ${Math.abs(saldoOperacional).toLocaleString("pt-BR")}.`,
+      });
+    }
+    if (carteira.totalAReceber > 0) {
+      insights.push({
+        id: "a-receber",
+        tipo: "info",
+        titulo: `R$ ${carteira.totalAReceber.toLocaleString("pt-BR")} a receber na carteira`,
+        descricao: `${carteira.pctAReceber.toFixed(0)}% do total contratado segue em aberto.`,
+      });
+    }
+
     return {
+      // estrutura original
       kpis,
       carteira,
       composicao,
@@ -336,7 +384,23 @@ export function useExecutiveForecast(refDate: Date) {
       mesRisco,
       ultimasEntradas,
       proximosRecebimentos,
-      loading: loadingPag || loadingDesp || metasQuery.isLoading,
+      // aliases consolidados solicitados
+      receitaPrevistaMes,
+      receitaRecebidaMes,
+      metaFinanceiraMes: metaMes,
+      gapFinanceiro: gapPrevisto,
+      saldoOperacional,
+      receitaPrevistaProximos6Meses: forecast6m,
+      carteiraFinanceira: carteira,
+      carteiraAVista: { quantidade: carteira.qtdMaesAVista, valor: carteira.valorAVista, pct: carteira.pctAVista },
+      carteiraParcelada: { quantidade: carteira.qtdMaesParceladas, valor: carteira.valorParcelado, pct: carteira.pctParcelado },
+      totalContratado: carteira.totalContratado,
+      totalRecebido: carteira.totalRecebido,
+      totalAReceber: carteira.totalAReceber,
+      pipelineOperacional: pipeline as PipelineForecast,
+      composicaoParaBaterMeta: composicao,
+      insights,
+      loading: loadingPag || loadingDesp || metasQuery.isLoading || pipeline.loading,
     };
-  }, [pagamentos, despesas, metasQuery.data, metasQuery.isLoading, refDate, loadingPag, loadingDesp]);
+  }, [pagamentos, despesas, metasQuery.data, metasQuery.isLoading, refDate, loadingPag, loadingDesp, pipeline]);
 }
