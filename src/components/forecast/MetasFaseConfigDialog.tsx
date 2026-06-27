@@ -179,7 +179,7 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
       onOpenChange={onOpenChange}
       title="Configurações de Meta"
       description="Defina a meta financeira mensal e as metas por fase do funil. Apenas administradores."
-      desktopWidth="sm:max-w-3xl"
+      desktopWidth="sm:max-w-4xl"
       mobileSide="right"
       footer={
         <div className="flex w-full items-center justify-between gap-3">
@@ -203,32 +203,32 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
       }
     >
       <div className="space-y-5">
-        {/* Tabs */}
-        <div className="inline-flex rounded-lg bg-muted p-1 text-sm">
+        {/* Tabs — segmented control full width */}
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/70 p-1 text-sm">
           <button
             type="button"
             onClick={() => setTab("mensal")}
             className={cn(
-              "flex items-center gap-2 rounded-md px-3 py-1.5 transition",
+              "flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 transition",
               tab === "mensal"
                 ? "bg-background shadow-sm font-semibold text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <Target className="h-3.5 w-3.5" />
-            Meta do Mês
+            <Target className="h-4 w-4" />
+            Meta por Mês
           </button>
           <button
             type="button"
             onClick={() => setTab("fases")}
             className={cn(
-              "flex items-center gap-2 rounded-md px-3 py-1.5 transition",
+              "flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 transition",
               tab === "fases"
                 ? "bg-background shadow-sm font-semibold text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <Layers className="h-3.5 w-3.5" />
+            <Layers className="h-4 w-4" />
             Metas por Fase
           </button>
         </div>
@@ -236,100 +236,125 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
         {/* Meta Mensal por mês */}
         {tab === "mensal" && (
           <section className="space-y-4">
-            <div className="relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-5">
-              <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
-              <div className="relative space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
-                      <Target className="h-3.5 w-3.5" />
-                      Meta Financeira por Mês
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Defina o valor de receita esperado para cada mês. O dashboard usa o valor do mês corrente.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-background/70 p-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAno(ano - 1)}>
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="px-2 text-sm font-bold tabular-nums min-w-[3rem] text-center">{ano}</div>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAno(ano + 1)}>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                  {MESES_PT.map((mes, idx) => {
-                    const isMesAtual = ano === anoAtual && idx === mesAtualIdx;
-                    return (
-                      <div
-                        key={mes}
-                        className={cn(
-                          "rounded-lg border bg-background/80 p-2.5 space-y-1.5 transition",
-                          isMesAtual ? "border-primary/60 ring-1 ring-primary/30" : "border-border/60"
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                            {mes}/{String(ano).slice(2)}
-                          </Label>
-                          {isMesAtual && (
-                            <span className="text-[9px] font-bold uppercase text-primary">Atual</span>
-                          )}
-                        </div>
-                        <div className="relative">
-                          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-muted-foreground">
-                            R$
-                          </span>
-                          <Input
-                            type="number"
-                            min={0}
-                            step={100}
-                            value={valoresMes[idx]}
-                            onChange={(e) => setMesValor(idx, e.target.value)}
-                            placeholder="0"
-                            className="h-9 pl-7 text-sm font-semibold tabular-nums"
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <Mini icon={<Wallet className="h-3.5 w-3.5" />} label={`Total ${ano}`}>
-                    {fmtBRL(totalAno)}
-                  </Mini>
-                  <Mini icon={<TrendingUp className="h-3.5 w-3.5" />} label="Média mensal">
-                    {fmtBRL(mediaMes)}
-                  </Mini>
-                  <Mini icon={<Target className="h-3.5 w-3.5" />} label="Ticket padrão">
-                    {fmtBRL(DEFAULT_TICKET_MEDIO)}
-                  </Mini>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                  <Button variant="outline" size="sm" onClick={replicarParaTodos} className="h-8 text-xs">
-                    <Copy className="h-3.5 w-3.5 mr-1.5" />
-                    Replicar para todos os meses
+            {/* Header com seletor de ano e KPIs resumo */}
+            <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-full"
+                    onClick={() => setAno(ano - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  {loadingMensal && (
-                    <span className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
-                      <Loader2 className="h-3 w-3 animate-spin" /> carregando metas…
-                    </span>
-                  )}
+                  <div className="min-w-[5rem] text-center">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                      Ano
+                    </div>
+                    <div className="text-2xl font-black tabular-nums leading-none text-primary">
+                      {ano}
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-full"
+                    onClick={() => setAno(ano + 1)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-1 flex-wrap items-stretch gap-2 sm:justify-end">
+                  <ResumoChip label={`Total ${ano}`} value={fmtBRL(totalAno)} icon={<Wallet className="h-3 w-3" />} />
+                  <ResumoChip label="Média/mês" value={fmtBRL(mediaMes)} icon={<TrendingUp className="h-3 w-3" />} />
+                  <ResumoChip label="Ticket padrão" value={fmtBRL(DEFAULT_TICKET_MEDIO)} icon={<Target className="h-3 w-3" />} />
                 </div>
               </div>
             </div>
 
-            <div className="rounded-lg border border-dashed border-border/60 p-3 text-xs text-muted-foreground">
-              Dica: para metas por etapa do funil (qualificação, contrato, aprovada), acesse a aba{" "}
-              <span className="font-semibold text-foreground">Metas por Fase</span>.
+            {/* Grid de meses */}
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+              {MESES_PT.map((mes, idx) => {
+                const isMesAtual = ano === anoAtual && idx === mesAtualIdx;
+                const isPassado = ano < anoAtual || (ano === anoAtual && idx < mesAtualIdx);
+                const val = Number(valoresMes[idx]) || 0;
+                return (
+                  <div
+                    key={mes}
+                    className={cn(
+                      "group relative rounded-xl border bg-card p-3 transition-all hover:border-primary/40 hover:shadow-sm",
+                      isMesAtual && "border-primary ring-2 ring-primary/20 shadow-sm",
+                      !isMesAtual && isPassado && "opacity-70",
+                      !isMesAtual && !isPassado && "border-border/60"
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-foreground">
+                        {mes}
+                        <span className="ml-1 text-muted-foreground font-normal">
+                          /{String(ano).slice(2)}
+                        </span>
+                      </Label>
+                      {isMesAtual && (
+                        <span className="rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">
+                          Atual
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                        R$
+                      </span>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={100}
+                        value={valoresMes[idx]}
+                        onChange={(e) => setMesValor(idx, e.target.value)}
+                        placeholder="0"
+                        className={cn(
+                          "h-11 pl-9 pr-2 text-base font-bold tabular-nums",
+                          isMesAtual && "border-primary/40 bg-primary/5"
+                        )}
+                      />
+                    </div>
+                    {val > 0 && (
+                      <div className="mt-1.5 text-[10px] text-muted-foreground text-right">
+                        ≈ {Math.ceil(val / DEFAULT_TICKET_MEDIO)} mães
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Ações + dica */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Button variant="outline" size="sm" onClick={replicarParaTodos} className="h-9">
+                <Copy className="h-3.5 w-3.5 mr-1.5" />
+                Replicar para todos os meses
+              </Button>
+              {loadingMensal && (
+                <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+                  <Loader2 className="h-3 w-3 animate-spin" /> carregando…
+                </span>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-dashed border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+              💡 Para metas por etapa do funil (qualificação, contrato, aprovada), acesse a aba{" "}
+              <button
+                onClick={() => setTab("fases")}
+                className="font-semibold text-primary hover:underline"
+              >
+                Metas por Fase
+              </button>
+              .
             </div>
           </section>
         )}
+
 
 
         {/* Metas por fase */}
