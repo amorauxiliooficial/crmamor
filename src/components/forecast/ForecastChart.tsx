@@ -19,9 +19,10 @@ interface Props {
   metaMes: number;
   formatBRL: (n: number) => string;
   formatBRLShort: (n: number) => string;
+  onMonthClick?: (month: ForecastMesItem) => void;
 }
 
-export function ForecastChart({ data, metaMes, formatBRL, formatBRLShort }: Props) {
+export function ForecastChart({ data, metaMes, formatBRL, formatBRLShort, onMonthClick }: Props) {
   const mediaTotal = data.length ? data.reduce((a, b) => a + b.total, 0) / data.length : 0;
   const mesesRisco = data.filter((d) => d.abaixoMeta).length;
 
@@ -38,6 +39,7 @@ export function ForecastChart({ data, metaMes, formatBRL, formatBRLShort }: Prop
             </div>
             <p className="text-xs text-muted-foreground ml-10">
               Próximos 6 meses · receita garantida, prevista e meta
+              {onMonthClick && <span className="ml-1 text-primary">· clique numa barra para ver o detalhe</span>}
             </p>
           </div>
           <div className="flex items-center gap-6 text-right">
@@ -104,6 +106,8 @@ export function ForecastChart({ data, metaMes, formatBRL, formatBRLShort }: Prop
                 name="Garantida"
                 fill="hsl(142 70% 45%)"
                 radius={[0, 0, 0, 0]}
+                cursor={onMonthClick ? "pointer" : undefined}
+                onClick={(d: any) => onMonthClick?.(d.payload as ForecastMesItem)}
               />
               <Bar
                 dataKey="pendente"
@@ -111,6 +115,8 @@ export function ForecastChart({ data, metaMes, formatBRL, formatBRLShort }: Prop
                 name="Prevista"
                 fill="hsl(217 91% 60%)"
                 radius={[6, 6, 0, 0]}
+                cursor={onMonthClick ? "pointer" : undefined}
+                onClick={(d: any) => onMonthClick?.(d.payload as ForecastMesItem)}
               />
               <Line
                 type="monotone"

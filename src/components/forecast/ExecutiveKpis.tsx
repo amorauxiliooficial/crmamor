@@ -11,9 +11,12 @@ import {
 } from "lucide-react";
 import type { ExecutivoKpis } from "@/hooks/useExecutiveForecast";
 
+export type KpiId = "prevista" | "recebida" | "meta" | "gap" | "saldo";
+
 interface Props {
   kpis: ExecutivoKpis;
   formatBRL: (n: number) => string;
+  onCardClick?: (id: KpiId) => void;
 }
 
 interface KpiCard {
@@ -45,10 +48,11 @@ function TrendPill({ value }: { value: number }) {
   );
 }
 
-export function ExecutiveKpis({ kpis, formatBRL }: Props) {
+export function ExecutiveKpis({ kpis, formatBRL, onCardClick }: Props) {
   const atingimento = kpis.metaMes > 0 ? (kpis.receitaRecebidaMes / kpis.metaMes) * 100 : 0;
-  const cards: KpiCard[] = [
+  const cards: (KpiCard & { id: KpiId })[] = [
     {
+      id: "prevista",
       label: "Receita Prevista",
       value: kpis.receitaPrevistaMes,
       icon: TrendingUp,
@@ -57,6 +61,7 @@ export function ExecutiveKpis({ kpis, formatBRL }: Props) {
       trend: kpis.deltaPrevistoPct,
     },
     {
+      id: "recebida",
       label: "Receita Recebida",
       value: kpis.receitaRecebidaMes,
       icon: CircleDollarSign,
@@ -65,6 +70,7 @@ export function ExecutiveKpis({ kpis, formatBRL }: Props) {
       trend: kpis.deltaRecebidoPct,
     },
     {
+      id: "meta",
       label: "Meta do Mês",
       value: kpis.metaMes,
       icon: Target,
@@ -72,6 +78,7 @@ export function ExecutiveKpis({ kpis, formatBRL }: Props) {
       hint: kpis.metaMes > 0 ? `${atingimento.toFixed(0)}% recebido` : "sem meta configurada",
     },
     {
+      id: "gap",
       label: "Gap p/ Meta",
       value: Math.abs(kpis.gapPrevisto),
       icon: TrendingDown,
@@ -86,6 +93,7 @@ export function ExecutiveKpis({ kpis, formatBRL }: Props) {
       hintTone: kpis.gapPrevisto > 0 ? "danger" : "success",
     },
     {
+      id: "saldo",
       label: "Saldo Operacional",
       value: kpis.saldoOperacional,
       icon: Wallet,
@@ -104,7 +112,11 @@ export function ExecutiveKpis({ kpis, formatBRL }: Props) {
         return (
           <Card
             key={c.label}
-            className="border-border/60 hover:border-border transition-colors hover:shadow-sm"
+            onClick={onCardClick ? () => onCardClick(c.id) : undefined}
+            className={cn(
+              "border-border/60 transition-all",
+              onCardClick && "cursor-pointer hover:border-primary/50 hover:shadow-md hover:-translate-y-0.5",
+            )}
           >
             <CardContent className="p-5 space-y-3">
               <div className="flex items-center justify-between">
