@@ -99,6 +99,7 @@ function somaMes(pagamentos: any[], start: Date, end: Date) {
 export function useExecutiveForecast(refDate: Date) {
   const { pagamentos, isLoading: loadingPag } = usePagamentos();
   const { despesas, isLoading: loadingDesp } = useDespesas();
+  const pipeline = usePipelineForecast();
   const queryClient = useQueryClient();
 
   const metasQuery = useQuery({
