@@ -1,6 +1,6 @@
 import { parseISO, isWithinInterval, startOfMonth, endOfMonth, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { Pagamento } from "@/types/pagamento";
+import type { PagamentoCompleto } from "@/types/pagamento";
 import type { Despesa } from "@/types/despesa";
 import type {
   CarteiraFinanceira,
@@ -17,7 +17,7 @@ const COLOR_DANGER = "hsl(0 72% 50%)";
 
 interface Ctx {
   refDate: Date;
-  pagamentos: Pagamento[];
+  pagamentos: PagamentoCompleto[];
   despesas: Despesa[];
   kpis: ExecutivoKpis;
   carteira: CarteiraFinanceira;
