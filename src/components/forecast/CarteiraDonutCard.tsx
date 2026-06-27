@@ -16,40 +16,16 @@ const COLOR_PARCELADO = "hsl(217 91% 60%)";
 const COLOR_RECEBIDO = "hsl(142 70% 45%)";
 const COLOR_RECEBER = "hsl(38 92% 55%)";
 
-export function CarteiraDonutCard({ carteira, formatBRL }: Props) {
+export function CarteiraDonutCard({ carteira, formatBRL, onSegmentClick }: Props) {
   const donut = [
     { name: "À Vista", value: carteira.valorAVista, color: COLOR_AVISTA },
     { name: "Parcelado", value: carteira.valorParcelado, color: COLOR_PARCELADO },
   ];
-  const segments = [
-    {
-      label: "À Vista",
-      qtd: carteira.qtdMaesAVista,
-      valor: carteira.valorAVista,
-      pct: carteira.pctAVista,
-      color: COLOR_AVISTA,
-    },
-    {
-      label: "Parcelado",
-      qtd: carteira.qtdMaesParceladas,
-      valor: carteira.valorParcelado,
-      pct: carteira.pctParcelado,
-      color: COLOR_PARCELADO,
-    },
-    {
-      label: "Recebido",
-      qtd: null as number | null,
-      valor: carteira.totalRecebido,
-      pct: carteira.pctRecebido,
-      color: COLOR_RECEBIDO,
-    },
-    {
-      label: "A Receber",
-      qtd: null as number | null,
-      valor: carteira.totalAReceber,
-      pct: carteira.pctAReceber,
-      color: COLOR_RECEBER,
-    },
+  const segments: { id: CarteiraSegmentId; label: string; qtd: number | null; valor: number; pct: number; color: string }[] = [
+    { id: "avista", label: "À Vista", qtd: carteira.qtdMaesAVista, valor: carteira.valorAVista, pct: carteira.pctAVista, color: COLOR_AVISTA },
+    { id: "parcelado", label: "Parcelado", qtd: carteira.qtdMaesParceladas, valor: carteira.valorParcelado, pct: carteira.pctParcelado, color: COLOR_PARCELADO },
+    { id: "recebido", label: "Recebido", qtd: null, valor: carteira.totalRecebido, pct: carteira.pctRecebido, color: COLOR_RECEBIDO },
+    { id: "areceber", label: "A Receber", qtd: null, valor: carteira.totalAReceber, pct: carteira.pctAReceber, color: COLOR_RECEBER },
   ];
 
   return (
