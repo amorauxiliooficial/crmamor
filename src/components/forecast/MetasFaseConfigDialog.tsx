@@ -273,8 +273,8 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
               </div>
             </div>
 
-            {/* Grid de meses */}
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            {/* Lista de meses — uma linha por mês, input largo */}
+            <div className="rounded-xl border border-border/60 bg-card/40 divide-y divide-border/50 overflow-hidden">
               {MESES_PT.map((mes, idx) => {
                 const isMesAtual = ano === anoAtual && idx === mesAtualIdx;
                 const isPassado = ano < anoAtual || (ano === anoAtual && idx < mesAtualIdx);
@@ -283,27 +283,34 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
                   <div
                     key={mes}
                     className={cn(
-                      "group relative rounded-xl border bg-card p-3 transition-all hover:border-primary/40 hover:shadow-sm",
-                      isMesAtual && "border-primary ring-2 ring-primary/20 shadow-sm",
-                      !isMesAtual && isPassado && "opacity-70",
-                      !isMesAtual && !isPassado && "border-border/60"
+                      "flex items-center gap-3 px-3 py-2.5 transition-colors",
+                      isMesAtual && "bg-primary/5",
+                      !isMesAtual && isPassado && "opacity-60"
                     )}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-xs font-bold uppercase tracking-wider text-foreground">
-                        {mes}
-                        <span className="ml-1 text-muted-foreground font-normal">
-                          /{String(ano).slice(2)}
-                        </span>
-                      </Label>
+                    {/* Mês */}
+                    <div className="flex items-center gap-2 w-[110px] shrink-0">
+                      <div
+                        className={cn(
+                          "flex h-10 w-12 flex-col items-center justify-center rounded-lg border text-center",
+                          isMesAtual
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border/60 bg-muted/40 text-foreground"
+                        )}
+                      >
+                        <span className="text-[10px] font-bold uppercase leading-none">{mes}</span>
+                        <span className="text-[9px] leading-none opacity-80 mt-0.5">/{String(ano).slice(2)}</span>
+                      </div>
                       {isMesAtual && (
-                        <span className="rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">
+                        <span className="rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">
                           Atual
                         </span>
                       )}
                     </div>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+
+                    {/* Input grande e bem visível */}
+                    <div className="relative flex-1 min-w-0">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">
                         R$
                       </span>
                       <Input
@@ -312,18 +319,27 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
                         step={100}
                         value={valoresMes[idx]}
                         onChange={(e) => setMesValor(idx, e.target.value)}
-                        placeholder="0"
+                        placeholder="0,00"
                         className={cn(
-                          "h-11 pl-9 pr-2 text-base font-bold tabular-nums",
-                          isMesAtual && "border-primary/40 bg-primary/5"
+                          "h-11 pl-10 pr-3 text-right text-lg font-bold tabular-nums",
+                          isMesAtual && "border-primary/40 bg-background"
                         )}
                       />
                     </div>
-                    {val > 0 && (
-                      <div className="mt-1.5 text-[10px] text-muted-foreground text-right">
-                        ≈ {Math.ceil(val / DEFAULT_TICKET_MEDIO)} mães
-                      </div>
-                    )}
+
+                    {/* Estimativa de mães */}
+                    <div className="w-[90px] shrink-0 text-right">
+                      {val > 0 ? (
+                        <>
+                          <div className="text-sm font-bold tabular-nums text-foreground leading-none">
+                            {Math.ceil(val / DEFAULT_TICKET_MEDIO)}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">mães</div>
+                        </>
+                      ) : (
+                        <div className="text-[10px] text-muted-foreground/60">—</div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
