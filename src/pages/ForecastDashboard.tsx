@@ -103,6 +103,7 @@ export default function ForecastDashboard() {
   const [selectedFase, setSelectedFase] = useState<FaseForecast | null>(null);
   const [drillOpen, setDrillOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
+  const [metaFinOpen, setMetaFinOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("resumo");
 
   useEffect(() => {
