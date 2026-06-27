@@ -472,6 +472,21 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
   );
 }
 
+function ResumoChip({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-background/80 px-3 py-1.5 backdrop-blur">
+      <div className="text-primary">{icon}</div>
+      <div className="leading-tight">
+        <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+          {label}
+        </div>
+        <div className="text-xs font-bold tabular-nums text-foreground">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+
 function Mini({
   icon,
   label,
