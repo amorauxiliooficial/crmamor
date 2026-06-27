@@ -30,24 +30,31 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
 
   const [tab, setTab] = useState<TabKey>("mensal");
   const [rows, setRows] = useState<MetaFase[]>([]);
-  const [valorMensal, setValorMensal] = useState<string>("");
+  const [ano, setAno] = useState<number>(new Date().getFullYear());
+  // valores por mês para o ano selecionado (índice 0 = janeiro)
+  const [valoresMes, setValoresMes] = useState<string[]>(Array(12).fill(""));
 
-  // Meta Financeira Mensal
-  const { data: metaMensal, isLoading: loadingMensal } = useQuery({
-    queryKey: ["meta_financeira_mensal"],
+  // Carrega todas as metas de receita (por mês + fallback "mensal")
+  const { data: metasReceita, isLoading: loadingMensal } = useQuery({
+    queryKey: ["meta_financeira_mensal_all"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("metas_config")
         .select("*")
         .eq("tipo_meta", "receita")
-        .eq("ativo", true)
-        .order("created_at", { ascending: true })
-        .maybeSingle();
+        .eq("ativo", true);
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
     enabled: open,
   });
+
+  // Mapa periodo -> registro
+  const metasMap = useMemo(() => {
+    const m = new Map<string, any>();
+    (metasReceita ?? []).forEach((r: any) => m.set(r.periodo, r));
+    return m;
+  }, [metasReceita]);
 
   useEffect(() => {
     if (!open) return;
@@ -67,37 +74,70 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
     );
   }, [open, metas]);
 
+  // Quando troca de ano ou carrega dados, preenche os 12 inputs
   useEffect(() => {
-    if (open && metaMensal) setValorMensal(String(metaMensal.valor_meta ?? 0));
-    else if (open && !loadingMensal && !metaMensal) setValorMensal("");
-  }, [open, metaMensal, loadingMensal]);
+    if (!open) return;
+    const fallback = metasMap.get("mensal");
+    const fallbackVal = fallback ? Number(fallback.valor_meta) || 0 : 0;
+    const next = Array.from({ length: 12 }, (_, i) => {
+      const key = `${ano}-${String(i + 1).padStart(2, "0")}`;
+      const row = metasMap.get(key);
+      if (row) return String(Number(row.valor_meta) || 0);
+      return fallbackVal ? String(fallbackVal) : "";
+    });
+    setValoresMes(next);
+  }, [open, ano, metasMap]);
 
   const updateRow = (key: string, patch: Partial<MetaFase>) => {
     setRows((prev) => prev.map((r) => (r.status_processo === key ? { ...r, ...patch } : r)));
   };
 
+  const setMesValor = (idx: number, v: string) => {
+    setValoresMes((prev) => prev.map((x, i) => (i === idx ? v : x)));
+  };
+
+  const replicarParaTodos = () => {
+    const primeiroComValor = valoresMes.find((v) => v && Number(v) > 0) ?? "";
+    if (!primeiroComValor) {
+      toast.info("Preencha pelo menos um mês antes de replicar");
+      return;
+    }
+    setValoresMes(Array(12).fill(primeiroComValor));
+    toast.success(`Valor replicado para todos os meses de ${ano}`);
+  };
+
   const saveMensal = useMutation({
     mutationFn: async () => {
-      const numeric = Number(valorMensal) || 0;
-      if (metaMensal) {
-        const { error } = await supabase
-          .from("metas_config")
-          .update({ valor_meta: numeric })
-          .eq("id", metaMensal.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("metas_config").insert({
-          nome: "Meta Financeira Mensal",
-          descricao: "Meta de receita projetada do mês",
-          tipo_meta: "receita",
-          valor_meta: numeric,
-          periodo: "mensal",
-          ativo: true,
-        });
-        if (error) throw error;
+      // upsert por (tipo_meta, periodo) — periodo no formato yyyy-MM
+      const payload = valoresMes
+        .map((v, i) => ({
+          periodo: `${ano}-${String(i + 1).padStart(2, "0")}`,
+          valor: Number(v) || 0,
+        }));
+
+      for (const item of payload) {
+        const existing = metasMap.get(item.periodo);
+        if (existing) {
+          const { error } = await supabase
+            .from("metas_config")
+            .update({ valor_meta: item.valor, ativo: true })
+            .eq("id", existing.id);
+          if (error) throw error;
+        } else if (item.valor > 0) {
+          const { error } = await supabase.from("metas_config").insert({
+            nome: `Meta Receita ${item.periodo}`,
+            descricao: `Meta de receita para ${item.periodo}`,
+            tipo_meta: "receita",
+            valor_meta: item.valor,
+            periodo: item.periodo,
+            ativo: true,
+          });
+          if (error) throw error;
+        }
       }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meta_financeira_mensal_all"] });
       queryClient.invalidateQueries({ queryKey: ["meta_financeira_mensal"] });
       queryClient.invalidateQueries({ queryKey: ["metas_config_receita"] });
     },
@@ -124,8 +164,14 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
     [rows]
   );
 
-  const valorMensalNum = Number(valorMensal) || 0;
-  const sugestaoAVista = valorMensalNum > 0 ? Math.ceil(valorMensalNum / DEFAULT_TICKET_MEDIO) : 0;
+  const totalAno = useMemo(
+    () => valoresMes.reduce((acc, v) => acc + (Number(v) || 0), 0),
+    [valoresMes]
+  );
+  const mediaMes = totalAno / 12;
+  const mesAtualIdx = new Date().getMonth();
+  const anoAtual = new Date().getFullYear();
+
 
   return (
     <ResponsiveOverlay
