@@ -3,13 +3,16 @@ import { ResponsiveOverlay } from "@/components/ui/responsive-overlay";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save, Target, TrendingUp, Wallet, Layers } from "lucide-react";
+import { Loader2, Save, Target, TrendingUp, Wallet, Layers, ChevronLeft, ChevronRight, Copy } from "lucide-react";
 import { useForecastMetas, MetaFase } from "@/hooks/useForecastMetas";
 import { FASES_FUNIL, stripEmoji, DEFAULT_TICKET_MEDIO } from "@/hooks/usePipelineForecast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+const MESES_PT = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
 
 interface MetasFaseConfigDialogProps {
   open: boolean;
