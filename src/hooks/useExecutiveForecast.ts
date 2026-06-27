@@ -6,6 +6,7 @@ import { ptBR } from "date-fns/locale";
 import { usePagamentos } from "@/hooks/usePagamentos";
 import { useDespesas } from "@/hooks/useDespesas";
 import { usePipelineForecast, type PipelineForecast } from "@/hooks/usePipelineForecast";
+import { calcularStatusGeral } from "@/lib/pagamentoUtils";
 
 const TICKET_AVISTA_FALLBACK = 1900;
 const TICKET_PARCELADO_MES_FALLBACK = 450;
@@ -97,7 +98,11 @@ function somaMes(pagamentos: any[], start: Date, end: Date) {
 }
 
 export function useExecutiveForecast(refDate: Date) {
-  const { pagamentos, isLoading: loadingPag } = usePagamentos();
+  const { pagamentos: pagamentosRaw, isLoading: loadingPag } = usePagamentos();
+  const pagamentos = useMemo(
+    () => pagamentosRaw.filter((p) => calcularStatusGeral(p.mae_nome, p.parcelas as any) !== "inadimplente"),
+    [pagamentosRaw],
+  );
   const { despesas, isLoading: loadingDesp } = useDespesas();
   const pipeline = usePipelineForecast();
   const queryClient = useQueryClient();
