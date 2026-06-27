@@ -39,6 +39,7 @@ export function ForecastChart({ data, metaMes, formatBRL, formatBRLShort, onMont
             </div>
             <p className="text-xs text-muted-foreground ml-10">
               Próximos 6 meses · receita garantida, prevista e meta
+              {onMonthClick && <span className="ml-1 text-primary">· clique numa barra para ver o detalhe</span>}
             </p>
           </div>
           <div className="flex items-center gap-6 text-right">

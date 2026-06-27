@@ -3,9 +3,12 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Wallet } from "lucide-react";
 import type { CarteiraFinanceira } from "@/hooks/useExecutiveForecast";
 
+export type CarteiraSegmentId = "avista" | "parcelado" | "recebido" | "areceber";
+
 interface Props {
   carteira: CarteiraFinanceira;
   formatBRL: (n: number) => string;
+  onSegmentClick?: (id: CarteiraSegmentId) => void;
 }
 
 const COLOR_AVISTA = "hsl(var(--primary))";
