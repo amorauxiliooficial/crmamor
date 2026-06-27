@@ -1,9 +1,9 @@
 import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { parseISO, startOfMonth, endOfMonth, addMonths, format, isWithinInterval } from "date-fns";
+import { parseISO, startOfMonth, endOfMonth, addMonths, subMonths, format, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { usePagamentos, type PagamentoComMae } from "@/hooks/usePagamentos";
+import { usePagamentos } from "@/hooks/usePagamentos";
 import { useDespesas } from "@/hooks/useDespesas";
 
 const TICKET_AVISTA_FALLBACK = 1900;
@@ -17,6 +17,8 @@ export interface ExecutivoKpis {
   gapRecebido: number;
   saldoOperacional: number;
   despesasMes: number;
+  deltaPrevistoPct: number; // vs mês anterior
+  deltaRecebidoPct: number; // vs mês anterior
 }
 
 export interface CarteiraFinanceira {
@@ -29,6 +31,8 @@ export interface CarteiraFinanceira {
   valorParcelado: number;
   pctAVista: number;
   pctParcelado: number;
+  pctRecebido: number;
+  pctAReceber: number;
 }
 
 export interface ComposicaoSugerida {
@@ -51,21 +55,44 @@ export interface RecebimentoItem {
   status: string;
 }
 
-export interface ProximoMesPrev {
+export interface ForecastMesItem {
   key: string;
   label: string;
-  valor: number;
+  recebido: number;
+  pendente: number;
+  total: number;
+  meta: number;
+  abaixoMeta: boolean;
 }
 
 const isAVista = (tipo: string) => /vista/i.test(tipo || "");
 
-function fetchMetaMes(mes: number, ano: number) {
-  // periodo formato esperado: "YYYY-MM" ou "mensal"; pegamos a meta mensal mais recente
+function fetchMetasReceita() {
   return supabase
     .from("metas_config")
     .select("*")
     .eq("ativo", true)
     .ilike("tipo_meta", "%receita%");
+}
+
+function somaMes(pagamentos: any[], start: Date, end: Date) {
+  let recebido = 0;
+  let pendente = 0;
+  pagamentos.forEach((pag) => {
+    pag.parcelas.forEach((p: any) => {
+      if (!p.data_pagamento || !p.valor) return;
+      let d: Date;
+      try {
+        d = parseISO(p.data_pagamento);
+      } catch {
+        return;
+      }
+      if (!isWithinInterval(d, { start, end })) return;
+      if (p.status === "pago") recebido += p.valor;
+      else if (p.status !== "inadimplente") pendente += p.valor;
+    });
+  });
+  return { recebido, pendente };
 }
 
 export function useExecutiveForecast(refDate: Date) {
@@ -76,7 +103,7 @@ export function useExecutiveForecast(refDate: Date) {
   const metasQuery = useQuery({
     queryKey: ["metas_config_receita"],
     queryFn: async () => {
-      const { data, error } = await fetchMetaMes(refDate.getMonth(), refDate.getFullYear());
+      const { data, error } = await fetchMetasReceita();
       if (error) throw error;
       return data ?? [];
     },
@@ -102,27 +129,23 @@ export function useExecutiveForecast(refDate: Date) {
     const monthEnd = endOfMonth(refDate);
     const today = new Date();
 
-    // ---- KPIs ----
-    let receitaPrevistaMes = 0;
-    let receitaRecebidaMes = 0;
+    // ---- Mês atual ----
+    const { recebido: receitaRecebidaMes, pendente: receitaPrevistaMes } = somaMes(
+      pagamentos,
+      monthStart,
+      monthEnd,
+    );
 
-    pagamentos.forEach((pag) => {
-      pag.parcelas.forEach((p) => {
-        if (!p.data_pagamento || !p.valor) return;
-        let d: Date;
-        try {
-          d = parseISO(p.data_pagamento);
-        } catch {
-          return;
-        }
-        if (!isWithinInterval(d, { start: monthStart, end: monthEnd })) return;
-        if (p.status === "pago") {
-          receitaRecebidaMes += p.valor;
-        } else if (p.status !== "inadimplente") {
-          receitaPrevistaMes += p.valor;
-        }
-      });
-    });
+    // ---- Mês anterior (para trend) ----
+    const prevStart = startOfMonth(subMonths(refDate, 1));
+    const prevEnd = endOfMonth(subMonths(refDate, 1));
+    const prev = somaMes(pagamentos, prevStart, prevEnd);
+    const calcDelta = (atual: number, anterior: number) => {
+      if (anterior <= 0) return atual > 0 ? 100 : 0;
+      return ((atual - anterior) / anterior) * 100;
+    };
+    const deltaPrevistoPct = calcDelta(receitaPrevistaMes, prev.pendente);
+    const deltaRecebidoPct = calcDelta(receitaRecebidaMes, prev.recebido);
 
     // ---- Meta mês ----
     const metasReceita = metasQuery.data ?? [];
@@ -136,7 +159,7 @@ export function useExecutiveForecast(refDate: Date) {
     const gapPrevisto = metaMes - (receitaRecebidaMes + receitaPrevistaMes);
     const gapRecebido = metaMes - receitaRecebidaMes;
 
-    // ---- Despesas do mês ----
+    // ---- Despesas ----
     let despesasMes = 0;
     despesas.forEach((d) => {
       try {
@@ -158,35 +181,32 @@ export function useExecutiveForecast(refDate: Date) {
       gapRecebido,
       saldoOperacional,
       despesasMes,
+      deltaPrevistoPct,
+      deltaRecebidoPct,
     };
 
-    // ---- Próximos 6 meses (inclui o mês atual de referência? usuário pediu próximos 6) ----
-    const proximos: ProximoMesPrev[] = [];
+    // ---- 6 meses (inclui mês corrente + 5 futuros) ----
+    const forecast6m: ForecastMesItem[] = [];
     for (let i = 0; i < 6; i++) {
-      const m = addMonths(monthStart, i + 1);
+      const m = addMonths(monthStart, i);
       const mStart = startOfMonth(m);
       const mEnd = endOfMonth(m);
-      let valor = 0;
-      pagamentos.forEach((pag) => {
-        pag.parcelas.forEach((p) => {
-          if (!p.data_pagamento || !p.valor) return;
-          if (p.status === "pago" || p.status === "inadimplente") return;
-          try {
-            const d = parseISO(p.data_pagamento);
-            if (isWithinInterval(d, { start: mStart, end: mEnd })) valor += p.valor;
-          } catch {
-            /* skip */
-          }
-        });
-      });
-      proximos.push({
+      const { recebido, pendente } = somaMes(pagamentos, mStart, mEnd);
+      const total = recebido + pendente;
+      forecast6m.push({
         key: format(m, "yyyy-MM"),
         label: format(m, "MMM/yy", { locale: ptBR }),
-        valor,
+        recebido,
+        pendente,
+        total,
+        meta: metaMes,
+        abaixoMeta: metaMes > 0 && total < metaMes * 0.8,
       });
     }
-    const totalProximos = proximos.reduce((a, p) => a + p.valor, 0);
-    const mediaProximos = proximos.length ? totalProximos / proximos.length : 0;
+    // próximos 6 (excluindo o atual) ainda usado para o KPI agregado
+    const proximos6 = forecast6m.slice(1);
+    const totalProximos = proximos6.reduce((a, p) => a + p.total, 0);
+    const mediaProximos = proximos6.length ? totalProximos / proximos6.length : 0;
 
     // ---- Carteira ----
     let totalContratado = 0;
@@ -225,9 +245,11 @@ export function useExecutiveForecast(refDate: Date) {
       valorParcelado,
       pctAVista: totalContratado ? (valorAVista / totalContratado) * 100 : 0,
       pctParcelado: totalContratado ? (valorParcelado / totalContratado) * 100 : 0,
+      pctRecebido: totalContratado ? (totalRecebido / totalContratado) * 100 : 0,
+      pctAReceber: totalContratado ? (totalAReceber / totalContratado) * 100 : 0,
     };
 
-    // ---- Composição sugerida ----
+    // ---- Composição p/ meta ----
     const ticketAVista = avistaValores.length
       ? avistaValores.reduce((a, b) => a + b, 0) / avistaValores.length
       : TICKET_AVISTA_FALLBACK;
@@ -252,7 +274,7 @@ export function useExecutiveForecast(refDate: Date) {
       opcaoMistaParcelada: gap > 0 ? mistaParcelada : 0,
     };
 
-    // ---- Últimas entradas (pagamentos recebidos mais recentes) ----
+    // ---- Últimas entradas ----
     const ultimas: RecebimentoItem[] = [];
     pagamentos.forEach((pag) => {
       pag.parcelas.forEach((p) => {
@@ -271,7 +293,7 @@ export function useExecutiveForecast(refDate: Date) {
     ultimas.sort((a, b) => (a.data < b.data ? 1 : -1));
     const ultimasEntradas = ultimas.slice(0, 10);
 
-    // ---- Próximos recebimentos (parcelas futuras pendentes) ----
+    // ---- Próximos recebimentos ----
     const proximosRec: RecebimentoItem[] = [];
     pagamentos.forEach((pag) => {
       pag.parcelas.forEach((p) => {
@@ -298,13 +320,18 @@ export function useExecutiveForecast(refDate: Date) {
     proximosRec.sort((a, b) => (a.data < b.data ? -1 : 1));
     const proximosRecebimentos = proximosRec.slice(0, 10);
 
+    // primeiro mês em risco (entre os 5 próximos)
+    const mesRisco = proximos6.find((p) => p.abaixoMeta) ?? null;
+
     return {
       kpis,
       carteira,
       composicao,
-      proximos6Meses: proximos,
+      forecast6m,
+      proximos6Meses: proximos6,
       totalProximos,
       mediaProximos,
+      mesRisco,
       ultimasEntradas,
       proximosRecebimentos,
       loading: loadingPag || loadingDesp || metasQuery.isLoading,

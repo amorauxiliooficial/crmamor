@@ -6,6 +6,8 @@ import {
   TrendingDown,
   Wallet,
   CircleDollarSign,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import type { ExecutivoKpis } from "@/hooks/useExecutiveForecast";
 
@@ -20,7 +22,27 @@ interface KpiCard {
   icon: typeof TrendingUp;
   accent: string;
   hint?: string;
-  hintColor?: string;
+  hintTone?: "muted" | "danger" | "success";
+  trend?: number | null;
+}
+
+function TrendPill({ value }: { value: number }) {
+  if (!isFinite(value) || Math.abs(value) < 0.5) {
+    return <span className="text-[10px] text-muted-foreground">estável</span>;
+  }
+  const up = value > 0;
+  const Icon = up ? ArrowUp : ArrowDown;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-0.5 text-[10px] font-semibold tabular-nums",
+        up ? "text-emerald-500" : "text-rose-500",
+      )}
+    >
+      <Icon className="h-3 w-3" />
+      {Math.abs(value).toFixed(0)}%
+    </span>
+  );
 }
 
 export function ExecutiveKpis({ kpis, formatBRL }: Props) {
@@ -32,6 +54,15 @@ export function ExecutiveKpis({ kpis, formatBRL }: Props) {
       icon: TrendingUp,
       accent: "text-sky-500 bg-sky-500/10",
       hint: "parcelas futuras do mês",
+      trend: kpis.deltaPrevistoPct,
+    },
+    {
+      label: "Receita Recebida",
+      value: kpis.receitaRecebidaMes,
+      icon: CircleDollarSign,
+      accent: "text-emerald-500 bg-emerald-500/10",
+      hint: "pagamentos confirmados",
+      trend: kpis.deltaRecebidoPct,
     },
     {
       label: "Meta do Mês",
@@ -50,16 +81,9 @@ export function ExecutiveKpis({ kpis, formatBRL }: Props) {
           : "text-emerald-500 bg-emerald-500/10",
       hint:
         kpis.gapPrevisto > 0
-          ? `Realizado: falta ${formatBRL(Math.max(kpis.gapRecebido, 0))}`
+          ? `Falta ${formatBRL(Math.max(kpis.gapRecebido, 0))} no realizado`
           : "Meta projetada coberta",
-      hintColor: kpis.gapPrevisto > 0 ? "text-rose-500" : "text-emerald-500",
-    },
-    {
-      label: "Receita Recebida",
-      value: kpis.receitaRecebidaMes,
-      icon: CircleDollarSign,
-      accent: "text-emerald-500 bg-emerald-500/10",
-      hint: "pagamentos confirmados no mês",
+      hintTone: kpis.gapPrevisto > 0 ? "danger" : "success",
     },
     {
       label: "Saldo Operacional",
@@ -69,7 +93,7 @@ export function ExecutiveKpis({ kpis, formatBRL }: Props) {
         kpis.saldoOperacional >= 0
           ? "text-emerald-500 bg-emerald-500/10"
           : "text-rose-500 bg-rose-500/10",
-      hint: `Despesas: ${formatBRL(kpis.despesasMes)}`,
+      hint: `Despesas ${formatBRL(kpis.despesasMes)}`,
     },
   ];
 
@@ -78,20 +102,37 @@ export function ExecutiveKpis({ kpis, formatBRL }: Props) {
       {cards.map((c) => {
         const Icon = c.icon;
         return (
-          <Card key={c.label} className="border-border/60">
-            <CardContent className="p-4 space-y-2">
+          <Card
+            key={c.label}
+            className="border-border/60 hover:border-border transition-colors hover:shadow-sm"
+          >
+            <CardContent className="p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                   {c.label}
                 </span>
                 <span className={cn("h-8 w-8 rounded-lg grid place-items-center", c.accent)}>
                   <Icon className="h-4 w-4" />
                 </span>
               </div>
-              <div className="text-xl font-bold tabular-nums">{formatBRL(c.value)}</div>
-              {c.hint && (
-                <div className={cn("text-[11px] text-muted-foreground", c.hintColor)}>{c.hint}</div>
-              )}
+              <div className="text-2xl font-bold tabular-nums tracking-tight">
+                {formatBRL(c.value)}
+              </div>
+              <div className="flex items-center justify-between gap-2 min-h-[16px]">
+                {c.hint && (
+                  <span
+                    className={cn(
+                      "text-[11px]",
+                      c.hintTone === "danger" && "text-rose-500",
+                      c.hintTone === "success" && "text-emerald-500",
+                      (!c.hintTone || c.hintTone === "muted") && "text-muted-foreground",
+                    )}
+                  >
+                    {c.hint}
+                  </span>
+                )}
+                {typeof c.trend === "number" && <TrendPill value={c.trend} />}
+              </div>
             </CardContent>
           </Card>
         );
