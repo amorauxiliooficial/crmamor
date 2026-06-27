@@ -3,8 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { usePipelineForecast, type FaseForecast } from "@/hooks/usePipelineForecast";
+import { useExecutiveForecast } from "@/hooks/useExecutiveForecast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -15,11 +23,21 @@ import {
 } from "@/components/ui/table";
 import { ArrowLeft, Loader2, Activity, Settings2, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { RiskBanner } from "@/components/forecast/RiskBanner";
 import { FunnelChart, atingimentoTextColor } from "@/components/forecast/FunnelChart";
 import { InsightsSidebar } from "@/components/forecast/InsightsSidebar";
 import { FaseDrillDownSheet } from "@/components/forecast/FaseDrillDownSheet";
 import { MetasFaseConfigDialog } from "@/components/forecast/MetasFaseConfigDialog";
+import { ExecutiveKpis } from "@/components/forecast/ExecutiveKpis";
+import { ProximosMesesChart } from "@/components/forecast/ProximosMesesChart";
+import {
+  CarteiraCard,
+  ComposicaoSugeridaCard,
+  MetaMensalCard,
+} from "@/components/forecast/CarteiraCards";
+import { RecebimentosPanels } from "@/components/forecast/RecebimentosPanels";
 
 const formatBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -46,11 +64,27 @@ const TONE_DOT: Record<string, string> = {
   azul: "bg-sky-500",
 };
 
+const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => ({
+  value: i,
+  label: format(new Date(2026, i, 1), "MMMM", { locale: ptBR }),
+}));
+
 export default function ForecastDashboard() {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
   const forecast = usePipelineForecast();
+
+  const today = new Date();
+  const [mes, setMes] = useState(today.getMonth());
+  const [ano, setAno] = useState(today.getFullYear());
+  const refDate = useMemo(() => new Date(ano, mes, 1), [mes, ano]);
+  const executivo = useExecutiveForecast(refDate);
+
+  const yearOptions = useMemo(() => {
+    const y = today.getFullYear();
+    return [y - 1, y, y + 1];
+  }, [today]);
 
   const [selectedFase, setSelectedFase] = useState<FaseForecast | null>(null);
   const [drillOpen, setDrillOpen] = useState(false);
@@ -85,7 +119,7 @@ export default function ForecastDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl">
-        <div className="flex h-14 items-center justify-between px-4 md:px-6 max-w-[1600px] mx-auto">
+        <div className="flex h-14 items-center justify-between px-4 md:px-6 max-w-[1600px] mx-auto gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
               <ArrowLeft className="h-5 w-5" />
@@ -93,7 +127,7 @@ export default function ForecastDashboard() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-base md:text-lg font-bold tracking-tight truncate">
-                  Forecast Pipeline
+                  Resumo Executivo
                 </h1>
                 <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                   <span className="relative flex h-1.5 w-1.5">
@@ -103,20 +137,45 @@ export default function ForecastDashboard() {
                   AO VIVO
                 </span>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                {forecast.totalMaes} mães no pipeline · clique numa fase para detalhar
+              <p className="text-[11px] text-muted-foreground hidden sm:block">
+                Visão geral da operação e do financeiro
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}>
+              <SelectTrigger className="h-8 w-[120px] text-xs capitalize">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[100]">
+                {MONTH_OPTIONS.map((m) => (
+                  <SelectItem key={m.value} value={String(m.value)} className="capitalize text-xs">
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={String(ano)} onValueChange={(v) => setAno(Number(v))}>
+              <SelectTrigger className="h-8 w-[90px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[100]">
+                {yearOptions.map((y) => (
+                  <SelectItem key={y} value={String(y)} className="text-xs">
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button variant="outline" size="sm" onClick={() => navigate("/forecast/tv")}>
-              <Monitor className="h-4 w-4 mr-2" />
-              Modo TV
+              <Monitor className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Modo TV</span>
             </Button>
             {isAdmin && (
               <Button variant="outline" size="sm" onClick={() => setConfigOpen(true)}>
-                <Settings2 className="h-4 w-4 mr-2" />
-                Metas
+                <Settings2 className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Metas</span>
               </Button>
             )}
           </div>
@@ -124,6 +183,38 @@ export default function ForecastDashboard() {
       </header>
 
       <main className="p-4 md:p-6 space-y-4 md:space-y-5 max-w-[1600px] mx-auto">
+        {/* 1. KPIs */}
+        <ExecutiveKpis kpis={executivo.kpis} formatBRL={formatBRL} />
+
+        {/* 2. Meta + Carteira + Composição */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          <MetaMensalCard
+            metaMes={executivo.kpis.metaMes}
+            receitaPrevista={executivo.kpis.receitaPrevistaMes}
+            receitaRecebida={executivo.kpis.receitaRecebidaMes}
+            formatBRL={formatBRL}
+          />
+          <CarteiraCard carteira={executivo.carteira} formatBRL={formatBRL} />
+          <ComposicaoSugeridaCard composicao={executivo.composicao} formatBRL={formatBRL} />
+        </div>
+
+        {/* 3. Próximos 6 meses */}
+        <ProximosMesesChart
+          data={executivo.proximos6Meses}
+          total={executivo.totalProximos}
+          media={executivo.mediaProximos}
+          formatBRL={formatBRL}
+          formatBRLShort={formatBRLShort}
+        />
+
+        {/* 4. Recebimentos */}
+        <RecebimentosPanels
+          ultimas={executivo.ultimasEntradas}
+          proximos={executivo.proximosRecebimentos}
+          formatBRL={formatBRL}
+        />
+
+        {/* 5. Pipeline Operacional (existente) */}
         <RiskBanner
           valorRisco={forecast.risco}
           fasesCriticas={fasesCriticas}
@@ -137,14 +228,20 @@ export default function ForecastDashboard() {
               <div>
                 <div className="flex items-center gap-2">
                   <Activity className="h-4 w-4 text-primary" />
-                  <h2 className="text-base md:text-lg font-bold tracking-tight">Funil Financeiro</h2>
+                  <h2 className="text-base md:text-lg font-bold tracking-tight">
+                    Pipeline Operacional
+                  </h2>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Largura proporcional · barra de progresso = atingimento da meta · clique para drill-down
                 </p>
               </div>
 
-              <FunnelChart fases={forecast.fases} onFaseClick={handleFaseClick} formatBRLShort={formatBRLShort} />
+              <FunnelChart
+                fases={forecast.fases}
+                onFaseClick={handleFaseClick}
+                formatBRLShort={formatBRLShort}
+              />
             </CardContent>
           </Card>
 
@@ -207,12 +304,21 @@ export default function ForecastDashboard() {
                         <TableCell
                           className={cn(
                             "text-right text-xs tabular-nums font-medium hidden md:table-cell",
-                            f.gapValor > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
+                            f.gapValor > 0
+                              ? "text-rose-600 dark:text-rose-400"
+                              : "text-emerald-600 dark:text-emerald-400"
                           )}
                         >
-                          {hasMeta ? `${f.gapValor > 0 ? "−" : "+"}${formatBRLShort(Math.abs(f.gapValor))}` : "—"}
+                          {hasMeta
+                            ? `${f.gapValor > 0 ? "−" : "+"}${formatBRLShort(Math.abs(f.gapValor))}`
+                            : "—"}
                         </TableCell>
-                        <TableCell className={cn("text-right text-xs font-bold tabular-nums", atingimentoTextColor(f.atingimentoPct, hasMeta))}>
+                        <TableCell
+                          className={cn(
+                            "text-right text-xs font-bold tabular-nums",
+                            atingimentoTextColor(f.atingimentoPct, hasMeta)
+                          )}
+                        >
                           {hasMeta ? `${(f.atingimentoPct * 100).toFixed(0)}%` : "—"}
                         </TableCell>
                       </TableRow>
