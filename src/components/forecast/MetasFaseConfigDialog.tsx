@@ -233,53 +233,93 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
           </button>
         </div>
 
-        {/* Meta Mensal */}
+        {/* Meta Mensal por mês */}
         {tab === "mensal" && (
           <section className="space-y-4">
             <div className="relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-5">
               <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
-              <div className="relative">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
-                  <Target className="h-3.5 w-3.5" />
-                  Meta Financeira Mensal
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Valor de receita que o time precisa atingir todo mês. Usada para calcular gap,
-                  percentual e composição sugerida.
-                </p>
-
-                <div className="mt-4 flex items-end gap-3">
-                  <div className="flex-1 space-y-1.5">
-                    <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Valor da meta (R$)
-                    </Label>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base font-semibold text-muted-foreground">
-                        R$
-                      </span>
-                      <Input
-                        type="number"
-                        min={0}
-                        step={100}
-                        value={valorMensal}
-                        onChange={(e) => setValorMensal(e.target.value)}
-                        placeholder="80000"
-                        className="h-14 pl-11 text-2xl font-bold tabular-nums"
-                      />
+              <div className="relative space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
+                      <Target className="h-3.5 w-3.5" />
+                      Meta Financeira por Mês
                     </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Defina o valor de receita esperado para cada mês. O dashboard usa o valor do mês corrente.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-background/70 p-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAno(ano - 1)}>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <div className="px-2 text-sm font-bold tabular-nums min-w-[3rem] text-center">{ano}</div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAno(ano + 1)}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <Mini icon={<Wallet className="h-3.5 w-3.5" />} label="Meta">
-                    {fmtBRL(valorMensalNum)}
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {MESES_PT.map((mes, idx) => {
+                    const isMesAtual = ano === anoAtual && idx === mesAtualIdx;
+                    return (
+                      <div
+                        key={mes}
+                        className={cn(
+                          "rounded-lg border bg-background/80 p-2.5 space-y-1.5 transition",
+                          isMesAtual ? "border-primary/60 ring-1 ring-primary/30" : "border-border/60"
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                            {mes}/{String(ano).slice(2)}
+                          </Label>
+                          {isMesAtual && (
+                            <span className="text-[9px] font-bold uppercase text-primary">Atual</span>
+                          )}
+                        </div>
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-muted-foreground">
+                            R$
+                          </span>
+                          <Input
+                            type="number"
+                            min={0}
+                            step={100}
+                            value={valoresMes[idx]}
+                            onChange={(e) => setMesValor(idx, e.target.value)}
+                            placeholder="0"
+                            className="h-9 pl-7 text-sm font-semibold tabular-nums"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <Mini icon={<Wallet className="h-3.5 w-3.5" />} label={`Total ${ano}`}>
+                    {fmtBRL(totalAno)}
                   </Mini>
-                  <Mini icon={<TrendingUp className="h-3.5 w-3.5" />} label="Ticket padrão">
+                  <Mini icon={<TrendingUp className="h-3.5 w-3.5" />} label="Média mensal">
+                    {fmtBRL(mediaMes)}
+                  </Mini>
+                  <Mini icon={<Target className="h-3.5 w-3.5" />} label="Ticket padrão">
                     {fmtBRL(DEFAULT_TICKET_MEDIO)}
                   </Mini>
-                  <Mini icon={<Target className="h-3.5 w-3.5" />} label="Mães necessárias">
-                    {sugestaoAVista > 0 ? `${sugestaoAVista} mães` : "—"}
-                  </Mini>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <Button variant="outline" size="sm" onClick={replicarParaTodos} className="h-8 text-xs">
+                    <Copy className="h-3.5 w-3.5 mr-1.5" />
+                    Replicar para todos os meses
+                  </Button>
+                  {loadingMensal && (
+                    <span className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
+                      <Loader2 className="h-3 w-3 animate-spin" /> carregando metas…
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -290,6 +330,7 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
             </div>
           </section>
         )}
+
 
         {/* Metas por fase */}
         {tab === "fases" && (
