@@ -105,6 +105,8 @@ export function ForecastChart({ data, metaMes, formatBRL, formatBRLShort, onMont
                 name="Garantida"
                 fill="hsl(142 70% 45%)"
                 radius={[0, 0, 0, 0]}
+                cursor={onMonthClick ? "pointer" : undefined}
+                onClick={(d: any) => onMonthClick?.(d.payload as ForecastMesItem)}
               />
               <Bar
                 dataKey="pendente"
@@ -112,6 +114,8 @@ export function ForecastChart({ data, metaMes, formatBRL, formatBRLShort, onMont
                 name="Prevista"
                 fill="hsl(217 91% 60%)"
                 radius={[6, 6, 0, 0]}
+                cursor={onMonthClick ? "pointer" : undefined}
+                onClick={(d: any) => onMonthClick?.(d.payload as ForecastMesItem)}
               />
               <Line
                 type="monotone"
