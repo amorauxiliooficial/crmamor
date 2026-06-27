@@ -195,16 +195,22 @@ export function useExecutiveForecast(refDate: Date) {
       const mEnd = endOfMonth(m);
       const { recebido, pendente } = somaMes(pagamentos, mStart, mEnd);
       const total = recebido + pendente;
+      const mKey = format(m, "yyyy-MM");
+      const mMetaRow =
+        metasReceita.find((x: any) => x.periodo === mKey) ??
+        metasReceita.find((x: any) => x.periodo === "mensal");
+      const mMeta = mMetaRow ? Number((mMetaRow as any).valor_meta) || 0 : 0;
       forecast6m.push({
-        key: format(m, "yyyy-MM"),
+        key: mKey,
         label: format(m, "MMM/yy", { locale: ptBR }),
         recebido,
         pendente,
         total,
-        meta: metaMes,
-        abaixoMeta: metaMes > 0 && total < metaMes * 0.8,
+        meta: mMeta,
+        abaixoMeta: mMeta > 0 && total < mMeta * 0.8,
       });
     }
+
     // próximos 6 (excluindo o atual) ainda usado para o KPI agregado
     const proximos6 = forecast6m.slice(1);
     const totalProximos = proximos6.reduce((a, p) => a + p.total, 0);
