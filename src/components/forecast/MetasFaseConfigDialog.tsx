@@ -3,13 +3,16 @@ import { ResponsiveOverlay } from "@/components/ui/responsive-overlay";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save, Target, TrendingUp, Wallet, Layers } from "lucide-react";
+import { Loader2, Save, Target, TrendingUp, Wallet, Layers, ChevronLeft, ChevronRight, Copy } from "lucide-react";
 import { useForecastMetas, MetaFase } from "@/hooks/useForecastMetas";
 import { FASES_FUNIL, stripEmoji, DEFAULT_TICKET_MEDIO } from "@/hooks/usePipelineForecast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+const MESES_PT = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
 
 interface MetasFaseConfigDialogProps {
   open: boolean;
@@ -27,24 +30,31 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
 
   const [tab, setTab] = useState<TabKey>("mensal");
   const [rows, setRows] = useState<MetaFase[]>([]);
-  const [valorMensal, setValorMensal] = useState<string>("");
+  const [ano, setAno] = useState<number>(new Date().getFullYear());
+  // valores por mês para o ano selecionado (índice 0 = janeiro)
+  const [valoresMes, setValoresMes] = useState<string[]>(Array(12).fill(""));
 
-  // Meta Financeira Mensal
-  const { data: metaMensal, isLoading: loadingMensal } = useQuery({
-    queryKey: ["meta_financeira_mensal"],
+  // Carrega todas as metas de receita (por mês + fallback "mensal")
+  const { data: metasReceita, isLoading: loadingMensal } = useQuery({
+    queryKey: ["meta_financeira_mensal_all"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("metas_config")
         .select("*")
         .eq("tipo_meta", "receita")
-        .eq("ativo", true)
-        .order("created_at", { ascending: true })
-        .maybeSingle();
+        .eq("ativo", true);
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
     enabled: open,
   });
+
+  // Mapa periodo -> registro
+  const metasMap = useMemo(() => {
+    const m = new Map<string, any>();
+    (metasReceita ?? []).forEach((r: any) => m.set(r.periodo, r));
+    return m;
+  }, [metasReceita]);
 
   useEffect(() => {
     if (!open) return;
@@ -64,37 +74,70 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
     );
   }, [open, metas]);
 
+  // Quando troca de ano ou carrega dados, preenche os 12 inputs
   useEffect(() => {
-    if (open && metaMensal) setValorMensal(String(metaMensal.valor_meta ?? 0));
-    else if (open && !loadingMensal && !metaMensal) setValorMensal("");
-  }, [open, metaMensal, loadingMensal]);
+    if (!open) return;
+    const fallback = metasMap.get("mensal");
+    const fallbackVal = fallback ? Number(fallback.valor_meta) || 0 : 0;
+    const next = Array.from({ length: 12 }, (_, i) => {
+      const key = `${ano}-${String(i + 1).padStart(2, "0")}`;
+      const row = metasMap.get(key);
+      if (row) return String(Number(row.valor_meta) || 0);
+      return fallbackVal ? String(fallbackVal) : "";
+    });
+    setValoresMes(next);
+  }, [open, ano, metasMap]);
 
   const updateRow = (key: string, patch: Partial<MetaFase>) => {
     setRows((prev) => prev.map((r) => (r.status_processo === key ? { ...r, ...patch } : r)));
   };
 
+  const setMesValor = (idx: number, v: string) => {
+    setValoresMes((prev) => prev.map((x, i) => (i === idx ? v : x)));
+  };
+
+  const replicarParaTodos = () => {
+    const primeiroComValor = valoresMes.find((v) => v && Number(v) > 0) ?? "";
+    if (!primeiroComValor) {
+      toast.info("Preencha pelo menos um mês antes de replicar");
+      return;
+    }
+    setValoresMes(Array(12).fill(primeiroComValor));
+    toast.success(`Valor replicado para todos os meses de ${ano}`);
+  };
+
   const saveMensal = useMutation({
     mutationFn: async () => {
-      const numeric = Number(valorMensal) || 0;
-      if (metaMensal) {
-        const { error } = await supabase
-          .from("metas_config")
-          .update({ valor_meta: numeric })
-          .eq("id", metaMensal.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("metas_config").insert({
-          nome: "Meta Financeira Mensal",
-          descricao: "Meta de receita projetada do mês",
-          tipo_meta: "receita",
-          valor_meta: numeric,
-          periodo: "mensal",
-          ativo: true,
-        });
-        if (error) throw error;
+      // upsert por (tipo_meta, periodo) — periodo no formato yyyy-MM
+      const payload = valoresMes
+        .map((v, i) => ({
+          periodo: `${ano}-${String(i + 1).padStart(2, "0")}`,
+          valor: Number(v) || 0,
+        }));
+
+      for (const item of payload) {
+        const existing = metasMap.get(item.periodo);
+        if (existing) {
+          const { error } = await supabase
+            .from("metas_config")
+            .update({ valor_meta: item.valor, ativo: true })
+            .eq("id", existing.id);
+          if (error) throw error;
+        } else if (item.valor > 0) {
+          const { error } = await supabase.from("metas_config").insert({
+            nome: `Meta Receita ${item.periodo}`,
+            descricao: `Meta de receita para ${item.periodo}`,
+            tipo_meta: "receita",
+            valor_meta: item.valor,
+            periodo: item.periodo,
+            ativo: true,
+          });
+          if (error) throw error;
+        }
       }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meta_financeira_mensal_all"] });
       queryClient.invalidateQueries({ queryKey: ["meta_financeira_mensal"] });
       queryClient.invalidateQueries({ queryKey: ["metas_config_receita"] });
     },
@@ -121,8 +164,14 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
     [rows]
   );
 
-  const valorMensalNum = Number(valorMensal) || 0;
-  const sugestaoAVista = valorMensalNum > 0 ? Math.ceil(valorMensalNum / DEFAULT_TICKET_MEDIO) : 0;
+  const totalAno = useMemo(
+    () => valoresMes.reduce((acc, v) => acc + (Number(v) || 0), 0),
+    [valoresMes]
+  );
+  const mediaMes = totalAno / 12;
+  const mesAtualIdx = new Date().getMonth();
+  const anoAtual = new Date().getFullYear();
+
 
   return (
     <ResponsiveOverlay
@@ -184,53 +233,93 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
           </button>
         </div>
 
-        {/* Meta Mensal */}
+        {/* Meta Mensal por mês */}
         {tab === "mensal" && (
           <section className="space-y-4">
             <div className="relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-5">
               <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
-              <div className="relative">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
-                  <Target className="h-3.5 w-3.5" />
-                  Meta Financeira Mensal
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Valor de receita que o time precisa atingir todo mês. Usada para calcular gap,
-                  percentual e composição sugerida.
-                </p>
-
-                <div className="mt-4 flex items-end gap-3">
-                  <div className="flex-1 space-y-1.5">
-                    <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Valor da meta (R$)
-                    </Label>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base font-semibold text-muted-foreground">
-                        R$
-                      </span>
-                      <Input
-                        type="number"
-                        min={0}
-                        step={100}
-                        value={valorMensal}
-                        onChange={(e) => setValorMensal(e.target.value)}
-                        placeholder="80000"
-                        className="h-14 pl-11 text-2xl font-bold tabular-nums"
-                      />
+              <div className="relative space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
+                      <Target className="h-3.5 w-3.5" />
+                      Meta Financeira por Mês
                     </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Defina o valor de receita esperado para cada mês. O dashboard usa o valor do mês corrente.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-background/70 p-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAno(ano - 1)}>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <div className="px-2 text-sm font-bold tabular-nums min-w-[3rem] text-center">{ano}</div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAno(ano + 1)}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <Mini icon={<Wallet className="h-3.5 w-3.5" />} label="Meta">
-                    {fmtBRL(valorMensalNum)}
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {MESES_PT.map((mes, idx) => {
+                    const isMesAtual = ano === anoAtual && idx === mesAtualIdx;
+                    return (
+                      <div
+                        key={mes}
+                        className={cn(
+                          "rounded-lg border bg-background/80 p-2.5 space-y-1.5 transition",
+                          isMesAtual ? "border-primary/60 ring-1 ring-primary/30" : "border-border/60"
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                            {mes}/{String(ano).slice(2)}
+                          </Label>
+                          {isMesAtual && (
+                            <span className="text-[9px] font-bold uppercase text-primary">Atual</span>
+                          )}
+                        </div>
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-muted-foreground">
+                            R$
+                          </span>
+                          <Input
+                            type="number"
+                            min={0}
+                            step={100}
+                            value={valoresMes[idx]}
+                            onChange={(e) => setMesValor(idx, e.target.value)}
+                            placeholder="0"
+                            className="h-9 pl-7 text-sm font-semibold tabular-nums"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <Mini icon={<Wallet className="h-3.5 w-3.5" />} label={`Total ${ano}`}>
+                    {fmtBRL(totalAno)}
                   </Mini>
-                  <Mini icon={<TrendingUp className="h-3.5 w-3.5" />} label="Ticket padrão">
+                  <Mini icon={<TrendingUp className="h-3.5 w-3.5" />} label="Média mensal">
+                    {fmtBRL(mediaMes)}
+                  </Mini>
+                  <Mini icon={<Target className="h-3.5 w-3.5" />} label="Ticket padrão">
                     {fmtBRL(DEFAULT_TICKET_MEDIO)}
                   </Mini>
-                  <Mini icon={<Target className="h-3.5 w-3.5" />} label="Mães necessárias">
-                    {sugestaoAVista > 0 ? `${sugestaoAVista} mães` : "—"}
-                  </Mini>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <Button variant="outline" size="sm" onClick={replicarParaTodos} className="h-8 text-xs">
+                    <Copy className="h-3.5 w-3.5 mr-1.5" />
+                    Replicar para todos os meses
+                  </Button>
+                  {loadingMensal && (
+                    <span className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
+                      <Loader2 className="h-3 w-3 animate-spin" /> carregando metas…
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -241,6 +330,7 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
             </div>
           </section>
         )}
+
 
         {/* Metas por fase */}
         {tab === "fases" && (
