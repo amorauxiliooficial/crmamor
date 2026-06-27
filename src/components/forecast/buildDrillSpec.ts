@@ -1,6 +1,6 @@
 import { parseISO, isWithinInterval, startOfMonth, endOfMonth, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { PagamentoCompleto } from "@/types/pagamento";
+// pagamentos é tipado livremente abaixo (formato do hook usePagamentos)
 import type { Despesa } from "@/types/despesa";
 import type {
   CarteiraFinanceira,
@@ -17,7 +17,7 @@ const COLOR_DANGER = "hsl(0 72% 50%)";
 
 interface Ctx {
   refDate: Date;
-  pagamentos: PagamentoCompleto[];
+  pagamentos: any[];
   despesas: Despesa[];
   kpis: ExecutivoKpis;
   carteira: CarteiraFinanceira;
@@ -269,8 +269,8 @@ export function buildCarteiraSpec(
   if (segment === "avista" || segment === "parcelado") {
     const want = segment === "avista";
     const records: DrillRecord[] = pagamentos
-      .filter((p) => isAVista(p.tipo_pagamento) === want)
-      .map((p) => ({
+      .filter((p: any) => isAVista(p.tipo_pagamento) === want)
+      .map((p: any): DrillRecord => ({
         id: p.id,
         nome: p.mae_nome,
         valor: Number(p.valor_total) || 0,
