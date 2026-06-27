@@ -6,6 +6,7 @@ import { ptBR } from "date-fns/locale";
 import { usePagamentos } from "@/hooks/usePagamentos";
 import { useDespesas } from "@/hooks/useDespesas";
 import { usePipelineForecast, type PipelineForecast } from "@/hooks/usePipelineForecast";
+import { calcularStatusGeral } from "@/lib/pagamentoUtils";
 
 const TICKET_AVISTA_FALLBACK = 1900;
 const TICKET_PARCELADO_MES_FALLBACK = 450;
