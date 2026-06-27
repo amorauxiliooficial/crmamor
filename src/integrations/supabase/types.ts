@@ -2748,6 +2748,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
       owns_mae_processo: { Args: { _mae_id: string }; Returns: boolean }
       validate_cpf: { Args: { cpf: string }; Returns: boolean }
     }
