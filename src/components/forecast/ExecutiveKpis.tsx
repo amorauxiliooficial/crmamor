@@ -11,9 +11,12 @@ import {
 } from "lucide-react";
 import type { ExecutivoKpis } from "@/hooks/useExecutiveForecast";
 
+export type KpiId = "prevista" | "recebida" | "meta" | "gap" | "saldo";
+
 interface Props {
   kpis: ExecutivoKpis;
   formatBRL: (n: number) => string;
+  onCardClick?: (id: KpiId) => void;
 }
 
 interface KpiCard {
@@ -45,10 +48,11 @@ function TrendPill({ value }: { value: number }) {
   );
 }
 
-export function ExecutiveKpis({ kpis, formatBRL }: Props) {
+export function ExecutiveKpis({ kpis, formatBRL, onCardClick }: Props) {
   const atingimento = kpis.metaMes > 0 ? (kpis.receitaRecebidaMes / kpis.metaMes) * 100 : 0;
-  const cards: KpiCard[] = [
+  const cards: (KpiCard & { id: KpiId })[] = [
     {
+      id: "prevista",
       label: "Receita Prevista",
       value: kpis.receitaPrevistaMes,
       icon: TrendingUp,
