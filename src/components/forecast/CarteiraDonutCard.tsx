@@ -83,7 +83,13 @@ export function CarteiraDonutCard({ carteira, formatBRL, onSegmentClick }: Props
 
           <div className="space-y-2.5">
             {segments.map((s) => (
-              <div key={s.label} className="space-y-1">
+              <div
+                key={s.label}
+                onClick={onSegmentClick ? () => onSegmentClick(s.id) : undefined}
+                className={`space-y-1 rounded-md -mx-2 px-2 py-1 transition-colors ${
+                  onSegmentClick ? "cursor-pointer hover:bg-muted/50" : ""
+                }`}
+              >
                 <div className="flex items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="h-2 w-2 rounded-full shrink-0" style={{ background: s.color }} />
