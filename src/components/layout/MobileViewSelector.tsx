@@ -10,7 +10,7 @@ const viewOptions = [
   { id: "kanban", label: "Processos", icon: LayoutGrid },
   { id: "gestantes", label: "Gestantes", icon: Baby },
   { id: "conferencia", label: "Conferência", icon: ClipboardCheck },
-  { id: "pagamentos", label: "Central Financeira", icon: DollarSign },
+  { id: "pagamentos", label: "Financeiro", icon: DollarSign },
   { id: "indicacoes", label: "Indicações", icon: UserPlus },
   { id: "prospeccao", label: "Prospecção", icon: Target },
 ];
