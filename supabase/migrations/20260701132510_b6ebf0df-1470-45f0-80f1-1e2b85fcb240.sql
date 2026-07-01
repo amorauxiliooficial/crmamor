@@ -1,0 +1,1 @@
+UPDATE public.parcelas_pagamento SET data_pagamento='2026-04-28' WHERE pagamento_id='c2bca5a7-210d-49ec-a47f-c69c5957be1d' AND numero_parcela=5 AND data_pagamento='0226-04-28';
