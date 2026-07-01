@@ -272,6 +272,25 @@ export function Header({
             >
               <Wallet className="h-5 w-5" />
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden md:flex gap-2 h-9 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+              onClick={() => navigate("/forecast")}
+              title="Central de Performance / Forecast"
+            >
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden lg:inline">Forecast</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 md:hidden"
+              onClick={() => navigate("/forecast")}
+              title="Forecast"
+            >
+              <TrendingUp className="h-5 w-5" />
+            </Button>
             <PagamentosNotificacao />
             <IndicacoesNotificacao onSelectIndicacao={onSelectIndicacao} />
           </div>
