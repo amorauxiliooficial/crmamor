@@ -96,12 +96,8 @@ export function MetricDrillSheet({ spec, open, onOpenChange, formatBRL }: Props)
           </div>
         </SheetHeader>
 
-        <Tabs defaultValue="resumo" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="mx-6 mt-4 grid grid-cols-3 h-9 bg-muted/60">
-            <TabsTrigger value="resumo" className="text-xs gap-1.5">
-              <Calculator className="h-3.5 w-3.5" />
-              Fórmula
-            </TabsTrigger>
+        <Tabs defaultValue="composicao" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="mx-6 mt-4 grid grid-cols-2 h-9 bg-muted/60">
             <TabsTrigger value="composicao" className="text-xs gap-1.5">
               <Layers className="h-3.5 w-3.5" />
               Composição
@@ -114,41 +110,8 @@ export function MetricDrillSheet({ spec, open, onOpenChange, formatBRL }: Props)
 
           <ScrollArea className="flex-1 min-h-0">
             <div className="px-6 py-5 space-y-4">
-              <TabsContent value="resumo" className="mt-0 space-y-4">
-                <Card className="border-border/60">
-                  <CardContent className="p-4 space-y-3">
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                        Cálculo
-                      </div>
-                      <code className="block text-xs font-mono bg-muted/60 rounded-md px-3 py-2 text-foreground">
-                        {spec.formula.expr}
-                      </code>
-                    </div>
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
-                        Como é calculado
-                      </div>
-                      <ul className="space-y-1.5">
-                        {spec.formula.explain.map((line, i) => (
-                          <li key={i} className="flex gap-2 text-xs leading-relaxed">
-                            <span className="text-primary mt-1">•</span>
-                            <span className="text-foreground/80">{line}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="pt-2 border-t border-border/60">
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                        Fonte dos dados
-                      </div>
-                      <p className="text-xs text-muted-foreground">{spec.formula.source}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
               <TabsContent value="composicao" className="mt-0 space-y-4">
+
                 {spec.composition && spec.composition.length > 0 ? (
                   <Card className="border-border/60">
                     <CardContent className="p-4 space-y-4">
