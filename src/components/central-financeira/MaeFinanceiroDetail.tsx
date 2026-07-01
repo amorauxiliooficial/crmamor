@@ -56,21 +56,49 @@ const TAB_OPTIONS: { value: TabKey; label: string; icon: any }[] = [
 ];
 
 async function fetchPagamentoDaMae(maeId: string) {
-  const { data: pag } = await supabase
+  const { data: pags } = await supabase
     .from("pagamentos_mae")
     .select("*")
     .eq("mae_id", maeId)
-    .maybeSingle();
+    .order("created_at", { ascending: true });
 
-  if (!pag) return null;
+  if (!pags || pags.length === 0) return null;
 
+  const ids = pags.map((p) => p.id);
   const { data: parcelas } = await supabase
     .from("parcelas_pagamento")
     .select("*")
-    .eq("pagamento_id", pag.id)
-    .order("numero_parcela", { ascending: true });
+    .in("pagamento_id", ids)
+    .order("data_pagamento", { ascending: true });
 
-  return { pagamento: pag, parcelas: parcelas ?? [] };
+  // Contrato "principal" = o mais recente (usado para editar/drawer)
+  const principal = pags[pags.length - 1];
+
+  // Somatório de todos os contratos (original + renegociações)
+  const valor_total = pags.reduce((s, p) => s + Number(p.valor_total ?? 0), 0);
+  const total_parcelas = pags.reduce((s, p) => s + Number(p.total_parcelas ?? 0), 0);
+
+  // Anexa rótulo do contrato em cada parcela para diferenciar na UI
+  const pagLabel = new Map(
+    pags.map((p, idx) => [
+      p.id,
+      pags.length > 1
+        ? idx === 0
+          ? "Original"
+          : `Renegociação ${idx > 1 ? idx : ""}`.trim()
+        : "",
+    ])
+  );
+  const parcelasEnriquecidas = (parcelas ?? []).map((pp: any) => ({
+    ...pp,
+    contrato_label: pagLabel.get(pp.pagamento_id) ?? "",
+  }));
+
+  return {
+    pagamento: { ...principal, valor_total, total_parcelas },
+    parcelas: parcelasEnriquecidas,
+    contratos: pags,
+  };
 }
 
 export function MaeFinanceiroDetail({ mae }: Props) {
@@ -373,7 +401,14 @@ export function MaeFinanceiroDetail({ mae }: Props) {
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="font-semibold w-8 shrink-0">#{p.numero_parcela}</span>
                           <div className="min-w-0">
-                            <div className="font-medium">{brl(p.valor)}</div>
+                            <div className="font-medium flex items-center gap-2 flex-wrap">
+                              {brl(p.valor)}
+                              {p.contrato_label && (
+                                <Badge variant="outline" className="text-[10px] py-0 h-4">
+                                  {p.contrato_label}
+                                </Badge>
+                              )}
+                            </div>
                             <div className="text-xs text-muted-foreground">{fmtDate(p.data_pagamento)}</div>
                           </div>
                         </div>
