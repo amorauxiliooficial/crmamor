@@ -299,6 +299,7 @@ Qualquer dúvida estamos à disposição!`;
             </Card>
 
             {/* Parcelas */}
+            {!hideParcelasBeneficio && (
             <Card>
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
                 <CardTitle className="text-base">Parcelas do benefício</CardTitle>
@@ -325,6 +326,8 @@ Qualquer dúvida estamos à disposição!`;
                 </div>
               </CardContent>
             </Card>
+            )}
+
 
             {/* Cobrança da Amor */}
             <Card>
