@@ -409,78 +409,146 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
           </TabsTrigger>
         </TabsList>
 
-        {/* ===== A Receber: KPIs + tabela executiva (exclui inadimplentes) ===== */}
+        {/* ===== A Receber: KPIs reorganizados para leitura clara ===== */}
         <TabsContent value="geral" className="mt-3 space-y-4">
-          <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-                <CardTitle className="text-xs font-medium">Mães</CardTitle>
-                <Users className="h-3.5 w-3.5 text-muted-foreground" />
-              </CardHeader>
-              <CardContent><div className="text-xl font-bold">{receberStats.totalMaes}</div></CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-                <CardTitle className="text-xs font-medium">Total Parcelas</CardTitle>
-                <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-              </CardHeader>
-              <CardContent><div className="text-xl font-bold">{receberStats.totalParcelas}</div></CardContent>
-            </Card>
-            <Card className="border-l-4 border-l-emerald-500">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-                <CardTitle className="text-xs font-medium">Pagas</CardTitle>
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              </CardHeader>
-              <CardContent><div className="text-xl font-bold text-emerald-600">{receberStats.pagas}</div></CardContent>
-            </Card>
-            <Card className="border-l-4 border-l-amber-500">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-                <CardTitle className="text-xs font-medium">Pendentes</CardTitle>
-                <Clock className="h-3.5 w-3.5 text-amber-500" />
-              </CardHeader>
-              <CardContent><div className="text-xl font-bold text-amber-600">{receberStats.pendentes}</div></CardContent>
-            </Card>
-            <Card className="border-l-4 border-l-blue-500">
-              <CardHeader className="pb-1">
-                <CardTitle className="text-xs font-medium flex items-center gap-1">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  Recebido em {meses[selectedMonth]}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="text-lg font-bold text-blue-600">{brl(receberStats.valorMes)}</div>
-                <div className="flex gap-1">
-                  <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
-                    <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent className="z-[100]">
-                      {meses.map((m, i) => (<SelectItem key={i} value={String(i)}>{m}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-                    <SelectTrigger className="h-7 text-xs w-20"><SelectValue /></SelectTrigger>
-                    <SelectContent className="z-[100]">
-                      {anos.map((a) => (<SelectItem key={a} value={String(a)}>{a}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {(() => {
+            const pctRecebido = receberStats.valorTotal > 0
+              ? Math.round((receberStats.valorPago / receberStats.valorTotal) * 100)
+              : 0;
+            const pctParcelas = receberStats.totalParcelas > 0
+              ? Math.round((receberStats.pagas / receberStats.totalParcelas) * 100)
+              : 0;
+            return (
+              <div className="grid gap-3 lg:grid-cols-3">
+                {/* HERO — Recebido no mês (destaque principal) */}
+                <Card className="lg:col-span-1 border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-500/5 to-transparent">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                        <TrendingUp className="h-3.5 w-3.5 text-blue-500" />
+                        Entrou no caixa em {meses[selectedMonth]}
+                      </CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="text-3xl font-bold text-blue-600 tabular-nums">
+                      {brl(receberStats.valorMes)}
+                    </div>
+                    <div className="flex gap-1.5">
+                      <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent className="z-[100]">
+                          {meses.map((m, i) => (<SelectItem key={i} value={String(i)}>{m}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+                        <SelectTrigger className="h-8 text-xs w-24"><SelectValue /></SelectTrigger>
+                        <SelectContent className="z-[100]">
+                          {anos.map((a) => (<SelectItem key={a} value={String(a)}>{a}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="pt-2 border-t flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Users className="h-3 w-3" /> Mães ativas
+                      </span>
+                      <span className="font-semibold">{receberStats.totalMaes}</span>
+                    </div>
+                  </CardContent>
+                </Card>
 
-          <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
-            <Card className="border-l-4 border-l-primary">
-              <CardHeader className="pb-1"><CardTitle className="text-xs font-medium">Valor Total Contratado</CardTitle></CardHeader>
-              <CardContent><div className="text-lg font-bold">{brl(receberStats.valorTotal)}</div></CardContent>
-            </Card>
-            <Card className="border-l-4 border-l-emerald-500">
-              <CardHeader className="pb-1"><CardTitle className="text-xs font-medium">Recebido (Total)</CardTitle></CardHeader>
-              <CardContent><div className="text-lg font-bold text-emerald-600">{brl(receberStats.valorPago)}</div></CardContent>
-            </Card>
-            <Card className="border-l-4 border-l-amber-500">
-              <CardHeader className="pb-1"><CardTitle className="text-xs font-medium">A Receber</CardTitle></CardHeader>
-              <CardContent><div className="text-lg font-bold text-amber-600">{brl(receberStats.valorPendente)}</div></CardContent>
-            </Card>
-          </div>
+                {/* GRUPO 1 — Financeiro (contratado / recebido / a receber) */}
+                <Card className="lg:col-span-1">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs font-medium text-muted-foreground">
+                      Financeiro consolidado
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <div className="flex items-baseline justify-between mb-1">
+                        <span className="text-xs text-muted-foreground">Total contratado</span>
+                        <span className="text-base font-bold tabular-nums">{brl(receberStats.valorTotal)}</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 transition-all"
+                          style={{ width: `${pctRecebido}%` }}
+                        />
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-1">
+                        {pctRecebido}% recebido
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div className="rounded-md border-l-2 border-emerald-500 bg-emerald-500/5 px-2 py-1.5">
+                        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Recebido
+                        </div>
+                        <div className="text-sm font-bold text-emerald-600 tabular-nums">
+                          {brl(receberStats.valorPago)}
+                        </div>
+                      </div>
+                      <div className="rounded-md border-l-2 border-amber-500 bg-amber-500/5 px-2 py-1.5">
+                        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-amber-500" /> A receber
+                        </div>
+                        <div className="text-sm font-bold text-amber-600 tabular-nums">
+                          {brl(receberStats.valorPendente)}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* GRUPO 2 — Parcelas (contagem) */}
+                <Card className="lg:col-span-1">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs font-medium text-muted-foreground">
+                      Parcelas
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <div className="flex items-baseline justify-between mb-1">
+                        <span className="text-xs text-muted-foreground">Total de parcelas</span>
+                        <span className="text-base font-bold tabular-nums">{receberStats.totalParcelas}</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 transition-all"
+                          style={{ width: `${pctParcelas}%` }}
+                        />
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-1">
+                        {pctParcelas}% quitadas
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div className="rounded-md border-l-2 border-emerald-500 bg-emerald-500/5 px-2 py-1.5">
+                        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Pagas
+                        </div>
+                        <div className="text-sm font-bold text-emerald-600 tabular-nums">
+                          {receberStats.pagas}
+                        </div>
+                      </div>
+                      <div className="rounded-md border-l-2 border-amber-500 bg-amber-500/5 px-2 py-1.5">
+                        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-amber-500" /> Pendentes
+                        </div>
+                        <div className="text-sm font-bold text-amber-600 tabular-nums">
+                          {receberStats.pendentes}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })()}
+
+
 
 
           {isLoading ? (
