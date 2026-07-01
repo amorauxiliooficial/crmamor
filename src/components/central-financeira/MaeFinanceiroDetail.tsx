@@ -401,7 +401,14 @@ export function MaeFinanceiroDetail({ mae }: Props) {
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="font-semibold w-8 shrink-0">#{p.numero_parcela}</span>
                           <div className="min-w-0">
-                            <div className="font-medium">{brl(p.valor)}</div>
+                            <div className="font-medium flex items-center gap-2 flex-wrap">
+                              {brl(p.valor)}
+                              {p.contrato_label && (
+                                <Badge variant="outline" className="text-[10px] py-0 h-4">
+                                  {p.contrato_label}
+                                </Badge>
+                              )}
+                            </div>
                             <div className="text-xs text-muted-foreground">{fmtDate(p.data_pagamento)}</div>
                           </div>
                         </div>
