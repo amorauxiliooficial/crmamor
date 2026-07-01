@@ -64,7 +64,13 @@ async function fetchFinanceiroData() {
     supabase
       .from("mae_processo")
       .select("*")
-      .in("status_processo", ["Aprovada", "📄 Rescisão de Contrato", "Renegociação"])
+      .in("status_processo", [
+        "Aprovada",
+        "📄 Rescisão de Contrato",
+        "Renegociação",
+        "Inadimplência",
+        "Negativação",
+      ])
       .order("nome_mae", { ascending: true }),
     supabase.from("pagamentos_mae").select("*").order("created_at", { ascending: false }),
     supabase.from("central_financeira" as any).select("id, mae_id"),
@@ -341,9 +347,10 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
     let totalAtraso = 0;
     let maesInad = 0;
     userFilteredRows.forEach((r) => {
-      if (r.parcelasEmAtraso.length === 0) return;
+      const parcelasEmAtraso = r.parcelasEmAtraso ?? [];
+      if (parcelasEmAtraso.length === 0) return;
       maesInad++;
-      r.parcelasEmAtraso.forEach((p: any) => {
+      parcelasEmAtraso.forEach((p: any) => {
         const b = agingBucket(p.diasAtraso ?? 0);
         buckets[b]++;
         bucketsVal[b] += Number(p.valor ?? 0);
