@@ -21,7 +21,9 @@ interface Props {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   inline?: boolean;
+  hideParcelasBeneficio?: boolean;
 }
+
 
 const PARCELA_STATUS = [
   { value: "prevista", label: "Prevista" },
