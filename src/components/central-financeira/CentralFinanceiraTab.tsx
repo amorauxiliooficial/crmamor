@@ -384,17 +384,92 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
         <TabsList>
-          <TabsTrigger value="geral">Visão Geral</TabsTrigger>
+          <TabsTrigger value="geral" className="gap-1.5">
+            A Receber
+            <Badge variant="outline" className="h-5 px-1.5 text-[10px]">{receberRows.length}</Badge>
+          </TabsTrigger>
           <TabsTrigger value="inadimplencia" className="gap-1.5">
             Inadimplências
-            {stats.inadimplentes > 0 && (
-              <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">{stats.inadimplentes}</Badge>
+            {inadimplenciaRowsBase.length > 0 && (
+              <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">{inadimplenciaRowsBase.length}</Badge>
             )}
           </TabsTrigger>
         </TabsList>
 
-        {/* ===== Visão Geral: Tabela executiva ===== */}
-        <TabsContent value="geral" className="mt-3">
+        {/* ===== A Receber: KPIs + tabela executiva (exclui inadimplentes) ===== */}
+        <TabsContent value="geral" className="mt-3 space-y-4">
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+                <CardTitle className="text-xs font-medium">Mães</CardTitle>
+                <Users className="h-3.5 w-3.5 text-muted-foreground" />
+              </CardHeader>
+              <CardContent><div className="text-xl font-bold">{receberStats.totalMaes}</div></CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+                <CardTitle className="text-xs font-medium">Total Parcelas</CardTitle>
+                <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+              </CardHeader>
+              <CardContent><div className="text-xl font-bold">{receberStats.totalParcelas}</div></CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-emerald-500">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+                <CardTitle className="text-xs font-medium">Pagas</CardTitle>
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+              </CardHeader>
+              <CardContent><div className="text-xl font-bold text-emerald-600">{receberStats.pagas}</div></CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-amber-500">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+                <CardTitle className="text-xs font-medium">Pendentes</CardTitle>
+                <Clock className="h-3.5 w-3.5 text-amber-500" />
+              </CardHeader>
+              <CardContent><div className="text-xl font-bold text-amber-600">{receberStats.pendentes}</div></CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-blue-500">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium flex items-center gap-1">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  Recebido em {meses[selectedMonth]}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="text-lg font-bold text-blue-600">{brl(receberStats.valorMes)}</div>
+                <div className="flex gap-1">
+                  <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+                    <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent className="z-[100]">
+                      {meses.map((m, i) => (<SelectItem key={i} value={String(i)}>{m}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+                    <SelectTrigger className="h-7 text-xs w-20"><SelectValue /></SelectTrigger>
+                    <SelectContent className="z-[100]">
+                      {anos.map((a) => (<SelectItem key={a} value={String(a)}>{a}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
+            <Card className="border-l-4 border-l-primary">
+              <CardHeader className="pb-1"><CardTitle className="text-xs font-medium">Valor Total Contratado</CardTitle></CardHeader>
+              <CardContent><div className="text-lg font-bold">{brl(receberStats.valorTotal)}</div></CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-emerald-500">
+              <CardHeader className="pb-1"><CardTitle className="text-xs font-medium">Recebido (Total)</CardTitle></CardHeader>
+              <CardContent><div className="text-lg font-bold text-emerald-600">{brl(receberStats.valorPago)}</div></CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-amber-500">
+              <CardHeader className="pb-1"><CardTitle className="text-xs font-medium">A Receber</CardTitle></CardHeader>
+              <CardContent><div className="text-lg font-bold text-amber-600">{brl(receberStats.valorPendente)}</div></CardContent>
+            </Card>
+          </div>
+
+
           {isLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
           ) : execRows.length === 0 ? (
