@@ -121,7 +121,7 @@ export function MaeFinanceiroDetail({ mae }: Props) {
     qc.invalidateQueries({ queryKey: ["pagamentos"] });
   };
 
-  const { central, parcelas: parcelasBeneficio, boletos } = useCentralFinanceira(mae.id);
+  const { parcelas: parcelasBeneficio, boletos, upsertParcela: upsertParcelaBenef, deleteParcela: deleteParcelaBenef } = useCentralFinanceira(mae.id);
 
   const honorariosResumo = useMemo(() => {
     const parcelas = pagQuery.data?.parcelas ?? [];
