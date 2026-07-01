@@ -58,7 +58,7 @@ async function fetchFinanceiroData() {
     supabase
       .from("mae_processo")
       .select("*")
-      .in("status_processo", ["Aprovada", "📄 Rescisão de Contrato"])
+      .in("status_processo", ["Aprovada", "📄 Rescisão de Contrato", "Renegociação"])
       .order("nome_mae", { ascending: true }),
     supabase.from("pagamentos_mae").select("*").order("created_at", { ascending: false }),
     supabase.from("central_financeira" as any).select("id, mae_id"),
