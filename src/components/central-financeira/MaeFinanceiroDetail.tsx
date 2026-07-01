@@ -48,12 +48,11 @@ const fmtDate = (d: string | null | undefined) => {
   }
 };
 
-type TabKey = "resumo" | "honorarios" | "central";
+type TabKey = "resumo" | "central";
 
 const TAB_OPTIONS: { value: TabKey; label: string; icon: any }[] = [
   { value: "resumo", label: "Resumo", icon: ClipboardList },
-  { value: "honorarios", label: "Honorários da Amor", icon: Receipt },
-  { value: "central", label: "Benefício & Boletos", icon: Landmark },
+  { value: "central", label: "Benefício, Boletos & Honorários", icon: Landmark },
 ];
 
 async function fetchPagamentoDaMae(maeId: string) {
@@ -227,7 +226,7 @@ export function MaeFinanceiroDetail({ mae }: Props) {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => setTab("honorarios")}
+                    onClick={() => setTab("central")}
                     className="text-xs h-7"
                   >
                     Abrir
@@ -302,103 +301,117 @@ export function MaeFinanceiroDetail({ mae }: Props) {
           </div>
         </TabsContent>
 
-        {/* HONORÁRIOS */}
-        <TabsContent value="honorarios" className="mt-4 space-y-4">
-          {pagQuery.isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        {/* CENTRAL — Honorários + Benefício & Boletos & Comunicado */}
+        <TabsContent value="central" className="mt-4 space-y-6">
+          {/* ===== Honorários da Amor ===== */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Honorários da Amor
+              </h3>
             </div>
-          ) : !pagQuery.data ? (
-            <Card>
-              <CardContent className="py-12 text-center space-y-3">
-                <Receipt className="h-10 w-10 text-muted-foreground/50 mx-auto" />
-                <p className="text-sm text-muted-foreground">
-                  Nenhum pagamento de honorários cadastrado para esta mãe.
-                </p>
-                <Button onClick={() => setPagamentoDialogOpen(true)} className="gap-1.5">
-                  <Plus className="h-4 w-4" />
-                  Cadastrar pagamento
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {/* Summary bar */}
+
+            {pagQuery.isLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : !pagQuery.data ? (
               <Card>
-                <CardContent className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                  <Stat label="Total contratado" value={brl(honorariosResumo.total)} />
-                  <Stat label="Recebido" value={brl(honorariosResumo.recebido)} accent="success" />
-                  <Stat label="Em aberto" value={brl(honorariosResumo.emAberto)} accent="warning" />
-                  <div className="flex items-center justify-end gap-2">
-                    <Button size="sm" variant="outline" onClick={() => setDrawerOpen(true)} className="gap-1">
-                      <Eye className="h-3.5 w-3.5" />
-                      Ver detalhes
-                    </Button>
-                    <Button size="sm" onClick={() => setPagamentoDialogOpen(true)} className="gap-1">
-                      <Edit className="h-3.5 w-3.5" />
-                      Editar
-                    </Button>
-                  </div>
+                <CardContent className="py-8 text-center space-y-3">
+                  <Receipt className="h-8 w-8 text-muted-foreground/50 mx-auto" />
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum pagamento de honorários cadastrado para esta mãe.
+                  </p>
+                  <Button onClick={() => setPagamentoDialogOpen(true)} className="gap-1.5">
+                    <Plus className="h-4 w-4" />
+                    Cadastrar pagamento
+                  </Button>
                 </CardContent>
               </Card>
-
-              {/* Parcelas inline */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <ClipboardList className="h-4 w-4" />
-                    Parcelas
-                    <Badge variant="outline" className="ml-auto text-xs">
-                      <StatusGeralBadge
-                        status={calcularStatusGeral(mae.nome_mae, drawerPagamento?.parcelas ?? [])}
-                      />
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {(pagQuery.data.parcelas ?? []).length === 0 && (
-                    <p className="text-sm text-muted-foreground">Nenhuma parcela cadastrada.</p>
-                  )}
-                  {(pagQuery.data.parcelas ?? []).map((p: any) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between border rounded p-2 text-sm gap-2"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="font-semibold w-8 shrink-0">#{p.numero_parcela}</span>
-                        <div className="min-w-0">
-                          <div className="font-medium">{brl(p.valor)}</div>
-                          <div className="text-xs text-muted-foreground">{fmtDate(p.data_pagamento)}</div>
-                        </div>
-                      </div>
-                      <ParcelaStatusBadge status={p.status} />
+            ) : (
+              <>
+                <Card>
+                  <CardContent className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <Stat label="Total contratado" value={brl(honorariosResumo.total)} />
+                    <Stat label="Recebido" value={brl(honorariosResumo.recebido)} accent="success" />
+                    <Stat label="Em aberto" value={brl(honorariosResumo.emAberto)} accent="warning" />
+                    <div className="flex items-center justify-end gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setDrawerOpen(true)} className="gap-1">
+                        <Eye className="h-3.5 w-3.5" />
+                        Ver detalhes
+                      </Button>
+                      <Button size="sm" onClick={() => setPagamentoDialogOpen(true)} className="gap-1">
+                        <Edit className="h-3.5 w-3.5" />
+                        Editar
+                      </Button>
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </>
-          )}
+                  </CardContent>
+                </Card>
 
-          <PagamentoDialog
-            open={pagamentoDialogOpen}
-            onOpenChange={setPagamentoDialogOpen}
-            maeId={mae.id}
-            maeNome={mae.nome_mae}
-            existingPagamentoId={pagQuery.data?.pagamento?.id}
-            onSuccess={refetchPag}
-          />
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4" />
+                      Parcelas dos honorários
+                      <Badge variant="outline" className="ml-auto text-xs">
+                        <StatusGeralBadge
+                          status={calcularStatusGeral(mae.nome_mae, drawerPagamento?.parcelas ?? [])}
+                        />
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {(pagQuery.data.parcelas ?? []).length === 0 && (
+                      <p className="text-sm text-muted-foreground">Nenhuma parcela cadastrada.</p>
+                    )}
+                    {(pagQuery.data.parcelas ?? []).map((p: any) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between border rounded p-2 text-sm gap-2"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="font-semibold w-8 shrink-0">#{p.numero_parcela}</span>
+                          <div className="min-w-0">
+                            <div className="font-medium">{brl(p.valor)}</div>
+                            <div className="text-xs text-muted-foreground">{fmtDate(p.data_pagamento)}</div>
+                          </div>
+                        </div>
+                        <ParcelaStatusBadge status={p.status} />
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </>
+            )}
 
-          <PagamentoDetailDrawer
-            open={drawerOpen}
-            onOpenChange={setDrawerOpen}
-            pagamento={drawerPagamento as any}
-            onUpdated={refetchPag}
-          />
-        </TabsContent>
+            <PagamentoDialog
+              open={pagamentoDialogOpen}
+              onOpenChange={setPagamentoDialogOpen}
+              maeId={mae.id}
+              maeNome={mae.nome_mae}
+              existingPagamentoId={pagQuery.data?.pagamento?.id}
+              onSuccess={refetchPag}
+            />
 
-        {/* CENTRAL — Benefício & Boletos & Comunicado */}
-        <TabsContent value="central" className="mt-4">
-          <CentralFinanceiraDialog mae={mae} inline />
+            <PagamentoDetailDrawer
+              open={drawerOpen}
+              onOpenChange={setDrawerOpen}
+              pagamento={drawerPagamento as any}
+              onUpdated={refetchPag}
+            />
+          </section>
+
+          {/* ===== Benefício INSS, Boletos & Comunicado ===== */}
+          <section className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Landmark className="h-4 w-4 text-blue-500" />
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Benefício INSS & Boletos
+              </h3>
+            </div>
+            <CentralFinanceiraDialog mae={mae} inline />
+          </section>
         </TabsContent>
       </Tabs>
     </div>
