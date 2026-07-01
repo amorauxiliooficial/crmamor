@@ -269,10 +269,19 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
     return list;
   }, [userFilteredRows, localSearch, searchQuery]);
 
-  // ===== "A Receber": mães SEM inadimplência =====
+  // Helper: mãe considerada inadimplente por STATUS (mesmo sem parcelas cadastradas)
+  const isInadimplenteStatus = (statusProcesso?: string | null) => {
+    const s = (statusProcesso ?? "").toLowerCase();
+    return s.includes("inadimpl") || s.includes("negativ");
+  };
+
+  // ===== "A Receber": mães SEM inadimplência (nem por parcela, nem por status) =====
   const receberRows = useMemo(
-    () => filteredRows.filter((r) => r.parcelasInadimplentes === 0),
-    [filteredRows]
+    () =>
+      filteredRows.filter(
+        (r) => r.parcelasInadimplentes === 0 && !isInadimplenteStatus(r.mae.status_processo),
+      ),
+    [filteredRows],
   );
 
   const execRows = useMemo(() => {
@@ -318,16 +327,20 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
     };
   }, [receberRows, selectedMonth, selectedYear]);
 
-  // Inadimplência-only rows with aging filter
+  // Inadimplência: por parcela em atraso OU por status marcado como Inadimplência/Negativação
   const inadimplenciaRowsBase = useMemo(
-    () => filteredRows.filter((r) => r.parcelasInadimplentes > 0),
-    [filteredRows]
+    () =>
+      filteredRows.filter(
+        (r) => r.parcelasInadimplentes > 0 || isInadimplenteStatus(r.mae.status_processo),
+      ),
+    [filteredRows],
   );
   const inadimplenciaRows = useMemo(() => {
     return inadimplenciaRowsBase
       .filter((r) => agingFilter === "all" || agingBucket(r.maiorAtrasoDias) === agingFilter)
       .sort((a, b) => b.maiorAtrasoDias - a.maiorAtrasoDias);
   }, [inadimplenciaRowsBase, agingFilter]);
+
 
   // Aging KPIs
   const agingStats = useMemo(() => {
