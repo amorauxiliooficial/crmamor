@@ -21,7 +21,9 @@ interface Props {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   inline?: boolean;
+  hideParcelasBeneficio?: boolean;
 }
+
 
 const PARCELA_STATUS = [
   { value: "prevista", label: "Prevista" },
@@ -50,7 +52,7 @@ const fmtDate = (d: string | null | undefined) => {
   }
 };
 
-export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inline = false }: Props) {
+export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inline = false, hideParcelasBeneficio = false }: Props) {
   const isActive = inline || open;
   const {
     central,
@@ -297,6 +299,7 @@ Qualquer dúvida estamos à disposição!`;
             </Card>
 
             {/* Parcelas */}
+            {!hideParcelasBeneficio && (
             <Card>
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
                 <CardTitle className="text-base">Parcelas do benefício</CardTitle>
@@ -323,6 +326,8 @@ Qualquer dúvida estamos à disposição!`;
                 </div>
               </CardContent>
             </Card>
+            )}
+
 
             {/* Cobrança da Amor */}
             <Card>
@@ -592,7 +597,7 @@ function Row({
   );
 }
 
-function ParcelaRow({
+export function ParcelaRow({
   p,
   onSave,
   onDelete,
