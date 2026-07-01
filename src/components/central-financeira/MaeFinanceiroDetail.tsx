@@ -48,12 +48,11 @@ const fmtDate = (d: string | null | undefined) => {
   }
 };
 
-type TabKey = "resumo" | "honorarios" | "central";
+type TabKey = "resumo" | "central";
 
 const TAB_OPTIONS: { value: TabKey; label: string; icon: any }[] = [
   { value: "resumo", label: "Resumo", icon: ClipboardList },
-  { value: "honorarios", label: "Honorários da Amor", icon: Receipt },
-  { value: "central", label: "Benefício & Boletos", icon: Landmark },
+  { value: "central", label: "Benefício, Boletos & Honorários", icon: Landmark },
 ];
 
 async function fetchPagamentoDaMae(maeId: string) {
