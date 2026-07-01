@@ -255,24 +255,47 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
     return rows.filter((r) => r.mae.user_id === selectedUserId);
   }, [rows, selectedUserId]);
 
-  const stats = useMemo(() => {
-    let totalParcelas = 0,
-      pagas = 0,
-      pendentes = 0,
-      inadimplentes = 0;
-    let valorTotal = 0,
-      valorPago = 0,
-      valorPendente = 0,
-      valorMes = 0,
-      valorEmAtraso = 0;
+  // Search filter
+  const filteredRows = useMemo(() => {
+    const q = (localSearch || searchQuery || "").toLowerCase().trim();
+    let list = userFilteredRows;
+    if (q) {
+      list = list.filter(
+        (r) =>
+          r.mae.nome_mae?.toLowerCase().includes(q) ||
+          (r.mae.cpf ?? "").replace(/\D/g, "").includes(q.replace(/\D/g, ""))
+      );
+    }
+    return list;
+  }, [userFilteredRows, localSearch, searchQuery]);
 
-    userFilteredRows.forEach((r) => {
+  // ===== "A Receber": mães SEM inadimplência =====
+  const receberRows = useMemo(
+    () => filteredRows.filter((r) => r.parcelasInadimplentes === 0),
+    [filteredRows]
+  );
+
+  const execRows = useMemo(() => {
+    return [...receberRows].sort((a, b) => {
+      const score = (r: MaeFinanceiroRow) => {
+        if (!r.hasPagamento) return 0;
+        if (r.parcelasPendentes > 0) return 1;
+        return 2;
+      };
+      const sc = score(a) - score(b);
+      if (sc !== 0) return sc;
+      return b.valorPendente - a.valorPendente;
+    });
+  }, [receberRows]);
+
+  const receberStats = useMemo(() => {
+    let totalParcelas = 0, pagas = 0, pendentes = 0;
+    let valorTotal = 0, valorPago = 0, valorPendente = 0, valorMes = 0;
+    receberRows.forEach((r) => {
       totalParcelas += r.parcelasTotal;
       pagas += r.parcelasPagas;
       pendentes += r.parcelasPendentes;
-      inadimplentes += r.parcelasInadimplentes;
-      valorTotal += r.parcelas.reduce((s, p) => s + Number(p.valor ?? 0), 0);
-      valorEmAtraso += r.valorEmAtraso;
+      valorTotal += r.valorTotal;
       r.parcelas.forEach((p) => {
         const v = Number(p.valor ?? 0);
         if (p.status === "pago") {
@@ -288,57 +311,23 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
         }
       });
     });
-
     return {
-      totalMaes: userFilteredRows.length,
-      totalParcelas,
-      pagas,
-      pendentes,
-      inadimplentes,
-      valorTotal,
-      valorPago,
-      valorPendente,
-      valorMes,
-      valorEmAtraso,
+      totalMaes: receberRows.length,
+      totalParcelas, pagas, pendentes,
+      valorTotal, valorPago, valorPendente, valorMes,
     };
-  }, [userFilteredRows, selectedMonth, selectedYear]);
-
-  // Search filter
-  const filteredRows = useMemo(() => {
-    const q = (localSearch || searchQuery || "").toLowerCase().trim();
-    let list = userFilteredRows;
-    if (q) {
-      list = list.filter(
-        (r) =>
-          r.mae.nome_mae?.toLowerCase().includes(q) ||
-          (r.mae.cpf ?? "").replace(/\D/g, "").includes(q.replace(/\D/g, ""))
-      );
-    }
-    return list;
-  }, [userFilteredRows, localSearch, searchQuery]);
-
-  // Executive table sorting
-  const execRows = useMemo(() => {
-    return [...filteredRows].sort((a, b) => {
-      const score = (r: MaeFinanceiroRow) => {
-        if (r.parcelasInadimplentes > 0) return 0;
-        if (!r.hasPagamento) return 1;
-        if (r.parcelasPendentes > 0) return 2;
-        return 3;
-      };
-      const sc = score(a) - score(b);
-      if (sc !== 0) return sc;
-      return b.valorEmAtraso - a.valorEmAtraso;
-    });
-  }, [filteredRows]);
+  }, [receberRows, selectedMonth, selectedYear]);
 
   // Inadimplência-only rows with aging filter
+  const inadimplenciaRowsBase = useMemo(
+    () => filteredRows.filter((r) => r.parcelasInadimplentes > 0),
+    [filteredRows]
+  );
   const inadimplenciaRows = useMemo(() => {
-    const only = filteredRows.filter((r) => r.parcelasInadimplentes > 0);
-    return only
+    return inadimplenciaRowsBase
       .filter((r) => agingFilter === "all" || agingBucket(r.maiorAtrasoDias) === agingFilter)
       .sort((a, b) => b.maiorAtrasoDias - a.maiorAtrasoDias);
-  }, [filteredRows, agingFilter]);
+  }, [inadimplenciaRowsBase, agingFilter]);
 
   // Aging KPIs
   const agingStats = useMemo(() => {
