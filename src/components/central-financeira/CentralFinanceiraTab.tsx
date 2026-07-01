@@ -509,13 +509,13 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                 <Card className="lg:col-span-1">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-medium text-muted-foreground">
-                      Parcelas
+                      Parcelas de {meses[selectedMonth]}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
                       <div className="flex items-baseline justify-between mb-1">
-                        <span className="text-xs text-muted-foreground">Total de parcelas</span>
+                        <span className="text-xs text-muted-foreground">Parcelas no mês</span>
                         <span className="text-base font-bold tabular-nums">{receberStats.totalParcelas}</span>
                       </div>
                       <div className="h-2 rounded-full bg-muted overflow-hidden">
