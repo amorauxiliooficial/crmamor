@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CentralFinanceiraDialog } from "@/components/central-financeira/CentralFinanceiraDialog";
+import { CentralFinanceiraDialog, ParcelaRow as BeneficioParcelaRow } from "@/components/central-financeira/CentralFinanceiraDialog";
 import { PagamentoDialog } from "@/components/pagamentos/PagamentoDialog";
 import { PagamentoDetailDrawer, StatusGeralBadge } from "@/components/pagamentos/PagamentoDetailDrawer";
 import { useCentralFinanceira } from "@/hooks/useCentralFinanceira";
 import { calcularStatusGeral } from "@/lib/pagamentoUtils";
+
 import { formatCpf } from "@/lib/formatters";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { format, parseISO } from "date-fns";
