@@ -95,7 +95,7 @@ export function ExecutiveKpis({ kpis, formatBRL, onCardClick }: Props) {
   ];
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {cards.map((c) => {
         const Icon = c.icon;
         return (
