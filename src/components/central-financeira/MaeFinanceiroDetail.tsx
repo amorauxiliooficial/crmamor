@@ -501,7 +501,7 @@ export function MaeFinanceiroDetail({ mae }: Props) {
                 Benefício INSS & Boletos
               </h3>
             </div>
-            <CentralFinanceiraDialog mae={mae} inline />
+            <CentralFinanceiraDialog mae={mae} inline hideParcelasBeneficio />
           </section>
         </TabsContent>
       </Tabs>
