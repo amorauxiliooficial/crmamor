@@ -657,16 +657,6 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                             <div className="flex items-center justify-end gap-1">
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="h-7 gap-1 text-xs"
-                                disabled={!temTelefone}
-                                onClick={() => openWhatsappCobranca(r.mae, r.valorEmAtraso, r.maiorAtrasoDias)}
-                              >
-                                <MessageCircle className="h-3 w-3" />
-                                Cobrar
-                              </Button>
-                              <Button
-                                size="sm"
                                 variant="ghost"
                                 className="h-7 gap-1 text-xs"
                                 onClick={() => setSelectedMae(r.mae)}
