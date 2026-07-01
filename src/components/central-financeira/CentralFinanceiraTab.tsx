@@ -300,28 +300,32 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
   const receberStats = useMemo(() => {
     let totalParcelas = 0, pagas = 0, pendentes = 0;
     let valorTotal = 0, valorPago = 0, valorPendente = 0, valorMes = 0;
+    const maesComParcelaNoMes = new Set<string>();
     receberRows.forEach((r) => {
-      totalParcelas += r.parcelasTotal;
-      pagas += r.parcelasPagas;
-      pendentes += r.parcelasPendentes;
-      valorTotal += r.valorTotal;
       r.parcelas.forEach((p) => {
+        if (!p.data_pagamento) return;
+        let dp: Date;
+        try {
+          dp = parseISO(p.data_pagamento);
+        } catch { return; }
+        if (getMonth(dp) !== selectedMonth || getYear(dp) !== selectedYear) return;
+
         const v = Number(p.valor ?? 0);
+        totalParcelas++;
+        valorTotal += v;
+        maesComParcelaNoMes.add(r.mae.id);
         if (p.status === "pago") {
+          pagas++;
           valorPago += v;
-          if (p.data_pagamento) {
-            try {
-              const dp = parseISO(p.data_pagamento);
-              if (getMonth(dp) === selectedMonth && getYear(dp) === selectedYear) valorMes += v;
-            } catch {}
-          }
+          valorMes += v;
         } else {
+          pendentes++;
           valorPendente += v;
         }
       });
     });
     return {
-      totalMaes: receberRows.length,
+      totalMaes: maesComParcelaNoMes.size,
       totalParcelas, pagas, pendentes,
       valorTotal, valorPago, valorPendente, valorMes,
     };
@@ -461,13 +465,13 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                 <Card className="lg:col-span-1">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-medium text-muted-foreground">
-                      Financeiro consolidado
+                      Financeiro de {meses[selectedMonth]}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
                       <div className="flex items-baseline justify-between mb-1">
-                        <span className="text-xs text-muted-foreground">Total contratado</span>
+                        <span className="text-xs text-muted-foreground">Previsto no mês</span>
                         <span className="text-base font-bold tabular-nums">{brl(receberStats.valorTotal)}</span>
                       </div>
                       <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -505,13 +509,13 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                 <Card className="lg:col-span-1">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-medium text-muted-foreground">
-                      Parcelas
+                      Parcelas de {meses[selectedMonth]}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
                       <div className="flex items-baseline justify-between mb-1">
-                        <span className="text-xs text-muted-foreground">Total de parcelas</span>
+                        <span className="text-xs text-muted-foreground">Parcelas no mês</span>
                         <span className="text-base font-bold tabular-nums">{receberStats.totalParcelas}</span>
                       </div>
                       <div className="h-2 rounded-full bg-muted overflow-hidden">
