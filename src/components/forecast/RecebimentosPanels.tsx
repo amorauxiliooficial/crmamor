@@ -1,11 +1,11 @@
+import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  ArrowDownCircle,
   CalendarClock,
   CheckCircle2,
-  Clock,
+  ChevronDown,
 } from "lucide-react";
 import {
   format,
@@ -45,9 +45,9 @@ function relativeLabel(iso: string, mode: "past" | "future"): string {
   return format(d, "dd 'de' MMM", { locale: ptBR });
 }
 
-function fullDate(iso: string): string {
+function shortDate(iso: string): string {
   const d = safeParse(iso);
-  return d ? format(d, "dd/MM/yyyy", { locale: ptBR }) : iso;
+  return d ? format(d, "dd/MM", { locale: ptBR }) : iso;
 }
 
 function initials(name: string): string {
@@ -59,14 +59,52 @@ function initials(name: string): string {
     .join("");
 }
 
-function groupByDate(items: RecebimentoItem[]) {
-  const groups = new Map<string, RecebimentoItem[]>();
+interface MaeGroup {
+  key: string;
+  nome: string;
+  tipo: string;
+  total: number;
+  count: number;
+  refDate: string; // most recent (past) or earliest (future)
+  parcelas: RecebimentoItem[];
+}
+
+function groupByMae(items: RecebimentoItem[], mode: "past" | "future"): MaeGroup[] {
+  const map = new Map<string, MaeGroup>();
   for (const it of items) {
-    const key = it.data?.slice(0, 10) ?? "sem-data";
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(it);
+    const key = `${it.nome}__${it.tipo}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.total += it.valor ?? 0;
+      existing.count += 1;
+      existing.parcelas.push(it);
+    } else {
+      map.set(key, {
+        key,
+        nome: it.nome,
+        tipo: it.tipo,
+        total: it.valor ?? 0,
+        count: 1,
+        refDate: it.data,
+        parcelas: [it],
+      });
+    }
   }
-  return Array.from(groups.entries());
+  // sort parcelas inside each group by date
+  for (const g of map.values()) {
+    g.parcelas.sort((a, b) => a.data.localeCompare(b.data));
+    g.refDate =
+      mode === "future"
+        ? g.parcelas[0].data
+        : g.parcelas[g.parcelas.length - 1].data;
+  }
+  const list = Array.from(map.values());
+  list.sort((a, b) =>
+    mode === "future"
+      ? a.refDate.localeCompare(b.refDate)
+      : b.refDate.localeCompare(a.refDate),
+  );
+  return list;
 }
 
 interface PanelProps {
@@ -90,8 +128,9 @@ function Panel({
   formatBRL,
   emptyLabel,
 }: PanelProps) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const groups = useMemo(() => groupByMae(items, mode), [items, mode]);
   const total = items.reduce((sum, i) => sum + (i.valor ?? 0), 0);
-  const groups = groupByDate(items);
 
   const accentClasses =
     accent === "emerald"
@@ -109,6 +148,15 @@ function Panel({
           value: "text-foreground",
           chip: "bg-primary/10 text-primary border-primary/20",
         };
+
+  const toggle = (key: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   return (
     <Card className={`border-border/60 ring-1 ${accentClasses.ring} overflow-hidden`}>
@@ -131,7 +179,8 @@ function Panel({
                 {formatBRL(total)}
               </div>
               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                {items.length} {items.length === 1 ? "parcela" : "parcelas"}
+                {groups.length} {groups.length === 1 ? "mãe" : "mães"} · {items.length}{" "}
+                {items.length === 1 ? "parcela" : "parcelas"}
               </div>
             </div>
           </div>
@@ -139,59 +188,92 @@ function Panel({
       </div>
 
       <CardContent className="p-0">
-        {items.length === 0 ? (
+        {groups.length === 0 ? (
           <div className="py-10 text-center text-xs text-muted-foreground">{emptyLabel}</div>
         ) : (
-          <ScrollArea className="h-[360px]">
+          <ScrollArea className="h-[380px]">
             <div className="divide-y divide-border/40">
-              {groups.map(([dateKey, list]) => {
-                const groupTotal = list.reduce((s, i) => s + (i.valor ?? 0), 0);
+              {groups.map((g) => {
+                const isOpen = expanded.has(g.key);
                 return (
-                  <div key={dateKey}>
-                    <div className="flex items-center justify-between px-4 py-2 bg-muted/30 sticky top-0 backdrop-blur-sm z-10">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          {relativeLabel(dateKey, mode)}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground/70">
-                          {fullDate(dateKey)}
-                        </span>
+                  <div key={g.key}>
+                    <button
+                      type="button"
+                      onClick={() => g.count > 1 && toggle(g.key)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                        g.count > 1 ? "hover:bg-muted/40 cursor-pointer" : "cursor-default"
+                      }`}
+                    >
+                      <div className="h-9 w-9 rounded-full bg-muted grid place-items-center text-[11px] font-semibold text-muted-foreground shrink-0">
+                        {initials(g.nome)}
                       </div>
-                      <span className="text-[11px] font-semibold tabular-nums text-muted-foreground">
-                        {formatBRL(groupTotal)}
-                      </span>
-                    </div>
-                    {list.map((r) => (
-                      <div
-                        key={r.id}
-                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors"
-                      >
-                        <div className="h-8 w-8 rounded-full bg-muted grid place-items-center text-[11px] font-semibold text-muted-foreground shrink-0">
-                          {initials(r.nome)}
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs md:text-sm font-semibold truncate leading-tight">
+                          {g.nome}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-xs font-medium truncate">{r.nome}</div>
-                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                            <Badge
-                              variant="outline"
-                              className="text-[9px] px-1.5 py-0 h-4 font-normal"
-                            >
-                              {r.tipo}
-                            </Badge>
-                            <span
-                              className={`text-[9px] px-1.5 py-0 h-4 rounded border inline-flex items-center ${accentClasses.chip}`}
-                            >
-                              {r.parcela}
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] px-1.5 py-0 h-4 font-normal"
+                          >
+                            {g.tipo}
+                          </Badge>
+                          <span
+                            className={`text-[9px] px-1.5 py-0 h-4 rounded border inline-flex items-center ${accentClasses.chip}`}
+                          >
+                            {g.count}× parc.
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {mode === "future" ? "1ª em " : "última "}
+                            <span className="font-medium text-foreground/70">
+                              {relativeLabel(g.refDate, mode)}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="text-right">
+                          <div className={`text-sm font-bold tabular-nums ${accentClasses.value}`}>
+                            {formatBRL(g.total)}
+                          </div>
+                          {g.count > 1 && (
+                            <div className="text-[10px] text-muted-foreground tabular-nums">
+                              {formatBRL(g.total / g.count)} / parc.
+                            </div>
+                          )}
+                        </div>
+                        {g.count > 1 && (
+                          <ChevronDown
+                            className={`h-4 w-4 text-muted-foreground transition-transform ${
+                              isOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        )}
+                      </div>
+                    </button>
+
+                    {isOpen && g.count > 1 && (
+                      <div className="bg-muted/20 border-t border-border/40 px-4 py-2 space-y-1">
+                        {g.parcelas.map((p) => (
+                          <div
+                            key={p.id}
+                            className="flex items-center justify-between gap-2 py-1 text-[11px]"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-muted-foreground tabular-nums w-10">
+                                {shortDate(p.data)}
+                              </span>
+                              <span className="text-muted-foreground/80 truncate">
+                                Parcela {p.parcela}
+                              </span>
+                            </div>
+                            <span className={`font-semibold tabular-nums ${accentClasses.value}`}>
+                              {formatBRL(p.valor)}
                             </span>
                           </div>
-                        </div>
-                        <div
-                          className={`text-xs font-bold tabular-nums shrink-0 ${accentClasses.value}`}
-                        >
-                          {formatBRL(r.valor)}
-                        </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 );
               })}
