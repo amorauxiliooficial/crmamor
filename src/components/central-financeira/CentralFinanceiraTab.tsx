@@ -69,7 +69,6 @@ async function fetchFinanceiroData() {
         "📄 Rescisão de Contrato",
         "Renegociação",
         "Inadimplência",
-        "🚫 Negativação",
         "Negativação",
       ])
       .order("nome_mae", { ascending: true }),
