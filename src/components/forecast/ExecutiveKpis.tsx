@@ -92,21 +92,10 @@ export function ExecutiveKpis({ kpis, formatBRL, onCardClick }: Props) {
           : "Meta projetada coberta",
       hintTone: kpis.gapPrevisto > 0 ? "danger" : "success",
     },
-    {
-      id: "saldo",
-      label: "Saldo Operacional",
-      value: kpis.saldoOperacional,
-      icon: Wallet,
-      accent:
-        kpis.saldoOperacional >= 0
-          ? "text-emerald-500 bg-emerald-500/10"
-          : "text-rose-500 bg-rose-500/10",
-      hint: `Despesas ${formatBRL(kpis.despesasMes)}`,
-    },
   ];
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {cards.map((c) => {
         const Icon = c.icon;
         return (

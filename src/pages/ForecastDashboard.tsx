@@ -346,7 +346,7 @@ export default function ForecastDashboard() {
           </header>
 
           <main className="px-4 md:px-8 py-6 md:py-8 space-y-8 max-w-[1400px] mx-auto">
-            <Section id="resumo" label="Resumo Executivo" sub="Clique num card para ver a fórmula e os registros">
+            <Section id="resumo" label="Resumo Executivo" sub="Clique num card para ver os registros">
               <ExecutiveKpis kpis={executivo.kpis} formatBRL={formatBRL} onCardClick={handleKpiClick} />
             </Section>
 
