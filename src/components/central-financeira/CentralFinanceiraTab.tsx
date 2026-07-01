@@ -347,9 +347,10 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
     let totalAtraso = 0;
     let maesInad = 0;
     userFilteredRows.forEach((r) => {
-      if (r.parcelasEmAtraso.length === 0) return;
+      const parcelasEmAtraso = r.parcelasEmAtraso ?? [];
+      if (parcelasEmAtraso.length === 0) return;
       maesInad++;
-      r.parcelasEmAtraso.forEach((p: any) => {
+      parcelasEmAtraso.forEach((p: any) => {
         const b = agingBucket(p.diasAtraso ?? 0);
         buckets[b]++;
         bucketsVal[b] += Number(p.valor ?? 0);
