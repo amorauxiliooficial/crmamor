@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DollarSign,
   Search,
@@ -18,15 +18,16 @@ import {
   Clock,
   AlertTriangle,
   TrendingUp,
-  Landmark,
-  Receipt,
-  ChevronDown,
+  MessageCircle,
+  ExternalLink,
+  Flame,
 } from "lucide-react";
 import { MaeFinanceiroDetail } from "@/components/central-financeira/MaeFinanceiroDetail";
 import { BancosDialog } from "@/components/pagamentos/BancosDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCpf } from "@/lib/formatters";
-import { format, getMonth, getYear, parseISO } from "date-fns";
+import { differenceInDays, format, getMonth, getYear, parseISO, startOfDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import type { MaeProcesso } from "@/types/mae";
 
 interface Props {
@@ -51,6 +52,11 @@ interface MaeFinanceiroRow {
   hasBeneficio: boolean;
   totalBoletos: number;
   boletosPagos: number;
+  // Aging fields
+  valorEmAtraso: number;
+  parcelasEmAtraso: any[];
+  maiorAtrasoDias: number;
+  proximoVencimento: string | null;
 }
 
 async function fetchFinanceiroData() {
@@ -73,7 +79,6 @@ async function fetchFinanceiroData() {
   const centralData = (centralResult.data ?? []) as any[];
   const boletosData = (boletosResult.data ?? []) as any[];
 
-  // Parcelas in one query
   const pagamentoIds = pagamentosData.map((p) => p.id);
   const { data: todasParcelas } = pagamentoIds.length
     ? await supabase
@@ -89,9 +94,13 @@ async function fetchFinanceiroData() {
     parcelasMap.get(p.pagamento_id)!.push(p);
   });
 
-  const pagamentoPorMae = new Map<string, { pagamento: any; parcelas: any[] }>();
+  // Aggregate all pagamentos per mae (a mother may have multiple contracts)
+  const pagamentoPorMae = new Map<string, { pagamentos: any[]; parcelas: any[] }>();
   pagamentosData.forEach((pag) => {
-    pagamentoPorMae.set(pag.mae_id, { pagamento: pag, parcelas: parcelasMap.get(pag.id) ?? [] });
+    const cur = pagamentoPorMae.get(pag.mae_id) ?? { pagamentos: [], parcelas: [] };
+    cur.pagamentos.push(pag);
+    cur.parcelas.push(...(parcelasMap.get(pag.id) ?? []));
+    pagamentoPorMae.set(pag.mae_id, cur);
   });
 
   const centralPorMae = new Map<string, string>();
@@ -105,6 +114,8 @@ async function fetchFinanceiroData() {
     boletosPorCentral.set(b.central_id, cur);
   });
 
+  const hoje = startOfDay(new Date());
+
   const rows: MaeFinanceiroRow[] = maesAprovadas.map((mae) => {
     const pagInfo = pagamentoPorMae.get(mae.id);
     const parcelas = pagInfo?.parcelas ?? [];
@@ -116,7 +127,11 @@ async function fetchFinanceiroData() {
       valorPendente = 0,
       parcelasPagas = 0,
       parcelasPendentes = 0,
-      parcelasInadimplentes = 0;
+      parcelasInadimplentes = 0,
+      valorEmAtraso = 0,
+      maiorAtrasoDias = 0;
+    const parcelasEmAtraso: any[] = [];
+    let proximoVencimento: string | null = null;
 
     parcelas.forEach((p) => {
       const v = Number(p.valor ?? 0);
@@ -124,14 +139,38 @@ async function fetchFinanceiroData() {
       if (p.status === "pago") {
         parcelasPagas++;
         valorRecebido += v;
-      } else if (p.status === "inadimplente") {
+        return;
+      }
+
+      let atrasado = p.status === "inadimplente";
+      let diasAtraso = 0;
+      if (p.data_pagamento) {
+        try {
+          const dv = parseISO(p.data_pagamento);
+          const diff = differenceInDays(hoje, dv);
+          if (diff > 0 && p.status !== "pago") {
+            atrasado = true;
+            diasAtraso = diff;
+          }
+          if (!proximoVencimento || dv < parseISO(proximoVencimento)) {
+            if (p.status !== "pago") proximoVencimento = p.data_pagamento;
+          }
+        } catch {}
+      }
+
+      if (atrasado) {
         parcelasInadimplentes++;
-        valorPendente += v;
+        valorEmAtraso += v;
+        maiorAtrasoDias = Math.max(maiorAtrasoDias, diasAtraso);
+        parcelasEmAtraso.push({ ...p, diasAtraso });
       } else {
         parcelasPendentes++;
-        valorPendente += v;
       }
+      valorPendente += v;
     });
+
+    const valorTotalContratado =
+      (pagInfo?.pagamentos ?? []).reduce((s, p) => s + Number(p.valor_total ?? 0), 0) || valorTotal;
 
     return {
       mae,
@@ -140,30 +179,54 @@ async function fetchFinanceiroData() {
       parcelasPagas,
       parcelasPendentes,
       parcelasInadimplentes,
-      valorTotal: pagInfo?.pagamento.valor_total ?? valorTotal,
+      valorTotal: valorTotalContratado,
       valorRecebido,
       valorPendente,
       parcelas,
       hasBeneficio: !!centralId,
       totalBoletos: boletosInfo?.total ?? 0,
       boletosPagos: boletosInfo?.pago ?? 0,
+      valorEmAtraso,
+      parcelasEmAtraso,
+      maiorAtrasoDias,
+      proximoVencimento,
     };
   });
 
   return { rows };
 }
 
+function agingBucket(dias: number): "1-7" | "8-30" | "31-60" | "60+" {
+  if (dias <= 7) return "1-7";
+  if (dias <= 30) return "8-30";
+  if (dias <= 60) return "31-60";
+  return "60+";
+}
+
+function openWhatsappCobranca(mae: MaeProcesso, valor: number, dias: number) {
+  const raw = (mae.telefone || "").replace(/\D/g, "");
+  if (!raw) return;
+  const phone = raw.startsWith("55") ? raw : `55${raw}`;
+  const primeiroNome = (mae.nome_mae || "").split(" ")[0];
+  const msg =
+    `Olá ${primeiroNome}, tudo bem?%0A%0A` +
+    `Passando aqui da *Amor Auxílio Maternidade* para lembrar que consta em nosso sistema uma parcela em aberto ` +
+    `no valor de *${brl(valor)}*, com ${dias} dia(s) de atraso.%0A%0A` +
+    `Poderia nos confirmar a previsão de pagamento? Estamos à disposição para negociar. 💜`;
+  window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+}
+
 export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [selectedMae, setSelectedMae] = useState<MaeProcesso | null>(null);
   const [localSearch, setLocalSearch] = useState("");
   const [bancosOpen, setBancosOpen] = useState(false);
+  const [tab, setTab] = useState<"geral" | "inadimplencia">("geral");
+  const [agingFilter, setAgingFilter] = useState<"all" | "1-7" | "8-30" | "31-60" | "60+">("all");
 
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState<number>(getMonth(currentDate));
   const [selectedYear, setSelectedYear] = useState<number>(getYear(currentDate));
-  const [mesOpen, setMesOpen] = useState(false);
 
   const meses = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -181,13 +244,11 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
 
   const rows = data?.rows ?? [];
 
-  // Filter by user
   const userFilteredRows = useMemo(() => {
     if (!selectedUserId || selectedUserId === "all") return rows;
     return rows.filter((r) => r.mae.user_id === selectedUserId);
   }, [rows, selectedUserId]);
 
-  // KPIs
   const stats = useMemo(() => {
     let totalParcelas = 0,
       pagas = 0,
@@ -196,7 +257,8 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
     let valorTotal = 0,
       valorPago = 0,
       valorPendente = 0,
-      valorMes = 0;
+      valorMes = 0,
+      valorEmAtraso = 0;
 
     userFilteredRows.forEach((r) => {
       totalParcelas += r.parcelasTotal;
@@ -204,6 +266,7 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
       pendentes += r.parcelasPendentes;
       inadimplentes += r.parcelasInadimplentes;
       valorTotal += r.parcelas.reduce((s, p) => s + Number(p.valor ?? 0), 0);
+      valorEmAtraso += r.valorEmAtraso;
       r.parcelas.forEach((p) => {
         const v = Number(p.valor ?? 0);
         if (p.status === "pago") {
@@ -230,6 +293,7 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
       valorPago,
       valorPendente,
       valorMes,
+      valorEmAtraso,
     };
   }, [userFilteredRows, selectedMonth, selectedYear]);
 
@@ -244,17 +308,50 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
           (r.mae.cpf ?? "").replace(/\D/g, "").includes(q.replace(/\D/g, ""))
       );
     }
-    // Sort: inadimplente > pendente > sem cadastro > pago
-    return [...list].sort((a, b) => {
+    return list;
+  }, [userFilteredRows, localSearch, searchQuery]);
+
+  // Executive table sorting
+  const execRows = useMemo(() => {
+    return [...filteredRows].sort((a, b) => {
       const score = (r: MaeFinanceiroRow) => {
         if (r.parcelasInadimplentes > 0) return 0;
         if (!r.hasPagamento) return 1;
         if (r.parcelasPendentes > 0) return 2;
         return 3;
       };
-      return score(a) - score(b);
+      const sc = score(a) - score(b);
+      if (sc !== 0) return sc;
+      return b.valorEmAtraso - a.valorEmAtraso;
     });
-  }, [userFilteredRows, localSearch, searchQuery]);
+  }, [filteredRows]);
+
+  // Inadimplência-only rows with aging filter
+  const inadimplenciaRows = useMemo(() => {
+    const only = filteredRows.filter((r) => r.parcelasInadimplentes > 0);
+    return only
+      .filter((r) => agingFilter === "all" || agingBucket(r.maiorAtrasoDias) === agingFilter)
+      .sort((a, b) => b.maiorAtrasoDias - a.maiorAtrasoDias);
+  }, [filteredRows, agingFilter]);
+
+  // Aging KPIs
+  const agingStats = useMemo(() => {
+    const buckets = { "1-7": 0, "8-30": 0, "31-60": 0, "60+": 0 } as Record<string, number>;
+    const bucketsVal = { "1-7": 0, "8-30": 0, "31-60": 0, "60+": 0 } as Record<string, number>;
+    let totalAtraso = 0;
+    let maesInad = 0;
+    userFilteredRows.forEach((r) => {
+      if (r.parcelasEmAtraso.length === 0) return;
+      maesInad++;
+      r.parcelasEmAtraso.forEach((p: any) => {
+        const b = agingBucket(p.diasAtraso ?? 0);
+        buckets[b]++;
+        bucketsVal[b] += Number(p.valor ?? 0);
+        totalAtraso += Number(p.valor ?? 0);
+      });
+    });
+    return { buckets, bucketsVal, totalAtraso, maesInad };
+  }, [userFilteredRows]);
 
   if (selectedMae) {
     return (
@@ -277,73 +374,51 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
             <CardTitle className="text-xs font-medium">Mães</CardTitle>
             <Users className="h-3.5 w-3.5 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold">{stats.totalMaes}</div>
-          </CardContent>
+          <CardContent><div className="text-xl font-bold">{stats.totalMaes}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
             <CardTitle className="text-xs font-medium">Total Parcelas</CardTitle>
             <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold">{stats.totalParcelas}</div>
-          </CardContent>
+          <CardContent><div className="text-xl font-bold">{stats.totalParcelas}</div></CardContent>
         </Card>
         <Card className="border-l-4 border-l-emerald-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
             <CardTitle className="text-xs font-medium">Pagas</CardTitle>
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
           </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-emerald-600">{stats.pagas}</div>
-          </CardContent>
+          <CardContent><div className="text-xl font-bold text-emerald-600">{stats.pagas}</div></CardContent>
         </Card>
         <Card className="border-l-4 border-l-amber-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
             <CardTitle className="text-xs font-medium">Pendentes</CardTitle>
             <Clock className="h-3.5 w-3.5 text-amber-500" />
           </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-amber-600">{stats.pendentes}</div>
-          </CardContent>
+          <CardContent><div className="text-xl font-bold text-amber-600">{stats.pendentes}</div></CardContent>
         </Card>
         <Card className="border-l-4 border-l-destructive">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
             <CardTitle className="text-xs font-medium">Inadimplentes</CardTitle>
             <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
           </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-destructive">{stats.inadimplentes}</div>
-          </CardContent>
+          <CardContent><div className="text-xl font-bold text-destructive">{stats.inadimplentes}</div></CardContent>
         </Card>
       </div>
 
       {/* KPIs de valor */}
       <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
         <Card className="border-l-4 border-l-primary">
-          <CardHeader className="pb-1">
-            <CardTitle className="text-xs font-medium">Valor Total Contratado</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-bold">{brl(stats.valorTotal)}</div>
-          </CardContent>
+          <CardHeader className="pb-1"><CardTitle className="text-xs font-medium">Valor Total Contratado</CardTitle></CardHeader>
+          <CardContent><div className="text-lg font-bold">{brl(stats.valorTotal)}</div></CardContent>
         </Card>
         <Card className="border-l-4 border-l-emerald-500">
-          <CardHeader className="pb-1">
-            <CardTitle className="text-xs font-medium">Recebido (Total)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-bold text-emerald-600">{brl(stats.valorPago)}</div>
-          </CardContent>
+          <CardHeader className="pb-1"><CardTitle className="text-xs font-medium">Recebido (Total)</CardTitle></CardHeader>
+          <CardContent><div className="text-lg font-bold text-emerald-600">{brl(stats.valorPago)}</div></CardContent>
         </Card>
         <Card className="border-l-4 border-l-amber-500">
-          <CardHeader className="pb-1">
-            <CardTitle className="text-xs font-medium">A Receber</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-bold text-amber-600">{brl(stats.valorPendente)}</div>
-          </CardContent>
+          <CardHeader className="pb-1"><CardTitle className="text-xs font-medium">A Receber</CardTitle></CardHeader>
+          <CardContent><div className="text-lg font-bold text-amber-600">{brl(stats.valorPendente)}</div></CardContent>
         </Card>
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="pb-1">
@@ -356,23 +431,15 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
             <div className="text-lg font-bold text-blue-600">{brl(stats.valorMes)}</div>
             <div className="flex gap-1">
               <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
-                <SelectTrigger className="h-7 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent className="z-[100]">
-                  {meses.map((m, i) => (
-                    <SelectItem key={i} value={String(i)}>{m}</SelectItem>
-                  ))}
+                  {meses.map((m, i) => (<SelectItem key={i} value={String(i)}>{m}</SelectItem>))}
                 </SelectContent>
               </Select>
               <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-                <SelectTrigger className="h-7 text-xs w-20">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="h-7 text-xs w-20"><SelectValue /></SelectTrigger>
                 <SelectContent className="z-[100]">
-                  {anos.map((a) => (
-                    <SelectItem key={a} value={String(a)}>{a}</SelectItem>
-                  ))}
+                  {anos.map((a) => (<SelectItem key={a} value={String(a)}>{a}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
@@ -398,87 +465,235 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
         </Button>
       </div>
 
-      {/* Lista de mães */}
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : filteredRows.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            Nenhuma mãe encontrada
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredRows.map((r) => (
-            <Card
-              key={r.mae.id}
-              className="cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => setSelectedMae(r.mae)}
-            >
-              <CardContent className="p-3 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-sm truncate">{r.mae.nome_mae}</h3>
-                    <p className="text-xs text-muted-foreground font-mono">
-                      {r.mae.cpf ? formatCpf(r.mae.cpf) : "—"}
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] shrink-0">
-                    {r.mae.status_processo}
-                  </Badge>
-                </div>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
+        <TabsList>
+          <TabsTrigger value="geral">Visão Geral</TabsTrigger>
+          <TabsTrigger value="inadimplencia" className="gap-1.5">
+            Inadimplências
+            {stats.inadimplentes > 0 && (
+              <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">{stats.inadimplentes}</Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-                {/* Honorários badge */}
-                <div className="flex items-center gap-1.5 text-xs">
-                  <Receipt className="h-3 w-3 text-primary" />
-                  <span className="text-muted-foreground">Honorários:</span>
-                  {!r.hasPagamento ? (
-                    <Badge variant="secondary" className="text-[10px]">Sem cadastro</Badge>
-                  ) : r.parcelasInadimplentes > 0 ? (
-                    <Badge variant="destructive" className="text-[10px]">Inadimplente</Badge>
-                  ) : r.parcelasPendentes > 0 && r.parcelasPagas > 0 ? (
-                    <Badge className="bg-amber-500/20 text-amber-700 text-[10px]">Parcial</Badge>
-                  ) : r.parcelasPendentes > 0 ? (
-                    <Badge className="bg-amber-500/20 text-amber-700 text-[10px]">Pendente</Badge>
-                  ) : r.parcelasPagas > 0 ? (
-                    <Badge className="bg-emerald-500/20 text-emerald-700 text-[10px]">Quitado</Badge>
-                  ) : (
-                    <Badge variant="secondary" className="text-[10px]">Sem parcelas</Badge>
-                  )}
-                </div>
-
-                {/* Benefício badge */}
-                <div className="flex items-center gap-1.5 text-xs">
-                  <Landmark className="h-3 w-3 text-blue-500" />
-                  <span className="text-muted-foreground">Benefício:</span>
-                  {!r.hasBeneficio ? (
-                    <Badge variant="secondary" className="text-[10px]">Sem cadastro</Badge>
-                  ) : r.totalBoletos === 0 ? (
-                    <Badge variant="outline" className="text-[10px]">Em projeção</Badge>
-                  ) : r.boletosPagos >= r.totalBoletos ? (
-                    <Badge className="bg-emerald-500/20 text-emerald-700 text-[10px]">Boletos pagos</Badge>
-                  ) : (
-                    <Badge className="bg-blue-500/20 text-blue-700 text-[10px]">
-                      {brl(r.totalBoletos - r.boletosPagos)} em aberto
-                    </Badge>
-                  )}
-                </div>
-
-                {r.hasPagamento && r.valorTotal > 0 && (
-                  <div className="text-xs text-muted-foreground pt-1 border-t flex items-center justify-between">
-                    <span>Total: {brl(r.valorTotal)}</span>
-                    {r.valorRecebido > 0 && (
-                      <span className="text-emerald-600">{brl(r.valorRecebido)} pago</span>
-                    )}
-                  </div>
-                )}
+        {/* ===== Visão Geral: Tabela executiva ===== */}
+        <TabsContent value="geral" className="mt-3">
+          {isLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : execRows.length === 0 ? (
+            <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhuma mãe encontrada</CardContent></Card>
+          ) : (
+            <Card>
+              <CardContent className="p-0 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="border-b bg-muted/40">
+                    <tr className="text-left text-xs uppercase text-muted-foreground">
+                      <th className="px-3 py-2 font-medium">Mãe</th>
+                      <th className="px-3 py-2 font-medium">Honorários</th>
+                      <th className="px-3 py-2 font-medium">Benefício</th>
+                      <th className="px-3 py-2 font-medium text-right">Total</th>
+                      <th className="px-3 py-2 font-medium text-right">Recebido</th>
+                      <th className="px-3 py-2 font-medium text-right">Em aberto</th>
+                      <th className="px-3 py-2 font-medium">Próx. venc.</th>
+                      <th className="px-3 py-2 font-medium"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {execRows.map((r) => (
+                      <tr
+                        key={r.mae.id}
+                        className="border-b last:border-0 hover:bg-muted/40 cursor-pointer"
+                        onClick={() => setSelectedMae(r.mae)}
+                      >
+                        <td className="px-3 py-2">
+                          <div className="font-medium truncate max-w-[200px]">{r.mae.nome_mae}</div>
+                          <div className="text-[11px] text-muted-foreground font-mono">
+                            {r.mae.cpf ? formatCpf(r.mae.cpf) : "—"}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2">
+                          {!r.hasPagamento ? (
+                            <Badge variant="secondary" className="text-[10px]">Sem cadastro</Badge>
+                          ) : r.parcelasInadimplentes > 0 ? (
+                            <Badge variant="destructive" className="text-[10px]">Inadimplente</Badge>
+                          ) : r.parcelasPendentes > 0 && r.parcelasPagas > 0 ? (
+                            <Badge className="bg-amber-500/20 text-amber-700 text-[10px]">Parcial</Badge>
+                          ) : r.parcelasPendentes > 0 ? (
+                            <Badge className="bg-amber-500/20 text-amber-700 text-[10px]">Pendente</Badge>
+                          ) : r.parcelasPagas > 0 ? (
+                            <Badge className="bg-emerald-500/20 text-emerald-700 text-[10px]">Quitado</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">—</Badge>
+                          )}
+                        </td>
+                        <td className="px-3 py-2">
+                          {!r.hasBeneficio ? (
+                            <Badge variant="secondary" className="text-[10px]">Sem cadastro</Badge>
+                          ) : r.totalBoletos === 0 ? (
+                            <Badge variant="outline" className="text-[10px]">Em projeção</Badge>
+                          ) : r.boletosPagos >= r.totalBoletos ? (
+                            <Badge className="bg-emerald-500/20 text-emerald-700 text-[10px]">Quitado</Badge>
+                          ) : (
+                            <Badge className="bg-blue-500/20 text-blue-700 text-[10px]">
+                              {brl(r.totalBoletos - r.boletosPagos)} em aberto
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums">{brl(r.valorTotal)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums text-emerald-600">{brl(r.valorRecebido)}</td>
+                        <td className={`px-3 py-2 text-right tabular-nums ${r.valorEmAtraso > 0 ? "text-destructive font-medium" : "text-amber-600"}`}>
+                          {brl(r.valorPendente)}
+                        </td>
+                        <td className="px-3 py-2 text-xs">
+                          {r.proximoVencimento
+                            ? format(parseISO(r.proximoVencimento), "dd/MM/yy", { locale: ptBR })
+                            : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground inline" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
+          )}
+        </TabsContent>
+
+        {/* ===== Inadimplências ===== */}
+        <TabsContent value="inadimplencia" className="mt-3 space-y-4">
+          {/* KPIs de aging */}
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
+            <Card className="border-l-4 border-l-destructive">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium flex items-center gap-1">
+                  <Flame className="h-3.5 w-3.5" /> Total em atraso
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-bold text-destructive">{brl(agingStats.totalAtraso)}</div>
+                <div className="text-[11px] text-muted-foreground">{agingStats.maesInad} mães</div>
+              </CardContent>
+            </Card>
+            {(["1-7", "8-30", "31-60", "60+"] as const).map((b) => (
+              <Card
+                key={b}
+                className={`cursor-pointer transition-colors ${agingFilter === b ? "border-primary" : ""}`}
+                onClick={() => setAgingFilter(agingFilter === b ? "all" : b)}
+              >
+                <CardHeader className="pb-1">
+                  <CardTitle className="text-xs font-medium">{b} dias</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-base font-bold">{brl(agingStats.bucketsVal[b])}</div>
+                  <div className="text-[11px] text-muted-foreground">{agingStats.buckets[b]} parcelas</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Faixa:</span>
+            <Select value={agingFilter} onValueChange={(v) => setAgingFilter(v as any)}>
+              <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent className="z-[100]">
+                <SelectItem value="all">Todas as faixas</SelectItem>
+                <SelectItem value="1-7">1 a 7 dias</SelectItem>
+                <SelectItem value="8-30">8 a 30 dias</SelectItem>
+                <SelectItem value="31-60">31 a 60 dias</SelectItem>
+                <SelectItem value="60+">Mais de 60 dias</SelectItem>
+              </SelectContent>
+            </Select>
+            <Badge variant="outline">{inadimplenciaRows.length} mães</Badge>
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : inadimplenciaRows.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                🎉 Nenhuma mãe inadimplente nesta faixa.
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="p-0 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="border-b bg-muted/40">
+                    <tr className="text-left text-xs uppercase text-muted-foreground">
+                      <th className="px-3 py-2 font-medium">Mãe</th>
+                      <th className="px-3 py-2 font-medium text-center">Parcelas atrasadas</th>
+                      <th className="px-3 py-2 font-medium text-right">Valor em atraso</th>
+                      <th className="px-3 py-2 font-medium text-center">Maior atraso</th>
+                      <th className="px-3 py-2 font-medium">Faixa</th>
+                      <th className="px-3 py-2 font-medium text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inadimplenciaRows.map((r) => {
+                      const bucket = agingBucket(r.maiorAtrasoDias);
+                      const bucketColor =
+                        bucket === "60+" ? "bg-destructive/20 text-destructive" :
+                        bucket === "31-60" ? "bg-orange-500/20 text-orange-700" :
+                        bucket === "8-30" ? "bg-amber-500/20 text-amber-700" :
+                        "bg-yellow-500/20 text-yellow-700";
+                      const temTelefone = !!(r.mae.telefone && r.mae.telefone.replace(/\D/g, ""));
+                      return (
+                        <tr key={r.mae.id} className="border-b last:border-0 hover:bg-muted/40">
+                          <td className="px-3 py-2">
+                            <div className="font-medium truncate max-w-[220px]">{r.mae.nome_mae}</div>
+                            <div className="text-[11px] text-muted-foreground font-mono">
+                              {r.mae.cpf ? formatCpf(r.mae.cpf) : "—"}
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <Badge variant="destructive" className="text-[10px]">
+                              {r.parcelasEmAtraso.length}
+                            </Badge>
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums font-semibold text-destructive">
+                            {brl(r.valorEmAtraso)}
+                          </td>
+                          <td className="px-3 py-2 text-center font-medium">
+                            {r.maiorAtrasoDias}d
+                          </td>
+                          <td className="px-3 py-2">
+                            <Badge className={`${bucketColor} text-[10px]`}>{bucket} dias</Badge>
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 gap-1 text-xs"
+                                disabled={!temTelefone}
+                                onClick={() => openWhatsappCobranca(r.mae, r.valorEmAtraso, r.maiorAtrasoDias)}
+                              >
+                                <MessageCircle className="h-3 w-3" />
+                                Cobrar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 gap-1 text-xs"
+                                onClick={() => setSelectedMae(r.mae)}
+                              >
+                                Abrir
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <BancosDialog open={bancosOpen} onOpenChange={setBancosOpen} />
     </div>
