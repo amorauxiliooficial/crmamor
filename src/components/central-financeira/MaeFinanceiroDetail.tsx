@@ -382,42 +382,97 @@ export function MaeFinanceiroDetail({ mae }: Props) {
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <ClipboardList className="h-4 w-4" />
-                      Parcelas dos honorários
-                      <Badge variant="outline" className="ml-auto text-xs">
-                        <StatusGeralBadge
-                          status={calcularStatusGeral(mae.nome_mae, drawerPagamento?.parcelas ?? [])}
-                        />
-                      </Badge>
+                      Parcelas
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    {(pagQuery.data.parcelas ?? []).length === 0 && (
-                      <p className="text-sm text-muted-foreground">Nenhuma parcela cadastrada.</p>
-                    )}
-                    {(pagQuery.data.parcelas ?? []).map((p: any) => (
-                      <div
-                        key={p.id}
-                        className="flex items-center justify-between border rounded p-2 text-sm gap-2"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="font-semibold w-8 shrink-0">#{p.numero_parcela}</span>
-                          <div className="min-w-0">
-                            <div className="font-medium flex items-center gap-2 flex-wrap">
-                              {brl(p.valor)}
-                              {p.contrato_label && (
-                                <Badge variant="outline" className="text-[10px] py-0 h-4">
-                                  {p.contrato_label}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-xs text-muted-foreground">{fmtDate(p.data_pagamento)}</div>
-                          </div>
+                  <CardContent>
+                    <Tabs defaultValue="honorarios">
+                      <TabsList className="grid grid-cols-2 w-full sm:w-auto">
+                        <TabsTrigger value="honorarios" className="gap-1.5">
+                          <Receipt className="h-3.5 w-3.5" />
+                          Honorários
+                          <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">
+                            {(pagQuery.data.parcelas ?? []).length}
+                          </Badge>
+                        </TabsTrigger>
+                        <TabsTrigger value="beneficio" className="gap-1.5">
+                          <Landmark className="h-3.5 w-3.5" />
+                          Benefício
+                          <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">
+                            {parcelasBeneficio.length}
+                          </Badge>
+                        </TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="honorarios" className="mt-3 space-y-2">
+                        <div className="flex items-center justify-end">
+                          <StatusGeralBadge
+                            status={calcularStatusGeral(mae.nome_mae, drawerPagamento?.parcelas ?? [])}
+                          />
                         </div>
-                        <ParcelaStatusBadge status={p.status} />
-                      </div>
-                    ))}
+                        {(pagQuery.data.parcelas ?? []).length === 0 && (
+                          <p className="text-sm text-muted-foreground">Nenhuma parcela cadastrada.</p>
+                        )}
+                        {(pagQuery.data.parcelas ?? []).map((p: any) => (
+                          <div
+                            key={p.id}
+                            className="flex items-center justify-between border rounded p-2 text-sm gap-2"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className="font-semibold w-8 shrink-0">#{p.numero_parcela}</span>
+                              <div className="min-w-0">
+                                <div className="font-medium flex items-center gap-2 flex-wrap">
+                                  {brl(p.valor)}
+                                  {p.contrato_label && (
+                                    <Badge variant="outline" className="text-[10px] py-0 h-4">
+                                      {p.contrato_label}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground">{fmtDate(p.data_pagamento)}</div>
+                              </div>
+                            </div>
+                            <ParcelaStatusBadge status={p.status} />
+                          </div>
+                        ))}
+                      </TabsContent>
+
+                      <TabsContent value="beneficio" className="mt-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">
+                            Total previsto: <strong>{brl(beneficioResumo.total)}</strong> · Já liberado:{" "}
+                            <strong className="text-emerald-600">{brl(beneficioResumo.liberado)}</strong>
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const prox = (parcelasBeneficio[parcelasBeneficio.length - 1]?.numero_parcela ?? 0) + 1;
+                              if (prox > 5) return;
+                              upsertParcelaBenef.mutate({ numero_parcela: prox, status: "prevista", valor: 0 });
+                            }}
+                            disabled={parcelasBeneficio.length >= 5}
+                            className="gap-1 h-7"
+                          >
+                            <Plus className="h-3.5 w-3.5" /> Adicionar
+                          </Button>
+                        </div>
+                        {parcelasBeneficio.length === 0 && (
+                          <p className="text-sm text-muted-foreground">Nenhuma parcela cadastrada.</p>
+                        )}
+                        {parcelasBeneficio.map((p) => (
+                          <BeneficioParcelaRow
+                            key={p.id}
+                            p={p}
+                            onSave={(patch) => upsertParcelaBenef.mutate({ ...patch, numero_parcela: p.numero_parcela })}
+                            onDelete={() => deleteParcelaBenef.mutate(p.id)}
+                          />
+                        ))}
+                      </TabsContent>
+                    </Tabs>
                   </CardContent>
                 </Card>
+
               </>
             )}
 
