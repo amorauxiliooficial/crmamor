@@ -597,7 +597,7 @@ function Row({
   );
 }
 
-function ParcelaRow({
+export function ParcelaRow({
   p,
   onSave,
   onDelete,
