@@ -226,7 +226,7 @@ export function MaeFinanceiroDetail({ mae }: Props) {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => setTab("honorarios")}
+                    onClick={() => setTab("central")}
                     className="text-xs h-7"
                   >
                     Abrir
