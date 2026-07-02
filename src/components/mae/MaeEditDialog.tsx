@@ -510,14 +510,35 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                   <Tag className="h-3.5 w-3.5 text-primary" />
                   Etiqueta
                 </Label>
-                <Input
-                  id="etiqueta"
-                  value={formData.etiqueta}
-                  onChange={(e) => setFormData({ ...formData, etiqueta: e.target.value })}
-                  placeholder="Ex: marketing, instagram, parceiro"
-                />
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.etiqueta || "__none__"}
+                    onValueChange={(v) => setFormData({ ...formData, etiqueta: v === "__none__" ? "" : v })}
+                  >
+                    <SelectTrigger id="etiqueta" className="flex-1">
+                      <SelectValue placeholder="Selecione uma etiqueta" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[100]">
+                      <SelectItem value="__none__">Sem etiqueta</SelectItem>
+                      {etiquetasList.map((et) => (
+                        <SelectItem key={et.id} value={et.nome}>
+                          <span className="flex items-center gap-2">
+                            <span
+                              className="inline-block h-2 w-2 rounded-full"
+                              style={{ background: et.cor ?? "hsl(var(--muted))" }}
+                            />
+                            {et.nome}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setEtiquetasManagerOpen(true)}>
+                    Gerenciar
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Digite "marketing" para acender o selo MKT no funil.
+                  Use "marketing" para acender o selo MKT no funil.
                 </p>
               </div>
               <div className="space-y-2">
