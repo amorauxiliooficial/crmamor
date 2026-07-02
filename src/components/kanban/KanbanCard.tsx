@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { calcularMesGravidez } from "@/lib/gestacaoUtils";
+import { MarketingBadge } from "@/components/marketing/MarketingBadge";
 
 interface KanbanCardProps {
   mae: MaeProcesso & { ultima_atividade_em?: string | null };
