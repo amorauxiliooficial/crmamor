@@ -825,6 +825,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           />
         </>
       )}
+      <EtiquetasManagerDialog open={etiquetasManagerOpen} onOpenChange={setEtiquetasManagerOpen} />
     </Dialog>
   );
 }
