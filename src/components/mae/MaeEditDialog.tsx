@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, DollarSign, FolderOpen, UserCog, Users } from "lucide-react";
+import { Loader2, Save, DollarSign, FolderOpen, UserCog, Users, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
@@ -99,6 +99,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     precisa_gps: "",
     uf: "",
     origem: "",
+    etiqueta: "",
     observacoes: "",
     senha_gov: "",
     verificacao_duas_etapas: false,
@@ -174,6 +175,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
         precisa_gps: mae.precisa_gps || "",
         uf: mae.uf || "",
         origem: mae.origem || "",
+        etiqueta: (mae as any).etiqueta || "",
         observacoes: mae.observacoes || "",
         senha_gov: mae.senha_gov || "",
         verificacao_duas_etapas: mae.verificacao_duas_etapas ?? false,
@@ -265,6 +267,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       bairro: address.bairro || null,
       cidade: address.cidade || null,
       origem: formData.origem || null,
+      etiqueta: formData.etiqueta.trim() || null,
       observacoes: formData.observacoes || null,
       senha_gov: formData.senha_gov || null,
       verificacao_duas_etapas: formData.verificacao_duas_etapas,
@@ -501,6 +504,21 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                   onChange={(e) => setFormData({ ...formData, origem: e.target.value })}
                   placeholder="Como chegou até nós"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="etiqueta" className="flex items-center gap-1.5">
+                  <Tag className="h-3.5 w-3.5 text-primary" />
+                  Etiqueta
+                </Label>
+                <Input
+                  id="etiqueta"
+                  value={formData.etiqueta}
+                  onChange={(e) => setFormData({ ...formData, etiqueta: e.target.value })}
+                  placeholder="Ex: marketing, instagram, parceiro"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Digite "marketing" para acender o selo MKT no funil.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="senha_gov">Senha Gov.br</Label>
