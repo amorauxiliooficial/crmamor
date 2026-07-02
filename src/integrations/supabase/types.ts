@@ -972,6 +972,27 @@ export type Database = {
           },
         ]
       }
+      etiquetas: {
+        Row: {
+          cor: string | null
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          cor?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          cor?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       forecast_metas_fase: {
         Row: {
           id: string
