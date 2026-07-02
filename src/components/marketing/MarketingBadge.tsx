@@ -15,74 +15,53 @@ export function isMarketingEtiqueta(etiqueta?: string | null): boolean {
 }
 
 /**
- * Converte hex (#rrggbb) para rgba com alpha.
+ * Retorna cor de texto (branco ou preto) com melhor contraste sobre a cor de fundo.
  */
-function hexToRgba(hex: string, alpha: number): string | null {
+function contrastText(hex: string): string {
   const m = hex.trim().match(/^#?([0-9a-fA-F]{6})$/);
-  if (!m) return null;
+  if (!m) return "#ffffff";
   const int = parseInt(m[1], 16);
   const r = (int >> 16) & 255;
   const g = (int >> 8) & 255;
   const b = int & 255;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  // luminância percebida
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.6 ? "#111827" : "#ffffff";
 }
 
 /**
- * Selo genérico para qualquer etiqueta cadastrada.
- * Usa a cor definida no gerenciamento de etiquetas.
- * Etiquetas contendo "marketing" mantêm o visual gritante (gradiente).
+ * Selo de etiqueta para cards do funil.
+ * Usa a cor cadastrada no gerenciador de etiquetas.
  */
 export function MarketingBadge({ etiqueta, className, compact = false }: MarketingBadgeProps) {
   const { data: etiquetas } = useEtiquetas();
 
   if (!etiqueta || !etiqueta.trim()) return null;
 
-  const isMkt = isMarketingEtiqueta(etiqueta);
-
-  if (isMkt) {
-    return (
-      <Badge
-        variant="default"
-        className={cn(
-          "gap-1 border font-bold",
-          "bg-gradient-to-r from-pink-500 via-rose-500 to-orange-500 text-white",
-          "border-white/40 hover:from-pink-400 hover:via-rose-400 hover:to-orange-400",
-          compact ? "text-[10px] px-1.5 py-0 h-5" : "text-xs px-2.5 py-0.5",
-          className
-        )}
-        title="Mãe do Marketing — priorizar abordagem"
-      >
-        <Megaphone className={cn(compact ? "h-2.5 w-2.5" : "h-3 w-3")} />
-        <span className="truncate max-w-[140px]">{etiqueta}</span>
-      </Badge>
-    );
-  }
-
-  // Busca cor cadastrada (match case-insensitive pelo nome)
   const found = etiquetas?.find(
     (e) => e.nome.trim().toLowerCase() === etiqueta.trim().toLowerCase()
   );
-  const cor = found?.cor || "#64748b"; // fallback slate
-
-  const bg = hexToRgba(cor, 0.15) ?? "transparent";
-  const border = hexToRgba(cor, 0.5) ?? cor;
+  const cor = found?.cor || "#64748b";
+  const textColor = contrastText(cor);
+  const isMkt = isMarketingEtiqueta(etiqueta);
+  const Icon = isMkt ? Megaphone : Tag;
 
   return (
     <Badge
-      variant="outline"
+      variant="default"
       className={cn(
-        "gap-1 font-semibold border",
+        "gap-1 border font-semibold",
         compact ? "text-[10px] px-1.5 py-0 h-5" : "text-xs px-2.5 py-0.5",
         className
       )}
       style={{
-        color: cor,
-        backgroundColor: bg,
-        borderColor: border,
+        backgroundColor: cor,
+        color: textColor,
+        borderColor: cor,
       }}
       title={`Etiqueta: ${etiqueta}`}
     >
-      <Tag className={cn(compact ? "h-2.5 w-2.5" : "h-3 w-3")} />
+      <Icon className={cn(compact ? "h-2.5 w-2.5" : "h-3 w-3")} />
       <span className="truncate max-w-[140px]">{etiqueta}</span>
     </Badge>
   );
