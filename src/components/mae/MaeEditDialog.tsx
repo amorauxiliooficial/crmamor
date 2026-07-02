@@ -48,6 +48,8 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
   const [isLoading, setIsLoading] = useState(false);
   const [pagamentoDialogOpen, setPagamentoDialogOpen] = useState(false);
   const [documentosDialogOpen, setDocumentosDialogOpen] = useState(false);
+  const [etiquetasManagerOpen, setEtiquetasManagerOpen] = useState(false);
+  const { data: etiquetasList = [] } = useEtiquetas();
   const [users, setUsers] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedAtendentes, setSelectedAtendentes] = useState<string[]>([]);
