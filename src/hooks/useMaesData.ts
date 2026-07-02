@@ -61,6 +61,7 @@ const mapDbToMae = (item: Record<string, unknown>): MaeProcessoComAtividade => (
   cidade: (item.cidade as string) || null,
   observacoes: (item.observacoes as string) || undefined,
   origem: (item.origem as string) || undefined,
+  etiqueta: (item.etiqueta as string) || null,
   senha_gov: (item.senha_gov as string) || undefined,
   verificacao_duas_etapas: (item.verificacao_duas_etapas as boolean) ?? false,
   is_gestante: (item.is_gestante as boolean) ?? false,
