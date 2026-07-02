@@ -267,6 +267,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       bairro: address.bairro || null,
       cidade: address.cidade || null,
       origem: formData.origem || null,
+      etiqueta: formData.etiqueta.trim() || null,
       observacoes: formData.observacoes || null,
       senha_gov: formData.senha_gov || null,
       verificacao_duas_etapas: formData.verificacao_duas_etapas,
