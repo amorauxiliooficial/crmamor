@@ -33,7 +33,7 @@ export function MarketingBadge({ etiqueta, className, compact = false }: Marketi
       title="Mãe do Marketing — priorizar abordagem"
     >
       <Megaphone className={cn(compact ? "h-2.5 w-2.5" : "h-3 w-3")} />
-      {compact ? "MKT" : "MARKETING"}
+      <span className="uppercase truncate max-w-[140px]">{etiqueta}</span>
     </Badge>
   );
 }
