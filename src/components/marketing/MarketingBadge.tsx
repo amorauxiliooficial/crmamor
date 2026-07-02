@@ -24,10 +24,9 @@ export function MarketingBadge({ etiqueta, className, compact = false }: Marketi
     <Badge
       variant="default"
       className={cn(
-        "gap-1 border-2 font-bold shadow-[0_0_12px_rgba(236,72,153,0.45)]",
+        "gap-1 border font-bold",
         "bg-gradient-to-r from-pink-500 via-rose-500 to-orange-500 text-white",
         "border-white/40 hover:from-pink-400 hover:via-rose-400 hover:to-orange-400",
-        "animate-pulse",
         compact ? "text-[10px] px-1.5 py-0 h-5" : "text-xs px-2.5 py-0.5",
         className
       )}
