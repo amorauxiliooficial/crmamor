@@ -542,7 +542,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Use "marketing" para acender o selo MKT no funil.
+                  A etiqueta selecionada aparece como selo colorido no card do funil.
                 </p>
               </div>
               <div className="space-y-2">
