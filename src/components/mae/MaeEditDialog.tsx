@@ -506,6 +506,21 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="etiqueta" className="flex items-center gap-1.5">
+                  <Tag className="h-3.5 w-3.5 text-primary" />
+                  Etiqueta
+                </Label>
+                <Input
+                  id="etiqueta"
+                  value={formData.etiqueta}
+                  onChange={(e) => setFormData({ ...formData, etiqueta: e.target.value })}
+                  placeholder="Ex: marketing, instagram, parceiro"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Digite "marketing" para acender o selo MKT no funil.
+                </p>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="senha_gov">Senha Gov.br</Label>
                 <Input
                   id="senha_gov"
