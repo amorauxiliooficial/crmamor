@@ -175,6 +175,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
         precisa_gps: mae.precisa_gps || "",
         uf: mae.uf || "",
         origem: mae.origem || "",
+        etiqueta: (mae as any).etiqueta || "",
         observacoes: mae.observacoes || "",
         senha_gov: mae.senha_gov || "",
         verificacao_duas_etapas: mae.verificacao_duas_etapas ?? false,
