@@ -19,6 +19,8 @@ import { MultiAtendentesSelect } from "@/components/mae/MultiAtendentesSelect";
 import { PhoneContactsEditor, PhoneEntry } from "@/components/mae/PhoneContactsEditor";
 import { useMotherContacts, useMotherContactActions } from "@/hooks/useMotherContacts";
 import { AddressFields, AddressValue, emptyAddress } from "@/components/mae/AddressFields";
+import { useEtiquetas } from "@/hooks/useEtiquetas";
+import { EtiquetasManagerDialog } from "@/components/etiquetas/EtiquetasManagerDialog";
 
 interface MaeEditDialogProps {
   mae: MaeProcesso | null;
