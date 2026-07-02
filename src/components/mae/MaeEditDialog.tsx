@@ -99,6 +99,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     precisa_gps: "",
     uf: "",
     origem: "",
+    etiqueta: "",
     observacoes: "",
     senha_gov: "",
     verificacao_duas_etapas: false,
