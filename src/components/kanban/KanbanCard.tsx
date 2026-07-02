@@ -96,7 +96,7 @@ export function KanbanCard({
         isDragging && "shadow-lg ring-1 ring-primary/40 rotate-2",
         followUpStatus === "overdue" && !hasUnreadAlert && "ring-1 ring-destructive/30",
         hasUnreadAlert && "ring-1 ring-primary/40",
-        (mae as any).etiqueta && isMarketingEtiqueta((mae as any).etiqueta) && "ring-2 ring-pink-500 shadow-[0_0_20px_rgba(236,72,153,0.25)]"
+        (mae as any).etiqueta && isMarketingEtiqueta((mae as any).etiqueta) && "ring-2 ring-pink-500"
       )}
       onClick={onClick}
     >
