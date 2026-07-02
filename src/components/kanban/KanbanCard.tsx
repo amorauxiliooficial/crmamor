@@ -113,10 +113,10 @@ export function KanbanCard({
       <CardContent className={cn("p-2.5 md:p-3 relative")}>
         <div className="space-y-1.5 md:space-y-2">
           <div className="flex items-start justify-between gap-1.5">
-            <h4 className="font-medium text-sm leading-tight line-clamp-2">
+            <h4 className="font-medium text-sm leading-tight line-clamp-2 min-w-0 flex-1">
               {mae.nome_mae}
             </h4>
-            <div className="flex gap-0.5 shrink-0">
+            <div className="flex flex-wrap justify-end gap-0.5 shrink-0 max-w-[60%]">
               <MarketingBadge etiqueta={(mae as any).etiqueta ?? mae.etiqueta} compact />
               {followUpStatus && (
                 <FollowUpBadge
