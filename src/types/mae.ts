@@ -44,6 +44,7 @@ export interface MaeProcesso {
   uf?: string;
   observacoes?: string;
   origem?: string;
+  etiqueta?: string | null;
   senha_gov?: string;
   verificacao_duas_etapas: boolean;
   is_gestante: boolean;
