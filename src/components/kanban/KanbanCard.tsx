@@ -116,6 +116,7 @@ export function KanbanCard({
               {mae.nome_mae}
             </h4>
             <div className="flex gap-0.5 shrink-0">
+              <MarketingBadge etiqueta={(mae as any).etiqueta ?? mae.etiqueta} compact />
               {followUpStatus && (
                 <FollowUpBadge
                   status={followUpStatus}
