@@ -58,6 +58,7 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
     central,
     parcelas,
     boletos,
+    recebimentos,
     historico,
     isLoading,
     updateCentral,
@@ -65,6 +66,8 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
     deleteParcela,
     upsertBoleto,
     deleteBoleto,
+    upsertRecebimento,
+    deleteRecebimento,
     salvarComunicado,
   } = useCentralFinanceira(isActive ? mae?.id ?? null : null);
 
