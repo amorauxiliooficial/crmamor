@@ -46,7 +46,8 @@ import {
   getProximoVencimento,
   getStatusGeralOrder,
 } from "@/lib/pagamentoUtils";
-import { ComunicadoDialog } from "@/components/pagamentos/ComunicadoDialog";
+import { CentralFinanceiraDialog } from "@/components/central-financeira/CentralFinanceiraDialog";
+import type { MaeProcesso } from "@/types/mae";
 import { BancosDialog } from "@/components/pagamentos/BancosDialog";
 import { TemplatesDialog } from "@/components/pagamentos/TemplatesDialog";
 import { AtendentesDialog } from "@/components/pagamentos/AtendentesDialog";
