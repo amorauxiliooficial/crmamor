@@ -34,6 +34,7 @@ import {
   Percent,
   MoreHorizontal,
   Eye,
+  Users,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { format, parseISO } from "date-fns";
