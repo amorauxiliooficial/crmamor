@@ -208,9 +208,7 @@ export function ComunicadoDialog({
     bancosLoading ||
     templatesLoading ||
     atendentesLoading ||
-    central.centralQuery?.isLoading ||
-    central.parcelasQuery?.isLoading ||
-    central.boletosQuery?.isLoading;
+    (central as any).isLoading;
 
   const variaveis = [
     "{{SAUDACAO}}",
