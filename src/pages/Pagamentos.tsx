@@ -48,6 +48,7 @@ import {
 import { ComunicadoDialog } from "@/components/pagamentos/ComunicadoDialog";
 import { BancosDialog } from "@/components/pagamentos/BancosDialog";
 import { TemplatesDialog } from "@/components/pagamentos/TemplatesDialog";
+import { AtendentesDialog } from "@/components/pagamentos/AtendentesDialog";
 import {
   AlertDialog,
   AlertDialogAction,
