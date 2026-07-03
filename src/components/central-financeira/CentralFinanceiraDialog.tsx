@@ -209,24 +209,88 @@ Qualquer dúvida estamos à disposição!`;
     return txt;
   };
 
+  const getSaudacao = () => {
+    const h = new Date().getHours();
+    if (h < 12) return "Bom dia";
+    if (h < 18) return "Boa tarde";
+    return "Boa noite";
+  };
+  const getPrimeiroNome = (nome: string) => nome.trim().split(/\s+/)[0] ?? nome;
+
+  const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
+  const selectedAtendente = atendentes.find((a) => a.id === selectedAtendenteId);
+
+  const renderFromTemplate = (): string => {
+    if (!selectedTemplate) return buildComunicado();
+    const listaParcelas = parcelas.length
+      ? parcelas
+          .slice()
+          .sort((a, b) => a.numero_parcela - b.numero_parcela)
+          .map(
+            (p) => `${p.numero_parcela}ª parcela – ${brl(p.valor)} – ${fmtDate(p.data_parcela)}`
+          )
+          .join("\n")
+      : "(Nenhuma parcela cadastrada)";
+    const listaBoletos = boletos.length
+      ? boletos
+          .map((b, i) => `${i + 1}º boleto – ${brl(b.valor)} – vencimento ${fmtDate(b.vencimento)}`)
+          .join("\n")
+      : "(Nenhum boleto cadastrado)";
+    const bancoEndereco = central?.endereco_saque?.trim() || "[Endereço não informado]";
+
+    const replacements: Record<string, string> = {
+      "{{SAUDACAO}}": getSaudacao(),
+      "{{NOME_MAE}}": mae?.nome_mae ?? "",
+      "{{PRIMEIRO_NOME_MAE}}": getPrimeiroNome(mae?.nome_mae ?? ""),
+      "{{CPF}}": mae?.cpf ? formatCpf(mae.cpf) : "",
+      "{{CEP}}": mae?.cep || "[CEP não informado]",
+      "{{NOME_ATENDENTE}}": selectedAtendente?.nome || "[Selecione um atendente]",
+      "{{CARGO_ATENDENTE}}": selectedAtendente?.cargo || "",
+      "{{NUMERO_BENEFICIO}}": central?.numero_beneficio || "[Nº do benefício não informado]",
+      "{{BANCO_NOME}}": central?.banco_saque || "[Banco não informado]",
+      "{{BANCO_ENDERECO}}": bancoEndereco,
+      "{{DATA_SAQUE}}": fmtDate(central?.data_saque),
+      "{{HORA_SAQUE}}": central?.horario_saque || "(Horário a confirmar)",
+      "{{VALOR_TOTAL_BENEFICIO}}": brl(totalParcelas || valorPrevistoManual),
+      "{{LISTA_PARCELAS_BENEFICIO}}": listaParcelas,
+      "{{LISTA_BOLETOS_AMOR}}": listaBoletos,
+      "{{HONORARIOS}}": brl(honorarios),
+      "{{PERCENTUAL_HONORARIOS}}": percentual ? `${percentual}%` : "",
+      "{{TAXA_ADMINISTRATIVA}}": taxa > 0 ? brl(taxa) : "ISENTO",
+      "{{TOTAL_HONORARIOS}}": brl(totalAmor),
+    };
+    let text = selectedTemplate.conteudo;
+    Object.entries(replacements).forEach(([k, v]) => {
+      text = text.replace(new RegExp(k.replace(/[{}]/g, "\\$&"), "g"), v);
+    });
+    return text;
+  };
+
+  const comunicadoTexto = useMemo(
+    () => (comunicadoOpen ? renderFromTemplate() : ""),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [comunicadoOpen, selectedTemplateId, selectedAtendenteId, templates, atendentes, central, parcelas, boletos, mae]
+  );
+
   const handleGerarComunicado = () => {
-    const txt = buildComunicado();
-    setComunicadoTexto(txt);
+    // Auto-selecionar primeiro template/atendente ativo
+    if (!selectedTemplateId && templates.length > 0) setSelectedTemplateId(templates[0].id);
+    if (!selectedAtendenteId) {
+      const ativos = atendentes.filter((a) => a.ativo);
+      if (ativos.length > 0) setSelectedAtendenteId(ativos[0].id);
+    }
     setComunicadoOpen(true);
+  };
+
+  // Salvar histórico ao abrir (com o texto final calculado)
+  const handleSalvarHistorico = () => {
+    if (!comunicadoTexto) return;
     salvarComunicado.mutate({
-      texto: txt,
+      texto: comunicadoTexto,
       snapshot: {
-        totalParcelas,
-        totalLiberado,
-        totalFuturo,
-        honorarios,
-        taxa,
-        totalAmor,
-        liquidoCliente,
-        totalBoletos,
-        boletosAberto,
-        parcelas,
-        boletos,
+        totalParcelas, totalLiberado, totalFuturo, honorarios, taxa, totalAmor,
+        liquidoCliente, totalBoletos, boletosAberto, parcelas, boletos,
+        template: selectedTemplate?.nome, atendente: selectedAtendente?.nome,
       },
     });
   };
@@ -234,6 +298,7 @@ Qualquer dúvida estamos à disposição!`;
   const handleCopyComunicado = async () => {
     try {
       await navigator.clipboard.writeText(comunicadoTexto);
+      handleSalvarHistorico();
       toast.success("Comunicado copiado!");
     } catch {
       toast.error("Erro ao copiar");
