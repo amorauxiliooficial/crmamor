@@ -809,3 +809,62 @@ function BoletoRow({
     </div>
   );
 }
+
+function RecebimentoRow({
+  r,
+  onSave,
+  onDelete,
+}: {
+  r: ParcelaRecebimento;
+  onSave: (patch: Partial<ParcelaRecebimento>) => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="grid grid-cols-12 gap-2 items-end border rounded p-2">
+      <div className="col-span-1">
+        <Label className="text-[10px] text-muted-foreground">Nº</Label>
+        <div className="font-semibold text-sm h-9 flex items-center">{r.numero_parcela}</div>
+      </div>
+      <div className="col-span-3">
+        <Label className="text-[10px] text-muted-foreground">Valor</Label>
+        <Input
+          type="number"
+          defaultValue={r.valor ?? ""}
+          onBlur={(e) => {
+            const v = e.target.value === "" ? null : Number(e.target.value);
+            if (v !== r.valor) onSave({ valor: v });
+          }}
+        />
+      </div>
+      <div className="col-span-3">
+        <Label className="text-[10px] text-muted-foreground">Data prevista</Label>
+        <Input
+          type="date"
+          defaultValue={r.data_prevista ?? ""}
+          onBlur={(e) => {
+            const v = e.target.value || null;
+            if (v !== r.data_prevista) onSave({ data_prevista: v });
+          }}
+        />
+      </div>
+      <div className="col-span-4">
+        <Label className="text-[10px] text-muted-foreground">Status</Label>
+        <Select value={r.status} onValueChange={(v: any) => onSave({ status: v })}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="z-[100]">
+            {RECEBIMENTO_STATUS.map((s) => (
+              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="col-span-1">
+        <Button variant="ghost" size="icon" onClick={onDelete}>
+          <Trash2 className="h-4 w-4 text-destructive" />
+        </Button>
+      </div>
+    </div>
+  );
+}
