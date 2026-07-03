@@ -441,6 +441,7 @@ export type Database = {
           taxa_administrativa: number | null
           updated_at: string
           updated_by: string | null
+          valor_previsto_beneficio: number | null
         }
         Insert: {
           agencia_saque?: string | null
@@ -459,6 +460,7 @@ export type Database = {
           taxa_administrativa?: number | null
           updated_at?: string
           updated_by?: string | null
+          valor_previsto_beneficio?: number | null
         }
         Update: {
           agencia_saque?: string | null
@@ -477,6 +479,7 @@ export type Database = {
           taxa_administrativa?: number | null
           updated_at?: string
           updated_by?: string | null
+          valor_previsto_beneficio?: number | null
         }
         Relationships: [
           {
