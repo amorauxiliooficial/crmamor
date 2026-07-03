@@ -1806,6 +1806,60 @@ export type Database = {
           },
         ]
       }
+      parcelas_recebimento_cliente: {
+        Row: {
+          central_id: string
+          created_at: string
+          data_prevista: string | null
+          id: string
+          mae_id: string
+          numero_parcela: number
+          observacoes: string | null
+          status: string
+          updated_at: string
+          valor: number | null
+        }
+        Insert: {
+          central_id: string
+          created_at?: string
+          data_prevista?: string | null
+          id?: string
+          mae_id: string
+          numero_parcela: number
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number | null
+        }
+        Update: {
+          central_id?: string
+          created_at?: string
+          data_prevista?: string | null
+          id?: string
+          mae_id?: string
+          numero_parcela?: number
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcelas_recebimento_cliente_central_id_fkey"
+            columns: ["central_id"]
+            isOneToOne: false
+            referencedRelation: "central_financeira"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcelas_recebimento_cliente_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       playbook_categorias: {
         Row: {
           created_at: string
