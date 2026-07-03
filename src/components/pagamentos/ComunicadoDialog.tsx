@@ -81,6 +81,29 @@ export function ComunicadoDialog({
   const [selectedAtendenteId, setSelectedAtendenteId] = useState<string>("");
   const [selectedParcelaIndex, setSelectedParcelaIndex] = useState<number>(0);
   const [copied, setCopied] = useState(false);
+  const [centralDialogOpen, setCentralDialogOpen] = useState(false);
+  const [maeFull, setMaeFull] = useState<MaeProcesso | null>(null);
+  const [loadingMae, setLoadingMae] = useState(false);
+
+  const handleOpenCentral = async () => {
+    setLoadingMae(true);
+    try {
+      const { data, error } = await supabase
+        .from("mae_processo")
+        .select("*")
+        .eq("id", pagamento.mae_id)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        setMaeFull(data as unknown as MaeProcesso);
+        setCentralDialogOpen(true);
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Erro ao abrir Central Financeira", description: e.message });
+    } finally {
+      setLoadingMae(false);
+    }
+  };
 
   // Auto-select first template / active atendente when data loads
   useEffect(() => {
