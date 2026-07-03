@@ -85,9 +85,10 @@ const Pagamentos = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedPagamentoForDrawer, setSelectedPagamentoForDrawer] = useState<PagamentoComMae | null>(null);
   
-  // Dialog states for comunicado feature
-  const [comunicadoDialogOpen, setComunicadoDialogOpen] = useState(false);
-  const [selectedPagamentoForComunicado, setSelectedPagamentoForComunicado] = useState<PagamentoComMae | null>(null);
+  // Central Financeira (unificada com comunicado)
+  const [centralOpen, setCentralOpen] = useState(false);
+  const [selectedMaeForCentral, setSelectedMaeForCentral] = useState<MaeProcesso | null>(null);
+  const [loadingMaeCentral, setLoadingMaeCentral] = useState(false);
   const [maeCepMap, setMaeCepMap] = useState<Record<string, string>>({});
   const [bancosDialogOpen, setBancosDialogOpen] = useState(false);
   const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
@@ -136,9 +137,24 @@ const Pagamentos = () => {
     fetchCeps();
   }, [pagamentos]);
 
-  const handleOpenComunicado = (pagamento: PagamentoComMae) => {
-    setSelectedPagamentoForComunicado(pagamento);
-    setComunicadoDialogOpen(true);
+  const handleOpenComunicado = async (pagamento: PagamentoComMae) => {
+    setLoadingMaeCentral(true);
+    try {
+      const { data, error } = await supabase
+        .from("mae_processo")
+        .select("*")
+        .eq("id", pagamento.mae_id)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        setSelectedMaeForCentral(data as unknown as MaeProcesso);
+        setCentralOpen(true);
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Erro ao abrir Central Financeira", description: e.message });
+    } finally {
+      setLoadingMaeCentral(false);
+    }
   };
 
   const stats = useMemo(() => {
