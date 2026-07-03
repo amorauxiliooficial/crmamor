@@ -296,6 +296,7 @@ export function useCentralFinanceira(maeId: string | null) {
     central: centralQuery.data,
     parcelas: parcelasQuery.data ?? [],
     boletos: boletosQuery.data ?? [],
+    recebimentos: recebimentosQuery.data ?? [],
     historico: historicoQuery.data ?? [],
     isLoading: centralQuery.isLoading || parcelasQuery.isLoading || boletosQuery.isLoading,
     updateCentral,
@@ -303,6 +304,8 @@ export function useCentralFinanceira(maeId: string | null) {
     deleteParcela,
     upsertBoleto,
     deleteBoleto,
+    upsertRecebimento,
+    deleteRecebimento,
     salvarComunicado,
   };
 }
