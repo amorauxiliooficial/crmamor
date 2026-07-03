@@ -20,10 +20,13 @@ import { useBancos } from "@/hooks/useBancos";
 import { useTemplates } from "@/hooks/useTemplates";
 import { useAtendentesComunicado } from "@/hooks/useAtendentesComunicado";
 import { useCentralFinanceira } from "@/hooks/useCentralFinanceira";
-import { Loader2, Copy, Check, FileText, Building2, UserCircle2, Info } from "lucide-react";
+import { Loader2, Copy, Check, FileText, Building2, UserCircle2, Info, Wallet, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+import { CentralFinanceiraDialog } from "@/components/central-financeira/CentralFinanceiraDialog";
+import type { MaeProcesso } from "@/types/mae";
 import type { PagamentoComMae } from "@/hooks/usePagamentos";
 
 interface ComunicadoDialogProps {
@@ -78,6 +81,29 @@ export function ComunicadoDialog({
   const [selectedAtendenteId, setSelectedAtendenteId] = useState<string>("");
   const [selectedParcelaIndex, setSelectedParcelaIndex] = useState<number>(0);
   const [copied, setCopied] = useState(false);
+  const [centralDialogOpen, setCentralDialogOpen] = useState(false);
+  const [maeFull, setMaeFull] = useState<MaeProcesso | null>(null);
+  const [loadingMae, setLoadingMae] = useState(false);
+
+  const handleOpenCentral = async () => {
+    setLoadingMae(true);
+    try {
+      const { data, error } = await supabase
+        .from("mae_processo")
+        .select("*")
+        .eq("id", pagamento.mae_id)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        setMaeFull(data as unknown as MaeProcesso);
+        setCentralDialogOpen(true);
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Erro ao abrir Central Financeira", description: e.message });
+    } finally {
+      setLoadingMae(false);
+    }
+  };
 
   // Auto-select first template / active atendente when data loads
   useEffect(() => {
@@ -242,6 +268,23 @@ export function ComunicadoDialog({
           </DialogTitle>
         </DialogHeader>
 
+        <div className="flex justify-end -mt-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleOpenCentral}
+            disabled={loadingMae}
+          >
+            {loadingMae ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Wallet className="h-4 w-4 mr-1" />
+            )}
+            Abrir Central Financeira
+            <ExternalLink className="h-3 w-3 ml-1 opacity-60" />
+          </Button>
+        </div>
+
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin" />
@@ -390,6 +433,14 @@ export function ComunicadoDialog({
           </div>
         )}
       </DialogContent>
+
+      {maeFull && (
+        <CentralFinanceiraDialog
+          mae={maeFull}
+          open={centralDialogOpen}
+          onOpenChange={setCentralDialogOpen}
+        />
+      )}
     </Dialog>
   );
 }
