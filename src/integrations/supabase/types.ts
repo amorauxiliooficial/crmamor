@@ -197,6 +197,33 @@ export type Database = {
           },
         ]
       }
+      atendentes_comunicado: {
+        Row: {
+          ativo: boolean
+          cargo: string | null
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cargo?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cargo?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       atividades_mae: {
         Row: {
           concluido: boolean | null

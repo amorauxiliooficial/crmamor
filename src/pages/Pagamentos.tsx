@@ -34,6 +34,7 @@ import {
   Percent,
   MoreHorizontal,
   Eye,
+  Users,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { format, parseISO } from "date-fns";
@@ -48,6 +49,7 @@ import {
 import { ComunicadoDialog } from "@/components/pagamentos/ComunicadoDialog";
 import { BancosDialog } from "@/components/pagamentos/BancosDialog";
 import { TemplatesDialog } from "@/components/pagamentos/TemplatesDialog";
+import { AtendentesDialog } from "@/components/pagamentos/AtendentesDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,6 +90,7 @@ const Pagamentos = () => {
   const [maeCepMap, setMaeCepMap] = useState<Record<string, string>>({});
   const [bancosDialogOpen, setBancosDialogOpen] = useState(false);
   const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
+  const [atendentesDialogOpen, setAtendentesDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -257,6 +260,10 @@ const Pagamentos = () => {
                 <DropdownMenuItem onClick={() => setTemplatesDialogOpen(true)}>
                   <FileText className="h-4 w-4 mr-2" />
                   Gerenciar Templates
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setAtendentesDialogOpen(true)}>
+                  <Users className="h-4 w-4 mr-2" />
+                  Gerenciar Atendentes
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -590,6 +597,7 @@ const Pagamentos = () => {
 
       <BancosDialog open={bancosDialogOpen} onOpenChange={setBancosDialogOpen} />
       <TemplatesDialog open={templatesDialogOpen} onOpenChange={setTemplatesDialogOpen} />
+      <AtendentesDialog open={atendentesDialogOpen} onOpenChange={setAtendentesDialogOpen} />
     </div>
   );
 };
