@@ -93,9 +93,9 @@ export function ComunicadoDialog({
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
   const selectedAtendente = atendentes.find((a) => a.id === selectedAtendenteId);
 
-  const centralData = central.centralQuery?.data;
-  const parcelasBeneficio = central.parcelasQuery?.data ?? [];
-  const boletosAmor = central.boletosQuery?.data ?? [];
+  const centralData = (central as any).central ?? null;
+  const parcelasBeneficio = (central as any).parcelas ?? [];
+  const boletosAmor = (central as any).boletos ?? [];
 
   const generatedText = useMemo(() => {
     if (!selectedTemplate) return "";
