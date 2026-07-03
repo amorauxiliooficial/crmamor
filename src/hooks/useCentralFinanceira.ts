@@ -13,6 +13,7 @@ export interface CentralFinanceira {
   observacao_saque: string | null;
   percentual_honorarios: number | null;
   taxa_administrativa: number | null;
+  valor_previsto_beneficio: number | null;
   observacoes_valores_futuros: string | null;
 }
 
