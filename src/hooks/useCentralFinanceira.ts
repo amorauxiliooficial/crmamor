@@ -14,6 +14,7 @@ export interface CentralFinanceira {
   percentual_honorarios: number | null;
   taxa_administrativa: number | null;
   valor_previsto_beneficio: number | null;
+  valor_receber_cliente: number | null;
   observacoes_valores_futuros: string | null;
 }
 

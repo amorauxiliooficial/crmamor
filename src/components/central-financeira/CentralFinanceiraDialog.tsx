@@ -93,7 +93,8 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
   const taxa = Number(central?.taxa_administrativa ?? 0);
   const honorarios = baseCalculo * (percentual / 100);
   const totalAmor = honorarios + taxa;
-  const liquidoCliente = baseCalculo - totalAmor;
+  const valorReceberManual = central?.valor_receber_cliente == null ? null : Number(central.valor_receber_cliente);
+  const liquidoCliente = valorReceberManual != null ? valorReceberManual : baseCalculo - totalAmor;
 
   const totalBoletos = useMemo(
     () => boletos.reduce((s, b) => s + Number(b.valor ?? 0), 0),
@@ -370,8 +371,21 @@ Qualquer dúvida estamos à disposição!`;
                 <SmallStat label="Honorários" value={brl(honorarios)} />
                 <SmallStat label="Total Amor" value={brl(totalAmor)} highlight />
                 <div className="md:col-span-2">
-                  <SmallStat label="Valor líquido estimado da cliente" value={brl(liquidoCliente)} />
+                  <FieldInput
+                    label="Valor a receber pela cliente (R$)"
+                    type="number"
+                    value={central?.valor_receber_cliente == null ? "" : String(central.valor_receber_cliente)}
+                    onSave={(v) => updateCentral.mutate({ valor_receber_cliente: v === "" ? null : Number(v) } as any)}
+                    placeholder="Informe o valor líquido que a mãe irá receber"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Se preenchido, substitui o cálculo automático abaixo.
+                  </p>
                 </div>
+                <div className="md:col-span-2">
+                  <SmallStat label="Valor líquido estimado da cliente" value={brl(liquidoCliente)} highlight={valorReceberManual != null} />
+                </div>
+
               </CardContent>
             </Card>
 

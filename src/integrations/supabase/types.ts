@@ -442,6 +442,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           valor_previsto_beneficio: number | null
+          valor_receber_cliente: number | null
         }
         Insert: {
           agencia_saque?: string | null
@@ -461,6 +462,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           valor_previsto_beneficio?: number | null
+          valor_receber_cliente?: number | null
         }
         Update: {
           agencia_saque?: string | null
@@ -480,6 +482,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           valor_previsto_beneficio?: number | null
+          valor_receber_cliente?: number | null
         }
         Relationships: [
           {
