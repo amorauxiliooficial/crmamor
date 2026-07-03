@@ -260,6 +260,10 @@ const Pagamentos = () => {
                   <FileText className="h-4 w-4 mr-2" />
                   Gerenciar Templates
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setAtendentesDialogOpen(true)}>
+                  <Users className="h-4 w-4 mr-2" />
+                  Gerenciar Atendentes
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="h-8">
