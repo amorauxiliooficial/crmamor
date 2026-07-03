@@ -227,6 +227,55 @@ export function useCentralFinanceira(maeId: string | null) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["central-boletos", centralId] }),
   });
 
+  const recebimentosQuery = useQuery({
+    queryKey: ["central-recebimentos", centralId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("parcelas_recebimento_cliente" as any)
+        .select("*")
+        .eq("central_id", centralId!)
+        .order("numero_parcela");
+      if (error) throw error;
+      return (data as any) as ParcelaRecebimento[];
+    },
+    enabled: !!centralId,
+  });
+
+  const upsertRecebimento = useMutation({
+    mutationFn: async (r: Partial<ParcelaRecebimento> & { id?: string }) => {
+      if (!centralId || !maeId) throw new Error("sem central");
+      if (r.id) {
+        const { data, error } = await supabase
+          .from("parcelas_recebimento_cliente" as any)
+          .update(r)
+          .eq("id", r.id)
+          .select()
+          .single();
+        if (error) throw error;
+        await logAlteracao("recebimento", r.id, null, JSON.stringify(r));
+        return data;
+      }
+      const { data, error } = await supabase
+        .from("parcelas_recebimento_cliente" as any)
+        .insert({ central_id: centralId, mae_id: maeId, ...r })
+        .select()
+        .single();
+      if (error) throw error;
+      await logAlteracao("recebimento", "novo", null, JSON.stringify(r));
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["central-recebimentos", centralId] }),
+  });
+
+  const deleteRecebimento = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("parcelas_recebimento_cliente" as any).delete().eq("id", id);
+      if (error) throw error;
+      await logAlteracao("recebimento", "delete", id, null);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["central-recebimentos", centralId] }),
+  });
+
   const salvarComunicado = useMutation({
     mutationFn: async ({ texto, snapshot }: { texto: string; snapshot: any }) => {
       if (!centralId || !maeId) throw new Error("sem central");
