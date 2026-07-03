@@ -600,15 +600,14 @@ const Pagamentos = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {selectedPagamentoForComunicado && (
-        <ComunicadoDialog
-          open={comunicadoDialogOpen}
+      {selectedMaeForCentral && (
+        <CentralFinanceiraDialog
+          mae={selectedMaeForCentral}
+          open={centralOpen}
           onOpenChange={(open) => {
-            setComunicadoDialogOpen(open);
-            if (!open) setSelectedPagamentoForComunicado(null);
+            setCentralOpen(open);
+            if (!open) setSelectedMaeForCentral(null);
           }}
-          pagamento={selectedPagamentoForComunicado}
-          maeCep={maeCepMap[selectedPagamentoForComunicado.mae_id]}
         />
       )}
 
