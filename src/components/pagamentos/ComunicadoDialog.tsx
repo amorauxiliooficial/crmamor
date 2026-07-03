@@ -20,10 +20,13 @@ import { useBancos } from "@/hooks/useBancos";
 import { useTemplates } from "@/hooks/useTemplates";
 import { useAtendentesComunicado } from "@/hooks/useAtendentesComunicado";
 import { useCentralFinanceira } from "@/hooks/useCentralFinanceira";
-import { Loader2, Copy, Check, FileText, Building2, UserCircle2, Info } from "lucide-react";
+import { Loader2, Copy, Check, FileText, Building2, UserCircle2, Info, Wallet, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+import { CentralFinanceiraDialog } from "@/components/central-financeira/CentralFinanceiraDialog";
+import type { MaeProcesso } from "@/types/mae";
 import type { PagamentoComMae } from "@/hooks/usePagamentos";
 
 interface ComunicadoDialogProps {
