@@ -268,6 +268,23 @@ export function ComunicadoDialog({
           </DialogTitle>
         </DialogHeader>
 
+        <div className="flex justify-end -mt-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleOpenCentral}
+            disabled={loadingMae}
+          >
+            {loadingMae ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Wallet className="h-4 w-4 mr-1" />
+            )}
+            Abrir Central Financeira
+            <ExternalLink className="h-3 w-3 ml-1 opacity-60" />
+          </Button>
+        </div>
+
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin" />
