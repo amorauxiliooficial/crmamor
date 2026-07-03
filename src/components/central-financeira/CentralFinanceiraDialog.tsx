@@ -371,8 +371,21 @@ Qualquer dúvida estamos à disposição!`;
                 <SmallStat label="Honorários" value={brl(honorarios)} />
                 <SmallStat label="Total Amor" value={brl(totalAmor)} highlight />
                 <div className="md:col-span-2">
-                  <SmallStat label="Valor líquido estimado da cliente" value={brl(liquidoCliente)} />
+                  <FieldInput
+                    label="Valor a receber pela cliente (R$)"
+                    type="number"
+                    value={central?.valor_receber_cliente == null ? "" : String(central.valor_receber_cliente)}
+                    onSave={(v) => updateCentral.mutate({ valor_receber_cliente: v === "" ? null : Number(v) } as any)}
+                    placeholder="Informe o valor líquido que a mãe irá receber"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Se preenchido, substitui o cálculo automático abaixo.
+                  </p>
                 </div>
+                <div className="md:col-span-2">
+                  <SmallStat label="Valor líquido estimado da cliente" value={brl(liquidoCliente)} highlight={valorReceberManual != null} />
+                </div>
+
               </CardContent>
             </Card>
 
