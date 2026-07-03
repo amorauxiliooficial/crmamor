@@ -410,6 +410,41 @@ Qualquer dúvida estamos à disposição!`;
               </CardContent>
             </Card>
 
+            {/* Recebimentos da cliente */}
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base">Parcelas a receber pela cliente</CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const prox = (recebimentos[recebimentos.length - 1]?.numero_parcela ?? 0) + 1;
+                    upsertRecebimento.mutate({ numero_parcela: prox, status: "prevista", valor: 0 });
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Adicionar
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {recebimentos.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Nenhuma parcela de recebimento cadastrada.</p>
+                )}
+                {recebimentos.map((r) => (
+                  <RecebimentoRow
+                    key={r.id}
+                    r={r}
+                    onSave={(patch) => upsertRecebimento.mutate({ id: r.id, ...patch })}
+                    onDelete={() => deleteRecebimento.mutate(r.id)}
+                  />
+                ))}
+                <div className="grid grid-cols-3 gap-2 pt-2 text-sm">
+                  <SmallStat label="Total previsto" value={brl(totalRecebimentos)} />
+                  <SmallStat label="Já recebido" value={brl(totalRecebido)} />
+                  <SmallStat label="Em aberto" value={brl(recebimentosAberto)} />
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Boletos */}
             <Card>
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
