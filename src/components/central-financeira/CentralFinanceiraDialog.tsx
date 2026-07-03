@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { useCentralFinanceira, type ParcelaBeneficio, type BoletoAmor } from "@/hooks/useCentralFinanceira";
+import { useCentralFinanceira, type ParcelaBeneficio, type BoletoAmor, type ParcelaRecebimento } from "@/hooks/useCentralFinanceira";
 import { useBancos } from "@/hooks/useBancos";
 import type { MaeProcesso } from "@/types/mae";
 import { Copy, Plus, Trash2, AlertTriangle, FileText, History, Calculator, Wallet, FileCheck2 } from "lucide-react";
@@ -40,6 +40,14 @@ const BOLETO_STATUS = [
   { value: "cancelado", label: "Cancelado" },
 ];
 
+const RECEBIMENTO_STATUS = [
+  { value: "prevista", label: "Prevista" },
+  { value: "liberada", label: "Liberada" },
+  { value: "recebida", label: "Recebida" },
+  { value: "atrasada", label: "Atrasada" },
+  { value: "cancelada", label: "Cancelada" },
+];
+
 const brl = (v: number | null | undefined) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(v ?? 0));
 
@@ -58,6 +66,7 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
     central,
     parcelas,
     boletos,
+    recebimentos,
     historico,
     isLoading,
     updateCentral,
@@ -65,6 +74,8 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
     deleteParcela,
     upsertBoleto,
     deleteBoleto,
+    upsertRecebimento,
+    deleteRecebimento,
     salvarComunicado,
   } = useCentralFinanceira(isActive ? mae?.id ?? null : null);
 
@@ -106,6 +117,16 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
   );
   const boletosAberto = totalBoletos - boletosPagos;
   const diferencaBoletos = totalAmor - totalBoletos;
+
+  const totalRecebimentos = useMemo(
+    () => recebimentos.reduce((s, r) => s + Number(r.valor ?? 0), 0),
+    [recebimentos]
+  );
+  const totalRecebido = useMemo(
+    () => recebimentos.filter((r) => r.status === "recebida").reduce((s, r) => s + Number(r.valor ?? 0), 0),
+    [recebimentos]
+  );
+  const recebimentosAberto = totalRecebimentos - totalRecebido;
 
   const alertas: string[] = [];
   if (Math.abs(diferencaBoletos) > 0.01 && totalBoletos > 0)
@@ -386,6 +407,41 @@ Qualquer dúvida estamos à disposição!`;
                   <SmallStat label="Valor líquido estimado da cliente" value={brl(liquidoCliente)} highlight={valorReceberManual != null} />
                 </div>
 
+              </CardContent>
+            </Card>
+
+            {/* Recebimentos da cliente */}
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base">Parcelas a receber pela cliente</CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const prox = (recebimentos[recebimentos.length - 1]?.numero_parcela ?? 0) + 1;
+                    upsertRecebimento.mutate({ numero_parcela: prox, status: "prevista", valor: 0 });
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Adicionar
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {recebimentos.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Nenhuma parcela de recebimento cadastrada.</p>
+                )}
+                {recebimentos.map((r) => (
+                  <RecebimentoRow
+                    key={r.id}
+                    r={r}
+                    onSave={(patch) => upsertRecebimento.mutate({ id: r.id, ...patch })}
+                    onDelete={() => deleteRecebimento.mutate(r.id)}
+                  />
+                ))}
+                <div className="grid grid-cols-3 gap-2 pt-2 text-sm">
+                  <SmallStat label="Total previsto" value={brl(totalRecebimentos)} />
+                  <SmallStat label="Já recebido" value={brl(totalRecebido)} />
+                  <SmallStat label="Em aberto" value={brl(recebimentosAberto)} />
+                </div>
               </CardContent>
             </Card>
 
@@ -740,6 +796,65 @@ function BoletoRow({
           </SelectTrigger>
           <SelectContent className="z-[100]">
             {BOLETO_STATUS.map((s) => (
+              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="col-span-1">
+        <Button variant="ghost" size="icon" onClick={onDelete}>
+          <Trash2 className="h-4 w-4 text-destructive" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function RecebimentoRow({
+  r,
+  onSave,
+  onDelete,
+}: {
+  r: ParcelaRecebimento;
+  onSave: (patch: Partial<ParcelaRecebimento>) => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="grid grid-cols-12 gap-2 items-end border rounded p-2">
+      <div className="col-span-1">
+        <Label className="text-[10px] text-muted-foreground">Nº</Label>
+        <div className="font-semibold text-sm h-9 flex items-center">{r.numero_parcela}</div>
+      </div>
+      <div className="col-span-3">
+        <Label className="text-[10px] text-muted-foreground">Valor</Label>
+        <Input
+          type="number"
+          defaultValue={r.valor ?? ""}
+          onBlur={(e) => {
+            const v = e.target.value === "" ? null : Number(e.target.value);
+            if (v !== r.valor) onSave({ valor: v });
+          }}
+        />
+      </div>
+      <div className="col-span-3">
+        <Label className="text-[10px] text-muted-foreground">Data prevista</Label>
+        <Input
+          type="date"
+          defaultValue={r.data_prevista ?? ""}
+          onBlur={(e) => {
+            const v = e.target.value || null;
+            if (v !== r.data_prevista) onSave({ data_prevista: v });
+          }}
+        />
+      </div>
+      <div className="col-span-4">
+        <Label className="text-[10px] text-muted-foreground">Status</Label>
+        <Select value={r.status} onValueChange={(v: any) => onSave({ status: v })}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="z-[100]">
+            {RECEBIMENTO_STATUS.map((s) => (
               <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
             ))}
           </SelectContent>
