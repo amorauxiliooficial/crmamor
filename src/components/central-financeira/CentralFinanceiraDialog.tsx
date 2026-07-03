@@ -335,6 +335,11 @@ Qualquer dúvida estamos à disposição!`;
                 <CardTitle className="text-base">Cobrança da Amor</CardTitle>
               </CardHeader>
               <CardContent className="grid md:grid-cols-2 gap-3">
+                <div className="md:col-span-2 grid grid-cols-3 gap-2 text-sm">
+                  <SmallStat label="Total previsto" value={brl(totalParcelas)} />
+                  <SmallStat label="Já liberado" value={brl(totalLiberado)} />
+                  <SmallStat label="Futuro previsto" value={brl(totalFuturo)} />
+                </div>
                 <FieldInput
                   label="Percentual de honorários (%)"
                   type="number"
