@@ -118,6 +118,16 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
   const boletosAberto = totalBoletos - boletosPagos;
   const diferencaBoletos = totalAmor - totalBoletos;
 
+  const totalRecebimentos = useMemo(
+    () => recebimentos.reduce((s, r) => s + Number(r.valor ?? 0), 0),
+    [recebimentos]
+  );
+  const totalRecebido = useMemo(
+    () => recebimentos.filter((r) => r.status === "recebida").reduce((s, r) => s + Number(r.valor ?? 0), 0),
+    [recebimentos]
+  );
+  const recebimentosAberto = totalRecebimentos - totalRecebido;
+
   const alertas: string[] = [];
   if (Math.abs(diferencaBoletos) > 0.01 && totalBoletos > 0)
     alertas.push("A soma dos boletos não bate com o total da Amor.");
