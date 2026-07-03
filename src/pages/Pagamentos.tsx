@@ -597,6 +597,7 @@ const Pagamentos = () => {
 
       <BancosDialog open={bancosDialogOpen} onOpenChange={setBancosDialogOpen} />
       <TemplatesDialog open={templatesDialogOpen} onOpenChange={setTemplatesDialogOpen} />
+      <AtendentesDialog open={atendentesDialogOpen} onOpenChange={setAtendentesDialogOpen} />
     </div>
   );
 };
