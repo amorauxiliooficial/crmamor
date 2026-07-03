@@ -46,7 +46,8 @@ import {
   getProximoVencimento,
   getStatusGeralOrder,
 } from "@/lib/pagamentoUtils";
-import { ComunicadoDialog } from "@/components/pagamentos/ComunicadoDialog";
+import { CentralFinanceiraDialog } from "@/components/central-financeira/CentralFinanceiraDialog";
+import type { MaeProcesso } from "@/types/mae";
 import { BancosDialog } from "@/components/pagamentos/BancosDialog";
 import { TemplatesDialog } from "@/components/pagamentos/TemplatesDialog";
 import { AtendentesDialog } from "@/components/pagamentos/AtendentesDialog";
@@ -84,9 +85,10 @@ const Pagamentos = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedPagamentoForDrawer, setSelectedPagamentoForDrawer] = useState<PagamentoComMae | null>(null);
   
-  // Dialog states for comunicado feature
-  const [comunicadoDialogOpen, setComunicadoDialogOpen] = useState(false);
-  const [selectedPagamentoForComunicado, setSelectedPagamentoForComunicado] = useState<PagamentoComMae | null>(null);
+  // Central Financeira (unificada com comunicado)
+  const [centralOpen, setCentralOpen] = useState(false);
+  const [selectedMaeForCentral, setSelectedMaeForCentral] = useState<MaeProcesso | null>(null);
+  const [loadingMaeCentral, setLoadingMaeCentral] = useState(false);
   const [maeCepMap, setMaeCepMap] = useState<Record<string, string>>({});
   const [bancosDialogOpen, setBancosDialogOpen] = useState(false);
   const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
@@ -135,9 +137,24 @@ const Pagamentos = () => {
     fetchCeps();
   }, [pagamentos]);
 
-  const handleOpenComunicado = (pagamento: PagamentoComMae) => {
-    setSelectedPagamentoForComunicado(pagamento);
-    setComunicadoDialogOpen(true);
+  const handleOpenComunicado = async (pagamento: PagamentoComMae) => {
+    setLoadingMaeCentral(true);
+    try {
+      const { data, error } = await supabase
+        .from("mae_processo")
+        .select("*")
+        .eq("id", pagamento.mae_id)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        setSelectedMaeForCentral(data as unknown as MaeProcesso);
+        setCentralOpen(true);
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Erro ao abrir Central Financeira", description: e.message });
+    } finally {
+      setLoadingMaeCentral(false);
+    }
   };
 
   const stats = useMemo(() => {
@@ -583,15 +600,14 @@ const Pagamentos = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {selectedPagamentoForComunicado && (
-        <ComunicadoDialog
-          open={comunicadoDialogOpen}
+      {selectedMaeForCentral && (
+        <CentralFinanceiraDialog
+          mae={selectedMaeForCentral}
+          open={centralOpen}
           onOpenChange={(open) => {
-            setComunicadoDialogOpen(open);
-            if (!open) setSelectedPagamentoForComunicado(null);
+            setCentralOpen(open);
+            if (!open) setSelectedMaeForCentral(null);
           }}
-          pagamento={selectedPagamentoForComunicado}
-          maeCep={maeCepMap[selectedPagamentoForComunicado.mae_id]}
         />
       )}
 

@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatCpf } from "@/lib/formatters";
+import { useTemplates } from "@/hooks/useTemplates";
+import { useAtendentesComunicado } from "@/hooks/useAtendentesComunicado";
 
 interface Props {
   mae: MaeProcesso | null;
@@ -82,7 +84,10 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
   const { bancos: bancosLista } = useBancos();
 
   const [comunicadoOpen, setComunicadoOpen] = useState(false);
-  const [comunicadoTexto, setComunicadoTexto] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [selectedAtendenteId, setSelectedAtendenteId] = useState<string>("");
+  const { templates } = useTemplates();
+  const { atendentes } = useAtendentesComunicado();
 
   // Cálculos
   const totalParcelas = useMemo(
@@ -204,24 +209,88 @@ Qualquer dúvida estamos à disposição!`;
     return txt;
   };
 
+  const getSaudacao = () => {
+    const h = new Date().getHours();
+    if (h < 12) return "Bom dia";
+    if (h < 18) return "Boa tarde";
+    return "Boa noite";
+  };
+  const getPrimeiroNome = (nome: string) => nome.trim().split(/\s+/)[0] ?? nome;
+
+  const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
+  const selectedAtendente = atendentes.find((a) => a.id === selectedAtendenteId);
+
+  const renderFromTemplate = (): string => {
+    if (!selectedTemplate) return buildComunicado();
+    const listaParcelas = parcelas.length
+      ? parcelas
+          .slice()
+          .sort((a, b) => a.numero_parcela - b.numero_parcela)
+          .map(
+            (p) => `${p.numero_parcela}ª parcela – ${brl(p.valor)} – ${fmtDate(p.data_parcela)}`
+          )
+          .join("\n")
+      : "(Nenhuma parcela cadastrada)";
+    const listaBoletos = boletos.length
+      ? boletos
+          .map((b, i) => `${i + 1}º boleto – ${brl(b.valor)} – vencimento ${fmtDate(b.vencimento)}`)
+          .join("\n")
+      : "(Nenhum boleto cadastrado)";
+    const bancoEndereco = central?.endereco_saque?.trim() || "[Endereço não informado]";
+
+    const replacements: Record<string, string> = {
+      "{{SAUDACAO}}": getSaudacao(),
+      "{{NOME_MAE}}": mae?.nome_mae ?? "",
+      "{{PRIMEIRO_NOME_MAE}}": getPrimeiroNome(mae?.nome_mae ?? ""),
+      "{{CPF}}": mae?.cpf ? formatCpf(mae.cpf) : "",
+      "{{CEP}}": mae?.cep || "[CEP não informado]",
+      "{{NOME_ATENDENTE}}": selectedAtendente?.nome || "[Selecione um atendente]",
+      "{{CARGO_ATENDENTE}}": selectedAtendente?.cargo || "",
+      "{{NUMERO_BENEFICIO}}": central?.numero_beneficio || "[Nº do benefício não informado]",
+      "{{BANCO_NOME}}": central?.banco_saque || "[Banco não informado]",
+      "{{BANCO_ENDERECO}}": bancoEndereco,
+      "{{DATA_SAQUE}}": fmtDate(central?.data_saque),
+      "{{HORA_SAQUE}}": central?.horario_saque || "(Horário a confirmar)",
+      "{{VALOR_TOTAL_BENEFICIO}}": brl(totalParcelas || valorPrevistoManual),
+      "{{LISTA_PARCELAS_BENEFICIO}}": listaParcelas,
+      "{{LISTA_BOLETOS_AMOR}}": listaBoletos,
+      "{{HONORARIOS}}": brl(honorarios),
+      "{{PERCENTUAL_HONORARIOS}}": percentual ? `${percentual}%` : "",
+      "{{TAXA_ADMINISTRATIVA}}": taxa > 0 ? brl(taxa) : "ISENTO",
+      "{{TOTAL_HONORARIOS}}": brl(totalAmor),
+    };
+    let text = selectedTemplate.conteudo;
+    Object.entries(replacements).forEach(([k, v]) => {
+      text = text.replace(new RegExp(k.replace(/[{}]/g, "\\$&"), "g"), v);
+    });
+    return text;
+  };
+
+  const comunicadoTexto = useMemo(
+    () => (comunicadoOpen ? renderFromTemplate() : ""),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [comunicadoOpen, selectedTemplateId, selectedAtendenteId, templates, atendentes, central, parcelas, boletos, mae]
+  );
+
   const handleGerarComunicado = () => {
-    const txt = buildComunicado();
-    setComunicadoTexto(txt);
+    // Auto-selecionar primeiro template/atendente ativo
+    if (!selectedTemplateId && templates.length > 0) setSelectedTemplateId(templates[0].id);
+    if (!selectedAtendenteId) {
+      const ativos = atendentes.filter((a) => a.ativo);
+      if (ativos.length > 0) setSelectedAtendenteId(ativos[0].id);
+    }
     setComunicadoOpen(true);
+  };
+
+  // Salvar histórico ao abrir (com o texto final calculado)
+  const handleSalvarHistorico = () => {
+    if (!comunicadoTexto) return;
     salvarComunicado.mutate({
-      texto: txt,
+      texto: comunicadoTexto,
       snapshot: {
-        totalParcelas,
-        totalLiberado,
-        totalFuturo,
-        honorarios,
-        taxa,
-        totalAmor,
-        liquidoCliente,
-        totalBoletos,
-        boletosAberto,
-        parcelas,
-        boletos,
+        totalParcelas, totalLiberado, totalFuturo, honorarios, taxa, totalAmor,
+        liquidoCliente, totalBoletos, boletosAberto, parcelas, boletos,
+        template: selectedTemplate?.nome, atendente: selectedAtendente?.nome,
       },
     });
   };
@@ -229,6 +298,7 @@ Qualquer dúvida estamos à disposição!`;
   const handleCopyComunicado = async () => {
     try {
       await navigator.clipboard.writeText(comunicadoTexto);
+      handleSalvarHistorico();
       toast.success("Comunicado copiado!");
     } catch {
       toast.error("Erro ao copiar");
@@ -566,13 +636,49 @@ Qualquer dúvida estamos à disposição!`;
 
         {/* Dialog do comunicado gerado */}
         <Dialog open={comunicadoOpen} onOpenChange={setComunicadoOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileCheck2 className="h-5 w-5" /> Comunicado WhatsApp
               </DialogTitle>
             </DialogHeader>
-            <Textarea value={comunicadoTexto} readOnly className="min-h-[400px] font-mono text-xs" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Template</Label>
+                <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                  <SelectTrigger><SelectValue placeholder="Modelo padrão" /></SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    {templates.length === 0 ? (
+                      <div className="p-2 text-xs text-muted-foreground text-center">Nenhum template cadastrado</div>
+                    ) : (
+                      templates.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Atendente</Label>
+                <Select value={selectedAtendenteId} onValueChange={setSelectedAtendenteId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o atendente" /></SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    {atendentes.filter((a) => a.ativo).length === 0 ? (
+                      <div className="p-2 text-xs text-muted-foreground text-center">Nenhum atendente cadastrado</div>
+                    ) : (
+                      atendentes.filter((a) => a.ativo).map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.nome}{a.cargo ? ` — ${a.cargo}` : ""}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Textarea value={comunicadoTexto} readOnly className="min-h-[380px] font-mono text-xs whitespace-pre-wrap" />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setComunicadoOpen(false)}>Fechar</Button>
               <Button onClick={handleCopyComunicado}>
