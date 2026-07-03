@@ -636,13 +636,49 @@ Qualquer dúvida estamos à disposição!`;
 
         {/* Dialog do comunicado gerado */}
         <Dialog open={comunicadoOpen} onOpenChange={setComunicadoOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileCheck2 className="h-5 w-5" /> Comunicado WhatsApp
               </DialogTitle>
             </DialogHeader>
-            <Textarea value={comunicadoTexto} readOnly className="min-h-[400px] font-mono text-xs" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Template</Label>
+                <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                  <SelectTrigger><SelectValue placeholder="Modelo padrão" /></SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    {templates.length === 0 ? (
+                      <div className="p-2 text-xs text-muted-foreground text-center">Nenhum template cadastrado</div>
+                    ) : (
+                      templates.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Atendente</Label>
+                <Select value={selectedAtendenteId} onValueChange={setSelectedAtendenteId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o atendente" /></SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    {atendentes.filter((a) => a.ativo).length === 0 ? (
+                      <div className="p-2 text-xs text-muted-foreground text-center">Nenhum atendente cadastrado</div>
+                    ) : (
+                      atendentes.filter((a) => a.ativo).map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.nome}{a.cargo ? ` — ${a.cargo}` : ""}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Textarea value={comunicadoTexto} readOnly className="min-h-[380px] font-mono text-xs whitespace-pre-wrap" />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setComunicadoOpen(false)}>Fechar</Button>
               <Button onClick={handleCopyComunicado}>
