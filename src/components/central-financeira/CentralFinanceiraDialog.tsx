@@ -40,6 +40,14 @@ const BOLETO_STATUS = [
   { value: "cancelado", label: "Cancelado" },
 ];
 
+const RECEBIMENTO_STATUS = [
+  { value: "prevista", label: "Prevista" },
+  { value: "liberada", label: "Liberada" },
+  { value: "recebida", label: "Recebida" },
+  { value: "atrasada", label: "Atrasada" },
+  { value: "cancelada", label: "Cancelada" },
+];
+
 const brl = (v: number | null | undefined) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(v ?? 0));
 
