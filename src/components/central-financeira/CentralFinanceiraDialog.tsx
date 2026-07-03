@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { useCentralFinanceira, type ParcelaBeneficio, type BoletoAmor } from "@/hooks/useCentralFinanceira";
+import { useCentralFinanceira, type ParcelaBeneficio, type BoletoAmor, type ParcelaRecebimento } from "@/hooks/useCentralFinanceira";
 import { useBancos } from "@/hooks/useBancos";
 import type { MaeProcesso } from "@/types/mae";
 import { Copy, Plus, Trash2, AlertTriangle, FileText, History, Calculator, Wallet, FileCheck2 } from "lucide-react";
