@@ -1,0 +1,1 @@
+ALTER TABLE public.central_financeira ADD COLUMN IF NOT EXISTS valor_receber_cliente numeric;
