@@ -37,6 +37,17 @@ export interface BoletoAmor {
   observacoes: string | null;
 }
 
+export interface ParcelaRecebimento {
+  id: string;
+  central_id: string;
+  mae_id: string;
+  numero_parcela: number;
+  valor: number | null;
+  data_prevista: string | null;
+  status: "prevista" | "liberada" | "recebida" | "atrasada" | "cancelada";
+  observacoes: string | null;
+}
+
 export interface ComunicadoHistorico {
   id: string;
   central_id: string;
