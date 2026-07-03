@@ -87,11 +87,13 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
   );
   const totalFuturo = totalParcelas - totalLiberado;
 
+  const valorPrevistoManual = Number(central?.valor_previsto_beneficio ?? 0);
+  const baseCalculo = totalParcelas > 0 ? totalParcelas : valorPrevistoManual;
   const percentual = Number(central?.percentual_honorarios ?? 0);
   const taxa = Number(central?.taxa_administrativa ?? 0);
-  const honorarios = totalParcelas * (percentual / 100);
+  const honorarios = baseCalculo * (percentual / 100);
   const totalAmor = honorarios + taxa;
-  const liquidoCliente = totalParcelas - totalAmor;
+  const liquidoCliente = baseCalculo - totalAmor;
 
   const totalBoletos = useMemo(
     () => boletos.reduce((s, b) => s + Number(b.valor ?? 0), 0),
