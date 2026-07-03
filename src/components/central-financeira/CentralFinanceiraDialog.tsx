@@ -338,10 +338,23 @@ Qualquer dúvida estamos à disposição!`;
               </CardHeader>
               <CardContent className="grid md:grid-cols-2 gap-3">
                 <div className="md:col-span-2 grid grid-cols-3 gap-2 text-sm">
-                  <SmallStat label="Total previsto" value={brl(totalParcelas)} />
+                  <SmallStat label="Total previsto" value={brl(baseCalculo)} />
                   <SmallStat label="Já liberado" value={brl(totalLiberado)} />
                   <SmallStat label="Futuro previsto" value={brl(totalFuturo)} />
                 </div>
+                {totalParcelas === 0 && (
+                  <div className="md:col-span-2">
+                    <FieldInput
+                      label="Valor previsto do benefício (R$)"
+                      type="number"
+                      value={String(central?.valor_previsto_beneficio ?? "")}
+                      onSave={(v) => updateCentral.mutate({ valor_previsto_beneficio: v === "" ? null : Number(v) } as any)}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Preencha aqui quando ainda não houver parcelas do benefício cadastradas.
+                    </p>
+                  </div>
+                )}
                 <FieldInput
                   label="Percentual de honorários (%)"
                   type="number"
