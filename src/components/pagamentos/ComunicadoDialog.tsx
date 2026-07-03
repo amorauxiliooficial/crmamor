@@ -433,6 +433,14 @@ export function ComunicadoDialog({
           </div>
         )}
       </DialogContent>
+
+      {maeFull && (
+        <CentralFinanceiraDialog
+          mae={maeFull}
+          open={centralDialogOpen}
+          onOpenChange={setCentralDialogOpen}
+        />
+      )}
     </Dialog>
   );
 }
