@@ -89,6 +89,7 @@ const Pagamentos = () => {
   const [maeCepMap, setMaeCepMap] = useState<Record<string, string>>({});
   const [bancosDialogOpen, setBancosDialogOpen] = useState(false);
   const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
+  const [atendentesDialogOpen, setAtendentesDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
