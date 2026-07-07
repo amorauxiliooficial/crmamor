@@ -17,6 +17,7 @@ import { ptBR } from "date-fns/locale";
 import { formatCpf } from "@/lib/formatters";
 import { useTemplates } from "@/hooks/useTemplates";
 import { useAtendentesComunicado } from "@/hooks/useAtendentesComunicado";
+import { useFornecedores } from "@/hooks/useFornecedores";
 
 interface Props {
   mae: MaeProcesso | null;
