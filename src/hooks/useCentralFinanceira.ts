@@ -34,9 +34,6 @@ export interface BoletoAmor {
   vencimento: string | null;
   status: "a_emitir" | "enviado" | "pago" | "vencido" | "cancelado";
   observacoes: string | null;
-  percentual_comissao: number | null;
-  fornecedor_id: string | null;
-  parcela_id: string | null;
 }
 
 export interface ParcelaRecebimento {
