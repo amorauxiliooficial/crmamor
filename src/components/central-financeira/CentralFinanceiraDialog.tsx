@@ -519,6 +519,7 @@ Qualquer dúvida estamos à disposição!`;
                   <BoletoRow
                     key={b.id}
                     b={b}
+                    fornecedores={fornecedoresAtivos}
                     onSave={(patch) => upsertBoleto.mutate({ id: b.id, ...patch })}
                     onDelete={() => deleteBoleto.mutate(b.id)}
                   />
