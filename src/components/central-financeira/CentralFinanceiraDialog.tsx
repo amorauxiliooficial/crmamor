@@ -17,6 +17,7 @@ import { ptBR } from "date-fns/locale";
 import { formatCpf } from "@/lib/formatters";
 import { useTemplates } from "@/hooks/useTemplates";
 import { useAtendentesComunicado } from "@/hooks/useAtendentesComunicado";
+import { useFornecedores } from "@/hooks/useFornecedores";
 
 interface Props {
   mae: MaeProcesso | null;
@@ -82,6 +83,7 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
   } = useCentralFinanceira(isActive ? mae?.id ?? null : null);
 
   const { bancos: bancosLista } = useBancos();
+  const { fornecedoresAtivos } = useFornecedores();
 
   const [comunicadoOpen, setComunicadoOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
@@ -518,6 +520,7 @@ Qualquer dúvida estamos à disposição!`;
                   <BoletoRow
                     key={b.id}
                     b={b}
+                    fornecedores={fornecedoresAtivos}
                     onSave={(patch) => upsertBoleto.mutate({ id: b.id, ...patch })}
                     onDelete={() => deleteBoleto.mutate(b.id)}
                   />
@@ -841,10 +844,12 @@ export function ParcelaRow({
 
 function BoletoRow({
   b,
+  fornecedores,
   onSave,
   onDelete,
 }: {
   b: BoletoAmor;
+  fornecedores: { id: string; nome: string }[];
   onSave: (patch: Partial<BoletoAmor>) => void;
   onDelete: () => void;
 }) {
@@ -898,6 +903,42 @@ function BoletoRow({
         <Button variant="ghost" size="icon" onClick={onDelete}>
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
+      </div>
+
+      <div className="col-span-4">
+        <Label className="text-[10px] text-muted-foreground">Parceiro (comissão)</Label>
+        <Select
+          value={b.fornecedor_id ?? "__none__"}
+          onValueChange={(v) => onSave({ fornecedor_id: v === "__none__" ? null : v })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Sem parceiro" />
+          </SelectTrigger>
+          <SelectContent className="z-[100]">
+            <SelectItem value="__none__">Sem parceiro</SelectItem>
+            {fornecedores.map((f) => (
+              <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="col-span-2">
+        <Label className="text-[10px] text-muted-foreground">% comissão</Label>
+        <Input
+          type="number"
+          step="0.1"
+          placeholder="10"
+          defaultValue={b.percentual_comissao ?? ""}
+          onBlur={(e) => {
+            const v = e.target.value === "" ? null : Number(e.target.value);
+            if (v !== b.percentual_comissao) onSave({ percentual_comissao: v });
+          }}
+        />
+      </div>
+      <div className="col-span-6 text-[10px] text-muted-foreground flex items-end pb-1">
+        {b.parcela_id
+          ? "✓ Vinculado a Honorários (sincroniza automaticamente)"
+          : "Será vinculado a Honorários ao salvar"}
       </div>
     </div>
   );
