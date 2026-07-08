@@ -59,18 +59,28 @@ interface MaeFinanceiroRow {
   proximoVencimento: string | null;
 }
 
+const STATUS_FINANCEIRO_ATIVO = [
+  "aprovada",
+  "rescisão de contrato",
+  "rescisao de contrato",
+  "renegociação",
+  "renegociacao",
+  "inadimplência",
+  "inadimplencia",
+  "negativação",
+  "negativacao",
+];
+
+function hasStatusFinanceiroAtivo(status?: string | null) {
+  const normalized = (status ?? "").toLowerCase();
+  return STATUS_FINANCEIRO_ATIVO.some((s) => normalized.includes(s));
+}
+
 async function fetchFinanceiroData() {
   const [maesResult, pagamentosResult, centralResult, boletosResult] = await Promise.all([
     supabase
       .from("mae_processo")
       .select("*")
-      .in("status_processo", [
-        "Aprovada",
-        "📄 Rescisão de Contrato",
-        "Renegociação",
-        "Inadimplência",
-        "Negativação",
-      ])
       .order("nome_mae", { ascending: true }),
     supabase.from("pagamentos_mae").select("*").order("created_at", { ascending: false }),
     supabase.from("central_financeira" as any).select("id, mae_id"),
@@ -122,11 +132,19 @@ async function fetchFinanceiroData() {
 
   const hoje = startOfDay(new Date());
 
-  const rows: MaeFinanceiroRow[] = maesAprovadas.map((mae) => {
+  const rows: MaeFinanceiroRow[] = maesAprovadas.flatMap((mae) => {
     const pagInfo = pagamentoPorMae.get(mae.id);
     const parcelas = pagInfo?.parcelas ?? [];
     const centralId = centralPorMae.get(mae.id);
     const boletosInfo = centralId ? boletosPorCentral.get(centralId) : undefined;
+
+    const hasPagamento = !!pagInfo;
+    const hasCentral = !!centralId;
+    const hasBoletos = !!boletosInfo && (boletosInfo.total > 0 || boletosInfo.pago > 0);
+    const hasBaixa = parcelas.some((p) => p.status === "pago" || p.status === "inadimplente");
+    const deveAparecer = hasStatusFinanceiroAtivo(mae.status_processo) || hasPagamento || hasCentral || hasBoletos || hasBaixa;
+
+    if (!deveAparecer) return [];
 
     let valorTotal = 0,
       valorRecebido = 0,
@@ -178,9 +196,9 @@ async function fetchFinanceiroData() {
     const valorTotalContratado =
       (pagInfo?.pagamentos ?? []).reduce((s, p) => s + Number(p.valor_total ?? 0), 0) || valorTotal;
 
-    return {
+    return [{
       mae,
-      hasPagamento: !!pagInfo,
+      hasPagamento,
       parcelasTotal: parcelas.length,
       parcelasPagas,
       parcelasPendentes,
@@ -196,7 +214,7 @@ async function fetchFinanceiroData() {
       parcelasEmAtraso,
       maiorAtrasoDias,
       proximoVencimento,
-    };
+    }];
   });
 
   return { rows };
