@@ -314,9 +314,12 @@ export type Database = {
         Row: {
           central_id: string
           created_at: string
+          fornecedor_id: string | null
           id: string
           numero_boleto: string | null
           observacoes: string | null
+          parcela_id: string | null
+          percentual_comissao: number | null
           status: string
           updated_at: string
           valor: number | null
@@ -325,9 +328,12 @@ export type Database = {
         Insert: {
           central_id: string
           created_at?: string
+          fornecedor_id?: string | null
           id?: string
           numero_boleto?: string | null
           observacoes?: string | null
+          parcela_id?: string | null
+          percentual_comissao?: number | null
           status?: string
           updated_at?: string
           valor?: number | null
@@ -336,9 +342,12 @@ export type Database = {
         Update: {
           central_id?: string
           created_at?: string
+          fornecedor_id?: string | null
           id?: string
           numero_boleto?: string | null
           observacoes?: string | null
+          parcela_id?: string | null
+          percentual_comissao?: number | null
           status?: string
           updated_at?: string
           valor?: number | null
@@ -350,6 +359,20 @@ export type Database = {
             columns: ["central_id"]
             isOneToOne: false
             referencedRelation: "central_financeira"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boletos_amor_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boletos_amor_parcela_id_fkey"
+            columns: ["parcela_id"]
+            isOneToOne: false
+            referencedRelation: "parcelas_pagamento"
             referencedColumns: ["id"]
           },
         ]
@@ -2840,6 +2863,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      boleto_status_to_parcela: {
+        Args: { _boleto_status: string }
+        Returns: string
+      }
+      ensure_pagamento_mae: { Args: { _mae_id: string }; Returns: string }
+      gerar_comissao_parcela: {
+        Args: { _parcela_id: string }
+        Returns: undefined
+      }
       get_migrations_in_period: {
         Args: { p_end: string; p_start: string }
         Returns: {
@@ -2858,6 +2890,10 @@ export type Database = {
       }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       owns_mae_processo: { Args: { _mae_id: string }; Returns: boolean }
+      recalc_pagamento_totais: {
+        Args: { _pagamento_id: string }
+        Returns: undefined
+      }
       validate_cpf: { Args: { cpf: string }; Returns: boolean }
     }
     Enums: {
