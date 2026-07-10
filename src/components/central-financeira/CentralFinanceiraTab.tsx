@@ -318,8 +318,7 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
   const receberStats = useMemo(() => {
     let totalParcelas = 0, pagas = 0, pendentes = 0;
     let valorTotal = 0, valorPago = 0, valorPendente = 0, valorMes = 0;
-    const maesComParcelaNoMes = new Set<string>();
-    const maesComBaixaNoMes = new Set<string>();
+    const maesNoMes = new Set<string>();
     const inSelectedMonth = (iso?: string | null) => {
       if (!iso) return false;
       try {
@@ -328,27 +327,23 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
       } catch { return false; }
     };
 
-    // "Entrou no caixa" = todas as baixas do mês, inclusive de mães com atraso em outras parcelas
+    // Unificado: considera TODAS as mães (inclusive com inadimplência em outras parcelas).
+    // Parcelas pagas ancoram-se em `pago_em` (data real da baixa); demais usam `data_pagamento` (vencimento).
     filteredRows.forEach((r) => {
       r.parcelas.forEach((p: any) => {
-        if (p.status !== "pago") return;
-        if (!inSelectedMonth(p.pago_em ?? p.data_pagamento)) return;
-        valorMes += Number(p.valor ?? 0);
-        maesComBaixaNoMes.add(r.mae.id);
-      });
-    });
+        const isPaga = p.status === "pago";
+        const dateRef = isPaga ? (p.pago_em ?? p.data_pagamento) : p.data_pagamento;
+        if (!inSelectedMonth(dateRef)) return;
 
-    // KPIs de previsto/recebido/pendente do mês só para mães sem inadimplência
-    receberRows.forEach((r) => {
-      r.parcelas.forEach((p: any) => {
-        if (!inSelectedMonth(p.data_pagamento)) return;
         const v = Number(p.valor ?? 0);
         totalParcelas++;
         valorTotal += v;
-        maesComParcelaNoMes.add(r.mae.id);
-        if (p.status === "pago") {
+        maesNoMes.add(r.mae.id);
+
+        if (isPaga) {
           pagas++;
           valorPago += v;
+          valorMes += v;
         } else {
           pendentes++;
           valorPendente += v;
@@ -357,11 +352,11 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
     });
 
     return {
-      totalMaes: maesComBaixaNoMes.size || maesComParcelaNoMes.size,
+      totalMaes: maesNoMes.size,
       totalParcelas, pagas, pendentes,
       valorTotal, valorPago, valorPendente, valorMes,
     };
-  }, [filteredRows, receberRows, selectedMonth, selectedYear]);
+  }, [filteredRows, selectedMonth, selectedYear]);
 
   // Inadimplência: por parcela em atraso OU por status marcado como Inadimplência/Negativação
   const inadimplenciaRowsBase = useMemo(
