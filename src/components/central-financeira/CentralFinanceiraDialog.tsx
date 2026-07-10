@@ -17,6 +17,8 @@ import { ptBR } from "date-fns/locale";
 import { formatCpf } from "@/lib/formatters";
 import { useTemplates } from "@/hooks/useTemplates";
 import { useAtendentesComunicado } from "@/hooks/useAtendentesComunicado";
+import { AtendentesDialog } from "@/components/pagamentos/AtendentesDialog";
+import { Settings } from "lucide-react";
 
 interface Props {
   mae: MaeProcesso | null;
@@ -84,6 +86,7 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
   const { bancos: bancosLista } = useBancos();
 
   const [comunicadoOpen, setComunicadoOpen] = useState(false);
+  const [atendentesManagerOpen, setAtendentesManagerOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [selectedAtendenteId, setSelectedAtendenteId] = useState<string>("");
   const { templates } = useTemplates();
@@ -145,11 +148,11 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
       toast.error("Máximo de 5 parcelas");
       return;
     }
-    upsertParcela.mutate({ numero_parcela: prox, status: "prevista", valor: 0 });
+    upsertParcela.mutate({ numero_parcela: prox, status: "prevista", valor: null });
   };
 
   const handleAddBoleto = () => {
-    upsertBoleto.mutate({ status: "a_emitir", valor: 0 });
+    upsertBoleto.mutate({ status: "a_emitir", valor: null });
   };
 
   const buildComunicado = () => {
@@ -163,11 +166,14 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
       .join("\n");
 
     const linhasBoletos = boletos
-      .map(
-        (b) =>
-          `  • Boleto ${b.numero_boleto ?? "—"}: ${brl(b.valor)} — venc. ${fmtDate(b.vencimento)} (${
-            BOLETO_STATUS.find((s) => s.value === b.status)?.label
-          })`
+      .slice()
+      .sort((a, b) => (a.vencimento ?? "9999-12-31").localeCompare(b.vencimento ?? "9999-12-31"))
+      .map((b, i) =>
+        i === 0
+          ? `  • Boleto ${b.numero_boleto ?? "—"}: ${brl(b.valor)} — venc. ${fmtDate(b.vencimento)} (${
+              BOLETO_STATUS.find((s) => s.value === b.status)?.label
+            })`
+          : `  • Boleto ${i + 1}: A confirmar`
       )
       .join("\n");
 
@@ -231,9 +237,20 @@ Qualquer dúvida estamos à disposição!`;
           )
           .join("\n")
       : "(Nenhuma parcela cadastrada)";
-    const listaBoletos = boletos.length
-      ? boletos
-          .map((b, i) => `${i + 1}º boleto – ${brl(b.valor)} – vencimento ${fmtDate(b.vencimento)}`)
+    const boletosOrdenados = boletos
+      .slice()
+      .sort((a, b) => {
+        const da = a.vencimento ?? "9999-12-31";
+        const db = b.vencimento ?? "9999-12-31";
+        return da.localeCompare(db);
+      });
+    const listaBoletos = boletosOrdenados.length
+      ? boletosOrdenados
+          .map((b, i) =>
+            i === 0
+              ? `${i + 1}º boleto – ${brl(b.valor)} – vencimento ${fmtDate(b.vencimento)}`
+              : `${i + 1}º boleto – A confirmar`
+          )
           .join("\n")
       : "(Nenhum boleto cadastrado)";
     const bancoEndereco = central?.endereco_saque?.trim() || "[Endereço não informado]";
@@ -476,7 +493,7 @@ Qualquer dúvida estamos à disposição!`;
                   variant="outline"
                   onClick={() => {
                     const prox = (recebimentos[recebimentos.length - 1]?.numero_parcela ?? 0) + 1;
-                    upsertRecebimento.mutate({ numero_parcela: prox, status: "prevista", valor: 0 });
+                    upsertRecebimento.mutate({ numero_parcela: prox, status: "prevista", valor: null });
                   }}
                 >
                   <Plus className="h-4 w-4 mr-1" /> Adicionar
@@ -660,12 +677,25 @@ Qualquer dúvida estamos à disposição!`;
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Atendente</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Atendente</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => setAtendentesManagerOpen(true)}
+                  >
+                    <Settings className="h-3 w-3 mr-1" /> Gerenciar
+                  </Button>
+                </div>
                 <Select value={selectedAtendenteId} onValueChange={setSelectedAtendenteId}>
                   <SelectTrigger><SelectValue placeholder="Selecione o atendente" /></SelectTrigger>
                   <SelectContent className="z-[100]">
                     {atendentes.filter((a) => a.ativo).length === 0 ? (
-                      <div className="p-2 text-xs text-muted-foreground text-center">Nenhum atendente cadastrado</div>
+                      <div className="p-2 text-xs text-muted-foreground text-center">
+                        Nenhum atendente cadastrado.<br />Clique em “Gerenciar” para adicionar.
+                      </div>
                     ) : (
                       atendentes.filter((a) => a.ativo).map((a) => (
                         <SelectItem key={a.id} value={a.id}>
@@ -687,6 +717,8 @@ Qualquer dúvida estamos à disposição!`;
             </div>
           </DialogContent>
         </Dialog>
+
+        <AtendentesDialog open={atendentesManagerOpen} onOpenChange={setAtendentesManagerOpen} />
     </>
   );
 
@@ -727,13 +759,21 @@ function FieldInput({
   type?: string;
   placeholder?: string;
 }) {
+  // For number inputs, treat "0" as empty to avoid the leading-zero issue
+  const displayValue = type === "number" && (value === "0" || value === "0.0" || value === "0.00") ? "" : value;
   return (
     <div>
       <Label className="text-xs text-muted-foreground">{label}</Label>
       <Input
-        defaultValue={value}
+        key={displayValue}
+        defaultValue={displayValue}
         type={type}
         placeholder={placeholder}
+        onFocus={(e) => {
+          if (type === "number" && (e.target.value === "0" || e.target.value === "0.0" || e.target.value === "0.00")) {
+            e.target.value = "";
+          }
+        }}
         onBlur={(e) => {
           if (e.target.value !== value) onSave(e.target.value);
         }}
@@ -799,7 +839,9 @@ export function ParcelaRow({
         <Label className="text-[10px] text-muted-foreground">Valor</Label>
         <Input
           type="number"
-          defaultValue={p.valor ?? ""}
+          defaultValue={p.valor && Number(p.valor) !== 0 ? p.valor : ""}
+          placeholder="0,00"
+          onFocus={(e) => { if (e.target.value === "0") e.target.value = ""; }}
           onBlur={(e) => {
             const v = e.target.value === "" ? null : Number(e.target.value);
             if (v !== p.valor) onSave({ valor: v });
@@ -863,7 +905,9 @@ function BoletoRow({
         <Label className="text-[10px] text-muted-foreground">Valor</Label>
         <Input
           type="number"
-          defaultValue={b.valor ?? ""}
+          defaultValue={b.valor && Number(b.valor) !== 0 ? b.valor : ""}
+          placeholder="0,00"
+          onFocus={(e) => { if (e.target.value === "0") e.target.value = ""; }}
           onBlur={(e) => {
             const v = e.target.value === "" ? null : Number(e.target.value);
             if (v !== b.valor) onSave({ valor: v });
@@ -922,7 +966,9 @@ function RecebimentoRow({
         <Label className="text-[10px] text-muted-foreground">Valor</Label>
         <Input
           type="number"
-          defaultValue={r.valor ?? ""}
+          defaultValue={r.valor && Number(r.valor) !== 0 ? r.valor : ""}
+          placeholder="0,00"
+          onFocus={(e) => { if (e.target.value === "0") e.target.value = ""; }}
           onBlur={(e) => {
             const v = e.target.value === "" ? null : Number(e.target.value);
             if (v !== r.valor) onSave({ valor: v });
