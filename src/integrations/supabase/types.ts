@@ -318,6 +318,7 @@ export type Database = {
           id: string
           numero_boleto: string | null
           observacoes: string | null
+          pago_em: string | null
           parcela_id: string | null
           percentual_comissao: number | null
           status: string
@@ -332,6 +333,7 @@ export type Database = {
           id?: string
           numero_boleto?: string | null
           observacoes?: string | null
+          pago_em?: string | null
           parcela_id?: string | null
           percentual_comissao?: number | null
           status?: string
@@ -346,6 +348,7 @@ export type Database = {
           id?: string
           numero_boleto?: string | null
           observacoes?: string | null
+          pago_em?: string | null
           parcela_id?: string | null
           percentual_comissao?: number | null
           status?: string
@@ -1814,6 +1817,7 @@ export type Database = {
           numero_parcela: number
           observacoes: string | null
           pagamento_id: string
+          pago_em: string | null
           status: string
           updated_at: string
           valor: number | null
@@ -1827,6 +1831,7 @@ export type Database = {
           numero_parcela: number
           observacoes?: string | null
           pagamento_id: string
+          pago_em?: string | null
           status?: string
           updated_at?: string
           valor?: number | null
@@ -1840,6 +1845,7 @@ export type Database = {
           numero_parcela?: number
           observacoes?: string | null
           pagamento_id?: string
+          pago_em?: string | null
           status?: string
           updated_at?: string
           valor?: number | null
