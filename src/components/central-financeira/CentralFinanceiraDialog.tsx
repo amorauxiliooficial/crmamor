@@ -234,9 +234,20 @@ Qualquer dúvida estamos à disposição!`;
           )
           .join("\n")
       : "(Nenhuma parcela cadastrada)";
-    const listaBoletos = boletos.length
-      ? boletos
-          .map((b, i) => `${i + 1}º boleto – ${brl(b.valor)} – vencimento ${fmtDate(b.vencimento)}`)
+    const boletosOrdenados = boletos
+      .slice()
+      .sort((a, b) => {
+        const da = a.vencimento ?? "9999-12-31";
+        const db = b.vencimento ?? "9999-12-31";
+        return da.localeCompare(db);
+      });
+    const listaBoletos = boletosOrdenados.length
+      ? boletosOrdenados
+          .map((b, i) =>
+            i === 0
+              ? `${i + 1}º boleto – ${brl(b.valor)} – vencimento ${fmtDate(b.vencimento)}`
+              : `${i + 1}º boleto – A confirmar`
+          )
           .join("\n")
       : "(Nenhum boleto cadastrado)";
     const bancoEndereco = central?.endereco_saque?.trim() || "[Endereço não informado]";
