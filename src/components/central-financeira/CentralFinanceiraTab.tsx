@@ -319,23 +319,30 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
     let totalParcelas = 0, pagas = 0, pendentes = 0;
     let valorTotal = 0, valorPago = 0, valorPendente = 0, valorMes = 0;
     const maesComParcelaNoMes = new Set<string>();
+    const inSelectedMonth = (iso?: string | null) => {
+      if (!iso) return false;
+      try {
+        const d = parseISO(iso);
+        return getMonth(d) === selectedMonth && getYear(d) === selectedYear;
+      } catch { return false; }
+    };
     receberRows.forEach((r) => {
-      r.parcelas.forEach((p) => {
-        if (!p.data_pagamento) return;
-        let dp: Date;
-        try {
-          dp = parseISO(p.data_pagamento);
-        } catch { return; }
-        if (getMonth(dp) !== selectedMonth || getYear(dp) !== selectedYear) return;
-
+      r.parcelas.forEach((p: any) => {
         const v = Number(p.valor ?? 0);
+
+        // "Entrou no caixa no mês" = baixas realizadas no mês (usa pago_em)
+        if (p.status === "pago" && inSelectedMonth(p.pago_em ?? p.data_pagamento)) {
+          valorMes += v;
+        }
+
+        // Métricas do mês por vencimento (previsto/recebido/a receber e contagem de parcelas)
+        if (!inSelectedMonth(p.data_pagamento)) return;
         totalParcelas++;
         valorTotal += v;
         maesComParcelaNoMes.add(r.mae.id);
         if (p.status === "pago") {
           pagas++;
           valorPago += v;
-          valorMes += v;
         } else {
           pendentes++;
           valorPendente += v;
