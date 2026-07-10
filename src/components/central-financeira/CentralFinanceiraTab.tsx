@@ -319,6 +319,7 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
     let totalParcelas = 0, pagas = 0, pendentes = 0;
     let valorTotal = 0, valorPago = 0, valorPendente = 0, valorMes = 0;
     const maesComParcelaNoMes = new Set<string>();
+    const maesComBaixaNoMes = new Set<string>();
     const inSelectedMonth = (iso?: string | null) => {
       if (!iso) return false;
       try {
@@ -326,17 +327,22 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
         return getMonth(d) === selectedMonth && getYear(d) === selectedYear;
       } catch { return false; }
     };
+
+    // "Entrou no caixa" = todas as baixas do mês, inclusive de mães com atraso em outras parcelas
+    filteredRows.forEach((r) => {
+      r.parcelas.forEach((p: any) => {
+        if (p.status !== "pago") return;
+        if (!inSelectedMonth(p.pago_em ?? p.data_pagamento)) return;
+        valorMes += Number(p.valor ?? 0);
+        maesComBaixaNoMes.add(r.mae.id);
+      });
+    });
+
+    // KPIs de previsto/recebido/pendente do mês só para mães sem inadimplência
     receberRows.forEach((r) => {
       r.parcelas.forEach((p: any) => {
-        const v = Number(p.valor ?? 0);
-
-        // "Entrou no caixa no mês" = baixas realizadas no mês (usa pago_em)
-        if (p.status === "pago" && inSelectedMonth(p.pago_em ?? p.data_pagamento)) {
-          valorMes += v;
-        }
-
-        // Métricas do mês por vencimento (previsto/recebido/a receber e contagem de parcelas)
         if (!inSelectedMonth(p.data_pagamento)) return;
+        const v = Number(p.valor ?? 0);
         totalParcelas++;
         valorTotal += v;
         maesComParcelaNoMes.add(r.mae.id);
@@ -349,12 +355,13 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
         }
       });
     });
+
     return {
-      totalMaes: maesComParcelaNoMes.size,
+      totalMaes: maesComBaixaNoMes.size || maesComParcelaNoMes.size,
       totalParcelas, pagas, pendentes,
       valorTotal, valorPago, valorPendente, valorMes,
     };
-  }, [receberRows, selectedMonth, selectedYear]);
+  }, [filteredRows, receberRows, selectedMonth, selectedYear]);
 
   // Inadimplência: por parcela em atraso OU por status marcado como Inadimplência/Negativação
   const inadimplenciaRowsBase = useMemo(
