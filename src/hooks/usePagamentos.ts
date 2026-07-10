@@ -21,6 +21,7 @@ export interface PagamentoComMae {
     valor: number | null;
     valor_comissao: number | null;
     data_pagamento: string | null;
+    pago_em: string | null;
     status: string;
     observacoes: string | null;
   }[];
