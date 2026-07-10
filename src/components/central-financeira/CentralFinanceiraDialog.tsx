@@ -493,7 +493,7 @@ Qualquer dúvida estamos à disposição!`;
                   variant="outline"
                   onClick={() => {
                     const prox = (recebimentos[recebimentos.length - 1]?.numero_parcela ?? 0) + 1;
-                    upsertRecebimento.mutate({ numero_parcela: prox, status: "prevista", valor: 0 });
+                    upsertRecebimento.mutate({ numero_parcela: prox, status: "prevista", valor: null });
                   }}
                 >
                   <Plus className="h-4 w-4 mr-1" /> Adicionar
