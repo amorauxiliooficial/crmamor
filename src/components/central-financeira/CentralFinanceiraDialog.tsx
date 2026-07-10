@@ -966,7 +966,9 @@ function RecebimentoRow({
         <Label className="text-[10px] text-muted-foreground">Valor</Label>
         <Input
           type="number"
-          defaultValue={r.valor ?? ""}
+          defaultValue={r.valor && Number(r.valor) !== 0 ? r.valor : ""}
+          placeholder="0,00"
+          onFocus={(e) => { if (e.target.value === "0") e.target.value = ""; }}
           onBlur={(e) => {
             const v = e.target.value === "" ? null : Number(e.target.value);
             if (v !== r.valor) onSave({ valor: v });
