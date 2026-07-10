@@ -677,12 +677,25 @@ Qualquer dúvida estamos à disposição!`;
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Atendente</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Atendente</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => setAtendentesManagerOpen(true)}
+                  >
+                    <Settings className="h-3 w-3 mr-1" /> Gerenciar
+                  </Button>
+                </div>
                 <Select value={selectedAtendenteId} onValueChange={setSelectedAtendenteId}>
                   <SelectTrigger><SelectValue placeholder="Selecione o atendente" /></SelectTrigger>
                   <SelectContent className="z-[100]">
                     {atendentes.filter((a) => a.ativo).length === 0 ? (
-                      <div className="p-2 text-xs text-muted-foreground text-center">Nenhum atendente cadastrado</div>
+                      <div className="p-2 text-xs text-muted-foreground text-center">
+                        Nenhum atendente cadastrado.<br />Clique em “Gerenciar” para adicionar.
+                      </div>
                     ) : (
                       atendentes.filter((a) => a.ativo).map((a) => (
                         <SelectItem key={a.id} value={a.id}>
