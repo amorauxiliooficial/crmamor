@@ -148,11 +148,11 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
       toast.error("Máximo de 5 parcelas");
       return;
     }
-    upsertParcela.mutate({ numero_parcela: prox, status: "prevista", valor: 0 });
+    upsertParcela.mutate({ numero_parcela: prox, status: "prevista", valor: null });
   };
 
   const handleAddBoleto = () => {
-    upsertBoleto.mutate({ status: "a_emitir", valor: 0 });
+    upsertBoleto.mutate({ status: "a_emitir", valor: null });
   };
 
   const buildComunicado = () => {
