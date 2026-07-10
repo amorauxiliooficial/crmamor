@@ -905,7 +905,9 @@ function BoletoRow({
         <Label className="text-[10px] text-muted-foreground">Valor</Label>
         <Input
           type="number"
-          defaultValue={b.valor ?? ""}
+          defaultValue={b.valor && Number(b.valor) !== 0 ? b.valor : ""}
+          placeholder="0,00"
+          onFocus={(e) => { if (e.target.value === "0") e.target.value = ""; }}
           onBlur={(e) => {
             const v = e.target.value === "" ? null : Number(e.target.value);
             if (v !== b.valor) onSave({ valor: v });
