@@ -839,7 +839,9 @@ export function ParcelaRow({
         <Label className="text-[10px] text-muted-foreground">Valor</Label>
         <Input
           type="number"
-          defaultValue={p.valor ?? ""}
+          defaultValue={p.valor && Number(p.valor) !== 0 ? p.valor : ""}
+          placeholder="0,00"
+          onFocus={(e) => { if (e.target.value === "0") e.target.value = ""; }}
           onBlur={(e) => {
             const v = e.target.value === "" ? null : Number(e.target.value);
             if (v !== p.valor) onSave({ valor: v });
