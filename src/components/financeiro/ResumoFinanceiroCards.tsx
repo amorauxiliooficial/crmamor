@@ -39,11 +39,15 @@ function calcPeriodTotals(
 
   pagamentos.forEach((pag) => {
     pag.parcelas.forEach((p) => {
-      if (!isInPeriod(p.data_pagamento)) return;
       const valor = p.valor || 0;
-      if (p.status === "pago") receitasRecebidas += valor;
-      else if (p.status === "pendente") receitasPendentes += valor;
-      else if (p.status === "inadimplente") receitasInadimplentes += valor;
+      if (p.status === "pago") {
+        // Cash-in usa a data em que a parcela foi marcada como paga
+        if (isInPeriod(p.pago_em || p.data_pagamento)) receitasRecebidas += valor;
+      } else if (p.status === "pendente") {
+        if (isInPeriod(p.data_pagamento)) receitasPendentes += valor;
+      } else if (p.status === "inadimplente") {
+        if (isInPeriod(p.data_pagamento)) receitasInadimplentes += valor;
+      }
     });
   });
 

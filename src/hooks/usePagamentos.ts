@@ -21,6 +21,7 @@ export interface PagamentoComMae {
     valor: number | null;
     valor_comissao: number | null;
     data_pagamento: string | null;
+    pago_em: string | null;
     status: string;
     observacoes: string | null;
   }[];
@@ -111,6 +112,7 @@ async function fetchPagamentos(): Promise<PagamentoComMae[]> {
         valor: p.valor,
         valor_comissao: p.valor_comissao,
         data_pagamento: p.data_pagamento,
+        pago_em: (p as any).pago_em ?? null,
         status: p.status,
         observacoes: p.observacoes,
       })),
