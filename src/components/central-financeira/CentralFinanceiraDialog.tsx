@@ -759,13 +759,21 @@ function FieldInput({
   type?: string;
   placeholder?: string;
 }) {
+  // For number inputs, treat "0" as empty to avoid the leading-zero issue
+  const displayValue = type === "number" && (value === "0" || value === "0.0" || value === "0.00") ? "" : value;
   return (
     <div>
       <Label className="text-xs text-muted-foreground">{label}</Label>
       <Input
-        defaultValue={value}
+        key={displayValue}
+        defaultValue={displayValue}
         type={type}
         placeholder={placeholder}
+        onFocus={(e) => {
+          if (type === "number" && (e.target.value === "0" || e.target.value === "0.0" || e.target.value === "0.00")) {
+            e.target.value = "";
+          }
+        }}
         onBlur={(e) => {
           if (e.target.value !== value) onSave(e.target.value);
         }}
