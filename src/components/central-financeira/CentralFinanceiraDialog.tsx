@@ -17,6 +17,8 @@ import { ptBR } from "date-fns/locale";
 import { formatCpf } from "@/lib/formatters";
 import { useTemplates } from "@/hooks/useTemplates";
 import { useAtendentesComunicado } from "@/hooks/useAtendentesComunicado";
+import { AtendentesDialog } from "@/components/pagamentos/AtendentesDialog";
+import { Settings } from "lucide-react";
 
 interface Props {
   mae: MaeProcesso | null;
