@@ -717,6 +717,8 @@ Qualquer dúvida estamos à disposição!`;
             </div>
           </DialogContent>
         </Dialog>
+
+        <AtendentesDialog open={atendentesManagerOpen} onOpenChange={setAtendentesManagerOpen} />
     </>
   );
 
