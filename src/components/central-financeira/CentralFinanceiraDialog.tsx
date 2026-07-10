@@ -166,11 +166,14 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
       .join("\n");
 
     const linhasBoletos = boletos
-      .map(
-        (b) =>
-          `  • Boleto ${b.numero_boleto ?? "—"}: ${brl(b.valor)} — venc. ${fmtDate(b.vencimento)} (${
-            BOLETO_STATUS.find((s) => s.value === b.status)?.label
-          })`
+      .slice()
+      .sort((a, b) => (a.vencimento ?? "9999-12-31").localeCompare(b.vencimento ?? "9999-12-31"))
+      .map((b, i) =>
+        i === 0
+          ? `  • Boleto ${b.numero_boleto ?? "—"}: ${brl(b.valor)} — venc. ${fmtDate(b.vencimento)} (${
+              BOLETO_STATUS.find((s) => s.value === b.status)?.label
+            })`
+          : `  • Boleto ${i + 1}: A confirmar`
       )
       .join("\n");
 
