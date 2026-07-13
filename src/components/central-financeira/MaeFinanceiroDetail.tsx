@@ -72,6 +72,24 @@ async function fetchPagamentoDaMae(maeId: string) {
     .in("pagamento_id", ids)
     .order("data_pagamento", { ascending: true });
 
+  // Só consideramos "parcelas reais" as que têm boleto vinculado (ou já pagas).
+  // Parcelas fantasmas (sem boleto) são resquícios do sync antigo e devem sumir.
+  const parcelaIds = (parcelas ?? []).map((p: any) => p.id);
+  let parcelasComBoleto = new Set<string>();
+  if (parcelaIds.length > 0) {
+    const { data: boletos } = await supabase
+      .from("boletos_amor")
+      .select("parcela_id")
+      .in("parcela_id", parcelaIds)
+      .in("status", ["a_emitir", "emitido", "pago", "vencido"]);
+    parcelasComBoleto = new Set(
+      (boletos || []).map((b: any) => b.parcela_id).filter(Boolean)
+    );
+  }
+  const parcelasFiltradas = (parcelas ?? []).filter(
+    (p: any) => p.status === "pago" || parcelasComBoleto.has(p.id)
+  );
+
   // Contrato "principal" = o mais recente (usado para editar/drawer)
   const principal = pags[pags.length - 1];
 
@@ -90,10 +108,11 @@ async function fetchPagamentoDaMae(maeId: string) {
         : "",
     ])
   );
-  const parcelasEnriquecidas = (parcelas ?? []).map((pp: any) => ({
+  const parcelasEnriquecidas = parcelasFiltradas.map((pp: any) => ({
     ...pp,
     contrato_label: pagLabel.get(pp.pagamento_id) ?? "",
   }));
+
 
   return {
     pagamento: { ...principal, valor_total, total_parcelas },
