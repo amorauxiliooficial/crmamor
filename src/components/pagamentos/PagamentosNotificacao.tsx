@@ -202,7 +202,7 @@ export function PagamentosNotificacao() {
             <div className="divide-y">
               {visiblePayments.map((payment) => (
                 <div
-                  key={payment.id}
+                  key={`${payment.mae_id}-${payment.data_pagamento}`}
                   className="p-3 hover:bg-muted/50 transition-colors cursor-pointer"
                   onClick={() => handlePaymentClick(payment)}
                 >
@@ -213,8 +213,9 @@ export function PagamentosNotificacao() {
                           {getDateLabel(payment.data_pagamento)}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                          Parcela {payment.numero_parcela}
-                          {payment.total_parcelas && `/${payment.total_parcelas}`}
+                          {payment.count > 1
+                            ? `${payment.count} parcelas`
+                            : `Parcela ${payment.numero_parcela}${payment.total_parcelas ? `/${payment.total_parcelas}` : ""}`}
                         </span>
                       </div>
                       <p className="text-sm font-medium truncate">
@@ -228,13 +229,14 @@ export function PagamentosNotificacao() {
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6 shrink-0"
-                      onClick={(e) => dismissPayment(payment.id, e)}
+                      onClick={(e) => dismissPayment(payment.ids, e)}
                     >
                       <X className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
               ))}
+
             </div>
           )}
         </div>
