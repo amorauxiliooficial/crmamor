@@ -217,10 +217,10 @@ export function PagamentosNotificacao() {
                           {getDateLabel(payment.data_pagamento)}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                          {payment.count > 1
-                            ? `${payment.count} parcelas`
-                            : `Parcela ${payment.numero_parcela}${payment.total_parcelas ? `/${payment.total_parcelas}` : ""}`}
+                          Parcela {payment.numero_parcela}
+                          {payment.total_parcelas ? `/${payment.total_parcelas}` : ""}
                         </span>
+
                       </div>
                       <p className="text-sm font-medium truncate">
                         {payment.nome_mae}
