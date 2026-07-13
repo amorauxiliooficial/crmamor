@@ -15,13 +15,14 @@ import { ptBR } from "date-fns/locale";
 
 interface UpcomingPayment {
   id: string;
-  pagamento_id: string;
-  numero_parcela: number;
+  pagamento_id: string | null;
+  numero_parcela: number | null;
   valor: number | null;
-  data_pagamento: string;
+  data_pagamento: string; // vencimento do boleto
   nome_mae: string;
   mae_id: string;
   total_parcelas: number | null;
+  numero_boleto: string | null;
 }
 
 export function PagamentosNotificacao() {
@@ -42,45 +43,50 @@ export function PagamentosNotificacao() {
     const todayStr = format(today, "yyyy-MM-dd");
     const tomorrowStr = format(tomorrow, "yyyy-MM-dd");
 
+    // Fonte da verdade: boletos_amor (o que a mãe efetivamente vai pagar).
+    // Ignoramos parcelas_pagamento "fantasmas" que existem sem boleto vinculado.
     const { data, error } = await supabase
-      .from("parcelas_pagamento")
+      .from("boletos_amor")
       .select(`
         id,
-        numero_parcela,
+        numero_boleto,
         valor,
-        data_pagamento,
+        vencimento,
         status,
-        pagamento_id,
-        pagamentos_mae!inner (
-          id,
-          total_parcelas,
+        parcela_id,
+        central_financeira!inner (
           mae_id,
-          mae_processo!inner (
-            nome_mae
-          )
+          mae_processo!inner ( nome_mae )
+        ),
+        parcelas_pagamento (
+          numero_parcela,
+          pagamento_id,
+          pagamentos_mae ( total_parcelas )
         )
       `)
-      .in("data_pagamento", [todayStr, tomorrowStr])
-      .eq("status", "pendente");
+      .in("vencimento", [todayStr, tomorrowStr])
+      .in("status", ["a_emitir", "emitido", "vencido"]);
 
     if (error) {
       console.error("Error fetching upcoming payments:", error);
     } else if (data) {
-      const payments: UpcomingPayment[] = data.map((p: any) => ({
-        id: p.id,
-        pagamento_id: p.pagamento_id,
-        numero_parcela: p.numero_parcela,
-        valor: p.valor,
-        data_pagamento: p.data_pagamento,
-        nome_mae: p.pagamentos_mae?.mae_processo?.nome_mae || "N/A",
-        mae_id: p.pagamentos_mae?.mae_id || "",
-        total_parcelas: p.pagamentos_mae?.total_parcelas,
+      const payments: UpcomingPayment[] = data.map((b: any) => ({
+        id: b.id,
+        pagamento_id: b.parcelas_pagamento?.pagamento_id ?? null,
+        numero_parcela: b.parcelas_pagamento?.numero_parcela ?? null,
+        valor: b.valor,
+        data_pagamento: b.vencimento,
+        nome_mae: b.central_financeira?.mae_processo?.nome_mae || "N/A",
+        mae_id: b.central_financeira?.mae_id || "",
+        total_parcelas: b.parcelas_pagamento?.pagamentos_mae?.total_parcelas ?? null,
+        numero_boleto: b.numero_boleto ?? null,
       }));
       setUpcomingPayments(payments);
     }
 
     setLoading(false);
   };
+
 
   useEffect(() => {
     fetchUpcomingPayments();
