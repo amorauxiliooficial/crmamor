@@ -89,10 +89,28 @@ export function PagamentosNotificacao() {
     return () => clearInterval(interval);
   }, [user]);
 
-  const visiblePayments = upcomingPayments.filter(
-    (p) => !dismissed.includes(p.id)
-  );
+  // Group by mae_id + data_pagamento to avoid showing the same mãe twice
+  // when there are duplicate/multiple parcelas due on the same day.
+  const visiblePayments = (() => {
+    const filtered = upcomingPayments.filter((p) => !dismissed.includes(p.id));
+    const groups = new Map<string, UpcomingPayment & { count: number; ids: string[] }>();
+    for (const p of filtered) {
+      const key = `${p.mae_id}__${p.data_pagamento}`;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.valor = (existing.valor || 0) + (p.valor || 0);
+        existing.count += 1;
+        existing.ids.push(p.id);
+      } else {
+        groups.set(key, { ...p, count: 1, ids: [p.id] });
+      }
+    }
+    return Array.from(groups.values()).sort((a, b) =>
+      a.data_pagamento.localeCompare(b.data_pagamento)
+    );
+  })();
   const hasNotifications = visiblePayments.length > 0;
+
 
   const formatCurrency = (value: number | null) => {
     if (value === null) return "N/A";
@@ -115,10 +133,11 @@ export function PagamentosNotificacao() {
     return "secondary";
   };
 
-  const dismissPayment = (id: string, e: React.MouseEvent) => {
+  const dismissPayment = (ids: string[], e: React.MouseEvent) => {
     e.stopPropagation();
-    setDismissed((prev) => [...prev, id]);
+    setDismissed((prev) => [...prev, ...ids]);
   };
+
 
   const handlePaymentClick = (payment: UpcomingPayment) => {
     setOpen(false);
@@ -183,7 +202,7 @@ export function PagamentosNotificacao() {
             <div className="divide-y">
               {visiblePayments.map((payment) => (
                 <div
-                  key={payment.id}
+                  key={`${payment.mae_id}-${payment.data_pagamento}`}
                   className="p-3 hover:bg-muted/50 transition-colors cursor-pointer"
                   onClick={() => handlePaymentClick(payment)}
                 >
@@ -194,8 +213,9 @@ export function PagamentosNotificacao() {
                           {getDateLabel(payment.data_pagamento)}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                          Parcela {payment.numero_parcela}
-                          {payment.total_parcelas && `/${payment.total_parcelas}`}
+                          {payment.count > 1
+                            ? `${payment.count} parcelas`
+                            : `Parcela ${payment.numero_parcela}${payment.total_parcelas ? `/${payment.total_parcelas}` : ""}`}
                         </span>
                       </div>
                       <p className="text-sm font-medium truncate">
@@ -209,13 +229,14 @@ export function PagamentosNotificacao() {
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6 shrink-0"
-                      onClick={(e) => dismissPayment(payment.id, e)}
+                      onClick={(e) => dismissPayment(payment.ids, e)}
                     >
                       <X className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
               ))}
+
             </div>
           )}
         </div>
