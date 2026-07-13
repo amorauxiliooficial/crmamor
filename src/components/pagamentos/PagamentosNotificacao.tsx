@@ -89,10 +89,28 @@ export function PagamentosNotificacao() {
     return () => clearInterval(interval);
   }, [user]);
 
-  const visiblePayments = upcomingPayments.filter(
-    (p) => !dismissed.includes(p.id)
-  );
+  // Group by mae_id + data_pagamento to avoid showing the same mãe twice
+  // when there are duplicate/multiple parcelas due on the same day.
+  const visiblePayments = (() => {
+    const filtered = upcomingPayments.filter((p) => !dismissed.includes(p.id));
+    const groups = new Map<string, UpcomingPayment & { count: number; ids: string[] }>();
+    for (const p of filtered) {
+      const key = `${p.mae_id}__${p.data_pagamento}`;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.valor = (existing.valor || 0) + (p.valor || 0);
+        existing.count += 1;
+        existing.ids.push(p.id);
+      } else {
+        groups.set(key, { ...p, count: 1, ids: [p.id] });
+      }
+    }
+    return Array.from(groups.values()).sort((a, b) =>
+      a.data_pagamento.localeCompare(b.data_pagamento)
+    );
+  })();
   const hasNotifications = visiblePayments.length > 0;
+
 
   const formatCurrency = (value: number | null) => {
     if (value === null) return "N/A";
