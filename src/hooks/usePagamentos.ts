@@ -63,16 +63,29 @@ async function fetchPagamentos(): Promise<PagamentoComMae[]> {
     .in("pagamento_id", pagamentoIds)
     .order("numero_parcela", { ascending: true });
 
+  // Fetch boletos to know which parcelas are "real" (i.e. actually billed).
+  // Parcelas orphaned (sem boleto vinculado) são resquícios e não devem aparecer.
+  const { data: boletos } = await supabase
+    .from("boletos_amor")
+    .select("parcela_id, status")
+    .in("status", ["a_emitir", "emitido", "pago", "vencido"]);
+  const parcelasComBoleto = new Set(
+    (boletos || []).map((b) => b.parcela_id).filter(Boolean) as string[]
+  );
+
   // Create lookup maps
   const maeMap = new Map(maes?.map((m) => [m.id, m]) || []);
   const parcelasMap = new Map<string, typeof todasParcelas>();
-  
+
   todasParcelas?.forEach((p) => {
+    // Mantém parcelas pagas (histórico) e as que têm boleto real vinculado.
+    if (p.status !== "pago" && !parcelasComBoleto.has(p.id)) return;
     if (!parcelasMap.has(p.pagamento_id)) {
       parcelasMap.set(p.pagamento_id, []);
     }
     parcelasMap.get(p.pagamento_id)!.push(p);
   });
+
 
   // Build result
   return pagamentosData.map((pag) => {
