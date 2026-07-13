@@ -89,20 +89,23 @@ export function PagamentosNotificacao() {
     return () => clearInterval(interval);
   }, [user]);
 
-  // Group by mae_id + data_pagamento to avoid showing the same mãe twice
-  // when there are duplicate/multiple parcelas due on the same day.
+  // Dedupe by mae_id + data_pagamento: parcelas duplicadas no mesmo dia
+  // representam o mesmo recebimento real, então mostramos só uma (a de maior valor).
   const visiblePayments = (() => {
     const filtered = upcomingPayments.filter((p) => !dismissed.includes(p.id));
-    const groups = new Map<string, UpcomingPayment & { count: number; ids: string[] }>();
+    const groups = new Map<string, UpcomingPayment & { ids: string[] }>();
     for (const p of filtered) {
       const key = `${p.mae_id}__${p.data_pagamento}`;
       const existing = groups.get(key);
-      if (existing) {
-        existing.valor = (existing.valor || 0) + (p.valor || 0);
-        existing.count += 1;
-        existing.ids.push(p.id);
+      if (!existing) {
+        groups.set(key, { ...p, ids: [p.id] });
       } else {
-        groups.set(key, { ...p, count: 1, ids: [p.id] });
+        existing.ids.push(p.id);
+        if ((p.valor || 0) > (existing.valor || 0)) {
+          existing.valor = p.valor;
+          existing.numero_parcela = p.numero_parcela;
+          existing.pagamento_id = p.pagamento_id;
+        }
       }
     }
     return Array.from(groups.values()).sort((a, b) =>
@@ -110,6 +113,7 @@ export function PagamentosNotificacao() {
     );
   })();
   const hasNotifications = visiblePayments.length > 0;
+
 
 
   const formatCurrency = (value: number | null) => {
