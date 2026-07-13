@@ -133,10 +133,11 @@ export function PagamentosNotificacao() {
     return "secondary";
   };
 
-  const dismissPayment = (id: string, e: React.MouseEvent) => {
+  const dismissPayment = (ids: string[], e: React.MouseEvent) => {
     e.stopPropagation();
-    setDismissed((prev) => [...prev, id]);
+    setDismissed((prev) => [...prev, ...ids]);
   };
+
 
   const handlePaymentClick = (payment: UpcomingPayment) => {
     setOpen(false);
