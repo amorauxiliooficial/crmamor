@@ -239,17 +239,6 @@ export function MaeDetailDialog({
               <Plus className="h-3.5 w-3.5" />
               Registrar contato
             </Button>
-            {mae.telefone && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1 gap-1.5 border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-400 sm:flex-none"
-                onClick={openWhatsApp}
-              >
-                <MessageCircle className="h-3.5 w-3.5" />
-                WhatsApp
-              </Button>
-            )}
             <Button
               size="sm"
               variant="outline"
