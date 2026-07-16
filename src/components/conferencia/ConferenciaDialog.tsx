@@ -15,6 +15,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, CheckCircle2, XCircle, Copy, Key, User } from "lucide-react";
 import { getUserFriendlyError, logError } from "@/lib/errorHandler";
+import { useQueryClient } from "@tanstack/react-query";
+import { atualizarUltimoContatoMaeNoCache } from "@/hooks/useMaesData";
 
 interface ConferenciaDialogProps {
   open: boolean;
@@ -36,6 +38,7 @@ export function ConferenciaDialog({
   onSuccess,
 }: ConferenciaDialogProps) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [houveAtualizacao, setHouveAtualizacao] = useState<string>("nao");
@@ -53,12 +56,16 @@ export function ConferenciaDialog({
 
     setIsLoading(true);
 
-    const { error } = await supabase.from("conferencia_inss").insert({
-      mae_id: maeId,
-      user_id: user.id,
-      houve_atualizacao: houveAtualizacao === "sim",
-      observacoes: observacoes.trim() || null,
-    });
+    const { data, error } = await supabase
+      .from("conferencia_inss")
+      .insert({
+        mae_id: maeId,
+        user_id: user.id,
+        houve_atualizacao: houveAtualizacao === "sim",
+        observacoes: observacoes.trim() || null,
+      })
+      .select("created_at")
+      .single();
 
     setIsLoading(false);
 
@@ -76,6 +83,10 @@ export function ConferenciaDialog({
       title: "Conferência registrada",
       description: `Conferência de ${maeNome} registrada com sucesso.`,
     });
+
+    atualizarUltimoContatoMaeNoCache(queryClient, maeId, data.created_at);
+    queryClient.invalidateQueries({ queryKey: ["maes_data"] });
+    queryClient.invalidateQueries({ queryKey: ["mae_observacoes", maeId] });
 
     // Reset form
     setHouveAtualizacao("nao");

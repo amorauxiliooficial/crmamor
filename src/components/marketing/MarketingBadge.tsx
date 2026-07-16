@@ -15,23 +15,9 @@ export function isMarketingEtiqueta(etiqueta?: string | null): boolean {
 }
 
 /**
- * Retorna cor de texto (branco ou preto) com melhor contraste sobre a cor de fundo.
- */
-function contrastText(hex: string): string {
-  const m = hex.trim().match(/^#?([0-9a-fA-F]{6})$/);
-  if (!m) return "#ffffff";
-  const int = parseInt(m[1], 16);
-  const r = (int >> 16) & 255;
-  const g = (int >> 8) & 255;
-  const b = int & 255;
-  // luminância percebida
-  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return lum > 0.6 ? "#111827" : "#ffffff";
-}
-
-/**
  * Selo de etiqueta para cards do funil.
- * Usa a cor cadastrada no gerenciador de etiquetas.
+ * Preserva a cor cadastrada, mas usa um tratamento suave para não competir
+ * com alertas e dados operacionais do card.
  */
 export function MarketingBadge({ etiqueta, className, compact = false }: MarketingBadgeProps) {
   const { data: etiquetas } = useEtiquetas();
@@ -42,26 +28,28 @@ export function MarketingBadge({ etiqueta, className, compact = false }: Marketi
     (e) => e.nome.trim().toLowerCase() === etiqueta.trim().toLowerCase()
   );
   const cor = found?.cor || "#64748b";
-  const textColor = contrastText(cor);
   const isMkt = isMarketingEtiqueta(etiqueta);
   const Icon = isMkt ? Megaphone : Tag;
 
   return (
     <Badge
-      variant="default"
+      variant="outline"
       className={cn(
-        "gap-1 border font-semibold",
-        compact ? "text-[10px] px-1.5 py-0 h-5" : "text-xs px-2.5 py-0.5",
+        "gap-1 border font-medium text-foreground",
+        compact ? "h-6 px-2 py-0 text-[10px]" : "h-7 px-2.5 py-0.5 text-xs",
         className
       )}
       style={{
-        backgroundColor: cor,
-        color: textColor,
-        borderColor: cor,
-      }}
+        "--etiqueta-cor": cor,
+        backgroundColor: "color-mix(in srgb, var(--etiqueta-cor) 9%, hsl(var(--card)))",
+        borderColor: "color-mix(in srgb, var(--etiqueta-cor) 26%, hsl(var(--border)))",
+      } as React.CSSProperties}
       title={`Etiqueta: ${etiqueta}`}
     >
-      <Icon className={cn(compact ? "h-2.5 w-2.5" : "h-3 w-3")} />
+      <Icon
+        className={cn(compact ? "h-3 w-3" : "h-3.5 w-3.5")}
+        style={{ color: cor }}
+      />
       <span className="truncate max-w-[140px]">{etiqueta}</span>
     </Badge>
   );

@@ -49,12 +49,17 @@ interface Props {
   maeId: string;
 }
 
-const CATEGORIAS: ObservacaoCategoria[] = [
+const CATEGORIAS_EDITAVEIS: ObservacaoCategoria[] = [
   "ligacao",
   "whatsapp",
   "documento",
   "reuniao",
   "outro",
+];
+
+const CATEGORIAS_FILTRO: ObservacaoCategoria[] = [
+  ...CATEGORIAS_EDITAVEIS,
+  "conferencia",
 ];
 
 function formatDateTime(iso: string) {
@@ -136,7 +141,8 @@ export function ObservacoesHistorico({ maeId }: Props) {
     );
   };
 
-  const canModify = (o: MaeObservacao) => !!user && o.autor_id === user.id;
+  const canModify = (o: MaeObservacao) =>
+    !!user && o.autor_id === user.id && !o.conferencia_id;
 
   const renderItem = (o: MaeObservacao) => {
     const isEditing = editando?.id === o.id;
@@ -212,7 +218,7 @@ export function ObservacoesHistorico({ maeId }: Props) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="z-[100]">
-                  {CATEGORIAS.map((c) => (
+                  {CATEGORIAS_EDITAVEIS.map((c) => (
                     <SelectItem key={c} value={c}>
                       {CATEGORIA_LABEL[c]}
                     </SelectItem>
@@ -272,7 +278,7 @@ export function ObservacoesHistorico({ maeId }: Props) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="z-[100]">
-              {CATEGORIAS.map((c) => (
+              {CATEGORIAS_EDITAVEIS.map((c) => (
                 <SelectItem key={c} value={c}>
                   {CATEGORIA_LABEL[c]}
                 </SelectItem>
@@ -307,7 +313,7 @@ export function ObservacoesHistorico({ maeId }: Props) {
             </SelectTrigger>
             <SelectContent className="z-[100]">
               <SelectItem value="all">Todas as categorias</SelectItem>
-              {CATEGORIAS.map((c) => (
+              {CATEGORIAS_FILTRO.map((c) => (
                 <SelectItem key={c} value={c}>
                   {CATEGORIA_LABEL[c]}
                 </SelectItem>

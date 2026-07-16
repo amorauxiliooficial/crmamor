@@ -81,6 +81,14 @@ export default function Index() {
     }
   }, [user, authLoading, navigate]);
 
+  // Mantém o diálogo aberto sincronizado após registrar um novo contato.
+  useEffect(() => {
+    setDetailMae((current) => {
+      if (!current) return current;
+      return maes.find((mae) => mae.id === current.id) ?? current;
+    });
+  }, [maes]);
+
 
   // Swipe navigation for mobile
   const swipeHandlers = useSwipeNavigation({

@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -78,6 +78,22 @@ const mapDbToMae = (item: Record<string, unknown>): MaeProcessoComAtividade => (
 interface MaesDataResult {
   maes: MaeProcessoComAtividade[];
   rawData: { id: string; user_id: string }[];
+}
+
+export function atualizarUltimoContatoMaeNoCache(
+  queryClient: QueryClient,
+  maeId: string,
+  ultimoContatoEm: string,
+) {
+  queryClient.setQueryData<MaesDataResult>(["maes_data"], (old) => {
+    if (!old) return old;
+    return {
+      ...old,
+      maes: old.maes.map((mae) =>
+        mae.id === maeId ? { ...mae, ultimo_contato_em: ultimoContatoEm } : mae,
+      ),
+    };
+  });
 }
 
 // Optimized fetch with parallel queries

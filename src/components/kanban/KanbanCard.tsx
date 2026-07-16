@@ -5,7 +5,6 @@ import { Calendar, FileText, Baby, FolderOpen, AlertTriangle, FileWarning, KeyRo
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { differenceInDays, parseISO } from "date-fns";
-import { FollowUpBadge } from "@/components/atividades/FollowUpBadge";
 import { useFollowUpStatus } from "@/hooks/useAtividades";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -22,7 +21,7 @@ interface KanbanCardProps {
   hasUnreadAlert?: boolean;
 }
 
-/** Retorna true se a gestante está a ≤30 dias do parto (DPP) — hora de gerar o DAS */
+/** Retorna true se a gestante está a ≤30 dias do parto (DPP) — hora de gerar a GPS */
 function verificarDASAuto(mae: MaeProcesso): boolean {
   if (!mae.is_gestante || !mae.data_evento || mae.data_evento_tipo !== "DPP") return false;
   const dpp = parseISO(mae.data_evento);
@@ -43,7 +42,7 @@ export function KanbanCard({
   const dasAuto = verificarDASAuto(mae);
   const mostrarDAS = dasAuto || mae.precisa_das;
   const dasEstado = mae.das_concluido ? "concluido" : mostrarDAS ? "pendente" : "oculto";
-  const { getFollowUpStatus, getDaysSinceLastActivity, configLoading } = useFollowUpStatus();
+  const { getFollowUpStatus, configLoading } = useFollowUpStatus();
   const queryClient = useQueryClient();
   const acompanhamento = getAcompanhamentoMae(mae);
   
@@ -55,11 +54,6 @@ export function KanbanCard({
     ? getFollowUpStatus(mae.ultima_atividade_em, mae.status_processo, mae.data_ultima_atualizacao)
     : null;
   
-  const daysSinceActivity = getDaysSinceLastActivity(
-    mae.ultima_atividade_em,
-    mae.data_ultima_atualizacao
-  );
-
   const toggleDAS = async (e: React.MouseEvent) => {
     e.stopPropagation();
     
@@ -69,24 +63,24 @@ export function KanbanCard({
         .from("mae_processo")
         .update({ precisa_das: true, das_concluido: false } as any)
         .eq("id", mae.id);
-      if (error) { toast.error("Erro ao atualizar DAS"); return; }
-      toast.success("✅ DAS marcado como pendente", { duration: 3000, position: "top-center" });
+      if (error) { toast.error("Erro ao atualizar GPS"); return; }
+      toast.success("GPS marcada como pendente", { duration: 3000, position: "top-center" });
     } else if (dasEstado === "pendente") {
       // Finalizar
       const { error } = await supabase
         .from("mae_processo")
         .update({ das_concluido: true } as any)
         .eq("id", mae.id);
-      if (error) { toast.error("Erro ao atualizar DAS"); return; }
-      toast.success("✅ DAS finalizado com sucesso", { duration: 3000, position: "top-center" });
+      if (error) { toast.error("Erro ao atualizar GPS"); return; }
+      toast.success("GPS finalizada com sucesso", { duration: 3000, position: "top-center" });
     } else {
       // Já concluído → voltar a oculto
       const { error } = await supabase
         .from("mae_processo")
         .update({ precisa_das: false, das_concluido: false } as any)
         .eq("id", mae.id);
-      if (error) { toast.error("Erro ao atualizar DAS"); return; }
-      toast.success("DAS removido", { duration: 3000, position: "top-center" });
+      if (error) { toast.error("Erro ao atualizar GPS"); return; }
+      toast.success("GPS removida", { duration: 3000, position: "top-center" });
     }
     queryClient.invalidateQueries({ queryKey: ["maes_data"] });
   };
@@ -115,71 +109,12 @@ export function KanbanCard({
       
       <CardContent className={cn("p-2.5 md:p-3 relative")}>
         <div className="space-y-1.5 md:space-y-2">
-          <div className="flex items-start justify-between gap-1.5">
+          <div className="flex items-start justify-between gap-2">
             <h4 className="font-medium text-sm leading-tight line-clamp-2 min-w-0 flex-1">
               {mae.nome_mae}
             </h4>
-            <div className="flex flex-wrap justify-end gap-0.5 shrink-0 max-w-[60%]">
+            <div className="flex flex-wrap justify-end gap-1 shrink-0 max-w-[58%]">
               <MarketingBadge etiqueta={(mae as any).etiqueta ?? mae.etiqueta} compact />
-              {followUpStatus && (
-                <FollowUpBadge
-                  status={followUpStatus}
-                  daysSinceActivity={daysSinceActivity}
-                  compact
-                />
-              )}
-              {dasEstado === "pendente" && (
-                <Badge
-                  variant="destructive"
-                  className={cn(
-                    "text-[10px] px-1.5 py-0 h-5 gap-0.5 cursor-pointer hover:opacity-80",
-                    dasAuto && !mae.precisa_das && "animate-pulse"
-                  )}
-                  onClick={toggleDAS}
-                  title="Clique para finalizar DAS"
-                >
-                  <FileWarning className="h-2.5 w-2.5" />
-                  DAS
-                </Badge>
-              )}
-              {dasEstado === "concluido" && (
-                <Badge
-                  variant="secondary"
-                  className="text-[10px] px-1.5 py-0 h-5 gap-0.5 cursor-pointer hover:opacity-80 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                  onClick={toggleDAS}
-                  title="DAS concluído — clique para remover"
-                >
-                  <FileWarning className="h-2.5 w-2.5" />
-                  DAS ✓
-                </Badge>
-              )}
-              {dasEstado === "oculto" && (
-                <Badge
-                  variant="outline"
-                  className="text-[10px] px-1.5 py-0 h-5 gap-0.5 cursor-pointer hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={toggleDAS}
-                  title="Marcar DAS como pendente"
-                >
-                  <FileWarning className="h-2.5 w-2.5" />
-                </Badge>
-              )}
-              {mae.is_gestante && mesGestacao && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-accent text-accent-foreground">
-                  <Baby className="h-2.5 w-2.5 mr-0.5" />
-                  {mesGestacao}º
-                </Badge>
-              )}
-              {(mae as any).ja_trabalhou && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
-                  <Flame className="h-2.5 w-2.5 mr-0.5" />
-                  Quente
-                </Badge>
-              )}
-              {mae.contrato_assinado && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 hidden sm:flex">
-                  Contrato
-                </Badge>
-              )}
             </div>
           </div>
 
@@ -187,16 +122,65 @@ export function KanbanCard({
             {formatCpf(mae.cpf)}
           </p>
 
+          <div className="flex flex-wrap gap-1.5 border-b border-border/60 pb-2">
+              {mae.is_gestante && mesGestacao && (
+                <Badge variant="outline" className="h-6 gap-1 border-primary/15 bg-primary/5 px-2 py-0 text-[10px] font-medium text-foreground">
+                  <Baby className="h-3 w-3 text-primary" />
+                  {mesGestacao}º mês
+                </Badge>
+              )}
+              {dasEstado === "pendente" && (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "h-6 cursor-pointer gap-1 border-destructive/25 bg-destructive/[0.07] px-2 py-0 text-[10px] font-medium text-foreground hover:bg-destructive/10"
+                  )}
+                  onClick={toggleDAS}
+                  title="Clique para finalizar a GPS"
+                >
+                  <FileWarning className="h-3 w-3 text-destructive" />
+                  GPS pendente
+                </Badge>
+              )}
+              {dasEstado === "concluido" && (
+                <Badge
+                  variant="outline"
+                  className="h-6 cursor-pointer gap-1 border-emerald-200 bg-emerald-50 px-2 py-0 text-[10px] font-medium text-foreground hover:bg-emerald-100/70 dark:border-emerald-800/60 dark:bg-emerald-950/25"
+                  onClick={toggleDAS}
+                  title="GPS finalizada — clique para remover"
+                >
+                  <FileWarning className="h-3 w-3 text-emerald-600 dark:text-emerald-300" />
+                  GPS finalizada
+                </Badge>
+              )}
+              {dasEstado === "oculto" && (
+                <Badge
+                  variant="outline"
+                  className="h-6 cursor-pointer gap-1 px-2 py-0 text-[10px] opacity-0 transition-opacity hover:bg-destructive/10 group-hover:opacity-100"
+                  onClick={toggleDAS}
+                  title="Marcar GPS como pendente"
+                >
+                  <FileWarning className="h-3 w-3" />
+                </Badge>
+              )}
+              {(mae as any).ja_trabalhou && (
+                <Badge variant="outline" className="h-6 gap-1 border-amber-200 bg-amber-50 px-2 py-0 text-[10px] font-medium text-foreground dark:border-amber-800/60 dark:bg-amber-950/25">
+                  <Flame className="h-3 w-3 text-amber-700 dark:text-amber-300" />
+                  Quente
+                </Badge>
+              )}
+          </div>
+
           {(acompanhamento.contatoAtrasado || acompanhamento.senhaAtrasada) && (
-            <div className="flex flex-wrap gap-1">
+            <div className="grid gap-1.5">
               {acompanhamento.contatoAtrasado && (
-                <div className="flex items-center gap-1 rounded-full border border-primary/15 bg-primary/5 px-2 py-1 text-[10px] font-medium text-foreground">
+                <div className="flex items-center gap-1.5 rounded-lg border border-primary/15 bg-primary/5 px-2.5 py-1.5 text-[10px] font-medium text-foreground">
                   <MessageSquareWarning className="h-3 w-3 shrink-0 text-primary" />
                   <span>Sem contato {formatarTempo(acompanhamento.diasSemContato)}</span>
                 </div>
               )}
               {acompanhamento.senhaAtrasada && (
-                <div className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-medium text-foreground dark:border-amber-800/60 dark:bg-amber-950/25">
+                <div className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[10px] font-medium text-foreground dark:border-amber-800/60 dark:bg-amber-950/25">
                   <KeyRound className="h-3 w-3 shrink-0 text-amber-700 dark:text-amber-300" />
                   <span>Sem senha {formatarTempo(acompanhamento.diasSemSenha)}</span>
                 </div>
