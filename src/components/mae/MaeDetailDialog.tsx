@@ -1,39 +1,39 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MaeProcesso, STATUS_COLORS } from "@/types/mae";
 import { formatCpf, formatDate } from "@/lib/formatters";
 import {
-  Pencil,
-  Calendar,
-  FileText,
-  MapPin,
-  Phone,
-  Mail,
-  User,
   ClipboardList,
-  MessageSquare,
+  Contact,
   Copy,
-  Key,
-  ShieldCheck,
-  FolderOpen,
+  ExternalLink,
   Eye,
   EyeOff,
+  FileText,
+  FileWarning,
+  FolderOpen,
+  Mail,
+  MapPin,
+  MessageCircle,
   MessageSquareWarning,
+  Pencil,
+  Phone,
+  UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { DocumentosDialog } from "@/components/mae/DocumentosDialog";
+import { DocumentosContent } from "@/components/mae/DocumentosDialog";
 import { ObservacoesHistorico } from "@/components/mae/ObservacoesHistorico";
 import { buildEnderecoCompleto } from "@/components/mae/AddressFields";
-import { ExternalLink } from "lucide-react";
 import { formatarTempo, getAcompanhamentoMae } from "@/lib/maeAcompanhamento";
 
 interface MaeDetailDialogProps {
@@ -47,8 +47,8 @@ const copyToClipboard = async (text: string, label: string) => {
   try {
     await navigator.clipboard.writeText(text);
     toast.success(`${label} copiado!`);
-  } catch (err) {
-    toast.error("Erro ao copiar");
+  } catch {
+    toast.error(`Não foi possível copiar ${label.toLowerCase()}`);
   }
 };
 
@@ -58,398 +58,346 @@ export function MaeDetailDialog({
   onOpenChange,
   onEdit,
 }: MaeDetailDialogProps) {
-  const [documentosDialogOpen, setDocumentosDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("resumo");
+  const [senhaRevelada, setSenhaRevelada] = useState(false);
+
+  useEffect(() => {
+    setActiveTab("resumo");
+    setSenhaRevelada(false);
+  }, [mae?.id, open]);
+
+  useEffect(() => {
+    if (!senhaRevelada) return;
+    const timer = window.setTimeout(() => setSenhaRevelada(false), 10000);
+    return () => window.clearTimeout(timer);
+  }, [senhaRevelada]);
+
+  const enderecoCompleto = useMemo(() => {
+    if (!mae) return "";
+    return buildEnderecoCompleto({
+      cep: mae.cep ?? undefined,
+      endereco: mae.endereco ?? undefined,
+      numero: mae.numero ?? undefined,
+      complemento: mae.complemento ?? undefined,
+      bairro: mae.bairro ?? undefined,
+      cidade: mae.cidade ?? undefined,
+      uf: mae.uf,
+    });
+  }, [mae]);
 
   if (!mae) return null;
+
   const acompanhamento = getAcompanhamentoMae(mae);
+  const gpsStatus = mae.das_concluido
+    ? "Finalizada"
+    : mae.precisa_das
+      ? "Pendente"
+      : mae.precisa_gps || "Não precisa";
+  const mapsUrl = enderecoCompleto
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`
+    : "";
+  const phoneDigits = mae.telefone?.replace(/\D/g, "") || "";
+  const whatsappNumber = phoneDigits && phoneDigits.length <= 11 ? `55${phoneDigits}` : phoneDigits;
+
+  const openWhatsApp = () => {
+    if (!whatsappNumber) return;
+    window.open(`https://wa.me/${whatsappNumber}`, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <User className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <DialogTitle className="text-xl">{mae.nome_mae}</DialogTitle>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-muted-foreground font-mono">
-                  CPF: {formatCpf(mae.cpf)}
-                </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={() => copyToClipboard(mae.cpf, "CPF")}
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
-              {mae.senha_gov && (
-                <div className="flex items-center gap-2">
-                  <p className="text-sm text-muted-foreground font-mono">
-                    <Key className="h-3 w-3 inline mr-1" />
-                    Senha Gov: {mae.senha_gov}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => copyToClipboard(mae.senha_gov!, "Senha Gov")}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </DialogHeader>
-
-
-        <div className="space-y-6">
-          {acompanhamento.aplicavel && (
-          <div className="grid gap-2 sm:grid-cols-2">
-            <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <MessageSquareWarning className="h-4 w-4" /> Último contato
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {acompanhamento.nuncaContatada ? "Nenhuma anotação" : formatarTempo(acompanhamento.diasSemContato)}
-                {acompanhamento.contatoAtrasado && " — atenção"}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Key className="h-4 w-4" /> Senha Gov.br
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {mae.senha_gov ? "Cadastrada" : `Pendente ${formatarTempo(acompanhamento.diasSemSenha)}`}
-                {acompanhamento.senhaAtrasada && " — atrasada"}
-              </p>
-            </div>
-          </div>
-          )}
-          {/* Status Badge and Actions */}
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            {onEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => {
-                  onOpenChange(false);
-                  onEdit(mae);
-                }}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                Editar
-              </Button>
-            )}
-            <div className="flex items-center gap-2">
-              <Badge
-                className={cn(
-                  "text-sm px-3 py-1",
-                  STATUS_COLORS[mae.status_processo]
-                )}
-                variant="outline"
-              >
-                {mae.status_processo}
-              </Badge>
-              {mae.contrato_assinado && (
-                <Badge variant="secondary">Contrato Assinado</Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDocumentosDialogOpen(true)}
-                className="gap-2"
-              >
-                <FolderOpen className="h-4 w-4" />
-                Documentos
-              </Button>
-            </div>
-          </div>
-
-
-          <Separator />
-
-          {/* Info Grid */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <InfoItem
-              icon={ClipboardList}
-              label="Tipo de Evento"
-              value={mae.tipo_evento}
-            />
-            <InfoItem
-              icon={Calendar}
-              label={mae.data_evento_tipo || "Data do Evento"}
-              value={mae.data_evento ? formatDate(mae.data_evento) : "Não informado"}
-            />
-            <InfoItem
-              icon={User}
-              label="Categoria Previdenciária"
-              value={mae.categoria_previdenciaria}
-            />
-            <InfoItem
-              icon={MapPin}
-              label="UF"
-              value={mae.uf || "Não informado"}
-            />
-            {mae.telefone && (
-              <InfoItemWithCopy icon={Phone} label="Telefone" value={mae.telefone} onCopy={() => copyToClipboard(mae.telefone!, "Telefone")} />
-            )}
-            {mae.email && (
-              <InfoItemWithCopy icon={Mail} label="Email" value={mae.email} onCopy={() => copyToClipboard(mae.email!, "Email")} />
-            )}
-            {/* senha_gov removida daqui - agora está no card destacado acima */}
-            <InfoItem
-              icon={ShieldCheck}
-              label="Verificação 2 Etapas"
-              value={mae.verificacao_duas_etapas ? "Sim" : "Não"}
-            />
-          </div>
-
-          {/* Protocolo INSS */}
-          {mae.protocolo_inss && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <h4 className="font-semibold flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Protocolo INSS
-                </h4>
-                <p className="text-sm font-mono bg-muted p-2 rounded">
-                  {mae.protocolo_inss}
-                </p>
-              </div>
-            </>
-          )}
-
-          {/* Parcelas */}
-          {mae.parcelas && (
-            <div className="space-y-2">
-              <h4 className="font-semibold">Parcelas</h4>
-              <p className="text-sm">{mae.parcelas}</p>
-            </div>
-          )}
-
-          {/* Segurada e GPS */}
-          {(mae.segurada || mae.precisa_gps) && (
-            <>
-              <Separator />
-              <div className="grid gap-4 md:grid-cols-2">
-                {mae.segurada && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">
-                      Segurada:
-                    </span>
-                    <p className="font-medium">{mae.segurada}</p>
+      <DialogContent className="gap-0 overflow-hidden p-0 md:max-w-3xl">
+        <div className="flex h-full max-h-screen flex-col overflow-hidden md:max-h-[90vh]">
+          <DialogHeader className="shrink-0 border-b px-4 py-4 pr-12 md:px-6">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+              <div className="min-w-0">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <UserRound className="h-5 w-5" />
                   </div>
-                )}
-                {mae.precisa_gps && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">
-                      Precisa GPS:
-                    </span>
-                    <p className="font-medium">{mae.precisa_gps}</p>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+                  <div className="min-w-0 flex-1">
+                    <DialogTitle className="pr-2 text-left text-lg leading-snug md:text-xl">
+                      {mae.nome_mae}
+                    </DialogTitle>
 
-          {/* Endereço */}
-          {(() => {
-            const a = mae as any;
-            const enderecoCompleto = buildEnderecoCompleto({
-              cep: mae.cep ?? undefined,
-              endereco: a.endereco,
-              numero: a.numero,
-              complemento: a.complemento,
-              bairro: a.bairro,
-              cidade: a.cidade,
-              uf: mae.uf,
-            });
-            if (!enderecoCompleto) return null;
-            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
-            return (
-              <>
-                <Separator />
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="font-semibold flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Endereço
-                    </h4>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 gap-1.5 text-xs"
-                        onClick={() => copyToClipboard(enderecoCompleto, "Endereço")}
-                      >
-                        <Copy className="h-3 w-3" /> Copiar
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 gap-1.5 text-xs"
-                        asChild
-                      >
-                        <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-3 w-3" /> Mapa
-                        </a>
-                      </Button>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2 sm:gap-4">
+                      <CredentialItem
+                        label="CPF"
+                        value={formatCpf(mae.cpf)}
+                        onCopy={() => copyToClipboard(mae.cpf, "CPF")}
+                      />
+                      <div className="min-w-0 text-left">
+                        <span className="text-xs text-muted-foreground">Senha Gov.br</span>
+                        <div className="mt-0.5 flex min-h-7 items-center gap-1">
+                          <span className={cn("truncate font-mono text-sm", !senhaRevelada && "tracking-widest")}>
+                            {mae.senha_gov
+                              ? senhaRevelada
+                                ? mae.senha_gov
+                                : "•".repeat(Math.max(8, Math.min(mae.senha_gov.length, 12)))
+                              : "Não cadastrada"}
+                          </span>
+                          {mae.senha_gov && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 shrink-0"
+                                onClick={() => setSenhaRevelada((value) => !value)}
+                                aria-label={senhaRevelada ? "Ocultar senha Gov.br" : "Revelar senha Gov.br por 10 segundos"}
+                              >
+                                {senhaRevelada ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 shrink-0"
+                                onClick={() => copyToClipboard(mae.senha_gov!, "Senha Gov.br")}
+                                aria-label="Copiar senha Gov.br"
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">{enderecoCompleto}</p>
                 </div>
-              </>
-            );
-          })()}
 
-          {/* Observações & Histórico */}
-          <Separator />
-          <ObservacoesHistorico maeId={mae.id} />
+                <div className="mt-3 flex flex-wrap items-center gap-2 pl-0 md:pl-14">
+                  <Badge
+                    variant="outline"
+                    className={cn("px-2.5 py-1 text-xs", STATUS_COLORS[mae.status_processo])}
+                  >
+                    {mae.status_processo}
+                  </Badge>
+                  {mae.etiqueta && (
+                    <Badge variant="outline" className="border-primary/20 bg-primary/5 px-2.5 py-1 text-xs text-foreground">
+                      {mae.etiqueta}
+                    </Badge>
+                  )}
+                </div>
+              </div>
 
-          {/* Metadata */}
-          <Separator />
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span>Origem: {mae.origem || "Não informado"}</span>
-            {(mae as any).etiqueta && (
-              <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 font-medium">
-                Etiqueta: {(mae as any).etiqueta}
-              </span>
-            )}
-            <span>
-              Última atualização: {formatDate(mae.data_ultima_atualizacao)}
-            </span>
+              <div className="flex flex-wrap gap-2 md:justify-end">
+                {onEdit && (
+                  <Button
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => {
+                      onOpenChange(false);
+                      onEdit(mae);
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Editar
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => setActiveTab("documentos")}>
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  Documentos
+                </Button>
+              </div>
+            </div>
+            <DialogDescription className="sr-only">
+              Dados, histórico e documentos de {mae.nome_mae}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto px-4 pb-5 md:px-6">
+            <div className="my-4 grid divide-y border-y py-3 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+              <div className="pb-3 sm:pb-0 sm:pr-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <MessageSquareWarning className="h-3.5 w-3.5 text-primary" />
+                  Último contato
+                </div>
+                <p className="mt-1 text-sm font-medium">
+                  {!acompanhamento.aplicavel
+                    ? "Não se aplica a esta etapa"
+                    : acompanhamento.nuncaContatada
+                      ? "Nenhuma anotação"
+                      : formatarTempo(acompanhamento.diasSemContato)}
+                </p>
+                {acompanhamento.aplicavel && (
+                  <button
+                    type="button"
+                    className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                    onClick={() => setActiveTab("historico")}
+                  >
+                    Registrar contato
+                  </button>
+                )}
+              </div>
+              <div className="pt-3 sm:pl-4 sm:pt-0">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <FileWarning className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" />
+                  GPS
+                </div>
+                <p className="mt-1 text-sm font-medium">{gpsStatus}</p>
+              </div>
+            </div>
+
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid h-auto w-full grid-cols-3">
+                <TabsTrigger value="resumo">Resumo</TabsTrigger>
+                <TabsTrigger value="historico">Histórico</TabsTrigger>
+                <TabsTrigger value="documentos">Documentos</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="resumo" className="mt-5 space-y-6">
+                <div className="grid gap-6 md:grid-cols-2">
+                  <DetailSection icon={ClipboardList} title="Processo">
+                    <DetailField label="Tipo de evento" value={mae.tipo_evento} />
+                    <DetailField
+                      label={mae.data_evento_tipo || "Data do evento"}
+                      value={mae.data_evento ? formatDate(mae.data_evento) : "Não informado"}
+                    />
+                    <DetailField label="Categoria" value={mae.categoria_previdenciaria} />
+                    {mae.segurada && <DetailField label="Segurada" value={mae.segurada} />}
+                    <DetailField label="Contrato" value={mae.contrato_assinado ? "Assinado" : "Não assinado"} />
+                  </DetailSection>
+
+                  <DetailSection icon={Contact} title="Contato">
+                    {mae.telefone && <DetailField label="Telefone" value={mae.telefone} />}
+                    {mae.email && <DetailField label="E-mail" value={mae.email} />}
+                    {mae.uf && <DetailField label="UF" value={mae.uf} />}
+                    <DetailField
+                      label="Verificação 2 etapas"
+                      value={mae.verificacao_duas_etapas ? "Sim" : "Não"}
+                    />
+                    {(mae.telefone || mae.email) && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {mae.telefone && (
+                          <>
+                            <Button variant="outline" size="sm" className="gap-2" onClick={openWhatsApp}>
+                              <MessageCircle className="h-3.5 w-3.5" />
+                              WhatsApp
+                            </Button>
+                            <Button variant="ghost" size="sm" className="gap-2" onClick={() => copyToClipboard(mae.telefone!, "Telefone")}>
+                              <Phone className="h-3.5 w-3.5" />
+                              Copiar telefone
+                            </Button>
+                          </>
+                        )}
+                        {mae.email && (
+                          <Button variant="ghost" size="sm" className="gap-2" onClick={() => copyToClipboard(mae.email!, "E-mail")}>
+                            <Mail className="h-3.5 w-3.5" />
+                            Copiar e-mail
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </DetailSection>
+                </div>
+
+                {(mae.protocolo_inss || mae.parcelas) && (
+                  <DetailSection icon={FileText} title="INSS">
+                    {mae.protocolo_inss && <DetailField label="Protocolo" value={mae.protocolo_inss} mono />}
+                    {mae.parcelas && <DetailField label="Parcelas" value={mae.parcelas} />}
+                  </DetailSection>
+                )}
+
+                {enderecoCompleto && (
+                  <DetailSection
+                    icon={MapPin}
+                    title="Endereço"
+                    actions={
+                      <>
+                        <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => copyToClipboard(enderecoCompleto, "Endereço")}>
+                          <Copy className="h-3.5 w-3.5" />
+                          Copiar
+                        </Button>
+                        <Button variant="ghost" size="sm" className="gap-1.5" asChild>
+                          <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Mapa
+                          </a>
+                        </Button>
+                      </>
+                    }
+                  >
+                    <p className="text-sm text-muted-foreground">{enderecoCompleto}</p>
+                  </DetailSection>
+                )}
+
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-xs text-muted-foreground">
+                  <span>Origem: {mae.origem || "Não informado"}</span>
+                  <span>Última atualização: {formatDate(mae.data_ultima_atualizacao)}</span>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="historico" className="mt-5">
+                <ObservacoesHistorico maeId={mae.id} />
+              </TabsContent>
+
+              <TabsContent value="documentos" className="mt-5">
+                <DocumentosContent
+                  maeId={mae.id}
+                  linkDocumentos={mae.link_documentos || null}
+                  onSuccess={() => undefined}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
-
-        <DocumentosDialog
-          open={documentosDialogOpen}
-          onOpenChange={setDocumentosDialogOpen}
-          maeId={mae.id}
-          maeNome={mae.nome_mae}
-          linkDocumentos={mae.link_documentos || null}
-          onSuccess={() => {}}
-        />
       </DialogContent>
     </Dialog>
   );
 }
 
-interface InfoItemProps {
-  icon: React.ComponentType<{ className?: string }>;
+interface CredentialItemProps {
   label: string;
   value: string;
-}
-
-function InfoItem({ icon: Icon, label, value }: InfoItemProps) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className="flex h-8 w-8 items-center justify-center rounded bg-muted">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </div>
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="font-medium text-sm">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-interface InfoItemWithCopyProps extends InfoItemProps {
   onCopy: () => void;
 }
 
-function InfoItemWithCopy({ icon: Icon, label, value, onCopy }: InfoItemWithCopyProps) {
+function CredentialItem({ label, value, onCopy }: CredentialItemProps) {
   return (
-    <div className="flex items-start gap-3">
-      <div className="flex h-8 w-8 items-center justify-center rounded bg-muted">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </div>
-      <div className="flex-1">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <div className="flex items-center gap-2">
-          <p className="font-medium text-sm">{value}</p>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
-            onClick={onCopy}
-          >
-            <Copy className="h-3 w-3" />
-          </Button>
-        </div>
+    <div className="min-w-0 text-left">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="mt-0.5 flex min-h-7 items-center gap-1">
+        <span className="truncate font-mono text-sm">{value}</span>
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={onCopy} aria-label={`Copiar ${label}`}>
+          <Copy className="h-3.5 w-3.5" />
+        </Button>
       </div>
     </div>
   );
 }
 
-function SenhaGovCard({ senha }: { senha: string }) {
-  const [revealed, setRevealed] = useState(false);
-  const masked = "•".repeat(Math.max(senha.length, 8));
-  const partial = senha.length >= 4
-    ? `${senha.slice(0, 2)}${"•".repeat(senha.length - 4)}${senha.slice(-2)}`
-    : masked;
+interface DetailSectionProps {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+}
 
-  const handleReveal = useCallback(() => {
-    setRevealed(true);
-  }, []);
-
-  useEffect(() => {
-    if (!revealed) return;
-    const timer = setTimeout(() => setRevealed(false), 10000);
-    return () => clearTimeout(timer);
-  }, [revealed]);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(senha);
-      toast.success("Senha gov.br copiada!");
-    } catch {
-      toast.error("Erro ao copiar senha");
-    }
-  };
-
+function DetailSection({ icon: Icon, title, actions, children }: DetailSectionProps) {
   return (
-    <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Key className="h-4 w-4 text-primary" />
-        <span className="text-sm font-semibold text-primary">Senha gov.br</span>
-        {revealed && (
-          <Badge variant="secondary" className="text-[10px] ml-auto animate-pulse">
-            Visível por 10s
-          </Badge>
-        )}
+    <section className="min-w-0">
+      <div className="mb-3 flex items-center justify-between gap-3 border-b pb-2">
+        <h4 className="flex items-center gap-2 font-semibold">
+          <Icon className="h-4 w-4 text-muted-foreground" />
+          {title}
+        </h4>
+        {actions && <div className="flex flex-wrap items-center justify-end gap-1">{actions}</div>}
       </div>
-      <div className="flex items-center gap-3">
-        <p className="text-lg font-mono font-semibold tracking-wider flex-1 select-none">
-          {revealed ? senha : partial}
-        </p>
-        <Button
-          size="sm"
-          onClick={handleCopy}
-          className="gap-1.5 shrink-0"
-        >
-          <Copy className="h-4 w-4" />
-          Copiar
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => revealed ? setRevealed(false) : handleReveal()}
-          className="gap-1.5 shrink-0"
-        >
-          {revealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          {revealed ? "Ocultar" : "Revelar"}
-        </Button>
-      </div>
+      <div className="space-y-2.5">{children}</div>
+    </section>
+  );
+}
+
+interface DetailFieldProps {
+  label: string;
+  value: string;
+  mono?: boolean;
+}
+
+function DetailField({ label, value, mono = false }: DetailFieldProps) {
+  return (
+    <div className="grid gap-0.5 text-sm sm:grid-cols-[minmax(110px,0.8fr)_minmax(0,1.2fr)] sm:gap-3">
+      <span className="text-xs text-muted-foreground sm:text-sm">{label}</span>
+      <span className={cn("break-words font-medium", mono && "font-mono text-xs")}>{value}</span>
     </div>
   );
 }
