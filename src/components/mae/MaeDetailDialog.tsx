@@ -106,17 +106,17 @@ export function MaeDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] gap-0 overflow-y-auto p-0 sm:max-w-[calc(100vw-2rem)] lg:max-w-3xl">
+      <DialogContent className="max-h-[88dvh] gap-0 overflow-y-auto p-0 sm:max-w-[calc(100vw-2rem)] lg:max-w-2xl">
         <div className="flex min-h-0 flex-col">
-          <DialogHeader className="shrink-0 border-b px-4 py-4 pr-12 md:px-6">
+          <DialogHeader className="shrink-0 border-b px-4 py-3 pr-12 md:px-5">
             <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
               <div className="min-w-0">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <UserRound className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <DialogTitle className="pr-2 text-left text-lg leading-snug md:text-xl">
+                    <DialogTitle className="pr-2 text-left text-base leading-snug md:text-lg">
                       {mae.nome_mae}
                     </DialogTitle>
 
@@ -204,8 +204,8 @@ export function MaeDetailDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="min-w-0 px-4 pb-5 md:px-6">
-            <div className="my-4 grid divide-y border-y py-3 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+          <div className="min-w-0 px-4 pb-4 md:px-5">
+            <div className="my-3 grid divide-y border-y py-2.5 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
               <div className="pb-3 sm:pb-0 sm:pr-4">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <MessageSquareWarning className="h-3.5 w-3.5 text-primary" />
@@ -239,13 +239,13 @@ export function MaeDetailDialog({
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid h-auto w-full grid-cols-3">
-                <TabsTrigger value="resumo">Resumo</TabsTrigger>
-                <TabsTrigger value="historico">Histórico</TabsTrigger>
-                <TabsTrigger value="documentos">Documentos</TabsTrigger>
+                <TabsTrigger value="resumo" className="text-sm">Resumo</TabsTrigger>
+                <TabsTrigger value="historico" className="text-sm">Histórico</TabsTrigger>
+                <TabsTrigger value="documentos" className="text-sm">Documentos</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="resumo" className="mt-5 space-y-6">
-                <div className="grid gap-5 md:grid-cols-2">
+              <TabsContent value="resumo" className="mt-4 space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
                   <DetailSection icon={ClipboardList} title="Processo">
                     <DetailField label="Tipo de evento" value={mae.tipo_evento} />
                     <DetailField
@@ -316,7 +316,7 @@ export function MaeDetailDialog({
                       </>
                     }
                   >
-                    <p className="text-sm text-muted-foreground">{enderecoCompleto}</p>
+                    <p className="text-sm leading-relaxed text-muted-foreground">{enderecoCompleto}</p>
                   </DetailSection>
                 )}
 
@@ -375,8 +375,8 @@ interface DetailSectionProps {
 function DetailSection({ icon: Icon, title, actions, children }: DetailSectionProps) {
   return (
     <section className="min-w-0">
-      <div className="mb-3 flex items-center justify-between gap-3 border-b pb-2">
-        <h4 className="flex items-center gap-2 font-semibold">
+      <div className="mb-2 flex items-center justify-between gap-3 border-b pb-2">
+        <h4 className="flex items-center gap-2 text-sm font-semibold">
           <Icon className="h-4 w-4 text-muted-foreground" />
           {title}
         </h4>
@@ -395,8 +395,8 @@ interface DetailFieldProps {
 
 function DetailField({ label, value, mono = false }: DetailFieldProps) {
   return (
-    <div className="grid min-w-0 grid-cols-[minmax(88px,0.8fr)_minmax(0,1.2fr)] gap-3 border-b py-2 text-sm last:border-b-0">
-      <span className="text-muted-foreground">{label}</span>
+    <div className="grid min-w-0 grid-cols-[minmax(88px,0.8fr)_minmax(0,1.2fr)] gap-3 border-b py-1.5 text-sm last:border-b-0">
+      <span className="text-xs text-muted-foreground">{label}</span>
       <span
         className={cn("min-w-0 truncate font-medium", mono && "font-mono text-xs")}
         title={value}
