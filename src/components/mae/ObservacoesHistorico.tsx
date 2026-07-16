@@ -150,10 +150,14 @@ export function ObservacoesHistorico({ maeId }: Props) {
       <div
         key={o.id}
         className={cn(
-          "rounded-lg border bg-card p-3 transition-colors",
-          o.fixada && "border-primary/40 bg-primary/5"
+          "grid min-w-0 grid-cols-[32px_minmax(0,1fr)] gap-3 border-b py-4 transition-colors last:border-b-0",
+          o.fixada && "rounded-lg border border-primary/30 bg-primary/5 px-3"
         )}
       >
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <MessageSquare className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge
@@ -234,11 +238,11 @@ export function ObservacoesHistorico({ maeId }: Props) {
             </div>
           </div>
         ) : (
-          <p className="text-sm whitespace-pre-wrap break-words">{o.texto}</p>
+          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{o.texto}</p>
         )}
 
-        <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-          <span>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-1 text-xs text-muted-foreground">
+          <span className="break-words">
             <span className="font-medium">{o.autor_nome}</span> ·{" "}
             {formatDateTime(o.created_at)}
           </span>
@@ -246,35 +250,38 @@ export function ObservacoesHistorico({ maeId }: Props) {
             <span className="italic">editada em {formatDateTime(o.editada_em)}</span>
           )}
         </div>
+        </div>
       </div>
     );
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <MessageSquare className="h-4 w-4" />
+    <div className="min-w-0 space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
         <h4 className="font-semibold">Observações & Histórico</h4>
+          <p className="mt-1 text-sm text-muted-foreground">Contatos, conferências e atualizações em ordem cronológica.</p>
+        </div>
         <Badge variant="secondary" className="text-xs">
           {observacoes.length}
         </Badge>
       </div>
 
       {/* Nova anotação */}
-      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+      <div className="space-y-3 rounded-xl border bg-muted/20 p-4">
         <Textarea
           placeholder="Adicionar nova anotação sobre a mãe..."
           value={novoTexto}
           onChange={(e) => setNovoTexto(e.target.value)}
-          rows={2}
-          className="text-sm bg-background"
+          rows={3}
+          className="min-h-24 resize-y bg-background text-sm"
         />
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Select
             value={novaCategoria}
             onValueChange={(v) => setNovaCategoria(v as ObservacaoCategoria)}
           >
-            <SelectTrigger className="h-9 w-40 bg-background">
+            <SelectTrigger className="h-9 w-44 bg-background">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="z-[100]">
@@ -297,7 +304,7 @@ export function ObservacoesHistorico({ maeId }: Props) {
 
       {/* Filtros */}
       {observacoes.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 gap-2 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
@@ -363,18 +370,18 @@ export function ObservacoesHistorico({ maeId }: Props) {
             : "Nenhuma anotação corresponde aos filtros."}
         </p>
       ) : (
-        <div className="space-y-3">
+        <div className="rounded-xl border px-4">
           {fixadas.length > 0 && (
             <>
               <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 <Pin className="h-3 w-3" /> Fixadas
               </div>
-              <div className="space-y-2">{fixadas.map(renderItem)}</div>
+              <div>{fixadas.map(renderItem)}</div>
               {restantes.length > 0 && <Separator />}
             </>
           )}
           {restantes.length > 0 && (
-            <div className="space-y-2">{restantes.map(renderItem)}</div>
+            <div>{restantes.map(renderItem)}</div>
           )}
         </div>
       )}

@@ -106,8 +106,8 @@ export function MaeDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 overflow-hidden p-0 md:max-w-3xl">
-        <div className="flex h-full max-h-screen flex-col overflow-hidden md:max-h-[90vh]">
+      <DialogContent className="max-h-[94dvh] gap-0 overflow-y-auto p-0 sm:max-w-[calc(100vw-2rem)] lg:max-w-4xl">
+        <div className="flex min-h-0 flex-col">
           <DialogHeader className="shrink-0 border-b px-4 py-4 pr-12 md:px-6">
             <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
               <div className="min-w-0">
@@ -204,7 +204,7 @@ export function MaeDetailDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-4 pb-5 md:px-6">
+          <div className="min-w-0 px-4 pb-5 md:px-6">
             <div className="my-4 grid divide-y border-y py-3 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
               <div className="pb-3 sm:pb-0 sm:pr-4">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -382,7 +382,7 @@ function DetailSection({ icon: Icon, title, actions, children }: DetailSectionPr
         </h4>
         {actions && <div className="flex flex-wrap items-center justify-end gap-1">{actions}</div>}
       </div>
-      <div className="space-y-2.5">{children}</div>
+      <div className="grid gap-2.5">{children}</div>
     </section>
   );
 }
@@ -395,9 +395,9 @@ interface DetailFieldProps {
 
 function DetailField({ label, value, mono = false }: DetailFieldProps) {
   return (
-    <div className="grid gap-0.5 text-sm sm:grid-cols-[minmax(110px,0.8fr)_minmax(0,1.2fr)] sm:gap-3">
-      <span className="text-xs text-muted-foreground sm:text-sm">{label}</span>
-      <span className={cn("break-words font-medium", mono && "font-mono text-xs")}>{value}</span>
+    <div className="min-w-0 rounded-lg border bg-muted/20 px-3 py-2.5 text-sm">
+      <span className="block text-xs text-muted-foreground">{label}</span>
+      <span className={cn("mt-0.5 block min-w-0 break-words font-medium leading-relaxed", mono && "font-mono text-xs")}>{value}</span>
     </div>
   );
 }
