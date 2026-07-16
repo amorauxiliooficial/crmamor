@@ -102,8 +102,11 @@ export function MaeDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92dvh] w-[calc(100vw-1rem)] gap-0 overflow-hidden border-border/60 bg-card p-0 shadow-2xl sm:max-w-lg lg:max-w-2xl">
-        <div className="flex max-h-[92dvh] min-h-0 flex-col overflow-hidden">
+      <DialogContent
+        fullscreenOnMobile={false}
+        className="left-1/2 top-1/2 flex h-[min(92dvh,720px)] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] translate-x-[-50%] translate-y-[-50%] flex-col gap-0 overflow-hidden rounded-lg border-border/60 bg-card p-0 shadow-2xl sm:max-w-lg lg:max-w-2xl"
+      >
+        <div className="flex h-full min-h-0 flex-col overflow-hidden">
           {/* ===== HEADER ===== */}
           <DialogHeader className="shrink-0 space-y-0 border-b border-border/60 bg-gradient-to-b from-muted/40 to-transparent px-5 py-5 pr-12 text-left md:px-6">
 
@@ -256,7 +259,7 @@ export function MaeDetailDialog({
           </div>
 
           {/* ===== TABS CONTENT ===== */}
-          <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-5 md:px-6">
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-5 md:px-6">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsContent value="resumo" className="mt-5 space-y-5">
                 <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
