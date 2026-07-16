@@ -503,11 +503,26 @@ Qualquer dúvida estamos à disposição!`;
                 {recebimentos.length === 0 && (
                   <p className="text-sm text-muted-foreground">Nenhuma parcela de recebimento cadastrada.</p>
                 )}
-                {recebimentos.map((r) => (
+                {recebimentos.map((r, idx) => (
                   <RecebimentoRow
                     key={r.id}
                     r={r}
-                    onSave={(patch) => upsertRecebimento.mutate({ id: r.id, ...patch })}
+                    onSave={(patch) => {
+                      upsertRecebimento.mutate({ id: r.id, ...patch });
+                      // Sincroniza vencimento do boleto correspondente (mesma posição)
+                      // já que o ciclo pagamento/recebimento é o mesmo.
+                      if (Object.prototype.hasOwnProperty.call(patch, "data_prevista")) {
+                        const novoVenc = patch.data_prevista ?? null;
+                        const boletoCorrespondente = boletos[idx];
+                        if (boletoCorrespondente) {
+                          if (boletoCorrespondente.vencimento !== novoVenc) {
+                            upsertBoleto.mutate({ id: boletoCorrespondente.id, vencimento: novoVenc });
+                          }
+                        } else if (novoVenc) {
+                          upsertBoleto.mutate({ status: "a_emitir", valor: r.valor ?? null, vencimento: novoVenc });
+                        }
+                      }
+                    }}
                     onDelete={() => deleteRecebimento.mutate(r.id)}
                   />
                 ))}
