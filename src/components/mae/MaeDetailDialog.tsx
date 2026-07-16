@@ -256,7 +256,7 @@ export function MaeDetailDialog({
           </div>
 
           {/* ===== TABS CONTENT ===== */}
-          <div className="min-w-0 px-5 pb-5 md:px-6">
+          <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-5 md:px-6">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsContent value="resumo" className="mt-5 space-y-5">
                 <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
