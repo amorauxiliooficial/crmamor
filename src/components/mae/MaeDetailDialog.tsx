@@ -108,8 +108,8 @@ export function MaeDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] gap-0 overflow-hidden border-border/60 bg-card p-0 shadow-2xl sm:max-w-[calc(100vw-2rem)] lg:max-w-3xl">
-        <div className="flex max-h-[90dvh] min-h-0 flex-col overflow-y-auto">
+      <DialogContent className="max-h-[90dvh] w-[calc(100vw-1rem)] gap-0 overflow-hidden border-border/60 bg-card p-0 shadow-2xl sm:max-w-lg lg:max-w-2xl">
+        <div className="flex max-h-[90dvh] min-h-0 flex-col overflow-y-auto overflow-x-hidden">
           {/* ===== HEADER ===== */}
           <DialogHeader className="shrink-0 space-y-0 border-b border-border/60 bg-gradient-to-b from-muted/40 to-transparent px-5 py-5 pr-12 text-left md:px-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
