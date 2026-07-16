@@ -20,7 +20,6 @@ import {
   FolderOpen,
   Mail,
   MapPin,
-  MessageCircle,
   Pencil,
   Plus,
   Phone,
