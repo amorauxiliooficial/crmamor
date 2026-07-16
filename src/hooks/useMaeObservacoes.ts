@@ -111,7 +111,7 @@ export function useMaeObservacoes(maeId: string | null | undefined) {
           texto: input.texto.trim(),
           categoria: input.categoria,
           fixada: input.fixada ?? false,
-        })
+        } as never)
         .select("created_at")
         .single();
       if (error) throw error;
