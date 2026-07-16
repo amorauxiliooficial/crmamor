@@ -111,20 +111,19 @@ export default function Index() {
     }
 
     if (acompanhamentoFilter === "contato") {
-      result = result.filter((m) => !isOutOfFunnel(m.status_processo) && getAcompanhamentoMae(m).contatoAtrasado);
+      result = result.filter((m) => getAcompanhamentoMae(m).contatoAtrasado);
     }
     if (acompanhamentoFilter === "senha") {
-      result = result.filter((m) => !isOutOfFunnel(m.status_processo) && getAcompanhamentoMae(m).senhaAtrasada);
+      result = result.filter((m) => getAcompanhamentoMae(m).senhaAtrasada);
     }
 
     return result;
   }, [maes, searchQuery, acompanhamentoFilter]);
 
   const acompanhamentoResumo = useMemo(() => {
-    const ativas = maes.filter((m) => !isOutOfFunnel(m.status_processo));
     return {
-      semContato: ativas.filter((m) => getAcompanhamentoMae(m).contatoAtrasado).length,
-      semSenha: ativas.filter((m) => getAcompanhamentoMae(m).senhaAtrasada).length,
+      semContato: maes.filter((m) => getAcompanhamentoMae(m).contatoAtrasado).length,
+      semSenha: maes.filter((m) => getAcompanhamentoMae(m).senhaAtrasada).length,
     };
   }, [maes]);
 

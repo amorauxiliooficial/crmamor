@@ -145,13 +145,15 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
               </div>
 
               <div className="flex flex-wrap gap-1 mt-2">
-                <Badge variant={acompanhamento.contatoAtrasado ? "destructive" : "outline"} className="text-[10px] px-1.5 py-0 h-5 gap-1">
-                  <MessageSquareWarning className="h-2.5 w-2.5" />
-                  Contato {formatarTempo(acompanhamento.diasSemContato)}
-                </Badge>
-                {!mae.senha_gov && (
-                  <Badge variant={acompanhamento.senhaAtrasada ? "destructive" : "secondary"} className="text-[10px] px-1.5 py-0 h-5 gap-1">
-                    <KeyRound className="h-2.5 w-2.5" />
+                {acompanhamento.contatoAtrasado && (
+                  <Badge variant="outline" className="h-5 gap-1 border-primary/15 bg-primary/5 px-1.5 py-0 text-[10px] font-medium text-foreground">
+                    <MessageSquareWarning className="h-2.5 w-2.5 text-primary" />
+                    Sem contato {formatarTempo(acompanhamento.diasSemContato)}
+                  </Badge>
+                )}
+                {acompanhamento.senhaAtrasada && (
+                  <Badge variant="outline" className="h-5 gap-1 border-amber-200 bg-amber-50 px-1.5 py-0 text-[10px] font-medium text-foreground dark:border-amber-800/60 dark:bg-amber-950/25">
+                    <KeyRound className="h-2.5 w-2.5 text-amber-700 dark:text-amber-300" />
                     Sem senha {formatarTempo(acompanhamento.diasSemSenha)}
                   </Badge>
                 )}

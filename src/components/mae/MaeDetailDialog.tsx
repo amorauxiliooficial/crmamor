@@ -108,26 +108,28 @@ export function MaeDetailDialog({
 
 
         <div className="space-y-6">
+          {acompanhamento.aplicavel && (
           <div className="grid gap-2 sm:grid-cols-2">
-            <div className={cn("rounded-lg border p-3", acompanhamento.contatoAtrasado && "border-destructive/50 bg-destructive/5")}>
+            <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <MessageSquareWarning className="h-4 w-4" /> Último contato
               </div>
-              <p className={cn("mt-1 text-sm", acompanhamento.contatoAtrasado ? "text-destructive font-semibold" : "text-muted-foreground")}>
+              <p className="mt-1 text-sm text-muted-foreground">
                 {acompanhamento.nuncaContatada ? "Nenhuma anotação" : formatarTempo(acompanhamento.diasSemContato)}
                 {acompanhamento.contatoAtrasado && " — atenção"}
               </p>
             </div>
-            <div className={cn("rounded-lg border p-3", acompanhamento.senhaAtrasada && "border-destructive/50 bg-destructive/5")}>
+            <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Key className="h-4 w-4" /> Senha Gov.br
               </div>
-              <p className={cn("mt-1 text-sm", acompanhamento.senhaAtrasada ? "text-destructive font-semibold" : "text-muted-foreground")}>
+              <p className="mt-1 text-sm text-muted-foreground">
                 {mae.senha_gov ? "Cadastrada" : `Pendente ${formatarTempo(acompanhamento.diasSemSenha)}`}
                 {acompanhamento.senhaAtrasada && " — atrasada"}
               </p>
             </div>
           </div>
+          )}
           {/* Status Badge and Actions */}
           <div className="flex items-center justify-between flex-wrap gap-2">
             {onEdit && (

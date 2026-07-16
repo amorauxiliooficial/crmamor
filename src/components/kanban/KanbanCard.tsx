@@ -97,9 +97,9 @@ export function KanbanCard({
         "group cursor-pointer transition-all hover:shadow-md active:scale-[0.98] md:hover:ring-1 md:hover:ring-primary/20 relative",
         isDragging && "shadow-lg ring-1 ring-primary/40 rotate-2",
         followUpStatus === "overdue" && !hasUnreadAlert && "ring-1 ring-destructive/30",
-        hasUnreadAlert && "ring-1 ring-primary/40"
-        ,acompanhamento.contatoAtrasado && "border-l-4 border-l-red-500 bg-red-50/60 dark:bg-red-950/20"
-        ,!acompanhamento.contatoAtrasado && acompanhamento.senhaAtrasada && "border-l-4 border-l-amber-500 bg-amber-50/60 dark:bg-amber-950/20"
+        hasUnreadAlert && "ring-1 ring-primary/40",
+        acompanhamento.contatoAtrasado && "border-l-2 border-l-primary/50",
+        !acompanhamento.contatoAtrasado && acompanhamento.senhaAtrasada && "border-l-2 border-l-amber-400/60",
       )}
       onClick={onClick}
     >
@@ -188,16 +188,16 @@ export function KanbanCard({
           </p>
 
           {(acompanhamento.contatoAtrasado || acompanhamento.senhaAtrasada) && (
-            <div className="space-y-1 rounded-md border bg-background/80 p-1.5">
+            <div className="flex flex-wrap gap-1">
               {acompanhamento.contatoAtrasado && (
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-red-700 dark:text-red-300">
-                  <MessageSquareWarning className="h-3.5 w-3.5 shrink-0" />
+                <div className="flex items-center gap-1 rounded-full border border-primary/15 bg-primary/5 px-2 py-1 text-[10px] font-medium text-foreground">
+                  <MessageSquareWarning className="h-3 w-3 shrink-0 text-primary" />
                   <span>Sem contato {formatarTempo(acompanhamento.diasSemContato)}</span>
                 </div>
               )}
               {acompanhamento.senhaAtrasada && (
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
-                  <KeyRound className="h-3.5 w-3.5 shrink-0" />
+                <div className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-medium text-foreground dark:border-amber-800/60 dark:bg-amber-950/25">
+                  <KeyRound className="h-3 w-3 shrink-0 text-amber-700 dark:text-amber-300" />
                   <span>Sem senha {formatarTempo(acompanhamento.diasSemSenha)}</span>
                 </div>
               )}
