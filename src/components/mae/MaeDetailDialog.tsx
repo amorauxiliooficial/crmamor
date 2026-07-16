@@ -363,7 +363,7 @@ export function MaeDetailDialog({
           </div>
 
           {/* ===== FOOTER ===== */}
-          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-border/60 bg-muted/20 px-5 py-3 md:px-6">
+          <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 bg-muted/20 px-5 py-3 md:px-6">
             <div className="flex flex-col">
               <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70">
                 Origem
