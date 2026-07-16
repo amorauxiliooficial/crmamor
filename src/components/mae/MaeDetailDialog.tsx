@@ -91,13 +91,8 @@ export function MaeDetailDialog({
   const mapsUrl = enderecoCompleto
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`
     : "";
-  const phoneDigits = mae.telefone?.replace(/\D/g, "") || "";
-  const whatsappNumber = phoneDigits && phoneDigits.length <= 11 ? `55${phoneDigits}` : phoneDigits;
 
-  const openWhatsApp = () => {
-    if (!whatsappNumber) return;
-    window.open(`https://wa.me/${whatsappNumber}`, "_blank", "noopener,noreferrer");
-  };
+
 
   const ultimoContatoLabel = !acompanhamento.aplicavel
     ? "Não se aplica"
