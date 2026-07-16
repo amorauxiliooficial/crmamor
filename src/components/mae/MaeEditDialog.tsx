@@ -374,7 +374,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[88dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[calc(100vw-2rem)] lg:max-w-4xl">
+      <DialogContent className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[calc(100vw-2rem)] lg:max-w-3xl">
         <DialogHeader className="shrink-0 border-b px-4 py-3 pr-12 md:px-5">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <Save className="h-4 w-4 text-primary" />
@@ -389,8 +389,8 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           onSubmit={handleSubmit}
           className="flex min-h-0 flex-1 flex-col [&_input]:h-9 [&_label]:text-sm [&_[role=combobox]]:h-9"
         >
-          <div className="grid min-h-0 flex-1 md:grid-cols-[180px_minmax(0,1fr)]">
-            <nav className="flex shrink-0 gap-1.5 overflow-x-auto border-b bg-muted/20 p-2.5 md:flex-col md:border-b-0 md:border-r md:p-3" aria-label="Seções da edição">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <nav className="grid shrink-0 grid-cols-2 gap-1 border-b bg-muted/20 p-2 sm:grid-cols-4" aria-label="Seções da edição">
               {([
                 ["pessoais", "Dados pessoais", UserRound],
                 ["processo", "Processo", ClipboardList],
@@ -401,7 +401,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                   key={value}
                   type="button"
                   variant={activeSection === value ? "secondary" : "ghost"}
-                  className="h-9 shrink-0 justify-start gap-2 px-3 text-sm"
+                  className="h-9 min-w-0 justify-center gap-1.5 px-2 text-sm"
                   onClick={() => setActiveSection(value)}
                 >
                   <Icon className="h-4 w-4" />
@@ -410,7 +410,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
               ))}
             </nav>
 
-            <div className="min-w-0 flex-1 overflow-y-auto p-3.5 md:p-4">
+            <div className="min-w-0 flex-1 overflow-y-auto p-4">
               <div className="mb-4 border-b pb-2.5">
                 <h3 className="font-semibold">
                   {activeSection === "pessoais" && "Dados pessoais"}
@@ -798,6 +798,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
               onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
               placeholder="Anotações adicionais sobre o processo..."
               rows={3}
+              className="min-h-20 resize-none whitespace-pre-line leading-relaxed"
             />
           </div>
               </div>
