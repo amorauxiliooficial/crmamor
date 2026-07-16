@@ -118,7 +118,7 @@ export function useMaeObservacoes(maeId: string | null | undefined) {
       // Persist ultimo_contato_em on the mãe so acompanhamento reflects the new note after refetch
       await supabase
         .from("mae_processo")
-        .update({ ultimo_contato_em: data.created_at })
+        .update({ ultimo_contato_em: data.created_at } as never)
         .eq("id", maeId);
       return data.created_at;
     },
