@@ -141,7 +141,7 @@ export function useMaeObservacoes(maeId: string | null | undefined) {
           categoria: input.categoria,
           editada_em: new Date().toISOString(),
           editada_por: user.id,
-        })
+        } as never)
         .eq("id", input.id);
       if (error) throw error;
     },
