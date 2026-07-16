@@ -40,7 +40,7 @@ export function BaterMetaCard({
             </span>
             <div>
               <h2 className="text-base font-semibold tracking-tight">Como bater a meta</h2>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Cálculos automáticos usando médias reais do sistema
               </p>
             </div>
@@ -62,7 +62,7 @@ export function BaterMetaCard({
         <div className="rounded-2xl border border-pink-100 bg-white/80 p-4 md:p-5 space-y-3">
           <div className="flex items-baseline justify-between gap-2 flex-wrap">
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                 <Target className="h-3 w-3" /> Meta do mês
               </div>
               <div className="text-2xl md:text-3xl font-bold tabular-nums tracking-tight text-pink-600">
@@ -70,7 +70,7 @@ export function BaterMetaCard({
               </div>
             </div>
             <div className="text-right">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">
                 Atingimento
               </div>
               <div className="text-xl font-bold tabular-nums text-sky-600">
@@ -85,7 +85,7 @@ export function BaterMetaCard({
                 value={pctAtingimento}
                 className="h-2.5 bg-pink-100 [&>div]:bg-gradient-to-r [&>div]:from-pink-500 [&>div]:to-sky-500"
               />
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>Recebido {pctRecebido.toFixed(0)}%</span>
                 <span>100% da meta</span>
               </div>
@@ -134,7 +134,7 @@ export function BaterMetaCard({
           </div>
         ) : metaConfigurada ? (
           <div className="space-y-3">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-1">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground px-1">
               Composição sugerida · ticket à vista {formatBRL(composicao.ticketAVista)} · parcela {formatBRL(composicao.ticketParceladoMes)}
             </div>
             <div className="space-y-2">
@@ -168,7 +168,7 @@ function Divider() {
   return (
     <div className="flex items-center gap-2 px-2">
       <div className="flex-1 h-px bg-pink-100" />
-      <span className="text-[9px] font-semibold tracking-[0.18em] text-muted-foreground/70">OU</span>
+      <span className="text-xs font-semibold tracking-[0.18em] text-muted-foreground/70">OU</span>
       <div className="flex-1 h-px bg-sky-100" />
     </div>
   );
@@ -229,7 +229,7 @@ function MiniKpi({
   };
   return (
     <div className={`rounded-xl border px-3 py-2.5 ${styles[tone]}`}>
-      <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider opacity-80">
+      <div className="flex items-center gap-1 text-xs uppercase tracking-wider opacity-80">
         <Icon className="h-2.5 w-2.5" />
         {label}
       </div>

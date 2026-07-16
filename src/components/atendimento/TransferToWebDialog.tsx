@@ -122,7 +122,7 @@ export function TransferToWebDialog({
                         <div className="flex items-center gap-2">
                           <Icon className={`h-3.5 w-3.5 ${cfg.color}`} />
                           <span>{inst.name}</span>
-                          <Badge variant="outline" className={`text-[10px] ${cfg.color}`}>
+                          <Badge variant="outline" className={`text-xs ${cfg.color}`}>
                             {cfg.label}
                           </Badge>
                         </div>
@@ -134,7 +134,7 @@ export function TransferToWebDialog({
             )}
 
             {connectedInstances.length === 0 && instances.length > 0 && (
-              <p className="text-[11px] text-amber-600 dark:text-amber-400">
+              <p className="text-xs text-amber-600 dark:text-amber-400">
                 ⚠️ Nenhuma instância conectada. Conecte uma via QR Code antes de transferir.
               </p>
             )}
@@ -149,7 +149,7 @@ export function TransferToWebDialog({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Evolution name:</span>
-                <span className="font-mono text-[11px]">{selectedInstance.evolution_instance_name}</span>
+                <span className="font-mono text-xs">{selectedInstance.evolution_instance_name}</span>
               </div>
               {selectedInstance.phone && (
                 <div className="flex items-center justify-between">
@@ -185,7 +185,7 @@ export function TransferToWebDialog({
             {transferring ? "Transferindo..." : "Confirmar transferência para Web"}
           </Button>
 
-          <p className="text-[10px] text-muted-foreground/50 text-center">
+          <p className="text-xs text-muted-foreground/50 text-center">
             As mensagens anteriores serão mantidas. Novas mensagens irão pelo WhatsApp Web.
           </p>
         </div>

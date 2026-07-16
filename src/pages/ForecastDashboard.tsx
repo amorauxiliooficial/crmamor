@@ -211,7 +211,7 @@ export default function ForecastDashboard() {
           </div>
 
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-            <div className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Navegação
             </div>
             {NAV_SECTIONS.map((s) => {
@@ -235,10 +235,10 @@ export default function ForecastDashboard() {
                     )}
                   />
                   <span className="flex-1 min-w-0">
-                    <span className="block text-[13px] font-medium leading-tight">{s.label}</span>
+                    <span className="block text-sm font-medium leading-tight">{s.label}</span>
                     <span
                       className={cn(
-                        "block text-[10px] mt-0.5",
+                        "block text-xs mt-0.5",
                         active ? "text-primary/70" : "text-muted-foreground",
                       )}
                     >
@@ -301,7 +301,7 @@ export default function ForecastDashboard() {
                     <h2 className="text-base md:text-lg font-bold tracking-tight truncate">
                       Central de Performance
                     </h2>
-                    <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                    <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                       <span className="relative flex h-1.5 w-1.5">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
                         <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -309,7 +309,7 @@ export default function ForecastDashboard() {
                       AO VIVO
                     </span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground capitalize">
+                  <p className="text-xs text-muted-foreground capitalize">
                     {format(refDate, "MMMM 'de' yyyy", { locale: ptBR })} · clique em qualquer KPI ou
                     barra para ver a origem dos dados
                   </p>
@@ -438,7 +438,7 @@ function Section({
   return (
     <section id={id} className="space-y-3 scroll-mt-20">
       <div className="px-1 flex items-baseline gap-2">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
           {label}
         </h2>
         {sub && <p className="text-xs text-muted-foreground/80">· {sub}</p>}

@@ -340,7 +340,7 @@ const Pagamentos = () => {
             </CardHeader>
             <CardContent className="p-3 pt-0 md:px-4 md:pb-4">
               <div className="text-xl md:text-2xl font-bold text-primary">{formatCurrency(stats.comissaoTotal)}</div>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Soma de todas as comissões</p>
+              <p className="text-xs md:text-xs text-muted-foreground">Soma de todas as comissões</p>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-primary">
@@ -350,7 +350,7 @@ const Pagamentos = () => {
             </CardHeader>
             <CardContent className="p-3 pt-0 md:px-4 md:pb-4">
               <div className="text-xl md:text-2xl font-bold text-primary">{formatCurrency(stats.comissaoRecebida)}</div>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Parcelas pagas</p>
+              <p className="text-xs md:text-xs text-muted-foreground">Parcelas pagas</p>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-muted-foreground">
@@ -360,7 +360,7 @@ const Pagamentos = () => {
             </CardHeader>
             <CardContent className="p-3 pt-0 md:px-4 md:pb-4">
               <div className="text-xl md:text-2xl font-bold text-muted-foreground">{formatCurrency(stats.comissaoPendente)}</div>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Parcelas pendentes</p>
+              <p className="text-xs md:text-xs text-muted-foreground">Parcelas pendentes</p>
             </CardContent>
           </Card>
         </section>
@@ -398,7 +398,7 @@ const Pagamentos = () => {
                     </div>
 
                     <div className="flex items-center justify-between gap-3 mb-2">
-                      <Badge variant="outline" className="text-[10px] shrink-0">
+                      <Badge variant="outline" className="text-xs shrink-0">
                         {pag.tipo_pagamento === "a_vista" ? "À Vista" : "Parcelado"}
                       </Badge>
                       <div className="flex items-center gap-1.5 flex-1 max-w-[120px]">
@@ -411,7 +411,7 @@ const Pagamentos = () => {
                     </div>
 
                     {proximoVenc && (
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         Próx. vencimento: {formatDate(proximoVenc)}
                       </p>
                     )}

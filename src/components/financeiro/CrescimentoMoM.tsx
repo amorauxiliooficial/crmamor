@@ -128,7 +128,7 @@ export function CrescimentoMoM({
         <div className="flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2 min-w-0">
           <Minus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
           <div className="min-w-0">
-            <p className="text-[10px] md:text-xs text-muted-foreground truncate">{label}</p>
+            <p className="text-xs md:text-xs text-muted-foreground truncate">{label}</p>
             <p className="text-sm md:text-base font-semibold text-muted-foreground">—</p>
           </div>
         </div>
@@ -143,7 +143,7 @@ export function CrescimentoMoM({
       <div className="flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2 min-w-0">
         <Icon className={`h-3.5 w-3.5 shrink-0 ${colorClass}`} />
         <div className="min-w-0">
-          <p className="text-[10px] md:text-xs text-muted-foreground truncate">{label}</p>
+          <p className="text-xs md:text-xs text-muted-foreground truncate">{label}</p>
           <p className={`text-sm md:text-base font-semibold ${colorClass}`}>
             {value >= 0 ? "+" : ""}{value.toFixed(1)}%
           </p>
@@ -180,14 +180,14 @@ export function CrescimentoMoM({
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted/50" vertical={false} />
                 <XAxis
                   dataKey="name"
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: 12 }}
                   axisLine={false}
                   tickLine={false}
                   className="text-muted-foreground"
                 />
                 <YAxis
                   tickFormatter={(v) => `${v}%`}
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: 12 }}
                   axisLine={false}
                   tickLine={false}
                   className="text-muted-foreground"

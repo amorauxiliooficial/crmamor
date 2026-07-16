@@ -209,7 +209,7 @@ export default function Playbook() {
             <TabsList className="inline-flex h-auto gap-1 tour-playbook-categories whitespace-nowrap">
               <TabsTrigger value="all" className="text-xs md:text-sm px-2 md:px-3 h-8 md:h-9">
                 Todas
-                <Badge variant="secondary" className="ml-1.5 text-[10px] md:text-xs h-4 md:h-5 px-1 md:px-1.5">
+                <Badge variant="secondary" className="ml-1.5 text-xs md:text-xs h-4 md:h-5 px-1 md:px-1.5">
                   {entradas.length}
                 </Badge>
               </TabsTrigger>
@@ -218,7 +218,7 @@ export default function Playbook() {
                 return (
                   <TabsTrigger key={cat.id} value={cat.id} className="text-xs md:text-sm px-2 md:px-3 h-8 md:h-9">
                     {cat.nome}
-                    <Badge variant="secondary" className="ml-1.5 text-[10px] md:text-xs h-4 md:h-5 px-1 md:px-1.5">
+                    <Badge variant="secondary" className="ml-1.5 text-xs md:text-xs h-4 md:h-5 px-1 md:px-1.5">
                       {count}
                     </Badge>
                   </TabsTrigger>

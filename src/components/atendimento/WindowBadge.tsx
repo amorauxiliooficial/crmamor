@@ -46,7 +46,7 @@ export function WindowBadge({ lastInboundAt, onSendTemplate, className }: Window
             <Badge
               variant="outline"
               className={cn(
-                "text-[10px] h-5 gap-1 cursor-pointer border-destructive/30 text-destructive/70 hover:bg-destructive/5",
+                "text-xs h-5 gap-1 cursor-pointer border-destructive/30 text-destructive/70 hover:bg-destructive/5",
                 className
               )}
               onClick={onSendTemplate}
@@ -71,7 +71,7 @@ export function WindowBadge({ lastInboundAt, onSendTemplate, className }: Window
             <Badge
               variant="outline"
               className={cn(
-                "text-[10px] h-5 gap-1 cursor-pointer border-destructive/30 text-destructive/70 hover:bg-destructive/5",
+                "text-xs h-5 gap-1 cursor-pointer border-destructive/30 text-destructive/70 hover:bg-destructive/5",
                 className
               )}
               onClick={onSendTemplate}
@@ -95,7 +95,7 @@ export function WindowBadge({ lastInboundAt, onSendTemplate, className }: Window
           <Badge
             variant="outline"
             className={cn(
-              "text-[10px] h-5 gap-1",
+              "text-xs h-5 gap-1",
               remainingMs < 3600000
                 ? "border-amber-400/30 text-amber-600 dark:text-amber-400"
                 : "border-emerald-400/30 text-emerald-600 dark:text-emerald-400",

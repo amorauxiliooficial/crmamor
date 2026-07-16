@@ -76,7 +76,7 @@ export function CommandPalette({
                 <span className="text-xs text-muted-foreground truncate">{c.ultimaMensagem}</span>
               </div>
               {c.etiquetas.length > 0 && (
-                <span className="ml-2 text-[10px] text-muted-foreground">{c.etiquetas[0]}</span>
+                <span className="ml-2 text-xs text-muted-foreground">{c.etiquetas[0]}</span>
               )}
             </CommandItem>
           ))}

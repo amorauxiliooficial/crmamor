@@ -117,7 +117,7 @@ export function PendenciasPanel({ maes, onMaeClick, onPlaySound }: PendenciasPan
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{mae.nome_mae}</p>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {mae.status_processo.replace(/^[\p{Emoji}\s]+/u, "")}
                   </p>
                 </div>

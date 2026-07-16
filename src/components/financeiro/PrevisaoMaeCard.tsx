@@ -127,7 +127,7 @@ export function PrevisaoMaeCard({ pagamentos }: PrevisaoMaeCardProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     {p.diasAtraso ? (
-                      <Badge variant="destructive" className="text-[10px]">
+                      <Badge variant="destructive" className="text-xs">
                         <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
                         {p.diasAtraso}d
                       </Badge>

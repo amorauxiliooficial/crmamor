@@ -206,7 +206,7 @@ export function ChatPanel({
           <button onClick={() => { setSummary(null); setAiResult(null); }} className="absolute top-2 right-2 text-muted-foreground/30 hover:text-foreground text-xs">✕</button>
           <div className="flex items-center gap-1.5 mb-1">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary/60">
+            <span className="text-xs font-semibold uppercase tracking-wider text-primary/60">
               {summary ? "Resumo IA" : aiResult?.type === "extract" ? "Dados Extraídos" : aiResult?.type === "next_action" ? "Próxima Ação" : "IA"}
             </span>
           </div>

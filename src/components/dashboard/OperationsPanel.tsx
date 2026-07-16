@@ -35,7 +35,7 @@ export function OperationsPanel({
               <div className="min-w-[120px] flex-1">
                 <div className="mb-1 flex items-center gap-1.5">
                   <Users className="h-4 w-4 text-primary" />
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">
                     Em andamento
                   </p>
                 </div>
@@ -47,7 +47,7 @@ export function OperationsPanel({
               <div className="shrink-0">
                 <div className="mb-1 flex items-center gap-1">
                   <Archive className="h-3 w-3 text-muted-foreground" />
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Concluídos</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Concluídos</p>
                 </div>
                 <p className="text-lg font-semibold leading-none text-muted-foreground tabular-nums">{concluidos}</p>
               </div>
@@ -57,7 +57,7 @@ export function OperationsPanel({
               <div className="shrink-0">
                 <div className="mb-1 flex items-center gap-1">
                   <XCircle className="h-3 w-3 text-muted-foreground" />
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Sem êxito</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Sem êxito</p>
                 </div>
                 <p className="text-lg font-semibold leading-none text-muted-foreground tabular-nums">{encerradosSemExito}</p>
               </div>
@@ -67,7 +67,7 @@ export function OperationsPanel({
 
         <Card className="border-border/50">
           <CardContent className="p-3">
-            <p className="mb-2 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            <p className="mb-2 px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Acompanhamento
             </p>
             <div className="grid grid-cols-2 gap-2">

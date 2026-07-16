@@ -36,7 +36,7 @@ function CopyButton({ value }: { value: string }) {
             {copied ? <Check className="h-2 w-2 text-emerald-500" /> : <Copy className="h-2 w-2" />}
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="left" className="text-[10px]">Copiar</TooltipContent>
+        <TooltipContent side="left" className="text-xs">Copiar</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
@@ -49,10 +49,10 @@ function CollapsibleSection({ title, defaultOpen = true, children, count }: {
   return (
     <div>
       <button onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 hover:text-foreground transition-colors">
+        className="flex items-center justify-between w-full py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/50 hover:text-foreground transition-colors">
         <span className="flex items-center gap-1.5">
           {title}
-          {count != null && <span className="text-[10px] font-mono text-muted-foreground/30">({count})</span>}
+          {count != null && <span className="text-xs font-mono text-muted-foreground/30">({count})</span>}
         </span>
         {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
       </button>
@@ -123,7 +123,7 @@ function ContactsList({ maeId }: { maeId: string }) {
 
   return (
     <div className="space-y-1">
-      {isLoading && <p className="text-[10px] text-muted-foreground/40">Carregando...</p>}
+      {isLoading && <p className="text-xs text-muted-foreground/40">Carregando...</p>}
       {contacts?.filter(c => c.active).map((c) => {
         const Icon = typeIcon[c.contact_type] || Phone;
         return (
@@ -135,7 +135,7 @@ function ContactsList({ maeId }: { maeId: string }) {
                   <p className="text-xs font-medium truncate">{c.value_e164}</p>
                   {c.is_primary && <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />}
                 </div>
-                <p className="text-[10px] text-muted-foreground/40">{c.contact_type}</p>
+                <p className="text-xs text-muted-foreground/40">{c.contact_type}</p>
               </div>
             </div>
             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -149,7 +149,7 @@ function ContactsList({ maeId }: { maeId: string }) {
                         <Star className="h-2 w-2" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="left" className="text-[10px]">Tornar principal</TooltipContent>
+                    <TooltipContent side="left" className="text-xs">Tornar principal</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               )}
@@ -161,14 +161,14 @@ function ContactsList({ maeId }: { maeId: string }) {
                       <PhoneOff className="h-2 w-2" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="left" className="text-[10px]">Desativar</TooltipContent>
+                  <TooltipContent side="left" className="text-xs">Desativar</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
           </div>
         );
       })}
-      <Button variant="ghost" size="sm" className="w-full h-7 text-[10px] text-primary/60 hover:text-primary gap-1" onClick={() => setShowAdd(true)}>
+      <Button variant="ghost" size="sm" className="w-full h-7 text-xs text-primary/60 hover:text-primary gap-1" onClick={() => setShowAdd(true)}>
         <Plus className="h-3 w-3" /> Adicionar contato
       </Button>
       <AddContactDialog maeId={maeId} open={showAdd} onOpenChange={setShowAdd} />
@@ -204,8 +204,8 @@ function TimelineSection({ maeId }: { maeId: string }) {
     contract_signed: { icon: FileCheck, color: "text-emerald-500/60" },
   };
 
-  if (isLoading) return <p className="text-[10px] text-muted-foreground/40">Carregando timeline...</p>;
-  if (unified.length === 0) return <p className="text-[10px] text-muted-foreground/40">Sem eventos</p>;
+  if (isLoading) return <p className="text-xs text-muted-foreground/40">Carregando timeline...</p>;
+  if (unified.length === 0) return <p className="text-xs text-muted-foreground/40">Sem eventos</p>;
 
   return (
     <div className="relative pl-4">
@@ -220,7 +220,7 @@ function TimelineSection({ maeId }: { maeId: string }) {
             </div>
             <div className="flex-1 min-w-0 ml-1.5">
               <p className="text-xs truncate">{event.title}</p>
-              <p className="text-[10px] text-muted-foreground/40 font-mono">{relTime}</p>
+              <p className="text-xs text-muted-foreground/40 font-mono">{relTime}</p>
             </div>
           </div>
         );
@@ -266,7 +266,7 @@ export function CrmContextPanel({ conversa, className, maeId }: CrmContextPanelP
     <div className={cn("w-[360px] shrink-0 border-l border-border/20 flex flex-col h-full bg-background", className)}>
       {/* Header */}
       <div className="px-4 py-3 border-b border-border/15">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/45">Contexto CRM</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/45">Contexto CRM</p>
         <p className="text-sm font-medium mt-1 truncate">{conversa.nome ?? conversa.telefone}</p>
       </div>
 
@@ -275,15 +275,15 @@ export function CrmContextPanel({ conversa, className, maeId }: CrmContextPanelP
           {/* Status card */}
           <div className="bg-muted/10 rounded-xl p-3 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/45">Etapa</span>
-              <Badge variant="outline" className="text-[10px] h-5 px-2 border-primary/15 text-primary rounded-full">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/45">Etapa</span>
+              <Badge variant="outline" className="text-xs h-5 px-2 border-primary/15 text-primary rounded-full">
                 {mockCrmData.etapa}
               </Badge>
             </div>
             <div className="flex items-center gap-1.5">
-              <Badge variant="secondary" className="text-[10px] h-5 px-2 rounded-full">{mockCrmData.categoria}</Badge>
+              <Badge variant="secondary" className="text-xs h-5 px-2 rounded-full">{mockCrmData.categoria}</Badge>
               {mockCrmData.contrato && (
-                <Badge variant="outline" className="text-[10px] h-5 px-2 border-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-full">
+                <Badge variant="outline" className="text-xs h-5 px-2 border-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-full">
                   <FileCheck className="h-3 w-3 mr-1" /> Contrato
                 </Badge>
               )}
@@ -300,7 +300,7 @@ export function CrmContextPanel({ conversa, className, maeId }: CrmContextPanelP
                   <div className="flex items-center gap-2 min-w-0">
                     <Phone className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-[10px] text-muted-foreground/45 uppercase tracking-wider">Telefone</p>
+                      <p className="text-xs text-muted-foreground/45 uppercase tracking-wider">Telefone</p>
                       <p className="text-xs font-medium truncate">{conversa.telefone}</p>
                     </div>
                   </div>
@@ -309,7 +309,7 @@ export function CrmContextPanel({ conversa, className, maeId }: CrmContextPanelP
                 {conversa.nome && (
                   <div className="flex items-center gap-2 py-1">
                     <Shield className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
-                    <div><p className="text-[10px] text-muted-foreground/45 uppercase tracking-wider">Nome</p><p className="text-xs font-medium">{conversa.nome}</p></div>
+                    <div><p className="text-xs text-muted-foreground/45 uppercase tracking-wider">Nome</p><p className="text-xs font-medium">{conversa.nome}</p></div>
                   </div>
                 )}
               </div>
@@ -321,7 +321,7 @@ export function CrmContextPanel({ conversa, className, maeId }: CrmContextPanelP
             {maeId ? (
               <TimelineSection maeId={maeId} />
             ) : (
-              <p className="text-[10px] text-muted-foreground/40">Vincule a uma mãe para ver a timeline.</p>
+              <p className="text-xs text-muted-foreground/40">Vincule a uma mãe para ver a timeline.</p>
             )}
           </CollapsibleSection>
 
@@ -350,7 +350,7 @@ export function CrmContextPanel({ conversa, className, maeId }: CrmContextPanelP
                     <CalendarClock className={cn("h-3 w-3 shrink-0", f.urgente ? "text-destructive/50" : "text-muted-foreground/40")} />
                     <span className="text-xs truncate">{f.label}</span>
                   </div>
-                  <span className={cn("text-[10px] shrink-0 ml-2 font-mono", f.urgente ? "text-destructive/50" : "text-muted-foreground/40")}>{f.data}</span>
+                  <span className={cn("text-xs shrink-0 ml-2 font-mono", f.urgente ? "text-destructive/50" : "text-muted-foreground/40")}>{f.data}</span>
                 </div>
               ))}
             </div>

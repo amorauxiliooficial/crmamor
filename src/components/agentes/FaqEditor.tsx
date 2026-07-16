@@ -157,15 +157,15 @@ export function FaqEditor({ value, onChange }: FaqEditorProps) {
             <div className="flex items-center gap-1 shrink-0">
               {value.length > 0 && (
                 <>
-                  <Button size="sm" variant="ghost" onClick={() => setShowImport(true)} className="text-[11px] h-7 px-2" title="Importar">
+                  <Button size="sm" variant="ghost" onClick={() => setShowImport(true)} className="text-xs h-7 px-2" title="Importar">
                     <Upload className="h-3 w-3" />
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={handleExport} className="text-[11px] h-7 px-2" title="Exportar JSON">
+                  <Button size="sm" variant="ghost" onClick={handleExport} className="text-xs h-7 px-2" title="Exportar JSON">
                     <Download className="h-3 w-3" />
                   </Button>
                 </>
               )}
-              <Button size="sm" variant="outline" onClick={addFaq} className="text-[11px] h-7">
+              <Button size="sm" variant="outline" onClick={addFaq} className="text-xs h-7">
                 <Plus className="h-3 w-3 mr-1" /> Adicionar
               </Button>
             </div>
@@ -177,10 +177,10 @@ export function FaqEditor({ value, onChange }: FaqEditorProps) {
               <BookOpen className="h-8 w-8 mx-auto text-muted-foreground/15 mb-2" />
               <p className="text-xs text-muted-foreground/50">Nenhuma pergunta cadastrada</p>
               <div className="flex items-center justify-center gap-2 mt-3">
-                <Button size="sm" variant="ghost" onClick={addFaq} className="text-[11px] h-7">
+                <Button size="sm" variant="ghost" onClick={addFaq} className="text-xs h-7">
                   <Plus className="h-3 w-3 mr-1" /> Criar primeira
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setShowImport(true)} className="text-[11px] h-7">
+                <Button size="sm" variant="ghost" onClick={() => setShowImport(true)} className="text-xs h-7">
                   <Upload className="h-3 w-3 mr-1" /> Importar
                 </Button>
               </div>
@@ -236,7 +236,7 @@ export function FaqEditor({ value, onChange }: FaqEditorProps) {
                           <GripVertical className="h-3.5 w-3.5" />
                         </div>
 
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 shrink-0 font-mono">
+                        <Badge variant="outline" className="text-xs px-1.5 py-0 h-4 shrink-0 font-mono">
                           {i + 1}
                         </Badge>
 
@@ -274,7 +274,7 @@ export function FaqEditor({ value, onChange }: FaqEditorProps) {
                       {isOpen && (
                         <div className="border-t border-border/20 px-3 py-3 space-y-3 bg-muted/5">
                           <div className="space-y-1.5">
-                            <label className="text-[11px] font-medium text-muted-foreground">Pergunta</label>
+                            <label className="text-xs font-medium text-muted-foreground">Pergunta</label>
                             <Input
                               value={faq.question}
                               onChange={e => updateFaq(i, "question", e.target.value)}
@@ -284,13 +284,13 @@ export function FaqEditor({ value, onChange }: FaqEditorProps) {
                           </div>
                           <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
-                              <label className="text-[11px] font-medium text-muted-foreground">Resposta</label>
+                              <label className="text-xs font-medium text-muted-foreground">Resposta</label>
                               <div className="flex items-center gap-1">
                                 {ANSWER_TEMPLATES.map(t => (
                                   <button
                                     key={t.label}
                                     onClick={() => insertTemplate(i, t.text)}
-                                    className="text-[9px] px-1.5 py-0.5 rounded border border-border/30 text-muted-foreground hover:text-primary hover:border-primary/30 transition-colors"
+                                    className="text-xs px-1.5 py-0.5 rounded border border-border/30 text-muted-foreground hover:text-primary hover:border-primary/30 transition-colors"
                                   >
                                     {t.label}
                                   </button>
@@ -303,7 +303,7 @@ export function FaqEditor({ value, onChange }: FaqEditorProps) {
                               placeholder="Resposta do agente..."
                               className="min-h-[80px] max-h-[200px] text-sm resize-y"
                             />
-                            <p className="text-[9px] text-muted-foreground/30">
+                            <p className="text-xs text-muted-foreground/30">
                               Use {"{{nome}}"} para variáveis. Suporta **negrito** e listas.
                             </p>
                           </div>
@@ -332,7 +332,7 @@ export function FaqEditor({ value, onChange }: FaqEditorProps) {
             <p className="text-xs text-muted-foreground">
               Cole várias perguntas e respostas no formato:
             </p>
-            <div className="text-[11px] bg-muted/20 rounded-lg p-2.5 font-mono text-muted-foreground border border-border/20">
+            <div className="text-xs bg-muted/20 rounded-lg p-2.5 font-mono text-muted-foreground border border-border/20">
               Pergunta: Como funciona?<br />
               Resposta: Funciona assim...<br />
               Pergunta: Qual o prazo?<br />

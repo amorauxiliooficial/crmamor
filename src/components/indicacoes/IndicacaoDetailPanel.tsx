@@ -314,7 +314,7 @@ export function IndicacaoDetailPanel({ indicacao, open, onOpenChange, onSuccess 
             {statusAbordagemLabels[indicacao.status_abordagem]}
           </Badge>
           {origem === "externa" && (
-            <Badge variant="outline" className="text-[10px]">
+            <Badge variant="outline" className="text-xs">
               <ExternalLink className="h-3 w-3 mr-1" />
               Externa
             </Badge>
@@ -480,16 +480,16 @@ export function IndicacaoDetailPanel({ indicacao, open, onOpenChange, onSuccess 
                 <div key={acao.id} className="bg-muted/50 rounded-md px-3 py-2 border-l-2 border-primary/50">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-medium text-primary">{acao.tipo_acao}</span>
-                    <span className="text-muted-foreground text-[10px]">
+                    <span className="text-muted-foreground text-xs">
                       {format(parseISO(acao.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                     <User className="h-3 w-3" />
                     <span>{acao.user_name}</span>
                   </div>
                   {acao.observacao && (
-                    <p className="text-[11px] text-foreground/80 mt-1 bg-background/50 p-1.5 rounded">{acao.observacao}</p>
+                    <p className="text-xs text-foreground/80 mt-1 bg-background/50 p-1.5 rounded">{acao.observacao}</p>
                   )}
                 </div>
               ))}

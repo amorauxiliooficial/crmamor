@@ -128,7 +128,7 @@ export function PhoneContactsEditor({
                   disabled={disabled}
                   className={`h-9 ${error ? "border-destructive" : ""}`}
                 />
-                {error && <span className="text-[10px] text-destructive">{error}</span>}
+                {error && <span className="text-xs text-destructive">{error}</span>}
               </div>
               {!(firstRequired && index === 0 && phones.length === 1) && (
                 <Button

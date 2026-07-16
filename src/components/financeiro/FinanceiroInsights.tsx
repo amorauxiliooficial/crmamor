@@ -127,7 +127,7 @@ export function FinanceiroInsights({
 
     return (
       <div className="rounded-lg border bg-card p-3 space-y-1">
-        <p className="text-[10px] md:text-xs text-muted-foreground font-medium">{label}</p>
+        <p className="text-xs md:text-xs text-muted-foreground font-medium">{label}</p>
         <p className="text-base md:text-lg font-bold">{fmtCurrency(current)}</p>
         <div className={`flex items-center gap-1 text-xs font-medium ${colorClass}`}>
           {diffPct !== null ? (
@@ -156,14 +156,14 @@ export function FinanceiroInsights({
 
     return (
       <div className="text-center space-y-0.5">
-        <p className="text-[10px] md:text-xs text-muted-foreground">{label}</p>
+        <p className="text-xs md:text-xs text-muted-foreground">{label}</p>
         <p className="text-sm md:text-base font-bold">{fmtCurrency(current)}</p>
         {diffPct !== null ? (
-          <p className={`text-[10px] md:text-xs font-medium ${colorClass}`}>
+          <p className={`text-xs md:text-xs font-medium ${colorClass}`}>
             {diffPct >= 0 ? "+" : ""}{diffPct.toFixed(0)}% vs 12m ant.
           </p>
         ) : (
-          <p className="text-[10px] text-muted-foreground">—</p>
+          <p className="text-xs text-muted-foreground">—</p>
         )}
       </div>
     );

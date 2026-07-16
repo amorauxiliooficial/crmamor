@@ -227,7 +227,7 @@ export function CrmTab({ maes, onRefresh }: CrmTabProps) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h4 className="font-medium text-sm truncate">{followUp.mae_nome}</h4>
-                {isOverdue && <Badge variant="destructive" className="text-[10px]">Atrasado</Badge>}
+                {isOverdue && <Badge variant="destructive" className="text-xs">Atrasado</Badge>}
               </div>
               
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

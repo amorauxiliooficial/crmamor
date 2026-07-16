@@ -139,7 +139,7 @@ export const MessageBubble = memo(function MessageBubble({
         <div className="w-7 shrink-0 flex flex-col justify-end mr-1">
           {showAvatar && (
             <Avatar className="h-6 w-6">
-              <AvatarFallback className="text-[10px] font-semibold bg-muted/30 text-foreground/50">
+              <AvatarFallback className="text-xs font-semibold bg-muted/30 text-foreground/50">
                 <User className="h-3 w-3" />
               </AvatarFallback>
             </Avatar>
@@ -149,7 +149,7 @@ export const MessageBubble = memo(function MessageBubble({
 
       <div className={cn("max-w-[85%] sm:max-w-[65%] overflow-hidden min-w-0 flex flex-col", isMe ? "items-end" : "items-start")}>
         {showAuthorLabel && isMe && m.sentByAgentName && (
-          <p className="text-[10px] text-muted-foreground/40 font-medium mb-0.5 px-2">
+          <p className="text-xs text-muted-foreground/40 font-medium mb-0.5 px-2">
             {m.sentByAgentName} • atendente
           </p>
         )}
@@ -159,7 +159,7 @@ export const MessageBubble = memo(function MessageBubble({
             <textarea
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
-              className="text-[14px] leading-relaxed p-2.5 rounded-xl bg-muted/30 border border-border/30 text-foreground resize-none min-h-[44px] focus:outline-none focus:ring-1 focus:ring-primary/30"
+              className="text-sm leading-relaxed p-2.5 rounded-xl bg-muted/30 border border-border/30 text-foreground resize-none min-h-[44px] focus:outline-none focus:ring-1 focus:ring-primary/30"
               rows={2}
               autoFocus
               onKeyDown={(e) => {
@@ -168,8 +168,8 @@ export const MessageBubble = memo(function MessageBubble({
               }}
             />
             <div className="flex gap-1 justify-end">
-              <button onClick={() => { setEditing(false); setEditText(m.texto); }} className="text-[10px] px-2.5 py-1 rounded-lg text-muted-foreground hover:bg-muted/30 transition-colors">Cancelar</button>
-              <button onClick={handleSaveEdit} disabled={!editText.trim() || editText.trim() === m.texto} className="text-[10px] px-2.5 py-1 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50">Salvar</button>
+              <button onClick={() => { setEditing(false); setEditText(m.texto); }} className="text-xs px-2.5 py-1 rounded-lg text-muted-foreground hover:bg-muted/30 transition-colors">Cancelar</button>
+              <button onClick={handleSaveEdit} disabled={!editText.trim() || editText.trim() === m.texto} className="text-xs px-2.5 py-1 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50">Salvar</button>
             </div>
           </div>
         ) : (
@@ -198,7 +198,7 @@ export const MessageBubble = memo(function MessageBubble({
                 isMe ? cn("bg-chat-outbound text-chat-outbound-foreground", rounding) : cn("bg-chat-inbound text-chat-inbound-foreground", rounding),
                 isFailed && "ring-1 ring-destructive/30"
               )}
-              style={{ fontFamily: "var(--chat-font, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif)" }}
+              style={{ fontFamily: "var(--chat-font, 'Poppins', ui-sans-serif, system-ui, sans-serif)" }}
             >
               {isMedia ? (
                 <MediaBubble
@@ -213,7 +213,7 @@ export const MessageBubble = memo(function MessageBubble({
                 />
               ) : (
                 <div
-                  className="block min-w-0 pr-14 text-[14.2px] leading-[19px] whitespace-pre-wrap"
+                  className="block min-w-0 pr-14 text-sm leading-[19px] whitespace-pre-wrap"
                   style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
                 >
                   {m.msgType === "reaction"
@@ -227,8 +227,8 @@ export const MessageBubble = memo(function MessageBubble({
               )}
 
               <span className={cn("absolute bottom-[6px] right-[9px] inline-flex items-center gap-0.5", isMedia ? "px-1.5 pb-0.5" : "") }>
-                {m.editedAt && <span className="text-[11px] italic text-chat-meta/40 mr-0.5">editada</span>}
-                <span className="text-[11px] tabular-nums text-chat-meta/55">
+                {m.editedAt && <span className="text-xs italic text-chat-meta/40 mr-0.5">editada</span>}
+                <span className="text-xs tabular-nums text-chat-meta/55">
                   {m.horario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                 </span>
                 {m.channel && (
@@ -243,7 +243,7 @@ export const MessageBubble = memo(function MessageBubble({
         )}
 
         {isFailed && onRetry && (
-          <button onClick={() => onRetry(m)} className="flex items-center gap-1 mt-1 px-2 py-1 text-[10px] text-destructive hover:text-destructive/80 hover:bg-destructive/5 rounded-md transition-colors">
+          <button onClick={() => onRetry(m)} className="flex items-center gap-1 mt-1 px-2 py-1 text-xs text-destructive hover:text-destructive/80 hover:bg-destructive/5 rounded-md transition-colors">
             <RotateCcw className="h-3 w-3" /> Reenviar
           </button>
         )}
@@ -254,7 +254,7 @@ export const MessageBubble = memo(function MessageBubble({
         <div className="w-7 shrink-0 flex flex-col justify-end ml-1">
           {showAvatar && (
             <Avatar className="h-6 w-6">
-              <AvatarFallback className="text-[10px] font-semibold bg-primary/10 text-primary/70">
+              <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary/70">
                 {avatarInitial || <User className="h-3 w-3" />}
               </AvatarFallback>
             </Avatar>
@@ -291,7 +291,7 @@ export function InlineEvent({ event, profileMap }: { event: import("@/hooks/useC
   if (event.event_type === "agent_note" && note) {
     return (
       <div className="flex items-center justify-center my-3">
-        <div className="inline-flex flex-col gap-1 px-3 py-2 rounded-xl bg-amber-500/5 border border-amber-500/10 text-[11px] text-muted-foreground/60 max-w-[80%]">
+        <div className="inline-flex flex-col gap-1 px-3 py-2 rounded-xl bg-amber-500/5 border border-amber-500/10 text-xs text-muted-foreground/60 max-w-[80%]">
           <div className="flex items-center gap-1.5">
             <span>📝</span>
             <span className="font-medium">{agentName}</span>
@@ -307,7 +307,7 @@ export function InlineEvent({ event, profileMap }: { event: import("@/hooks/useC
 
   return (
     <div className="flex items-center justify-center my-3">
-      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/15 text-[11px] text-muted-foreground/50 max-w-[80%]">
+      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/15 text-xs text-muted-foreground/50 max-w-[80%]">
         <span>{info.icon}</span>
         <span className="font-medium">{agentName}</span>
         <span>{info.label}</span>

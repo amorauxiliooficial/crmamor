@@ -178,7 +178,7 @@ export function AtividadeDialog({
                             <span className="text-sm font-medium">
                               {TIPO_ATIVIDADE_LABELS[atividade.tipo_atividade]}
                             </span>
-                            <span className="text-[11px] text-muted-foreground shrink-0">
+                            <span className="text-xs text-muted-foreground shrink-0">
                               {formatRelative(atividade.data_atividade)}
                             </span>
                           </div>
@@ -187,7 +187,7 @@ export function AtividadeDialog({
                               {atividade.descricao}
                             </p>
                           )}
-                          <p className="text-[10px] text-muted-foreground/70 mt-1">
+                          <p className="text-xs text-muted-foreground/70 mt-1">
                             {formatDate(atividade.data_atividade)}
                           </p>
                         </div>

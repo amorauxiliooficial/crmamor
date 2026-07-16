@@ -42,7 +42,7 @@ export function ExecutivePipelineTable({ fases, onFaseClick, formatBRLShort }: P
         <div className="overflow-x-auto -mx-2">
           <table className="w-full border-separate border-spacing-y-1.5 min-w-[720px] px-2">
             <thead>
-              <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <tr className="text-xs uppercase tracking-wider text-muted-foreground">
                 <th className="text-left font-medium pl-3 pb-1">Etapa</th>
                 <th className="text-right font-medium pb-1">Atual</th>
                 <th className="text-right font-medium pb-1">Meta estrut.</th>

@@ -437,7 +437,7 @@ export function PagamentoDialog({
                 const telError = contatoErrors[telKey];
                 return (
                   <div key={n} className="flex items-start gap-2">
-                    <span className="text-[10px] text-muted-foreground font-medium mt-2.5 w-4 shrink-0">{n}.</span>
+                    <span className="text-xs text-muted-foreground font-medium mt-2.5 w-4 shrink-0">{n}.</span>
                     <Input
                       placeholder="Nome (opcional)"
                       value={contatos[nomeKey]}
@@ -457,7 +457,7 @@ export function PagamentoDialog({
                         }}
                         className={`h-8 text-sm ${telError ? "border-destructive" : ""}`}
                       />
-                      {telError && <span className="text-[10px] text-destructive">{telError}</span>}
+                      {telError && <span className="text-xs text-destructive">{telError}</span>}
                     </div>
                     {n > 1 && (
                       <Button
@@ -494,7 +494,7 @@ export function PagamentoDialog({
             {/* Config section - only tipo now */}
             <div className="rounded-xl border bg-muted/30 p-4">
               <div className="space-y-1.5">
-                <Label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Tipo</Label>
+                <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Tipo</Label>
                 <Select value={tipoPagamento} onValueChange={handleTipoPagamentoChange}>
                   <SelectTrigger className="h-10">
                     <SelectValue />
@@ -559,7 +559,7 @@ export function PagamentoDialog({
                           {parcela.numero_parcela}ª parcela
                         </Badge>
                         {parcela.status === "pago" && parcela.valor && parcelaComissao > 0 && (
-                          <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-mono border-primary/30 text-primary">
+                          <Badge variant="outline" className="text-xs h-5 px-1.5 font-mono border-primary/30 text-primary">
                             <Percent className="h-2.5 w-2.5 mr-0.5" />
                             {formatCurrency(parcelaComissao)}
                           </Badge>
@@ -581,7 +581,7 @@ export function PagamentoDialog({
                     {/* Fields - row 1: Valor, Data */}
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
                           <DollarSign className="h-3 w-3" /> Valor (R$)
                         </Label>
                         <Input
@@ -595,7 +595,7 @@ export function PagamentoDialog({
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-3 w-3" /> Data
                         </Label>
                         <Input
@@ -610,7 +610,7 @@ export function PagamentoDialog({
                     {/* Fields - row 2: Status, Mãe recebe */}
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">Status</Label>
+                        <Label className="text-xs text-muted-foreground">Status</Label>
                         <Select
                           value={parcela.status}
                           onValueChange={(value) => updateParcela(index, "status", value)}
@@ -632,7 +632,7 @@ export function PagamentoDialog({
                         </Select>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
                           <DollarSign className="h-3 w-3" /> Mãe recebe
                         </Label>
                         <Input
@@ -650,7 +650,7 @@ export function PagamentoDialog({
                     {/* Fields - row 3: Comissão % and Fornecedor */}
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
                           <Percent className="h-3 w-3" /> Comissão
                         </Label>
                         <div className="relative">
@@ -668,7 +668,7 @@ export function PagamentoDialog({
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
                           <Users className="h-3 w-3" /> Fornecedor
                         </Label>
                         <Select
@@ -692,7 +692,7 @@ export function PagamentoDialog({
 
                     {/* Fields - row 4: Observações full width */}
                     <div className="space-y-1">
-                      <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">
                         <FileText className="h-3 w-3" /> Observações
                       </Label>
                       <Input

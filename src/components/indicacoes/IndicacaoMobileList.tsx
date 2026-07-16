@@ -74,10 +74,10 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  <Badge variant="secondary" className={`text-[10px] ${statusAbordagemColors[ind.status_abordagem]}`}>
+                  <Badge variant="secondary" className={`text-xs ${statusAbordagemColors[ind.status_abordagem]}`}>
                     {statusAbordagemLabels[ind.status_abordagem]}
                   </Badge>
-                  <Badge variant="outline" className={`text-[10px] ${origemIndicacaoColors[origem]}`}>
+                  <Badge variant="outline" className={`text-xs ${origemIndicacaoColors[origem]}`}>
                     {origem === "externa" && <ExternalLink className="h-2.5 w-2.5 mr-0.5" />}
                     {origemIndicacaoLabels[origem]}
                   </Badge>
@@ -92,14 +92,14 @@ export function IndicacaoMobileList({ indicacoes, selectedId, onSelect }: Indica
                   const t = ind.assigned_user_id ? formatTimeSince(ind.assigned_at) : null;
                   if (!heat || !t) return null;
                   return (
-                    <Badge variant="outline" className={`h-5 px-1.5 text-[10px] gap-1 border ${leadHeatClasses[heat]}`}>
+                    <Badge variant="outline" className={`h-5 px-1.5 text-xs gap-1 border ${leadHeatClasses[heat]}`}>
                       <Clock className="h-2.5 w-2.5" />
                       {t} · {leadHeatLabels[heat]}
                     </Badge>
                   );
                 })()}
                 {ind.motivo_abordagem && (
-                  <span className="text-[10px]">{motivoAbordagemLabels[ind.motivo_abordagem as keyof typeof motivoAbordagemLabels]}</span>
+                  <span className="text-xs">{motivoAbordagemLabels[ind.motivo_abordagem as keyof typeof motivoAbordagemLabels]}</span>
                 )}
               </div>
 

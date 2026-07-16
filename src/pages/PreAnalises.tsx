@@ -509,12 +509,12 @@ export default function PreAnalises() {
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-medium truncate">{nomeMae}</span>
                           {isStandalone && (
-                            <Badge variant="outline" className="text-[10px] shrink-0">
+                            <Badge variant="outline" className="text-xs shrink-0">
                               Avulsa
                             </Badge>
                           )}
                           {canRegister && (
-                            <Badge className="text-[10px] bg-primary/20 text-primary shrink-0 gap-1">
+                            <Badge className="text-xs bg-primary/20 text-primary shrink-0 gap-1">
                               <UserPlus className="h-3 w-3" />
                               Cadastrar
                             </Badge>

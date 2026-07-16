@@ -120,13 +120,13 @@ export function ProspeccaoMobileList({
                     <div className="flex items-center gap-1 mt-0.5">
                       <p className="text-xs text-muted-foreground">{mesAtual}º mês</p>
                       {mesAtual >= 7 && (
-                        <Badge variant="secondary" className={`text-[10px] px-1 py-0 h-4 ${mesAtual >= 8 ? "bg-pink-200 text-pink-800 dark:bg-pink-900/40 dark:text-pink-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"}`}>
+                        <Badge variant="secondary" className={`text-xs px-1 py-0 h-4 ${mesAtual >= 8 ? "bg-pink-200 text-pink-800 dark:bg-pink-900/40 dark:text-pink-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"}`}>
                           {mesAtual >= 8 ? "Urgente" : "Próxima"}
                         </Badge>
                       )}
                     </div>
                   )}
-                  {p.observacoes && <p className="text-[11px] text-muted-foreground italic line-clamp-1 mt-0.5">{p.observacoes}</p>}
+                  {p.observacoes && <p className="text-xs text-muted-foreground italic line-clamp-1 mt-0.5">{p.observacoes}</p>}
                 </div>
                 {onStatusChange ? (
                   <div onClick={(e) => e.stopPropagation()}>
@@ -135,7 +135,7 @@ export function ProspeccaoMobileList({
                       onValueChange={(v) => onStatusChange(p.id, v as StatusProspeccao)}
                       disabled={updatingStatusId === p.id}
                     >
-                      <SelectTrigger className={`h-7 text-[11px] px-2 py-0 border-0 ${statusProspeccaoColors[p.status]}`}>
+                      <SelectTrigger className={`h-7 text-xs px-2 py-0 border-0 ${statusProspeccaoColors[p.status]}`}>
                         <SelectValue>{statusProspeccaoLabels[p.status]}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
@@ -146,7 +146,7 @@ export function ProspeccaoMobileList({
                     </Select>
                   </div>
                 ) : (
-                  <Badge variant="secondary" className={`text-[10px] ${statusProspeccaoColors[p.status]}`}>
+                  <Badge variant="secondary" className={`text-xs ${statusProspeccaoColors[p.status]}`}>
                     {statusProspeccaoLabels[p.status]}
                   </Badge>
                 )}
@@ -157,11 +157,11 @@ export function ProspeccaoMobileList({
                     value={p.assigned_user_id ?? UNASSIGNED_VALUE}
                     onValueChange={(v) => onAssign(p.id, v === UNASSIGNED_VALUE ? null : v)}
                   >
-                    <SelectTrigger className="h-7 text-[11px] flex-1">
+                    <SelectTrigger className="h-7 text-xs flex-1">
                       <div className="flex items-center gap-1.5 truncate">
                         {assigned ? (
                           <Avatar className="h-4 w-4">
-                            <AvatarFallback className="text-[9px]">
+                            <AvatarFallback className="text-xs">
                               {getInitials(assigned.full_name, assigned.email)}
                             </AvatarFallback>
                           </Avatar>
@@ -196,12 +196,12 @@ export function ProspeccaoMobileList({
               <div className="flex items-center justify-between text-xs text-muted-foreground gap-2">
                 <span>{format(parseISO(p.created_at), "dd/MM/yy", { locale: ptBR })}</span>
                 {heat && timeWith ? (
-                  <Badge variant="outline" className={`h-5 px-1.5 text-[10px] gap-1 border ${leadHeatClasses[heat]}`}>
+                  <Badge variant="outline" className={`h-5 px-1.5 text-xs gap-1 border ${leadHeatClasses[heat]}`}>
                     <Clock className="h-2.5 w-2.5" />
                     {timeWith} · {leadHeatLabels[heat]}
                   </Badge>
                 ) : isUnassigned ? (
-                  <Badge variant="outline" className="h-5 px-1.5 text-[10px] gap-1 border bg-primary/15 text-primary border-primary/40">
+                  <Badge variant="outline" className="h-5 px-1.5 text-xs gap-1 border bg-primary/15 text-primary border-primary/40">
                     <AlertTriangle className="h-2.5 w-2.5" />
                     Prioridade
                   </Badge>

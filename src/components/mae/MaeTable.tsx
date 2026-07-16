@@ -232,7 +232,7 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
             <div className="flex items-center gap-1.5">
               <span>{value as string}</span>
             {(mae as any).ja_trabalhou && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 gap-0.5">
+              <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 gap-0.5">
                 <Flame className="h-2.5 w-2.5" />
                 Quente
               </Badge>
@@ -241,13 +241,13 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
             {(acompanhamento.contatoAtrasado || acompanhamento.senhaAtrasada) && (
               <div className="flex flex-wrap gap-1">
                 {acompanhamento.contatoAtrasado && (
-                  <Badge variant="outline" className="h-5 gap-1 border-primary/15 bg-primary/5 px-1.5 text-[10px] font-medium text-foreground">
+                  <Badge variant="outline" className="h-5 gap-1 border-primary/15 bg-primary/5 px-1.5 text-xs font-medium text-foreground">
                     <MessageSquareWarning className="h-3 w-3 text-primary" />
                     Sem contato {formatarTempo(acompanhamento.diasSemContato)}
                   </Badge>
                 )}
                 {acompanhamento.senhaAtrasada && (
-                  <Badge variant="outline" className="h-5 gap-1 border-amber-200 bg-amber-50 px-1.5 text-[10px] font-medium text-foreground dark:border-amber-800/60 dark:bg-amber-950/25">
+                  <Badge variant="outline" className="h-5 gap-1 border-amber-200 bg-amber-50 px-1.5 text-xs font-medium text-foreground dark:border-amber-800/60 dark:bg-amber-950/25">
                     <KeyRound className="h-3 w-3 text-amber-700 dark:text-amber-300" />
                     Sem senha {formatarTempo(acompanhamento.diasSemSenha)}
                   </Badge>

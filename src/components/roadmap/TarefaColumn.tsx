@@ -182,11 +182,11 @@ export function TarefaColumn({
           </>
         ) : (
           <>
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-background text-[10px] font-medium">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-background text-xs font-medium">
               {tarefas.length}
             </span>
             <span
-              className="text-[10px] font-medium text-center mt-2 leading-tight"
+              className="text-xs font-medium text-center mt-2 leading-tight"
               style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
             >
               {statusLabel}
@@ -216,7 +216,7 @@ export function TarefaColumn({
                       key={cat.value}
                       onClick={() => setQuickCategory(cat.value)}
                       className={cn(
-                        "flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-all",
+                        "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-all",
                         quickCategory === cat.value
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted hover:bg-muted/80"
@@ -233,7 +233,7 @@ export function TarefaColumn({
                       key={pri.value}
                       onClick={() => setQuickPriority(pri.value)}
                       className={cn(
-                        "flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-all",
+                        "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-all",
                         quickPriority === pri.value
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted hover:bg-muted/80"

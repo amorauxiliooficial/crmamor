@@ -217,18 +217,18 @@ export default function AgentesIA() {
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="font-semibold text-sm truncate">{agent.name}</p>
                       {agent.is_default && (
-                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
+                        <Badge variant="secondary" className="text-xs px-1.5 py-0">
                           <Star className="h-2.5 w-2.5 mr-0.5 fill-current" /> Padrão
                         </Badge>
                       )}
                       {agent.published_at ? (
-                        <Badge variant="default" className="text-[9px] px-1.5 py-0 gap-0.5">
+                        <Badge variant="default" className="text-xs px-1.5 py-0 gap-0.5">
                           <CheckCircle2 className="h-2.5 w-2.5" /> v{agent.version}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0">Rascunho</Badge>
+                        <Badge variant="outline" className="text-xs px-1.5 py-0">Rascunho</Badge>
                       )}
-                      {!agent.is_active && <Badge variant="outline" className="text-[9px]">Inativo</Badge>}
+                      {!agent.is_active && <Badge variant="outline" className="text-xs">Inativo</Badge>}
                     </div>
                     <p className="text-xs text-muted-foreground truncate mt-0.5">
                       {agent.model} · {agent.tone} · {agent.max_tokens} tokens
@@ -236,10 +236,10 @@ export default function AgentesIA() {
                     {agent.departments?.length > 0 && (
                       <div className="flex gap-1 mt-1 overflow-hidden">
                         {agent.departments.slice(0, 3).map(d => (
-                          <Badge key={d} variant="outline" className="text-[8px] px-1 py-0 shrink-0">{d}</Badge>
+                          <Badge key={d} variant="outline" className="text-xs px-1 py-0 shrink-0">{d}</Badge>
                         ))}
                         {agent.departments.length > 3 && (
-                          <Badge variant="outline" className="text-[8px] px-1 py-0 shrink-0">+{agent.departments.length - 3}</Badge>
+                          <Badge variant="outline" className="text-xs px-1 py-0 shrink-0">+{agent.departments.length - 3}</Badge>
                         )}
                       </div>
                     )}

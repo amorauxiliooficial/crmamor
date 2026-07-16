@@ -430,12 +430,12 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
         <TabsList>
           <TabsTrigger value="geral" className="gap-1.5">
             A Receber
-            <Badge variant="outline" className="h-5 px-1.5 text-[10px]">{receberRows.length}</Badge>
+            <Badge variant="outline" className="h-5 px-1.5 text-xs">{receberRows.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="inadimplencia" className="gap-1.5">
             Inadimplências
             {inadimplenciaRowsBase.length > 0 && (
-              <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">{inadimplenciaRowsBase.length}</Badge>
+              <Badge variant="destructive" className="h-5 px-1.5 text-xs">{inadimplenciaRowsBase.length}</Badge>
             )}
           </TabsTrigger>
         </TabsList>
@@ -507,13 +507,13 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                           style={{ width: `${pctRecebido}%` }}
                         />
                       </div>
-                      <div className="text-[10px] text-muted-foreground mt-1">
+                      <div className="text-xs text-muted-foreground mt-1">
                         {pctRecebido}% recebido
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 pt-1">
                       <div className="rounded-md border-l-2 border-emerald-500 bg-emerald-500/5 px-2 py-1.5">
-                        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
                           <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Recebido
                         </div>
                         <div className="text-sm font-bold text-emerald-600 tabular-nums">
@@ -521,7 +521,7 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                         </div>
                       </div>
                       <div className="rounded-md border-l-2 border-amber-500 bg-amber-500/5 px-2 py-1.5">
-                        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
                           <Clock className="h-3 w-3 text-amber-500" /> A receber
                         </div>
                         <div className="text-sm font-bold text-amber-600 tabular-nums">
@@ -551,13 +551,13 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                           style={{ width: `${pctParcelas}%` }}
                         />
                       </div>
-                      <div className="text-[10px] text-muted-foreground mt-1">
+                      <div className="text-xs text-muted-foreground mt-1">
                         {pctParcelas}% quitadas
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 pt-1">
                       <div className="rounded-md border-l-2 border-emerald-500 bg-emerald-500/5 px-2 py-1.5">
-                        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
                           <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Pagas
                         </div>
                         <div className="text-sm font-bold text-emerald-600 tabular-nums">
@@ -565,7 +565,7 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                         </div>
                       </div>
                       <div className="rounded-md border-l-2 border-amber-500 bg-amber-500/5 px-2 py-1.5">
-                        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
                           <Clock className="h-3 w-3 text-amber-500" /> Pendentes
                         </div>
                         <div className="text-sm font-bold text-amber-600 tabular-nums">
@@ -611,34 +611,34 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                       >
                         <td className="px-3 py-2">
                           <div className="font-medium truncate max-w-[200px]">{r.mae.nome_mae}</div>
-                          <div className="text-[11px] text-muted-foreground font-mono">
+                          <div className="text-xs text-muted-foreground font-mono">
                             {r.mae.cpf ? formatCpf(r.mae.cpf) : "—"}
                           </div>
                         </td>
                         <td className="px-3 py-2">
                           {!r.hasPagamento ? (
-                            <Badge variant="secondary" className="text-[10px]">Sem cadastro</Badge>
+                            <Badge variant="secondary" className="text-xs">Sem cadastro</Badge>
                           ) : r.parcelasInadimplentes > 0 ? (
-                            <Badge variant="destructive" className="text-[10px]">Inadimplente</Badge>
+                            <Badge variant="destructive" className="text-xs">Inadimplente</Badge>
                           ) : r.parcelasPendentes > 0 && r.parcelasPagas > 0 ? (
-                            <Badge className="bg-amber-500/20 text-amber-700 text-[10px]">Parcial</Badge>
+                            <Badge className="bg-amber-500/20 text-amber-700 text-xs">Parcial</Badge>
                           ) : r.parcelasPendentes > 0 ? (
-                            <Badge className="bg-amber-500/20 text-amber-700 text-[10px]">Pendente</Badge>
+                            <Badge className="bg-amber-500/20 text-amber-700 text-xs">Pendente</Badge>
                           ) : r.parcelasPagas > 0 ? (
-                            <Badge className="bg-emerald-500/20 text-emerald-700 text-[10px]">Quitado</Badge>
+                            <Badge className="bg-emerald-500/20 text-emerald-700 text-xs">Quitado</Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-[10px]">—</Badge>
+                            <Badge variant="secondary" className="text-xs">—</Badge>
                           )}
                         </td>
                         <td className="px-3 py-2">
                           {!r.hasBeneficio ? (
-                            <Badge variant="secondary" className="text-[10px]">Sem cadastro</Badge>
+                            <Badge variant="secondary" className="text-xs">Sem cadastro</Badge>
                           ) : r.totalBoletos === 0 ? (
-                            <Badge variant="outline" className="text-[10px]">Em projeção</Badge>
+                            <Badge variant="outline" className="text-xs">Em projeção</Badge>
                           ) : r.boletosPagos >= r.totalBoletos ? (
-                            <Badge className="bg-emerald-500/20 text-emerald-700 text-[10px]">Quitado</Badge>
+                            <Badge className="bg-emerald-500/20 text-emerald-700 text-xs">Quitado</Badge>
                           ) : (
-                            <Badge className="bg-blue-500/20 text-blue-700 text-[10px]">
+                            <Badge className="bg-blue-500/20 text-blue-700 text-xs">
                               {brl(r.totalBoletos - r.boletosPagos)} em aberto
                             </Badge>
                           )}
@@ -677,7 +677,7 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
               </CardHeader>
               <CardContent>
                 <div className="text-lg font-bold text-destructive">{brl(agingStats.totalAtraso)}</div>
-                <div className="text-[11px] text-muted-foreground">{agingStats.maesInad} mães</div>
+                <div className="text-xs text-muted-foreground">{agingStats.maesInad} mães</div>
               </CardContent>
             </Card>
             {(["1-7", "8-30", "31-60", "60+"] as const).map((b) => (
@@ -691,7 +691,7 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                 </CardHeader>
                 <CardContent>
                   <div className="text-base font-bold">{brl(agingStats.bucketsVal[b])}</div>
-                  <div className="text-[11px] text-muted-foreground">{agingStats.buckets[b]} parcelas</div>
+                  <div className="text-xs text-muted-foreground">{agingStats.buckets[b]} parcelas</div>
                 </CardContent>
               </Card>
             ))}
@@ -747,12 +747,12 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                         <tr key={r.mae.id} className="border-b last:border-0 hover:bg-muted/40">
                           <td className="px-3 py-2">
                             <div className="font-medium truncate max-w-[220px]">{r.mae.nome_mae}</div>
-                            <div className="text-[11px] text-muted-foreground font-mono">
+                            <div className="text-xs text-muted-foreground font-mono">
                               {r.mae.cpf ? formatCpf(r.mae.cpf) : "—"}
                             </div>
                           </td>
                           <td className="px-3 py-2 text-center">
-                            <Badge variant="destructive" className="text-[10px]">
+                            <Badge variant="destructive" className="text-xs">
                               {r.parcelasEmAtraso.length}
                             </Badge>
                           </td>
@@ -763,7 +763,7 @@ export function CentralFinanceiraTab({ searchQuery, selectedUserId }: Props) {
                             {r.maiorAtrasoDias}d
                           </td>
                           <td className="px-3 py-2">
-                            <Badge className={`${bucketColor} text-[10px]`}>{bucket} dias</Badge>
+                            <Badge className={`${bucketColor} text-xs`}>{bucket} dias</Badge>
                           </td>
                           <td className="px-3 py-2">
                             <div className="flex items-center justify-end gap-1">

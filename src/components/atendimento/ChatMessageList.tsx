@@ -217,10 +217,10 @@ export function ChatMessageList({
             <div className="mx-auto w-full max-w-3xl mb-2">
               <div className="bg-muted/10 rounded-lg p-2 flex items-center gap-2">
                 <Pin className="h-3 w-3 text-muted-foreground/40 shrink-0" />
-                <span className="text-[11px] text-muted-foreground/50">
+                <span className="text-xs text-muted-foreground/50">
                   {pinnedMsgs.length} fixada{pinnedMsgs.length > 1 ? "s" : ""}
                 </span>
-                <p className="text-[11px] text-muted-foreground/35 truncate flex-1">
+                <p className="text-xs text-muted-foreground/35 truncate flex-1">
                   {pinnedMsgs[pinnedMsgs.length - 1]?.texto}
                 </p>
               </div>
@@ -234,7 +234,7 @@ export function ChatMessageList({
             <button
               onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
               className={cn(
-                "flex items-center gap-1.5 text-[11px] px-3 py-1 rounded-full transition-all",
+                "flex items-center gap-1.5 text-xs px-3 py-1 rounded-full transition-all",
                 showFavoritesOnly
                   ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
                   : "text-muted-foreground/40 hover:text-foreground",
@@ -254,7 +254,7 @@ export function ChatMessageList({
           messageGroups.map((group) => (
             <div key={group.label}>
               <div className="flex items-center justify-center my-4">
-                <span className="text-[10px] font-medium text-muted-foreground/30 bg-muted/10 px-3 py-1 rounded-full">
+                <span className="text-xs font-medium text-muted-foreground/30 bg-muted/10 px-3 py-1 rounded-full">
                   {group.label}
                 </span>
               </div>

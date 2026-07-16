@@ -330,17 +330,17 @@ export default function Conferencia() {
                           </Button>
                         </div>
                       )}
-                      <Badge variant="outline" className="mt-1 text-[10px]">
+                      <Badge variant="outline" className="mt-1 text-xs">
                         {mae.status_processo}
                       </Badge>
                     </div>
                     {mae.precisa_conferencia ? (
-                      <Badge variant="destructive" className="text-[10px] shrink-0">
+                      <Badge variant="destructive" className="text-xs shrink-0">
                         <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
                         Pendente
                       </Badge>
                     ) : (
-                      <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-600 text-[10px] shrink-0">
+                      <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-600 text-xs shrink-0">
                         <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />
                         Em dia
                       </Badge>
@@ -415,7 +415,7 @@ export default function Conferencia() {
                     <TableCell className="font-medium">
                       <div className="flex flex-col gap-1">
                         <span>{mae.nome_mae}</span>
-                        <Badge variant="outline" className="text-[10px] w-fit">
+                        <Badge variant="outline" className="text-xs w-fit">
                           {mae.status_processo}
                         </Badge>
                       </div>

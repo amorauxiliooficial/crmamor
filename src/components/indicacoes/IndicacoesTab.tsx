@@ -616,7 +616,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                           <div className="flex items-center gap-1 min-w-0">
                             <span className="font-medium truncate">{indicacao.nome_indicada}</span>
                             {origem === "externa" && (
-                              <Badge variant="outline" className="h-4 px-1 text-[9px] shrink-0">
+                              <Badge variant="outline" className="h-4 px-1 text-xs shrink-0">
                                 <ExternalLink className="h-2.5 w-2.5 mr-0.5" />
                                 Ext
                               </Badge>
@@ -754,7 +754,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                                     <div className="flex items-center gap-1.5 truncate">
                                       {assigned ? (
                                         <Avatar className="h-5 w-5">
-                                          <AvatarFallback className="text-[10px]">
+                                          <AvatarFallback className="text-xs">
                                             {getInitials(assigned.full_name, assigned.email)}
                                           </AvatarFallback>
                                         </Avatar>
@@ -798,7 +798,7 @@ export function IndicacoesTab({ searchQuery = "", externalSelectedIndicacao, onC
                                     <TooltipTrigger asChild>
                                       <Badge
                                         variant="outline"
-                                        className={`h-5 px-1.5 text-[10px] font-medium border ${leadHeatClasses[heat]} w-fit gap-1`}
+                                        className={`h-5 px-1.5 text-xs font-medium border ${leadHeatClasses[heat]} w-fit gap-1`}
                                       >
                                         <Clock className="h-2.5 w-2.5" />
                                         {timeWith} · {leadHeatLabels[heat]}

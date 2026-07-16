@@ -793,7 +793,7 @@ function SmallStat({
 }) {
   return (
     <div className={`rounded border p-2 ${highlight ? "border-primary/50 bg-primary/5" : ""}`}>
-      <div className="text-[10px] uppercase text-muted-foreground">{label}</div>
+      <div className="text-xs uppercase text-muted-foreground">{label}</div>
       <div className="font-semibold">{value}</div>
     </div>
   );
@@ -832,11 +832,11 @@ export function ParcelaRow({
   return (
     <div className="grid grid-cols-12 gap-2 items-end border rounded p-2">
       <div className="col-span-1">
-        <Label className="text-[10px] text-muted-foreground">Nº</Label>
+        <Label className="text-xs text-muted-foreground">Nº</Label>
         <div className="font-semibold text-sm h-9 flex items-center">{p.numero_parcela}</div>
       </div>
       <div className="col-span-3">
-        <Label className="text-[10px] text-muted-foreground">Valor</Label>
+        <Label className="text-xs text-muted-foreground">Valor</Label>
         <Input
           type="number"
           defaultValue={p.valor && Number(p.valor) !== 0 ? p.valor : ""}
@@ -849,7 +849,7 @@ export function ParcelaRow({
         />
       </div>
       <div className="col-span-3">
-        <Label className="text-[10px] text-muted-foreground">Data</Label>
+        <Label className="text-xs text-muted-foreground">Data</Label>
         <Input
           type="date"
           defaultValue={p.data_parcela ?? ""}
@@ -860,7 +860,7 @@ export function ParcelaRow({
         />
       </div>
       <div className="col-span-4">
-        <Label className="text-[10px] text-muted-foreground">Status</Label>
+        <Label className="text-xs text-muted-foreground">Status</Label>
         <Select value={p.status} onValueChange={(v: any) => onSave({ status: v })}>
           <SelectTrigger>
             <SelectValue />
@@ -893,7 +893,7 @@ function BoletoRow({
   return (
     <div className="grid grid-cols-12 gap-2 items-end border rounded p-2">
       <div className="col-span-3">
-        <Label className="text-[10px] text-muted-foreground">Nº boleto</Label>
+        <Label className="text-xs text-muted-foreground">Nº boleto</Label>
         <Input
           defaultValue={b.numero_boleto ?? ""}
           onBlur={(e) => {
@@ -902,7 +902,7 @@ function BoletoRow({
         />
       </div>
       <div className="col-span-2">
-        <Label className="text-[10px] text-muted-foreground">Valor</Label>
+        <Label className="text-xs text-muted-foreground">Valor</Label>
         <Input
           type="number"
           defaultValue={b.valor && Number(b.valor) !== 0 ? b.valor : ""}
@@ -915,7 +915,7 @@ function BoletoRow({
         />
       </div>
       <div className="col-span-3">
-        <Label className="text-[10px] text-muted-foreground">Vencimento</Label>
+        <Label className="text-xs text-muted-foreground">Vencimento</Label>
         <Input
           type="date"
           defaultValue={b.vencimento ?? ""}
@@ -926,7 +926,7 @@ function BoletoRow({
         />
       </div>
       <div className="col-span-3">
-        <Label className="text-[10px] text-muted-foreground">Status</Label>
+        <Label className="text-xs text-muted-foreground">Status</Label>
         <Select value={b.status} onValueChange={(v: any) => onSave({ status: v })}>
           <SelectTrigger>
             <SelectValue />
@@ -959,11 +959,11 @@ function RecebimentoRow({
   return (
     <div className="grid grid-cols-12 gap-2 items-end border rounded p-2">
       <div className="col-span-1">
-        <Label className="text-[10px] text-muted-foreground">Nº</Label>
+        <Label className="text-xs text-muted-foreground">Nº</Label>
         <div className="font-semibold text-sm h-9 flex items-center">{r.numero_parcela}</div>
       </div>
       <div className="col-span-3">
-        <Label className="text-[10px] text-muted-foreground">Valor</Label>
+        <Label className="text-xs text-muted-foreground">Valor</Label>
         <Input
           type="number"
           defaultValue={r.valor && Number(r.valor) !== 0 ? r.valor : ""}
@@ -976,7 +976,7 @@ function RecebimentoRow({
         />
       </div>
       <div className="col-span-3">
-        <Label className="text-[10px] text-muted-foreground">Data prevista</Label>
+        <Label className="text-xs text-muted-foreground">Data prevista</Label>
         <Input
           type="date"
           defaultValue={r.data_prevista ?? ""}
@@ -987,7 +987,7 @@ function RecebimentoRow({
         />
       </div>
       <div className="col-span-4">
-        <Label className="text-[10px] text-muted-foreground">Status</Label>
+        <Label className="text-xs text-muted-foreground">Status</Label>
         <Select value={r.status} onValueChange={(v: any) => onSave({ status: v })}>
           <SelectTrigger>
             <SelectValue />

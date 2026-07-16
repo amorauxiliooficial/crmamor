@@ -180,7 +180,7 @@ export function MarketingCalendar({ onAddCriativo, onEditCriativo }: MarketingCa
                         <TooltipTrigger asChild>
                           <div
                             className={cn(
-                              "text-[10px] md:text-xs p-1 rounded border cursor-pointer truncate group/item relative",
+                              "text-xs md:text-xs p-1 rounded border cursor-pointer truncate group/item relative",
                               getTipoInstagramColor(criativo.tipo_instagram),
                               criativo.status === "postado" && "opacity-60",
                               criativo.status === "cancelado" && "line-through opacity-40"
@@ -206,7 +206,7 @@ export function MarketingCalendar({ onAddCriativo, onEditCriativo }: MarketingCa
                             {criativo.tipo_conteudo && (
                               <Badge
                                 variant="outline"
-                                className="text-[10px]"
+                                className="text-xs"
                                 style={{
                                   borderColor: criativo.tipo_conteudo.cor,
                                   color: criativo.tipo_conteudo.cor,

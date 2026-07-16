@@ -36,11 +36,11 @@ export function RiskBanner({ valorRisco, fasesCriticas, gapMeta, formatBRL, gest
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Pipeline em Risco
               </span>
               {hasRisk && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+                <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-75" />
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-rose-500" />
@@ -64,7 +64,7 @@ export function RiskBanner({ valorRisco, fasesCriticas, gapMeta, formatBRL, gest
 
         <div className="flex items-center gap-6">
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Gap vs Meta
             </div>
             <div

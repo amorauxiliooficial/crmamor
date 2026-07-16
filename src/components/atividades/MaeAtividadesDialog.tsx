@@ -520,7 +520,7 @@ export function MaeAtividadesDialog({
                                       : "Follow-up"}
                                   </span>
                                   {isOverdue && (
-                                    <Badge variant="destructive" className="text-[10px]">
+                                    <Badge variant="destructive" className="text-xs">
                                       Atrasado
                                     </Badge>
                                   )}
@@ -594,12 +594,12 @@ export function MaeAtividadesDialog({
                                     {TIPO_ATIVIDADE_LABELS[atividade.tipo_atividade]}
                                   </span>
                                   {atividade.resultado_contato && (
-                                    <Badge variant="outline" className="text-[10px]">
+                                    <Badge variant="outline" className="text-xs">
                                       {RESULTADO_CONTATO_LABELS[atividade.resultado_contato as ResultadoContato]}
                                     </Badge>
                                   )}
                                   {atividade.concluido && (
-                                    <Badge variant="secondary" className="text-[10px]">
+                                    <Badge variant="secondary" className="text-xs">
                                       <CheckCircle2 className="h-3 w-3 mr-1" />
                                       Concluído
                                     </Badge>
@@ -760,7 +760,7 @@ function SenhaGovInline({ senha }: { senha: string }) {
         {revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
       </Button>
       {revealed && countdown > 0 && (
-        <span className="text-[10px] text-muted-foreground font-mono">{countdown}s</span>
+        <span className="text-xs text-muted-foreground font-mono">{countdown}s</span>
       )}
     </div>
   );

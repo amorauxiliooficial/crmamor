@@ -112,7 +112,7 @@ export function MobileSidebar({
             />
             <div>
               <SheetTitle className="text-left text-base">AAM</SheetTitle>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Amor Auxílio Maternidade
               </p>
             </div>
@@ -121,7 +121,7 @@ export function MobileSidebar({
 
         <ScrollArea className="flex-1 h-[calc(100vh-160px)]">
           <div className="p-3 space-y-0.5">
-            <p className="text-[10px] font-semibold text-muted-foreground mb-2 px-2 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-muted-foreground mb-2 px-2 uppercase tracking-wider">
               Visualizações
             </p>
             {navigationItems.map((item) => (
@@ -143,7 +143,7 @@ export function MobileSidebar({
           <Separator className="my-2" />
 
           <div className="p-3 space-y-0.5">
-            <p className="text-[10px] font-semibold text-muted-foreground mb-2 px-2 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-muted-foreground mb-2 px-2 uppercase tracking-wider">
               Ferramentas
             </p>
             <Button
@@ -195,7 +195,7 @@ export function MobileSidebar({
                   {onboardingProgress !== null && onboardingProgress < 100 && (
                     <Badge
                       variant="destructive"
-                      className="ml-auto h-5 px-1.5 text-[10px] font-semibold"
+                      className="ml-auto h-5 px-1.5 text-xs font-semibold"
                     >
                       {onboardingProgress}%
                     </Badge>

@@ -178,7 +178,7 @@ export function PagamentosNotificacao() {
           {hasNotifications && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] animate-pulse shadow-[0_0_10px_hsl(var(--destructive))]"
+              className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs animate-pulse shadow-[0_0_10px_hsl(var(--destructive))]"
             >
               {visiblePayments.length}
             </Badge>
@@ -219,7 +219,7 @@ export function PagamentosNotificacao() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <Badge variant={getDateBadgeVariant(payment.data_pagamento)} className="text-[10px]">
+                        <Badge variant={getDateBadgeVariant(payment.data_pagamento)} className="text-xs">
                           {getDateLabel(payment.data_pagamento)}
                         </Badge>
                         <span className="text-xs text-muted-foreground">

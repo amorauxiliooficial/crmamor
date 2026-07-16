@@ -229,19 +229,19 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
             {statusProspeccaoLabels[prospeccao.status]}
           </Badge>
           {prospeccao.origem && (
-            <Badge variant="outline" className="text-[10px] gap-1">
+            <Badge variant="outline" className="text-xs gap-1">
               <MapPin className="h-2.5 w-2.5" />
               {origemLabels[prospeccao.origem] || prospeccao.origem}
             </Badge>
           )}
           {isProxima && (
-            <Badge variant="secondary" className={`text-[10px] gap-1 ${mesGestacao! >= 8 ? "bg-pink-200 text-pink-800 dark:bg-pink-900/40 dark:text-pink-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"}`}>
+            <Badge variant="secondary" className={`text-xs gap-1 ${mesGestacao! >= 8 ? "bg-pink-200 text-pink-800 dark:bg-pink-900/40 dark:text-pink-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"}`}>
               <Baby className="h-2.5 w-2.5" />
               {mesGestacao}º mês — {mesGestacao! >= 8 ? "Urgente" : "Próxima do parto"}
             </Badge>
           )}
           {isConverted && prospeccao.mae_processo_id && (
-            <Badge variant="outline" className="text-[10px] cursor-pointer gap-1 hover:bg-muted" onClick={() => navigate("/?view=kanban")}>
+            <Badge variant="outline" className="text-xs cursor-pointer gap-1 hover:bg-muted" onClick={() => navigate("/?view=kanban")}>
               <ExternalLink className="h-2.5 w-2.5" />
               Ver Processo
             </Badge>
@@ -301,7 +301,7 @@ export function ProspeccaoDetailPanel({ prospeccao, open, onOpenChange, onSucces
                 </SelectContent>
               </Select>
               {mesGestacao != null && mesAvancou && (
-                <p className="text-[10px] text-primary font-medium">
+                <p className="text-xs text-primary font-medium">
                   Hoje: {mesGestacao}º mês
                 </p>
               )}

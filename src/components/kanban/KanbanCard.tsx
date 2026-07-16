@@ -100,7 +100,7 @@ export function KanbanCard({
       {/* Badge de alerta do admin */}
       {hasUnreadAlert && (
         <div className="absolute top-1.5 right-1.5 z-10">
-          <Badge variant="default" className="text-[10px] px-1.5 py-0 h-5 gap-1">
+          <Badge variant="default" className="text-xs px-1.5 py-0 h-5 gap-1">
             <AlertTriangle className="h-3 w-3" />
             Aviso
           </Badge>
@@ -124,7 +124,7 @@ export function KanbanCard({
 
           <div className="flex flex-wrap gap-1.5 border-b border-border/60 pb-2">
               {mae.is_gestante && mesGestacao && (
-                <Badge variant="outline" className="h-6 gap-1 border-primary/15 bg-primary/5 px-2 py-0 text-[10px] font-medium text-foreground">
+                <Badge variant="outline" className="h-6 gap-1 border-primary/15 bg-primary/5 px-2 py-0 text-xs font-medium text-foreground">
                   <Baby className="h-3 w-3 text-primary" />
                   {mesGestacao}º mês
                 </Badge>
@@ -133,7 +133,7 @@ export function KanbanCard({
                 <Badge
                   variant="outline"
                   className={cn(
-                    "h-6 cursor-pointer gap-1 border-destructive/25 bg-destructive/[0.07] px-2 py-0 text-[10px] font-medium text-foreground hover:bg-destructive/10"
+                    "h-6 cursor-pointer gap-1 border-destructive/25 bg-destructive/[0.07] px-2 py-0 text-xs font-medium text-foreground hover:bg-destructive/10"
                   )}
                   onClick={toggleDAS}
                   title="Clique para finalizar a GPS"
@@ -145,7 +145,7 @@ export function KanbanCard({
               {dasEstado === "concluido" && (
                 <Badge
                   variant="outline"
-                  className="h-6 cursor-pointer gap-1 border-emerald-200 bg-emerald-50 px-2 py-0 text-[10px] font-medium text-foreground hover:bg-emerald-100/70 dark:border-emerald-800/60 dark:bg-emerald-950/25"
+                  className="h-6 cursor-pointer gap-1 border-emerald-200 bg-emerald-50 px-2 py-0 text-xs font-medium text-foreground hover:bg-emerald-100/70 dark:border-emerald-800/60 dark:bg-emerald-950/25"
                   onClick={toggleDAS}
                   title="GPS finalizada — clique para remover"
                 >
@@ -156,7 +156,7 @@ export function KanbanCard({
               {dasEstado === "oculto" && (
                 <Badge
                   variant="outline"
-                  className="h-6 cursor-pointer gap-1 px-2 py-0 text-[10px] opacity-0 transition-opacity hover:bg-destructive/10 group-hover:opacity-100"
+                  className="h-6 cursor-pointer gap-1 px-2 py-0 text-xs opacity-0 transition-opacity hover:bg-destructive/10 group-hover:opacity-100"
                   onClick={toggleDAS}
                   title="Marcar GPS como pendente"
                 >
@@ -164,7 +164,7 @@ export function KanbanCard({
                 </Badge>
               )}
               {(mae as any).ja_trabalhou && (
-                <Badge variant="outline" className="h-6 gap-1 border-amber-200 bg-amber-50 px-2 py-0 text-[10px] font-medium text-foreground dark:border-amber-800/60 dark:bg-amber-950/25">
+                <Badge variant="outline" className="h-6 gap-1 border-amber-200 bg-amber-50 px-2 py-0 text-xs font-medium text-foreground dark:border-amber-800/60 dark:bg-amber-950/25">
                   <Flame className="h-3 w-3 text-amber-700 dark:text-amber-300" />
                   Quente
                 </Badge>
@@ -174,13 +174,13 @@ export function KanbanCard({
           {(acompanhamento.contatoAtrasado || acompanhamento.senhaAtrasada) && (
             <div className="grid gap-1.5">
               {acompanhamento.contatoAtrasado && (
-                <div className="flex items-center gap-1.5 rounded-lg border border-primary/15 bg-primary/5 px-2.5 py-1.5 text-[10px] font-medium text-foreground">
+                <div className="flex items-center gap-1.5 rounded-lg border border-primary/15 bg-primary/5 px-2.5 py-1.5 text-xs font-medium text-foreground">
                   <MessageSquareWarning className="h-3 w-3 shrink-0 text-primary" />
                   <span>Sem contato {formatarTempo(acompanhamento.diasSemContato)}</span>
                 </div>
               )}
               {acompanhamento.senhaAtrasada && (
-                <div className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[10px] font-medium text-foreground dark:border-amber-800/60 dark:bg-amber-950/25">
+                <div className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-foreground dark:border-amber-800/60 dark:bg-amber-950/25">
                   <KeyRound className="h-3 w-3 shrink-0 text-amber-700 dark:text-amber-300" />
                   <span>Sem senha {formatarTempo(acompanhamento.diasSemSenha)}</span>
                 </div>
@@ -189,17 +189,17 @@ export function KanbanCard({
           )}
 
           <div className="flex flex-wrap gap-1">
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+            <Badge variant="outline" className="text-xs px-1.5 py-0 h-5">
               {mae.tipo_evento}
             </Badge>
             {mae.uf && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+              <Badge variant="outline" className="text-xs px-1.5 py-0 h-5">
                 {mae.uf}
               </Badge>
             )}
           </div>
 
-          <div className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+          <div className="flex flex-col gap-1 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               {mae.data_evento && (
                 <span className="flex items-center gap-1">
@@ -214,7 +214,7 @@ export function KanbanCard({
               )}
             </div>
             {mae.protocolo_inss && (
-              <span className="flex items-center gap-1 font-mono text-[10px] bg-muted/50 px-1.5 py-0.5 rounded w-fit">
+              <span className="flex items-center gap-1 font-mono text-xs bg-muted/50 px-1.5 py-0.5 rounded w-fit">
                 <FileText className="h-3 w-3 shrink-0" />
                 <span className="truncate max-w-[120px]" title={mae.protocolo_inss}>
                   {mae.protocolo_inss}
@@ -222,7 +222,7 @@ export function KanbanCard({
               </span>
             )}
             {mae.senha_gov && (
-              <span className="flex items-center gap-1 font-mono text-[10px] bg-muted/50 px-1.5 py-0.5 rounded w-fit">
+              <span className="flex items-center gap-1 font-mono text-xs bg-muted/50 px-1.5 py-0.5 rounded w-fit">
                 <KeyRound className="h-3 w-3 shrink-0" />
                 <span className="truncate max-w-[120px]" title={mae.senha_gov}>
                   {mae.senha_gov}
@@ -232,7 +232,7 @@ export function KanbanCard({
           </div>
 
           {mae.observacoes && (
-            <p className="text-[11px] text-muted-foreground italic line-clamp-2 border-t pt-1.5">
+            <p className="text-xs text-muted-foreground italic line-clamp-2 border-t pt-1.5">
               {mae.observacoes}
             </p>
           )}

@@ -168,7 +168,7 @@ export default function AtendimentoConfig() {
                 <p className="text-sm font-medium">WhatsApp Oficial (API)</p>
                 <p className="text-xs text-muted-foreground">Canal principal — integração Cloud API</p>
               </div>
-              <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">Ativo</span>
+              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">Ativo</span>
             </div>
 
             <Separator />
@@ -219,7 +219,7 @@ export default function AtendimentoConfig() {
                     Salvar
                   </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Número usado no link wa.me ao transferir conversas para o atendimento manual.
                 </p>
               </div>

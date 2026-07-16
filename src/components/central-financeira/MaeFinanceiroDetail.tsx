@@ -221,7 +221,7 @@ export function MaeFinanceiroDetail({ mae }: Props) {
             <h2 className="font-semibold truncate">{mae.nome_mae}</h2>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="font-mono">{mae.cpf ? formatCpf(mae.cpf) : "—"}</span>
-              <Badge variant="outline" className="text-[10px]">
+              <Badge variant="outline" className="text-xs">
                 {mae.status_processo}
               </Badge>
             </div>
@@ -410,14 +410,14 @@ export function MaeFinanceiroDetail({ mae }: Props) {
                         <TabsTrigger value="honorarios" className="gap-1.5">
                           <Receipt className="h-3.5 w-3.5" />
                           Honorários
-                          <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">
+                          <Badge variant="secondary" className="ml-1 text-xs h-4 px-1">
                             {(pagQuery.data.parcelas ?? []).length}
                           </Badge>
                         </TabsTrigger>
                         <TabsTrigger value="beneficio" className="gap-1.5">
                           <Landmark className="h-3.5 w-3.5" />
                           Benefício
-                          <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">
+                          <Badge variant="secondary" className="ml-1 text-xs h-4 px-1">
                             {parcelasBeneficio.length}
                           </Badge>
                         </TabsTrigger>
@@ -443,7 +443,7 @@ export function MaeFinanceiroDetail({ mae }: Props) {
                                 <div className="font-medium flex items-center gap-2 flex-wrap">
                                   {brl(p.valor)}
                                   {p.contrato_label && (
-                                    <Badge variant="outline" className="text-[10px] py-0 h-4">
+                                    <Badge variant="outline" className="text-xs py-0 h-4">
                                       {p.contrato_label}
                                     </Badge>
                                   )}
@@ -570,7 +570,7 @@ function Stat({
       : "";
   return (
     <div>
-      <div className="text-[10px] uppercase text-muted-foreground tracking-wide">{label}</div>
+      <div className="text-xs uppercase text-muted-foreground tracking-wide">{label}</div>
       <div className={`text-lg font-semibold tabular-nums ${color}`}>{value}</div>
     </div>
   );

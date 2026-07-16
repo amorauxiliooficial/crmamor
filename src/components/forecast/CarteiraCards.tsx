@@ -43,7 +43,7 @@ export function CarteiraCard({ carteira, formatBRL }: CarteiraProps) {
             </ResponsiveContainer>
             <div className="absolute inset-0 grid place-items-center pointer-events-none">
               <div className="text-center">
-                <div className="text-[10px] uppercase text-muted-foreground">Total</div>
+                <div className="text-xs uppercase text-muted-foreground">Total</div>
                 <div className="text-sm font-bold tabular-nums">
                   {formatBRL(carteira.totalContratado)}
                 </div>
@@ -165,7 +165,7 @@ export function MetaMensalCard({ metaMes, receitaPrevista, receitaRecebida, form
 
         <div>
           <div className="text-2xl font-bold tabular-nums text-primary">{formatBRL(metaMes)}</div>
-          <div className="text-[11px] text-muted-foreground">Meta de receita</div>
+          <div className="text-xs text-muted-foreground">Meta de receita</div>
         </div>
 
         <div className="space-y-1">
@@ -179,16 +179,16 @@ export function MetaMensalCard({ metaMes, receitaPrevista, receitaRecebida, form
               style={{ width: `${Math.min(pct, 100)}%` }}
             />
           </div>
-          <div className="text-[11px] text-muted-foreground text-right">{pct.toFixed(0)}% atingido</div>
+          <div className="text-xs text-muted-foreground text-right">{pct.toFixed(0)}% atingido</div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="rounded-md border border-border/60 p-2">
-            <div className="text-[10px] uppercase text-muted-foreground">Previsto</div>
+            <div className="text-xs uppercase text-muted-foreground">Previsto</div>
             <div className="font-semibold tabular-nums">{formatBRL(receitaPrevista)}</div>
           </div>
           <div className="rounded-md border border-border/60 p-2">
-            <div className="text-[10px] uppercase text-muted-foreground">Falta gerar</div>
+            <div className="text-xs uppercase text-muted-foreground">Falta gerar</div>
             <div className="font-semibold tabular-nums text-rose-500">{formatBRL(falta)}</div>
           </div>
         </div>

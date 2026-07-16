@@ -81,11 +81,11 @@ function StatusGeralBadge({ status }: { status: StatusGeral }) {
 function ParcelaStatusBadge({ status }: { status: string }) {
   switch (status) {
     case "pago":
-      return <Badge className="bg-primary/20 text-primary text-[10px]">Pago</Badge>;
+      return <Badge className="bg-primary/20 text-primary text-xs">Pago</Badge>;
     case "inadimplente":
-      return <Badge variant="destructive" className="text-[10px]">Inadimplente</Badge>;
+      return <Badge variant="destructive" className="text-xs">Inadimplente</Badge>;
     default:
-      return <Badge variant="secondary" className="text-[10px]">Pendente</Badge>;
+      return <Badge variant="secondary" className="text-xs">Pendente</Badge>;
   }
 }
 
@@ -177,7 +177,7 @@ function DrawerBody({
                 <Button variant="ghost" size="icon" className="h-5 w-5" onClick={copyCpf}>
                   <Copy className="h-3 w-3" />
                 </Button>
-                {copiedCpf && <span className="text-[10px] text-primary">Copiado</span>}
+                {copiedCpf && <span className="text-xs text-primary">Copiado</span>}
               </div>
             </div>
             <StatusGeralBadge status={statusGeral} />
@@ -271,7 +271,7 @@ function DrawerBody({
               value={valorAReceber}
               onChange={(e) => setValorAReceber(e.target.value)}
             />
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Este valor é apenas para conferência interna. Não afeta relatórios ou totais.
             </p>
           </div>

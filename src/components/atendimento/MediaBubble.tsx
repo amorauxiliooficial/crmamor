@@ -74,7 +74,7 @@ export const MediaBubble = memo(function MediaBubble({
           isMe={isMe}
         />
         {caption && caption !== "[audio]" && (
-          <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{caption}</p>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{caption}</p>
         )}
       </div>
     );
@@ -101,7 +101,7 @@ export const MediaBubble = memo(function MediaBubble({
             />
           </button>
           {caption && caption !== "[image]" && caption !== "[sticker]" && (
-            <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{caption}</p>
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">{caption}</p>
           )}
         </div>
 
@@ -152,7 +152,7 @@ export const MediaBubble = memo(function MediaBubble({
             </div>
           </button>
           {caption && caption !== "[video]" && (
-            <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{caption}</p>
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">{caption}</p>
           )}
         </div>
 
@@ -205,15 +205,15 @@ export const MediaBubble = memo(function MediaBubble({
               </p>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className={cn(
-                  "text-[10px] font-medium uppercase tracking-wide",
+                  "text-xs font-medium uppercase tracking-wide",
                   isMe ? "text-primary-foreground/50" : "text-muted-foreground/60"
                 )}>
                   {docInfo.label}
                 </span>
                 {mediaSize && (
                   <>
-                    <span className={cn("text-[10px]", isMe ? "text-primary-foreground/30" : "text-muted-foreground/30")}>•</span>
-                    <span className={cn("text-[10px]", isMe ? "text-primary-foreground/50" : "text-muted-foreground/60")}>
+                    <span className={cn("text-xs", isMe ? "text-primary-foreground/30" : "text-muted-foreground/30")}>•</span>
+                    <span className={cn("text-xs", isMe ? "text-primary-foreground/50" : "text-muted-foreground/60")}>
                       {formatFileSize(mediaSize)}
                     </span>
                   </>
@@ -291,7 +291,7 @@ export const MediaBubble = memo(function MediaBubble({
         </div>
 
         {caption && caption !== "[document]" && (
-          <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{caption}</p>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{caption}</p>
         )}
       </div>
     );

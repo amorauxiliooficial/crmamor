@@ -71,7 +71,7 @@ export function FollowUpBadge({
             <Badge
               variant="outline"
               className={cn(
-                "h-5 px-1.5 py-0 gap-0.5 text-[10px] font-medium cursor-pointer border",
+                "h-5 px-1.5 py-0 gap-0.5 text-xs font-medium cursor-pointer border",
                 config.className,
                 className
               )}
