@@ -20,7 +20,6 @@ import {
   FolderOpen,
   Mail,
   MapPin,
-  MessageCircle,
   Pencil,
   Plus,
   Phone,
@@ -92,13 +91,8 @@ export function MaeDetailDialog({
   const mapsUrl = enderecoCompleto
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`
     : "";
-  const phoneDigits = mae.telefone?.replace(/\D/g, "") || "";
-  const whatsappNumber = phoneDigits && phoneDigits.length <= 11 ? `55${phoneDigits}` : phoneDigits;
 
-  const openWhatsApp = () => {
-    if (!whatsappNumber) return;
-    window.open(`https://wa.me/${whatsappNumber}`, "_blank", "noopener,noreferrer");
-  };
+
 
   const ultimoContatoLabel = !acompanhamento.aplicavel
     ? "Não se aplica"
@@ -108,8 +102,8 @@ export function MaeDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] gap-0 overflow-hidden border-border/60 bg-card p-0 shadow-2xl sm:max-w-[calc(100vw-2rem)] lg:max-w-3xl">
-        <div className="flex max-h-[90dvh] min-h-0 flex-col overflow-y-auto">
+      <DialogContent className="max-h-[90dvh] w-[calc(100vw-1rem)] gap-0 overflow-hidden border-border/60 bg-card p-0 shadow-2xl sm:max-w-lg lg:max-w-2xl">
+        <div className="flex max-h-[90dvh] min-h-0 flex-col overflow-y-auto overflow-x-hidden">
           {/* ===== HEADER ===== */}
           <DialogHeader className="shrink-0 space-y-0 border-b border-border/60 bg-gradient-to-b from-muted/40 to-transparent px-5 py-5 pr-12 text-left md:px-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -239,17 +233,6 @@ export function MaeDetailDialog({
               <Plus className="h-3.5 w-3.5" />
               Registrar contato
             </Button>
-            {mae.telefone && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1 gap-1.5 border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-400 sm:flex-none"
-                onClick={openWhatsApp}
-              >
-                <MessageCircle className="h-3.5 w-3.5" />
-                WhatsApp
-              </Button>
-            )}
             <Button
               size="sm"
               variant="outline"
