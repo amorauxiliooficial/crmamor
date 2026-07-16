@@ -225,7 +225,7 @@ export function MaeDetailDialog({
           </DialogHeader>
 
           {/* ===== ACTION TOOLBAR ===== */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-border/60 bg-muted/20 px-5 py-3 md:px-6">
+          <div className="shrink-0 flex flex-wrap items-center gap-2 border-b border-border/60 bg-muted/20 px-5 py-3 md:px-6">
             <Button
               size="sm"
               className="flex-1 gap-1.5 sm:flex-none"
