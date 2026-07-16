@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { MaeProcesso, STATUS_COLORS } from "@/types/mae";
 import { formatCpf, formatDate } from "@/lib/formatters";
 import {
@@ -26,6 +26,7 @@ import {
   MessageCircle,
   MessageSquareWarning,
   Pencil,
+  Plus,
   Phone,
   UserRound,
 } from "lucide-react";
@@ -193,10 +194,6 @@ export function MaeDetailDialog({
                     Editar
                   </Button>
                 )}
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => setActiveTab("documentos")}>
-                  <FolderOpen className="h-3.5 w-3.5" />
-                  Documentos
-                </Button>
               </div>
             </div>
             <DialogDescription className="sr-only">
@@ -205,7 +202,7 @@ export function MaeDetailDialog({
           </DialogHeader>
 
           <div className="min-w-0 px-4 pb-4 md:px-5">
-            <div className="my-3 grid divide-y border-y py-2.5 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+            <div className="my-3 grid divide-y border-y py-2.5 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
               <div className="pb-3 sm:pb-0 sm:pr-4">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <MessageSquareWarning className="h-3.5 w-3.5 text-primary" />
@@ -218,15 +215,6 @@ export function MaeDetailDialog({
                       ? "Nenhuma anotação"
                       : formatarTempo(acompanhamento.diasSemContato)}
                 </p>
-                {acompanhamento.aplicavel && (
-                  <button
-                    type="button"
-                    className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                    onClick={() => setActiveTab("historico")}
-                  >
-                    Registrar contato
-                  </button>
-                )}
               </div>
               <div className="pt-3 sm:pl-4 sm:pt-0">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -235,18 +223,43 @@ export function MaeDetailDialog({
                 </div>
                 <p className="mt-1 text-sm font-medium">{gpsStatus}</p>
               </div>
+              <div className="pt-3 sm:pl-4 sm:pt-0">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <ClipboardList className="h-3.5 w-3.5 text-primary" />
+                  Etapa atual
+                </div>
+                <p className="mt-1 truncate text-sm font-medium" title={mae.status_processo}>
+                  {mae.status_processo}
+                </p>
+              </div>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid h-auto w-full grid-cols-3">
-                <TabsTrigger value="resumo" className="text-sm">Resumo</TabsTrigger>
-                <TabsTrigger value="historico" className="text-sm">Histórico</TabsTrigger>
-                <TabsTrigger value="documentos" className="text-sm">Documentos</TabsTrigger>
-              </TabsList>
+              <div className="flex flex-wrap items-center gap-2 border-b pb-3">
+                {activeTab !== "resumo" && (
+                  <Button variant="ghost" size="sm" onClick={() => setActiveTab("resumo")}>
+                    Resumo
+                  </Button>
+                )}
+                <Button size="sm" className="gap-2" onClick={() => setActiveTab("historico")}>
+                  <Plus className="h-3.5 w-3.5" />
+                  Registrar contato
+                </Button>
+                {mae.telefone && (
+                  <Button variant="outline" size="sm" className="gap-2" onClick={openWhatsApp}>
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    WhatsApp
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => setActiveTab("documentos")}>
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  Documentos
+                </Button>
+              </div>
 
               <TabsContent value="resumo" className="mt-4 space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
-                  <DetailSection icon={ClipboardList} title="Processo">
+                  <DetailSection icon={ClipboardList} title="Dados do processo">
                     <DetailField label="Tipo de evento" value={mae.tipo_evento} />
                     <DetailField
                       label={mae.data_evento_tipo || "Data do evento"}
@@ -255,9 +268,10 @@ export function MaeDetailDialog({
                     <DetailField label="Categoria" value={mae.categoria_previdenciaria} />
                     {mae.segurada && <DetailField label="Segurada" value={mae.segurada} />}
                     <DetailField label="Contrato" value={mae.contrato_assinado ? "Assinado" : "Não assinado"} />
+                    {mae.protocolo_inss && <DetailField label="Protocolo INSS" value={mae.protocolo_inss} mono />}
                   </DetailSection>
 
-                  <DetailSection icon={Contact} title="Contato">
+                  <DetailSection icon={Contact} title="Contato e ações">
                     {mae.telefone && <DetailField label="Telefone" value={mae.telefone} />}
                     {mae.email && <DetailField label="E-mail" value={mae.email} />}
                     {mae.uf && <DetailField label="UF" value={mae.uf} />}
@@ -269,10 +283,6 @@ export function MaeDetailDialog({
                       <div className="mt-3 flex flex-wrap gap-2">
                         {mae.telefone && (
                           <>
-                            <Button variant="outline" size="sm" className="gap-2" onClick={openWhatsApp}>
-                              <MessageCircle className="h-3.5 w-3.5" />
-                              WhatsApp
-                            </Button>
                             <Button variant="ghost" size="sm" className="gap-2" onClick={() => copyToClipboard(mae.telefone!, "Telefone")}>
                               <Phone className="h-3.5 w-3.5" />
                               Copiar telefone
@@ -290,9 +300,8 @@ export function MaeDetailDialog({
                   </DetailSection>
                 </div>
 
-                {(mae.protocolo_inss || mae.parcelas) && (
+                {mae.parcelas && (
                   <DetailSection icon={FileText} title="INSS">
-                    {mae.protocolo_inss && <DetailField label="Protocolo" value={mae.protocolo_inss} mono />}
                     {mae.parcelas && <DetailField label="Parcelas" value={mae.parcelas} />}
                   </DetailSection>
                 )}
@@ -327,7 +336,7 @@ export function MaeDetailDialog({
               </TabsContent>
 
               <TabsContent value="historico" className="mt-5">
-                <ObservacoesHistorico maeId={mae.id} />
+                <ObservacoesHistorico maeId={mae.id} startOpen />
               </TabsContent>
 
               <TabsContent value="documentos" className="mt-5">

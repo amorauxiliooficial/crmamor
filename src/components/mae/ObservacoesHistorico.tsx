@@ -12,6 +12,7 @@ import {
   X,
   Check,
   AlertTriangle,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,7 @@ import {
 
 interface Props {
   maeId: string;
+  startOpen?: boolean;
 }
 
 const CATEGORIAS_EDITAVEIS: ObservacaoCategoria[] = [
@@ -70,7 +72,7 @@ function formatDateTime(iso: string) {
   }
 }
 
-export function ObservacoesHistorico({ maeId }: Props) {
+export function ObservacoesHistorico({ maeId, startOpen = false }: Props) {
   const { user } = useAuth();
   const { data: observacoes = [], isLoading, create, update, togglePin, remove } =
     useMaeObservacoes(maeId);
@@ -78,6 +80,8 @@ export function ObservacoesHistorico({ maeId }: Props) {
   // form
   const [novoTexto, setNovoTexto] = useState("");
   const [novaCategoria, setNovaCategoria] = useState<ObservacaoCategoria>("outro");
+  const [showComposer, setShowComposer] = useState(startOpen);
+  const [showFilters, setShowFilters] = useState(false);
 
   // filtros
   const [busca, setBusca] = useState("");
@@ -122,6 +126,7 @@ export function ObservacoesHistorico({ maeId }: Props) {
         onSuccess: () => {
           setNovoTexto("");
           setNovaCategoria("outro");
+          setShowComposer(false);
         },
       }
     );
@@ -262,19 +267,23 @@ export function ObservacoesHistorico({ maeId }: Props) {
         <h4 className="font-semibold">Observações & Histórico</h4>
           <p className="mt-1 text-sm text-muted-foreground">Contatos, conferências e atualizações em ordem cronológica.</p>
         </div>
-        <Badge variant="secondary" className="text-xs">
-          {observacoes.length}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="text-xs">{observacoes.length}</Badge>
+          <Button size="sm" className="gap-2" onClick={() => setShowComposer(true)}>
+            <Plus className="h-4 w-4" /> Nova anotação
+          </Button>
+        </div>
       </div>
 
       {/* Nova anotação */}
-      <div className="space-y-3 rounded-xl border bg-muted/20 p-4">
+      {showComposer && (
+      <div className="space-y-3 border-y py-3">
         <Textarea
-          placeholder="Adicionar nova anotação sobre a mãe..."
+          placeholder="Registre uma atualização objetiva..."
           value={novoTexto}
           onChange={(e) => setNovoTexto(e.target.value)}
           rows={3}
-          className="min-h-24 resize-y bg-background text-sm"
+          className="min-h-20 resize-none text-sm"
         />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Select
@@ -292,28 +301,33 @@ export function ObservacoesHistorico({ maeId }: Props) {
               ))}
             </SelectContent>
           </Select>
-          <Button
-            size="sm"
-            onClick={handleAdd}
-            disabled={!novoTexto.trim() || create.isPending}
-          >
-            <Plus className="h-4 w-4 mr-1" /> Adicionar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setShowComposer(false)}>Cancelar</Button>
+            <Button size="sm" onClick={handleAdd} disabled={!novoTexto.trim() || create.isPending}>
+              <Plus className="h-4 w-4 mr-1" /> Adicionar
+            </Button>
+          </div>
         </div>
       </div>
+      )}
 
       {/* Filtros */}
       {observacoes.length > 0 && (
-        <div className="grid grid-cols-1 gap-2 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex flex-wrap items-center gap-2 border-b pb-3">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               placeholder="Buscar..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="h-9 pl-7 text-sm"
+              className="h-9 w-full pl-7 text-sm sm:w-64"
             />
           </div>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowFilters((value) => !value)}>
+            <SlidersHorizontal className="h-3.5 w-3.5" /> Filtros
+          </Button>
+          {showFilters && (
+          <div className="grid w-full grid-cols-1 gap-2 pt-1 sm:grid-cols-2">
           <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
             <SelectTrigger className="h-9 text-sm">
               <SelectValue placeholder="Categoria" />
@@ -357,6 +371,8 @@ export function ObservacoesHistorico({ maeId }: Props) {
               title="Data final"
             />
           </div>
+          </div>
+          )}
         </div>
       )}
 
@@ -370,7 +386,7 @@ export function ObservacoesHistorico({ maeId }: Props) {
             : "Nenhuma anotação corresponde aos filtros."}
         </p>
       ) : (
-        <div className="rounded-xl border px-4">
+        <div>
           {fixadas.length > 0 && (
             <>
               <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
