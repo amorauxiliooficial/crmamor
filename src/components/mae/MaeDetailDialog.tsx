@@ -363,25 +363,25 @@ export function MaeDetailDialog({
                 />
               </TabsContent>
             </Tabs>
-          </div>
 
-          {/* ===== FOOTER ===== */}
-          <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 bg-muted/20 px-5 py-3 md:px-6">
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70">
-                Origem
-              </span>
-              <span className="text-xs font-medium text-foreground/80">
-                {mae.origem || "Não informado"}
-              </span>
-            </div>
-            <div className="flex flex-col items-end">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70">
-                Última atualização
-              </span>
-              <span className="text-xs font-medium text-foreground/80">
-                {formatDate(mae.data_ultima_atualizacao)}
-              </span>
+            {/* ===== FOOTER ===== */}
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-3">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70">
+                  Origem
+                </span>
+                <span className="text-xs font-medium text-foreground/80">
+                  {mae.origem || "Não informado"}
+                </span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70">
+                  Última atualização
+                </span>
+                <span className="text-xs font-medium text-foreground/80">
+                  {formatDate(mae.data_ultima_atualizacao)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
