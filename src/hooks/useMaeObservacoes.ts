@@ -3,18 +3,21 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { atualizarUltimoContatoMaeNoCache } from "@/hooks/useMaesData";
 
 export type ObservacaoCategoria =
   | "ligacao"
   | "whatsapp"
   | "documento"
   | "reuniao"
+  | "conferencia"
   | "importado"
   | "outro";
 
 export interface MaeObservacao {
   id: string;
   mae_id: string;
+  conferencia_id: string | null;
   autor_id: string | null;
   autor_nome: string;
   texto: string;
@@ -33,6 +36,7 @@ export const CATEGORIA_LABEL: Record<ObservacaoCategoria, string> = {
   whatsapp: "WhatsApp",
   documento: "Documento",
   reuniao: "Reunião",
+  conferencia: "Conferência INSS",
   importado: "Importado",
   outro: "Outro",
 };
@@ -42,6 +46,7 @@ export const CATEGORIA_COLORS: Record<ObservacaoCategoria, string> = {
   whatsapp: "bg-green-500/15 text-green-700 dark:text-green-300 border-green-500/30",
   documento: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
   reuniao: "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30",
+  conferencia: "bg-primary/10 text-primary border-primary/25",
   importado: "bg-muted text-muted-foreground border-border",
   outro: "bg-pink-500/15 text-pink-700 dark:text-pink-300 border-pink-500/30",
 };
@@ -77,6 +82,7 @@ export function useMaeObservacoes(maeId: string | null | undefined) {
         { event: "*", schema: "public", table: "mae_observacoes", filter: `mae_id=eq.${maeId}` },
         () => {
           queryClient.invalidateQueries({ queryKey: key });
+          queryClient.invalidateQueries({ queryKey: ["maes_data"] });
         }
       )
       .subscribe();
@@ -96,18 +102,24 @@ export function useMaeObservacoes(maeId: string | null | undefined) {
         .eq("id", user.id)
         .maybeSingle();
       const autor_nome = profile?.full_name || profile?.email || "Atendente";
-      const { error } = await supabase.from("mae_observacoes").insert({
-        mae_id: maeId,
-        autor_id: user.id,
-        autor_nome,
-        texto: input.texto.trim(),
-        categoria: input.categoria,
-        fixada: input.fixada ?? false,
-      });
+      const { data, error } = await supabase
+        .from("mae_observacoes")
+        .insert({
+          mae_id: maeId,
+          autor_id: user.id,
+          autor_nome,
+          texto: input.texto.trim(),
+          categoria: input.categoria,
+          fixada: input.fixada ?? false,
+        })
+        .select("created_at")
+        .single();
       if (error) throw error;
+      return data.created_at;
     },
-    onSuccess: () => {
+    onSuccess: (createdAt) => {
       toast.success("Anotação adicionada");
+      atualizarUltimoContatoMaeNoCache(queryClient, maeId!, createdAt);
       queryClient.invalidateQueries({ queryKey: key });
       queryClient.invalidateQueries({ queryKey: ["maes_data"] });
     },
@@ -164,6 +176,7 @@ export function useMaeObservacoes(maeId: string | null | undefined) {
     onSuccess: () => {
       toast.success("Anotação removida");
       queryClient.invalidateQueries({ queryKey: key });
+      queryClient.invalidateQueries({ queryKey: ["maes_data"] });
     },
     onError: (e: any) => toast.error(e.message || "Erro ao remover"),
   });

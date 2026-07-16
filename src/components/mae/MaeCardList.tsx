@@ -168,21 +168,16 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
                     {mae.uf}
                   </Badge>
                 )}
-                {mae.contrato_assinado && (
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
-                    Contrato ✓
-                  </Badge>
-                )}
                 {precisaDAS && (
-                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 gap-0.5 animate-pulse">
-                    <FileWarning className="h-2.5 w-2.5" />
-                    DAS
+                  <Badge variant="outline" className="h-5 gap-1 border-destructive/25 bg-destructive/[0.07] px-1.5 py-0 text-[10px] font-medium text-foreground">
+                    <FileWarning className="h-2.5 w-2.5 text-destructive" />
+                    GPS pendente
                   </Badge>
                 )}
                 {dasConcluido && (
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 gap-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                    <FileWarning className="h-2.5 w-2.5" />
-                    DAS ✓
+                  <Badge variant="outline" className="h-5 gap-1 border-emerald-200 bg-emerald-50 px-1.5 py-0 text-[10px] font-medium text-foreground dark:border-emerald-800/60 dark:bg-emerald-950/25">
+                    <FileWarning className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-300" />
+                    GPS finalizada
                   </Badge>
                 )}
               </div>

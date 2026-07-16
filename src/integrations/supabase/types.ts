@@ -1289,6 +1289,7 @@ export type Database = {
           autor_id: string | null
           autor_nome: string
           categoria: Database["public"]["Enums"]["observacao_categoria"]
+          conferencia_id: string | null
           created_at: string
           editada_em: string | null
           editada_por: string | null
@@ -1304,6 +1305,7 @@ export type Database = {
           autor_id?: string | null
           autor_nome?: string
           categoria?: Database["public"]["Enums"]["observacao_categoria"]
+          conferencia_id?: string | null
           created_at?: string
           editada_em?: string | null
           editada_por?: string | null
@@ -1319,6 +1321,7 @@ export type Database = {
           autor_id?: string | null
           autor_nome?: string
           categoria?: Database["public"]["Enums"]["observacao_categoria"]
+          conferencia_id?: string | null
           created_at?: string
           editada_em?: string | null
           editada_por?: string | null
@@ -1331,6 +1334,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "mae_observacoes_conferencia_id_fkey"
+            columns: ["conferencia_id"]
+            isOneToOne: true
+            referencedRelation: "conferencia_inss"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "mae_observacoes_mae_id_fkey"
             columns: ["mae_id"]
@@ -2936,6 +2946,7 @@ export type Database = {
         | "whatsapp"
         | "documento"
         | "reuniao"
+        | "conferencia"
         | "importado"
         | "outro"
       resultado_final: "APROVADA" | "REPROVADA"
@@ -3139,6 +3150,7 @@ export const Constants = {
         "whatsapp",
         "documento",
         "reuniao",
+        "conferencia",
         "importado",
         "outro",
       ],
