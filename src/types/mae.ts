@@ -51,6 +51,8 @@ export interface MaeProcesso {
   mes_gestacao?: number | null;
   data_ultima_atualizacao: string;
   created_at?: string;
+  /** Data da anotação mais recente em Observações & Histórico. */
+  ultimo_contato_em?: string | null;
   link_documentos?: string | null;
   cep?: string | null;
   endereco?: string | null;

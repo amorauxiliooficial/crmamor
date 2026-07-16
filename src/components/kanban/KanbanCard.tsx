@@ -1,7 +1,7 @@
 import { MaeProcesso } from "@/types/mae";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Baby, FolderOpen, AlertTriangle, FileWarning, KeyRound, Flame } from "lucide-react";
+import { Calendar, FileText, Baby, FolderOpen, AlertTriangle, FileWarning, KeyRound, Flame, MessageSquareWarning } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { differenceInDays, parseISO } from "date-fns";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { calcularMesGravidez } from "@/lib/gestacaoUtils";
 import { MarketingBadge } from "@/components/marketing/MarketingBadge";
+import { formatarTempo, getAcompanhamentoMae } from "@/lib/maeAcompanhamento";
 
 interface KanbanCardProps {
   mae: MaeProcesso & { ultima_atividade_em?: string | null };
@@ -44,6 +45,7 @@ export function KanbanCard({
   const dasEstado = mae.das_concluido ? "concluido" : mostrarDAS ? "pendente" : "oculto";
   const { getFollowUpStatus, getDaysSinceLastActivity, configLoading } = useFollowUpStatus();
   const queryClient = useQueryClient();
+  const acompanhamento = getAcompanhamentoMae(mae);
   
   const isActiveStatus = !mae.status_processo.toLowerCase().includes("aprovada") &&
     !mae.status_processo.toLowerCase().includes("indeferida") &&
@@ -96,6 +98,8 @@ export function KanbanCard({
         isDragging && "shadow-lg ring-1 ring-primary/40 rotate-2",
         followUpStatus === "overdue" && !hasUnreadAlert && "ring-1 ring-destructive/30",
         hasUnreadAlert && "ring-1 ring-primary/40"
+        ,acompanhamento.contatoAtrasado && "border-l-4 border-l-red-500 bg-red-50/60 dark:bg-red-950/20"
+        ,!acompanhamento.contatoAtrasado && acompanhamento.senhaAtrasada && "border-l-4 border-l-amber-500 bg-amber-50/60 dark:bg-amber-950/20"
       )}
       onClick={onClick}
     >
@@ -182,6 +186,23 @@ export function KanbanCard({
           <p className="text-xs text-muted-foreground font-mono">
             {formatCpf(mae.cpf)}
           </p>
+
+          {(acompanhamento.contatoAtrasado || acompanhamento.senhaAtrasada) && (
+            <div className="space-y-1 rounded-md border bg-background/80 p-1.5">
+              {acompanhamento.contatoAtrasado && (
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-red-700 dark:text-red-300">
+                  <MessageSquareWarning className="h-3.5 w-3.5 shrink-0" />
+                  <span>Sem contato {formatarTempo(acompanhamento.diasSemContato)}</span>
+                </div>
+              )}
+              {acompanhamento.senhaAtrasada && (
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                  <KeyRound className="h-3.5 w-3.5 shrink-0" />
+                  <span>Sem senha {formatarTempo(acompanhamento.diasSemSenha)}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-1">
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">

@@ -68,6 +68,7 @@ const mapDbToMae = (item: Record<string, unknown>): MaeProcessoComAtividade => (
   mes_gestacao: (item.mes_gestacao as number) ?? null,
   data_ultima_atualizacao: item.data_ultima_atualizacao as string,
   created_at: (item.created_at as string) || undefined,
+  ultimo_contato_em: (item.ultimo_contato_em as string) || null,
   link_documentos: (item.link_documentos as string) || null,
   ultima_atividade_em: (item.ultima_atividade_em as string) || null,
   precisa_das: (item.precisa_das as boolean) ?? false,
