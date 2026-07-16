@@ -1390,6 +1390,7 @@ export type Database = {
           tipo_evento: Database["public"]["Enums"]["tipo_evento"]
           uf: string | null
           ultima_atividade_em: string | null
+          ultimo_contato_em: string | null
           user_id: string
           verificacao_duas_etapas: boolean
           zap_card_id: string | null
@@ -1443,6 +1444,7 @@ export type Database = {
           tipo_evento?: Database["public"]["Enums"]["tipo_evento"]
           uf?: string | null
           ultima_atividade_em?: string | null
+          ultimo_contato_em?: string | null
           user_id: string
           verificacao_duas_etapas?: boolean
           zap_card_id?: string | null
@@ -1496,6 +1498,7 @@ export type Database = {
           tipo_evento?: Database["public"]["Enums"]["tipo_evento"]
           uf?: string | null
           ultima_atividade_em?: string | null
+          ultimo_contato_em?: string | null
           user_id?: string
           verificacao_duas_etapas?: boolean
           zap_card_id?: string | null
