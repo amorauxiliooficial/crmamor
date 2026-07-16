@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, DollarSign, FolderOpen, UserCog, Users, Tag } from "lucide-react";
+import { Loader2, Save, DollarSign, FolderOpen, Users, Tag, UserRound, ClipboardList, MapPin, Landmark } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MaeProcesso, StatusProcesso, STATUS_ORDER } from "@/types/mae";
@@ -56,6 +56,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
   const [originalAtendentes, setOriginalAtendentes] = useState<string[]>([]);
   const [phones, setPhones] = useState<PhoneEntry[]>([]);
   const [address, setAddress] = useState<AddressValue>(emptyAddress);
+  const [activeSection, setActiveSection] = useState<"pessoais" | "processo" | "endereco" | "inss">("pessoais");
 
   // Load existing contacts
   const { data: existingContacts } = useMotherContacts(mae?.id ?? null);
@@ -162,6 +163,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
 
   useEffect(() => {
     if (mae && open) {
+      setActiveSection("pessoais");
       setFormData({
         nome_mae: mae.nome_mae,
         cpf: formatCpf(mae.cpf),
@@ -372,8 +374,8 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[94dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[calc(100vw-2rem)] lg:max-w-5xl">
+        <DialogHeader className="shrink-0 border-b px-5 py-4 pr-12 md:px-6">
           <DialogTitle className="flex items-center gap-2">
             <Save className="h-5 w-5 text-primary" />
             Editar Processo
@@ -383,9 +385,41 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="grid min-h-0 flex-1 md:grid-cols-[210px_minmax(0,1fr)]">
+            <nav className="flex shrink-0 gap-2 overflow-x-auto border-b bg-muted/20 p-3 md:flex-col md:border-b-0 md:border-r md:p-4" aria-label="Seções da edição">
+              {([
+                ["pessoais", "Dados pessoais", UserRound],
+                ["processo", "Processo", ClipboardList],
+                ["endereco", "Endereço", MapPin],
+                ["inss", "INSS e observações", Landmark],
+              ] as const).map(([value, label, Icon]) => (
+                <Button
+                  key={value}
+                  type="button"
+                  variant={activeSection === value ? "secondary" : "ghost"}
+                  className="shrink-0 justify-start gap-2"
+                  onClick={() => setActiveSection(value)}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </Button>
+              ))}
+            </nav>
+
+            <div className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6">
+              <div className="mb-5 border-b pb-3">
+                <h3 className="font-semibold">
+                  {activeSection === "pessoais" && "Dados pessoais"}
+                  {activeSection === "processo" && "Processo e evento"}
+                  {activeSection === "endereco" && "Endereço"}
+                  {activeSection === "inss" && "INSS e observações"}
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">Preencha os dados desta seção e salve ao finalizar.</p>
+              </div>
+              <div className="space-y-6">
           {/* Admin: Atendentes Responsáveis */}
-          {isAdmin && (
+          {activeSection === "processo" && isAdmin && (
             <div className="space-y-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-primary" />
@@ -437,7 +471,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           )}
 
           {/* Status */}
-          <div className="space-y-2">
+          <div className={activeSection === "processo" ? "space-y-2" : "hidden"}>
             <Label>Status do Processo</Label>
             <Select
               value={formData.status_processo}
@@ -457,7 +491,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           </div>
 
           {/* Dados Pessoais */}
-          <div className="space-y-4">
+          <div className={activeSection === "pessoais" ? "space-y-4" : "hidden"}>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Dados Pessoais
             </h3>
@@ -568,7 +602,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           </div>
 
           {/* Dados do Evento */}
-          <div className="space-y-4">
+          <div className={activeSection === "processo" ? "space-y-4" : "hidden"}>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Dados do Evento
             </h3>
@@ -644,12 +678,14 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           </div>
 
           {/* Endereço */}
-          <AddressFields value={address} onChange={setAddress} />
+          <div className={activeSection === "endereco" ? "block" : "hidden"}>
+            <AddressFields value={address} onChange={setAddress} />
+          </div>
 
 
 
           {/* INSS */}
-          <div className="space-y-4">
+          <div className={activeSection === "inss" ? "space-y-4" : "hidden"}>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Dados INSS
             </h3>
@@ -694,7 +730,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           </div>
 
           {/* Gestante */}
-          <div className="space-y-4 p-4 bg-primary/10 rounded-lg">
+          <div className={activeSection === "processo" ? "space-y-4 rounded-lg bg-primary/10 p-4" : "hidden"}>
             <div className="flex items-center justify-between">
               <div>
                 <Label htmlFor="is_gestante" className="font-medium">Gestante</Label>
@@ -738,7 +774,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           </div>
 
           {/* Contrato */}
-          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+          <div className={activeSection === "processo" ? "flex items-center justify-between rounded-lg bg-muted/50 p-4" : "hidden"}>
             <div>
               <Label htmlFor="contrato_assinado" className="font-medium">Contrato Assinado</Label>
               <p className="text-sm text-muted-foreground">A cliente já assinou o contrato?</p>
@@ -751,7 +787,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           </div>
 
           {/* Observações */}
-          <div className="space-y-2">
+          <div className={activeSection === "inss" ? "space-y-2" : "hidden"}>
             <Label htmlFor="observacoes">Observações</Label>
             <Textarea
               id="observacoes"
@@ -761,9 +797,12 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
               rows={3}
             />
           </div>
+              </div>
+            </div>
+          </div>
 
           {/* Submit */}
-          <div className="flex flex-wrap justify-between gap-3">
+          <div className="flex shrink-0 flex-wrap justify-between gap-3 border-t bg-background px-4 py-3 md:px-6">
             <div className="flex flex-wrap gap-2">
               <Button 
                 type="button" 
