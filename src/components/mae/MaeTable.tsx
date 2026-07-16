@@ -225,7 +225,7 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
     const value = mae[columnId as keyof MaeProcesso];
 
     switch (columnId) {
-      case "nome_mae":
+      case "nome_mae": {
         const acompanhamento = getAcompanhamentoMae(mae);
         return (
           <div className="space-y-1">
@@ -238,20 +238,25 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
               </Badge>
               )}
             </div>
-            <div className="flex flex-wrap gap-1">
-              <Badge variant={acompanhamento.contatoAtrasado ? "destructive" : "outline"} className="h-5 gap-1 px-1.5 text-[10px]">
-                <MessageSquareWarning className="h-3 w-3" />
-                Contato {formatarTempo(acompanhamento.diasSemContato)}
-              </Badge>
-              {!mae.senha_gov && (
-                <Badge variant={acompanhamento.senhaAtrasada ? "destructive" : "secondary"} className="h-5 gap-1 px-1.5 text-[10px]">
-                  <KeyRound className="h-3 w-3" />
-                  Sem senha {formatarTempo(acompanhamento.diasSemSenha)}
-                </Badge>
-              )}
-            </div>
+            {(acompanhamento.contatoAtrasado || acompanhamento.senhaAtrasada) && (
+              <div className="flex flex-wrap gap-1">
+                {acompanhamento.contatoAtrasado && (
+                  <Badge variant="outline" className="h-5 gap-1 border-primary/15 bg-primary/5 px-1.5 text-[10px] font-medium text-foreground">
+                    <MessageSquareWarning className="h-3 w-3 text-primary" />
+                    Sem contato {formatarTempo(acompanhamento.diasSemContato)}
+                  </Badge>
+                )}
+                {acompanhamento.senhaAtrasada && (
+                  <Badge variant="outline" className="h-5 gap-1 border-amber-200 bg-amber-50 px-1.5 text-[10px] font-medium text-foreground dark:border-amber-800/60 dark:bg-amber-950/25">
+                    <KeyRound className="h-3 w-3 text-amber-700 dark:text-amber-300" />
+                    Sem senha {formatarTempo(acompanhamento.diasSemSenha)}
+                  </Badge>
+                )}
+              </div>
+            )}
           </div>
         );
+      }
       case "cpf":
         return formatCpf(value as string);
       case "data_evento":
