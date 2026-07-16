@@ -374,20 +374,23 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[94dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[calc(100vw-2rem)] lg:max-w-5xl">
-        <DialogHeader className="shrink-0 border-b px-5 py-4 pr-12 md:px-6">
-          <DialogTitle className="flex items-center gap-2">
-            <Save className="h-5 w-5 text-primary" />
+      <DialogContent className="flex max-h-[88dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[calc(100vw-2rem)] lg:max-w-4xl">
+        <DialogHeader className="shrink-0 border-b px-4 py-3 pr-12 md:px-5">
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <Save className="h-4 w-4 text-primary" />
             Editar Processo
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             Altere as informações do processo de {mae.nome_mae}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className="grid min-h-0 flex-1 md:grid-cols-[210px_minmax(0,1fr)]">
-            <nav className="flex shrink-0 gap-2 overflow-x-auto border-b bg-muted/20 p-3 md:flex-col md:border-b-0 md:border-r md:p-4" aria-label="Seções da edição">
+        <form
+          onSubmit={handleSubmit}
+          className="flex min-h-0 flex-1 flex-col [&_input]:h-9 [&_label]:text-sm [&_[role=combobox]]:h-9"
+        >
+          <div className="grid min-h-0 flex-1 md:grid-cols-[180px_minmax(0,1fr)]">
+            <nav className="flex shrink-0 gap-1.5 overflow-x-auto border-b bg-muted/20 p-2.5 md:flex-col md:border-b-0 md:border-r md:p-3" aria-label="Seções da edição">
               {([
                 ["pessoais", "Dados pessoais", UserRound],
                 ["processo", "Processo", ClipboardList],
@@ -398,7 +401,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                   key={value}
                   type="button"
                   variant={activeSection === value ? "secondary" : "ghost"}
-                  className="shrink-0 justify-start gap-2"
+                  className="h-9 shrink-0 justify-start gap-2 px-3 text-sm"
                   onClick={() => setActiveSection(value)}
                 >
                   <Icon className="h-4 w-4" />
@@ -407,8 +410,8 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
               ))}
             </nav>
 
-            <div className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6">
-              <div className="mb-5 border-b pb-3">
+            <div className="min-w-0 flex-1 overflow-y-auto p-3.5 md:p-4">
+              <div className="mb-4 border-b pb-2.5">
                 <h3 className="font-semibold">
                   {activeSection === "pessoais" && "Dados pessoais"}
                   {activeSection === "processo" && "Processo e evento"}
@@ -417,7 +420,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                 </h3>
                 <p className="mt-1 text-sm text-muted-foreground">Preencha os dados desta seção e salve ao finalizar.</p>
               </div>
-              <div className="space-y-6">
+              <div className="space-y-4">
           {/* Admin: Atendentes Responsáveis */}
           {activeSection === "processo" && isAdmin && (
             <div className="space-y-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
@@ -495,7 +498,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Dados Pessoais
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="nome_mae">Nome da Mãe *</Label>
                 <Input
@@ -606,7 +609,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Dados do Evento
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Tipo de Evento</Label>
                 <Select
@@ -689,7 +692,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Dados INSS
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="protocolo_inss">Protocolo INSS</Label>
                 <Input
@@ -802,11 +805,12 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
           </div>
 
           {/* Submit */}
-          <div className="flex shrink-0 flex-wrap justify-between gap-3 border-t bg-background px-4 py-3 md:px-6">
+          <div className="flex shrink-0 flex-wrap justify-between gap-2 border-t bg-background px-4 py-2.5 md:px-5">
             <div className="flex flex-wrap gap-2">
               <Button 
                 type="button" 
                 variant="outline" 
+                size="sm"
                 onClick={() => setPagamentoDialogOpen(true)}
                 className="gap-2"
               >
@@ -816,6 +820,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
               <Button 
                 type="button" 
                 variant="outline" 
+                size="sm"
                 onClick={() => setDocumentosDialogOpen(true)}
                 className="gap-2"
               >
@@ -824,10 +829,10 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
               </Button>
             </div>
             <div className="flex gap-3">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" size="sm" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
