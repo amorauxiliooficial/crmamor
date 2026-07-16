@@ -106,7 +106,7 @@ export function MaeDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[94dvh] gap-0 overflow-y-auto p-0 sm:max-w-[calc(100vw-2rem)] lg:max-w-4xl">
+      <DialogContent className="max-h-[90dvh] gap-0 overflow-y-auto p-0 sm:max-w-[calc(100vw-2rem)] lg:max-w-3xl">
         <div className="flex min-h-0 flex-col">
           <DialogHeader className="shrink-0 border-b px-4 py-4 pr-12 md:px-6">
             <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
@@ -245,7 +245,7 @@ export function MaeDetailDialog({
               </TabsList>
 
               <TabsContent value="resumo" className="mt-5 space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-5 md:grid-cols-2">
                   <DetailSection icon={ClipboardList} title="Processo">
                     <DetailField label="Tipo de evento" value={mae.tipo_evento} />
                     <DetailField
@@ -382,7 +382,7 @@ function DetailSection({ icon: Icon, title, actions, children }: DetailSectionPr
         </h4>
         {actions && <div className="flex flex-wrap items-center justify-end gap-1">{actions}</div>}
       </div>
-      <div className="grid gap-2.5">{children}</div>
+      <div>{children}</div>
     </section>
   );
 }
@@ -395,9 +395,14 @@ interface DetailFieldProps {
 
 function DetailField({ label, value, mono = false }: DetailFieldProps) {
   return (
-    <div className="min-w-0 rounded-lg border bg-muted/20 px-3 py-2.5 text-sm">
-      <span className="block text-xs text-muted-foreground">{label}</span>
-      <span className={cn("mt-0.5 block min-w-0 break-words font-medium leading-relaxed", mono && "font-mono text-xs")}>{value}</span>
+    <div className="grid min-w-0 grid-cols-[minmax(88px,0.8fr)_minmax(0,1.2fr)] gap-3 border-b py-2 text-sm last:border-b-0">
+      <span className="text-muted-foreground">{label}</span>
+      <span
+        className={cn("min-w-0 truncate font-medium", mono && "font-mono text-xs")}
+        title={value}
+      >
+        {value}
+      </span>
     </div>
   );
 }
