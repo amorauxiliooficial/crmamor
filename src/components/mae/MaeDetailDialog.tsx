@@ -102,10 +102,11 @@ export function MaeDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] w-[calc(100vw-1rem)] gap-0 overflow-hidden border-border/60 bg-card p-0 shadow-2xl sm:max-w-lg lg:max-w-2xl">
-        <div className="flex max-h-[90dvh] min-h-0 flex-col overflow-y-auto overflow-x-hidden">
+      <DialogContent className="max-h-[92dvh] w-[calc(100vw-1rem)] gap-0 overflow-hidden border-border/60 bg-card p-0 shadow-2xl sm:max-w-lg lg:max-w-2xl">
+        <div className="flex max-h-[92dvh] min-h-0 flex-col overflow-hidden">
           {/* ===== HEADER ===== */}
           <DialogHeader className="shrink-0 space-y-0 border-b border-border/60 bg-gradient-to-b from-muted/40 to-transparent px-5 py-5 pr-12 text-left md:px-6">
+
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
@@ -224,7 +225,7 @@ export function MaeDetailDialog({
           </DialogHeader>
 
           {/* ===== ACTION TOOLBAR ===== */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-border/60 bg-muted/20 px-5 py-3 md:px-6">
+          <div className="shrink-0 flex flex-wrap items-center gap-2 border-b border-border/60 bg-muted/20 px-5 py-3 md:px-6">
             <Button
               size="sm"
               className="flex-1 gap-1.5 sm:flex-none"
@@ -255,7 +256,7 @@ export function MaeDetailDialog({
           </div>
 
           {/* ===== TABS CONTENT ===== */}
-          <div className="min-w-0 px-5 pb-5 md:px-6">
+          <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-5 md:px-6">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsContent value="resumo" className="mt-5 space-y-5">
                 <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
@@ -362,7 +363,7 @@ export function MaeDetailDialog({
           </div>
 
           {/* ===== FOOTER ===== */}
-          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-border/60 bg-muted/20 px-5 py-3 md:px-6">
+          <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 bg-muted/20 px-5 py-3 md:px-6">
             <div className="flex flex-col">
               <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70">
                 Origem
