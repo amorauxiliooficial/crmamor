@@ -259,7 +259,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
                     : "bg-muted border border-border group-hover:border-foreground/20"
                 }`}
               >
-                <span className={`text-[11px] font-bold tabular-nums ${active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"}`}>
+                <span className={`text-xs font-bold tabular-nums ${active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"}`}>
                   {tab.count}
                 </span>
               </span>
@@ -271,7 +271,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-2xl bg-card border border-border border-l-4 border-l-primary p-5 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
             {statusTab === "aguardando" ? "Aguardando Análise INSS" : "Aprovada"}
           </p>
           <div className="mt-2 flex items-baseline gap-3">
@@ -283,7 +283,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
         </div>
 
         <div className="rounded-2xl bg-card border border-border border-l-4 border-l-destructive p-5 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-destructive/80">
+          <p className="text-xs font-bold uppercase tracking-widest text-destructive/80">
             Pendentes de Conferência
           </p>
           <div className="mt-2 flex items-baseline gap-3">
@@ -297,7 +297,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
         </div>
 
         <div className="rounded-2xl bg-card border border-border border-l-4 border-l-emerald-500 p-5 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-500/80">
+          <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-500/80">
             Em Dia
           </p>
           <div className="mt-2 flex items-baseline gap-3">
@@ -315,11 +315,11 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
-                <TableHead className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Identidade</TableHead>
-                <TableHead className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Credenciais</TableHead>
-                <TableHead className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground text-center">Status</TableHead>
-                <TableHead className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Última Conferência</TableHead>
-                <TableHead className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground text-right">Ações</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Identidade</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Credenciais</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-widest text-muted-foreground text-center">Status</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Última Conferência</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-widest text-muted-foreground text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -344,7 +344,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
                     <TableCell className="py-4">
                       <div className="flex flex-col gap-1.5">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-[13px] text-foreground/90">
+                          <span className="font-mono text-sm text-foreground/90">
                             {formatCpf(mae.cpf)}
                           </span>
                           <Button
@@ -359,11 +359,11 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
                         {mae.senha_gov && (
                           <div className="flex items-center gap-2">
                             <span className="px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20">
-                              <span className="text-[10px] font-bold uppercase tracking-tighter text-primary">
+                              <span className="text-xs font-bold uppercase tracking-tighter text-primary">
                                 Gov.br
                               </span>
                             </span>
-                            <span className="font-mono text-[12px] text-muted-foreground">
+                            <span className="font-mono text-sm text-muted-foreground">
                               {mae.senha_gov}
                             </span>
                             <Button
@@ -381,12 +381,12 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
                     <TableCell className="py-4">
                       <div className="flex justify-center">
                         {mae.precisa_conferencia ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive/10 text-destructive text-[11px] font-bold border border-destructive/20">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive/10 text-destructive text-xs font-bold border border-destructive/20">
                             <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
                             PENDENTE
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold border border-emerald-500/20">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                             EM DIA
                           </span>
@@ -399,7 +399,7 @@ export function ConferenciaTab({ searchQuery, selectedUserId }: ConferenciaTabPr
                           <div className="text-sm font-medium text-foreground tabular-nums">
                             {format(new Date(mae.ultima_conferencia), "dd/MM/yyyy", { locale: ptBR })}
                           </div>
-                          <div className="text-[11px] text-muted-foreground mt-0.5">
+                          <div className="text-xs text-muted-foreground mt-0.5">
                             {mae.dias_sem_conferencia === 0
                               ? "Hoje"
                               : `${mae.dias_sem_conferencia} dia(s) atrás`}

@@ -145,7 +145,7 @@ function TemplateFormDialog({
               placeholder="Olá {{1}}, seu atendimento foi agendado para {{2}}."
               className="min-h-[100px] text-sm"
             />
-            <p className="text-[10px] text-muted-foreground/50">Use {"{{1}}"}, {"{{2}}"}, etc. para variáveis</p>
+            <p className="text-xs text-muted-foreground/50">Use {"{{1}}"}, {"{{2}}"}, etc. para variáveis</p>
           </div>
 
           <div className="space-y-1.5">
@@ -242,8 +242,8 @@ export default function WaTemplatesConfig() {
                         <Badge variant="outline" className={statusColors[t.status] || ""}>
                           {t.status}
                         </Badge>
-                        <Badge variant="outline" className="text-[10px]">{t.category}</Badge>
-                        <span className="text-[10px] text-muted-foreground/40">{t.language_code}</span>
+                        <Badge variant="outline" className="text-xs">{t.category}</Badge>
+                        <span className="text-xs text-muted-foreground/40">{t.language_code}</span>
                       </div>
                       <p className="text-xs text-muted-foreground/60 line-clamp-2">
                         {(() => {

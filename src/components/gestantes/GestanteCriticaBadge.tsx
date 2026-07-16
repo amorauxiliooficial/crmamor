@@ -22,7 +22,7 @@ export function GestanteCriticaBadge({ mae, className, compact = false }: Gestan
       variant="default"
       className={cn(
         "gap-1 bg-primary/15 text-primary border border-primary/40 hover:bg-primary/20 animate-pulse",
-        compact ? "text-[10px] px-1.5 py-0 h-5" : "text-[11px] px-2 py-0.5",
+        compact ? "text-xs px-1.5 py-0 h-5" : "text-xs px-2 py-0.5",
         className
       )}
       title="Gestante no 7º/8º mês — entrar em contato"

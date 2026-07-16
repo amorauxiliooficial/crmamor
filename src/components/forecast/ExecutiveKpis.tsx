@@ -31,14 +31,14 @@ interface KpiCard {
 
 function TrendPill({ value }: { value: number }) {
   if (!isFinite(value) || Math.abs(value) < 0.5) {
-    return <span className="text-[10px] text-muted-foreground">estável</span>;
+    return <span className="text-xs text-muted-foreground">estável</span>;
   }
   const up = value > 0;
   const Icon = up ? ArrowUp : ArrowDown;
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 text-[10px] font-semibold tabular-nums",
+        "inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums",
         up ? "text-emerald-500" : "text-rose-500",
       )}
     >
@@ -109,7 +109,7 @@ export function ExecutiveKpis({ kpis, formatBRL, onCardClick }: Props) {
           >
             <CardContent className="p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   {c.label}
                 </span>
                 <span className={cn("h-8 w-8 rounded-lg grid place-items-center", c.accent)}>
@@ -123,7 +123,7 @@ export function ExecutiveKpis({ kpis, formatBRL, onCardClick }: Props) {
                 {c.hint && (
                   <span
                     className={cn(
-                      "text-[11px]",
+                      "text-xs",
                       c.hintTone === "danger" && "text-rose-500",
                       c.hintTone === "success" && "text-emerald-500",
                       (!c.hintTone || c.hintTone === "muted") && "text-muted-foreground",

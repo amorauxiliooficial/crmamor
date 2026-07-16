@@ -53,7 +53,7 @@ export function MetaProgressCard({ progress }: MetaProgressCardProps) {
             </div>
             <div>
               <h4 className="font-medium text-sm">{meta.nome}</h4>
-              <p className="text-[10px] text-muted-foreground uppercase">{PERIODO_LABELS[meta.periodo]}</p>
+              <p className="text-xs text-muted-foreground uppercase">{PERIODO_LABELS[meta.periodo]}</p>
             </div>
           </div>
           {atingido && (

@@ -42,9 +42,9 @@ export function MobileBottomNav({
               )}
             >
               <Icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <span className="text-xs font-medium">{tab.label}</span>
               {tab.value === "conversas" && unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1/4 bg-primary text-primary-foreground h-4 min-w-4 px-1 flex items-center justify-center rounded-full text-[9px] font-bold">
+                <span className="absolute top-1.5 right-1/4 bg-primary text-primary-foreground h-4 min-w-4 px-1 flex items-center justify-center rounded-full text-xs font-bold">
                   {unreadCount}
                 </span>
               )}
@@ -60,7 +60,7 @@ export function MobileBottomNav({
             className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-muted-foreground/60 active:text-foreground transition-colors"
           >
             <Info className="h-5 w-5" />
-            <span className="text-[10px] font-medium">CRM</span>
+            <span className="text-xs font-medium">CRM</span>
           </button>
         )}
       </div>

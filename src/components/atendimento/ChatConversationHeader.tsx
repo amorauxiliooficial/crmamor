@@ -112,7 +112,7 @@ export function ChatConversationHeader({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="font-semibold text-[15px] truncate">{ci.displayName}</p>
+          <p className="font-semibold text-sm truncate">{ci.displayName}</p>
           <span className={cn("h-2 w-2 rounded-full shrink-0", connectionDot)} />
           {channel !== "evolution" && (
             <WindowBadge lastInboundAt={effectiveLastInboundAt} onSendTemplate={onOpenTemplateDialog} />
@@ -121,7 +121,7 @@ export function ChatConversationHeader({
           <Badge
             variant="outline"
             className={cn(
-              "text-[9px] h-5 gap-1 px-1.5 font-medium border-border/20",
+              "text-xs h-5 gap-1 px-1.5 font-medium border-border/20",
               channel === "evolution"
                 ? "text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/5"
                 : channel === "web_manual_team"
@@ -133,8 +133,8 @@ export function ChatConversationHeader({
             {channel === "evolution" ? "WhatsApp Web" : channel === "web_manual_team" ? "Web Manual" : "Oficial"}
           </Badge>
         </div>
-        {ci.subtitle && <p className="text-[12px] text-primary/70 truncate">{ci.subtitle}</p>}
-        <p className={cn("text-[11px] font-medium", QUEUE_STATUS_LABELS[conversa.queueStatus ?? ""]?.color ?? "text-muted-foreground/40")}>
+        {ci.subtitle && <p className="text-sm text-primary/70 truncate">{ci.subtitle}</p>}
+        <p className={cn("text-xs font-medium", QUEUE_STATUS_LABELS[conversa.queueStatus ?? ""]?.color ?? "text-muted-foreground/40")}>
           {QUEUE_STATUS_LABELS[conversa.queueStatus ?? ""]?.label ?? conversa.status}
           {conversa.atendente && <span className="text-muted-foreground/50 font-normal"> · {conversa.atendente}</span>}
         </p>
@@ -146,7 +146,7 @@ export function ChatConversationHeader({
           <PopoverTrigger asChild>
             <Button size="sm" variant="ghost" className="h-8 gap-1.5 rounded-lg text-xs text-muted-foreground/60 hover:text-primary">
               {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              <span className="hidden lg:inline text-[12px]">IA</span>
+              <span className="hidden lg:inline text-sm">IA</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-44 p-1" align="end">
@@ -212,11 +212,11 @@ export function ChatConversationHeader({
 
             {aiEnabled && onChangeAiAgent && aiAgents.length > 0 && (
               <div className="px-2.5 py-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/35 mb-1">Agente IA</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/35 mb-1">Agente IA</p>
                 <button className={cn("w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg transition-colors", !selectedAiAgentId ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/30 text-muted-foreground/70")} onClick={() => onChangeAiAgent(null)}>Padrão</button>
                 {aiAgents.map(a => (
                   <button key={a.id} className={cn("w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg transition-colors", selectedAiAgentId === a.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/30 text-muted-foreground/70")} onClick={() => onChangeAiAgent(a.id)}>
-                    {a.name} <span className="text-[9px] text-muted-foreground/40">{a.model}</span>
+                    {a.name} <span className="text-xs text-muted-foreground/40">{a.model}</span>
                   </button>
                 ))}
               </div>
@@ -225,7 +225,7 @@ export function ChatConversationHeader({
             <div className="h-px bg-border/10 my-1" />
 
             <div className="px-2.5 py-1">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/35 mb-1">Etiquetas</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/35 mb-1">Etiquetas</p>
               {ETIQUETAS_OPTIONS.map((e) => (
                 <label key={e} className="flex items-center gap-2 py-1.5 cursor-pointer text-xs hover:text-foreground text-muted-foreground/70">
                   <Checkbox checked={conversa.etiquetas.includes(e)} onCheckedChange={() => onToggleEtiqueta(e)} className="h-3.5 w-3.5" />

@@ -301,19 +301,19 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
             />
             <div className="flex items-center gap-1.5 mt-0.5 overflow-hidden">
               {isPublished ? (
-                <Badge variant="default" className="text-[9px] px-1.5 py-0 h-4 gap-0.5 shrink-0">
+                <Badge variant="default" className="text-xs px-1.5 py-0 h-4 gap-0.5 shrink-0">
                   <CheckCircle2 className="h-2.5 w-2.5" /> v{agent?.version || 1}
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 shrink-0">Rascunho</Badge>
+                <Badge variant="outline" className="text-xs px-1.5 py-0 h-4 shrink-0">Rascunho</Badge>
               )}
               {isDirty && (
-                <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 shrink-0 text-amber-500 border-amber-500/30">
+                <Badge variant="outline" className="text-xs px-1.5 py-0 h-4 shrink-0 text-amber-500 border-amber-500/30">
                   <Circle className="h-1.5 w-1.5 fill-current" /> Não salvo
                 </Badge>
               )}
               {!isDirty && lastSavedAt && (
-                <span className="text-[9px] text-muted-foreground/40 flex items-center gap-0.5 shrink-0">
+                <span className="text-xs text-muted-foreground/40 flex items-center gap-0.5 shrink-0">
                   <Clock className="h-2.5 w-2.5" />
                   {lastSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                 </span>
@@ -352,7 +352,7 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
         {validationErrors.length > 0 && (
           <div className="mx-3 sm:mx-6 mb-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-2">
             <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
-            <div className="text-[11px] text-destructive space-y-0.5">
+            <div className="text-xs text-destructive space-y-0.5">
               {validationErrors.map((e, i) => <p key={i}>{e.msg}</p>)}
             </div>
           </div>
@@ -451,7 +451,7 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
                       <div className="flex gap-1">
                         {TOKEN_PRESETS.map(p => (
                           <button key={p} onClick={() => { setMaxTokens(p); markDirty(); }} className={cn(
-                            "px-2 py-0.5 rounded text-[10px] font-medium border transition-all",
+                            "px-2 py-0.5 rounded text-xs font-medium border transition-all",
                             maxTokens === p ? "bg-primary/10 border-primary/30 text-primary" : "border-border/30 text-muted-foreground hover:bg-muted/20"
                           )}>{p}</button>
                         ))}
@@ -474,7 +474,7 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
                     {departments.length > 0 && (
                       <div className="flex flex-wrap gap-1 p-1.5 rounded-lg bg-muted/20 border border-border/20">
                         {departments.map(d => (
-                          <Badge key={d} variant="secondary" className="gap-1 pl-2 pr-1 py-0 text-[11px]">
+                          <Badge key={d} variant="secondary" className="gap-1 pl-2 pr-1 py-0 text-xs">
                             {d}
                             <button onClick={() => toggleDepartment(d)} className="hover:bg-muted rounded-full p-0.5"><X className="h-2.5 w-2.5" /></button>
                           </Badge>
@@ -483,7 +483,7 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
                     )}
                     <div className="flex flex-wrap gap-1">
                       {filteredDepts.filter(d => !departments.includes(d)).map(d => (
-                        <button key={d} onClick={() => toggleDepartment(d)} className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] border border-dashed border-border/40 text-muted-foreground hover:border-primary/30 hover:text-primary hover:bg-primary/5 transition-all">
+                        <button key={d} onClick={() => toggleDepartment(d)} className="flex items-center gap-1 px-2 py-0.5 rounded text-xs border border-dashed border-border/40 text-muted-foreground hover:border-primary/30 hover:text-primary hover:bg-primary/5 transition-all">
                           <Plus className="h-2.5 w-2.5" />{d}
                         </button>
                       ))}
@@ -503,7 +503,7 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPromptExpanded(!promptExpanded)} title={promptExpanded ? "Recolher" : "Expandir"}>
                           {promptExpanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
                         </Button>
-                        <Button variant="outline" size="sm" onClick={insertPromptTemplate} className="text-[11px] h-7 px-2">
+                        <Button variant="outline" size="sm" onClick={insertPromptTemplate} className="text-xs h-7 px-2">
                           <FileText className="h-3 w-3 mr-1" /> Template
                         </Button>
                       </div>
@@ -519,7 +519,7 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
                           promptExpanded ? "min-h-[400px] max-h-[600px]" : "min-h-[160px] max-h-[300px]"
                         )}
                       />
-                      <div className="absolute bottom-2 right-3 text-[9px] text-muted-foreground/30 font-mono">{systemPrompt.length}</div>
+                      <div className="absolute bottom-2 right-3 text-xs text-muted-foreground/30 font-mono">{systemPrompt.length}</div>
                     </div>
                   </CardContent>
                 </Card>
@@ -603,7 +603,7 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-medium truncate">{tool.label}</p>
-                            <p className="text-[11px] text-muted-foreground/70 truncate">{tool.desc}</p>
+                            <p className="text-xs text-muted-foreground/70 truncate">{tool.desc}</p>
                           </div>
                         </div>
                         <Switch checked={isEnabled} onCheckedChange={v => { setToolsConfig(prev => ({ ...prev, [tool.key]: v })); markDirty(); }} onClick={e => e.stopPropagation()} />
@@ -612,12 +612,12 @@ export function AgentFormPanel({ agent, onSave, onPublish, onDuplicate, onCancel
                       {/* Inline config panel */}
                       {isEnabled && tool.configFields.length > 0 && (
                         <div className="border-t border-border/20 px-3 sm:px-4 py-3 bg-muted/5 space-y-2.5">
-                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                             <Settings2 className="h-3 w-3" /> Configuração
                           </div>
                           {tool.configFields.map(cf => (
                             <div key={cf.key} className="space-y-1">
-                              <Label className="text-[11px]">{cf.label}</Label>
+                              <Label className="text-xs">{cf.label}</Label>
                               <Input
                                 value={toolsConfig[`${tool.key}_${cf.key}`] ?? ""}
                                 onChange={e => updateToolConfig(tool.key, cf.key, e.target.value)}
@@ -690,11 +690,11 @@ function SimulatorPanel({ name, model, maxTokens, tone, messages, loading, input
           <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0"><Bot className="h-3.5 w-3.5 text-primary" /></div>
           <div className="min-w-0">
             <p className="text-xs font-semibold leading-none truncate">{name || "Agente"}</p>
-            <p className="text-[9px] text-muted-foreground mt-0.5">{modelLabel} · {maxTokens} tok</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{modelLabel} · {maxTokens} tok</p>
           </div>
         </div>
         {messages.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={onClear} className="h-6 text-[9px] text-muted-foreground px-2"><RotateCcw className="h-2.5 w-2.5 mr-1" />Limpar</Button>
+          <Button variant="ghost" size="sm" onClick={onClear} className="h-6 text-xs text-muted-foreground px-2"><RotateCcw className="h-2.5 w-2.5 mr-1" />Limpar</Button>
         )}
       </div>
 
@@ -704,7 +704,7 @@ function SimulatorPanel({ name, model, maxTokens, tone, messages, loading, input
           <div className="text-center pt-12 pb-6">
             <div className="h-12 w-12 rounded-2xl bg-primary/5 flex items-center justify-center mx-auto mb-2"><MessageSquare className="h-6 w-6 text-primary/20" /></div>
             <p className="text-xs text-muted-foreground/40 font-medium">Simulador</p>
-            <p className="text-[10px] text-muted-foreground/30 mt-0.5">Teste o agente sem enviar WhatsApp</p>
+            <p className="text-xs text-muted-foreground/30 mt-0.5">Teste o agente sem enviar WhatsApp</p>
           </div>
         )}
         {messages.map((msg, i) => (
@@ -714,17 +714,17 @@ function SimulatorPanel({ name, model, maxTokens, tone, messages, loading, input
                 <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center mr-1.5 mt-1 shrink-0"><Bot className="h-2.5 w-2.5 text-primary" /></div>
               )}
               <div className={cn(
-                "max-w-[85%] px-3 py-2 text-[13px] leading-relaxed",
+                "max-w-[85%] px-3 py-2 text-sm leading-relaxed",
                 msg.role === "user" ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md" : "bg-muted/30 rounded-2xl rounded-bl-md"
               )}>{msg.text}</div>
             </div>
             {msg.role === "assistant" && msg.meta && (
               <div className="ml-7 mt-1 flex flex-wrap gap-1">
-                {msg.meta.model && <Badge variant="outline" className="text-[8px] px-1 py-0 font-mono">{msg.meta.model}</Badge>}
-                {msg.meta.tokens && <Badge variant="outline" className="text-[8px] px-1 py-0 font-mono">{msg.meta.tokens.total_tokens} tok</Badge>}
-                {msg.meta.latency_ms && <Badge variant="outline" className="text-[8px] px-1 py-0 font-mono">{msg.meta.latency_ms}ms</Badge>}
+                {msg.meta.model && <Badge variant="outline" className="text-xs px-1 py-0 font-mono">{msg.meta.model}</Badge>}
+                {msg.meta.tokens && <Badge variant="outline" className="text-xs px-1 py-0 font-mono">{msg.meta.tokens.total_tokens} tok</Badge>}
+                {msg.meta.latency_ms && <Badge variant="outline" className="text-xs px-1 py-0 font-mono">{msg.meta.latency_ms}ms</Badge>}
                 {msg.meta.tool_actions?.map((a: string, j: number) => (
-                  <Badge key={j} variant="secondary" className="text-[8px] px-1 py-0 gap-0.5"><Zap className="h-2 w-2" />{a}</Badge>
+                  <Badge key={j} variant="secondary" className="text-xs px-1 py-0 gap-0.5"><Zap className="h-2 w-2" />{a}</Badge>
                 ))}
               </div>
             )}

@@ -60,14 +60,14 @@ export function KanbanColumn({
           <div className="flex-1 min-w-0">
             <h3 className={cn("font-semibold text-sm", concluded && "text-muted-foreground", denied && "text-amber-700/90 dark:text-amber-500/80")}>{statusLabel}</h3>
             {nextAction && (
-              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
                 {nextAction}
               </p>
             )}
             {showFollowUp && (
               <div className="flex items-center gap-1 mt-0.5">
                 <Clock className="h-3 w-3 text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground font-medium">
+                <span className="text-xs text-muted-foreground font-medium">
                   Follow-up: {followUpLabel}
                 </span>
               </div>
@@ -75,11 +75,11 @@ export function KanbanColumn({
           </div>
         ) : (
           <>
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-background text-[10px] font-medium">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-background text-xs font-medium">
               {maes.length}
             </span>
             <span 
-              className="text-[10px] font-medium text-center mt-2 leading-tight"
+              className="text-xs font-medium text-center mt-2 leading-tight"
               style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
             >
               {statusLabel}

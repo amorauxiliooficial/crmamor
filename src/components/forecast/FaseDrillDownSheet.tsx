@@ -109,7 +109,7 @@ export function FaseDrillDownSheet({ fase, open, onOpenChange, formatBRL, format
                 />
               </div>
               {fase.gapValor > 0 && (
-                <p className="text-[11px] text-rose-600 dark:text-rose-400">
+                <p className="text-xs text-rose-600 dark:text-rose-400">
                   Faltam {formatBRL(fase.gapValor)} ({fase.gapQuantidade > 0 ? `${fase.gapQuantidade} mães` : "—"})
                 </p>
               )}
@@ -159,11 +159,11 @@ export function FaseDrillDownSheet({ fase, open, onOpenChange, formatBRL, format
                     >
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium truncate">{m.nome_mae}</div>
-                        <div className="text-[11px] text-muted-foreground truncate">
+                        <div className="text-xs text-muted-foreground truncate">
                           {diasTotais}d no CRM · ticket {formatBRLShort(fase.ticketMedio)}
                         </div>
                       </div>
-                      <Badge variant="outline" className={cn("text-[10px] font-semibold tabular-nums", badge.tone)}>
+                      <Badge variant="outline" className={cn("text-xs font-semibold tabular-nums", badge.tone)}>
                         {dias}d nesta fase
                       </Badge>
                     </button>
@@ -205,12 +205,12 @@ function Stat({
   };
   return (
     <div className="rounded-lg border border-border/60 p-2.5 bg-card/50">
-      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         <Icon className="h-3 w-3" />
         {label}
       </div>
       <div className={cn("text-lg font-bold tabular-nums mt-0.5", TONE_TEXT[tone])}>{value}</div>
-      {hint && <div className="text-[10px] text-muted-foreground truncate">{hint}</div>}
+      {hint && <div className="text-xs text-muted-foreground truncate">{hint}</div>}
     </div>
   );
 }
@@ -246,27 +246,27 @@ function FaixasGestacionais({
         <h3 className="text-xs font-bold uppercase tracking-wider text-pink-700 dark:text-pink-300">
           Faixa gestacional
         </h3>
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           Total {totalQtd} mães · {formatBRLShort(totalValor)}
         </span>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {grupos.map((g) => (
           <div key={g.label} className="rounded-md border border-border/60 bg-card/60 p-2.5">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {g.label}
             </div>
             <div className="text-lg font-bold tabular-nums text-pink-700 dark:text-pink-300">
               {g.qtd}
             </div>
-            <div className="text-[11px] text-muted-foreground tabular-nums">
+            <div className="text-xs text-muted-foreground tabular-nums">
               {formatBRLShort(g.valor)}
             </div>
           </div>
         ))}
       </div>
       {semInfo > 0 && (
-        <p className="text-[10px] text-muted-foreground italic">
+        <p className="text-xs text-muted-foreground italic">
           {semInfo} {semInfo === 1 ? "mãe sem" : "mães sem"} mês gestacional informado
         </p>
       )}

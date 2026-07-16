@@ -128,7 +128,7 @@ export function ResumoFinanceiroCards({
     const diff = current - previous;
 
     return (
-      <p className={`text-[9px] md:text-[10px] font-medium ${colorClass} truncate`}>
+      <p className={`text-xs md:text-xs font-medium ${colorClass} truncate`}>
         {label} vs anterior
         {Math.abs(diff) > 0 && (
           <span className="text-muted-foreground font-normal ml-0.5">
@@ -209,7 +209,7 @@ export function ResumoFinanceiroCards({
       {cards.map((c) => (
         <Card key={c.title} className={`${c.borderColor ? `border-l-4 ${c.borderColor}` : ""}`}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2 md:pt-4 md:px-4">
-            <CardTitle className="text-[10px] md:text-xs font-medium text-muted-foreground">
+            <CardTitle className="text-xs md:text-xs font-medium text-muted-foreground">
               {c.title}
             </CardTitle>
             <c.icon className={`h-3.5 w-3.5 md:h-4 md:w-4 ${c.iconColor}`} />
@@ -218,7 +218,7 @@ export function ResumoFinanceiroCards({
             <div className={`text-base md:text-xl font-bold ${c.valueColor}`}>
               {formatCurrency(c.value)}
             </div>
-            <p className="text-[9px] md:text-xs text-muted-foreground">{c.sub}</p>
+            <p className="text-xs md:text-xs text-muted-foreground">{c.sub}</p>
             {renderDelta(c.value, c.prev, c.invertColor)}
           </CardContent>
         </Card>

@@ -115,7 +115,7 @@ export function HistoricoAtividadesDialog({
                             {TIPO_ATIVIDADE_LABELS[atividade.tipo_atividade as TipoAtividade] || atividade.tipo_atividade}
                           </span>
                           {atividade.resultado_contato && (
-                            <Badge variant="outline" className="text-[10px]">
+                            <Badge variant="outline" className="text-xs">
                               {RESULTADO_CONTATO_LABELS[atividade.resultado_contato as ResultadoContato] || atividade.resultado_contato}
                             </Badge>
                           )}
@@ -141,7 +141,7 @@ export function HistoricoAtividadesDialog({
                             <Badge 
                               variant={atividade.status_followup === "concluido" ? "default" : 
                                        atividade.status_followup === "cancelado" ? "destructive" : "secondary"}
-                              className="text-[10px]"
+                              className="text-xs"
                             >
                               {atividade.status_followup === "concluido" ? "Concluído" :
                                atividade.status_followup === "cancelado" ? "Cancelado" :

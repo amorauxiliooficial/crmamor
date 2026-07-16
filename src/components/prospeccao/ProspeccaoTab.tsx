@@ -263,7 +263,7 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${stats.semDono > 0 ? "text-primary" : ""}`}>{stats.semDono}</div>
-            <p className="text-[10px] text-muted-foreground">Clique para priorizar</p>
+            <p className="text-xs text-muted-foreground">Clique para priorizar</p>
           </CardContent>
         </Card>
         <Card className={stats.esfriando > 0 ? "border-destructive/40" : ""}>
@@ -275,7 +275,7 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${stats.esfriando > 0 ? "text-destructive" : ""}`}>{stats.esfriando}</div>
-            <p className="text-[10px] text-muted-foreground">+ 1 dia útil parado</p>
+            <p className="text-xs text-muted-foreground">+ 1 dia útil parado</p>
           </CardContent>
         </Card>
       </div>
@@ -464,7 +464,7 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                                 <div className="flex items-center gap-1.5 truncate">
                                   {assigned ? (
                                     <Avatar className="h-5 w-5 shrink-0">
-                                      <AvatarFallback className="text-[10px]">
+                                      <AvatarFallback className="text-xs">
                                         {getInitials(assigned.full_name, assigned.email)}
                                       </AvatarFallback>
                                     </Avatar>
@@ -473,7 +473,7 @@ export function ProspeccaoTab({ searchQuery = "", selectedUserId }: ProspeccaoTa
                                   )}
                                   <span className="truncate">{assignedLabel}</span>
                                   {heat && timeWith && (
-                                    <span className={`ml-auto inline-flex items-center gap-1 text-[10px] font-medium pl-1.5 pr-1 py-0.5 rounded ${leadHeatClasses[heat]}`}>
+                                    <span className={`ml-auto inline-flex items-center gap-1 text-xs font-medium pl-1.5 pr-1 py-0.5 rounded ${leadHeatClasses[heat]}`}>
                                       <span className="h-1.5 w-1.5 rounded-full bg-current" />
                                       {timeWith}
                                     </span>

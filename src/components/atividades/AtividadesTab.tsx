@@ -260,7 +260,7 @@ export function AtividadesTab({ maes, onRefresh, selectedUserId }: AtividadesTab
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                           <span className="font-mono">{formatCpf(mae.cpf)}</span>
                           <span>•</span>
-                          <Badge variant="outline" className="text-[10px] h-5">
+                          <Badge variant="outline" className="text-xs h-5">
                             {mae.status_processo.split(" ").slice(1).join(" ")}
                           </Badge>
                           {mae.ultima_atividade_em && (

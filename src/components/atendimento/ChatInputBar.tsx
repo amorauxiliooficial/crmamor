@@ -143,7 +143,7 @@ export function ChatInputBar({
           <Globe className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium text-amber-700 dark:text-amber-300">Atendimento manual no WhatsApp Web</p>
-            <p className="text-[10px] text-amber-600/60 dark:text-amber-400/60">
+            <p className="text-xs text-amber-600/60 dark:text-amber-400/60">
               IA automática desabilitada — use as notas do atendente para registrar o andamento
             </p>
           </div>
@@ -155,7 +155,7 @@ export function ChatInputBar({
         <div className="mx-4 mt-2 mb-1 p-2.5 bg-muted/5 border border-border/15 rounded-lg space-y-2 animate-in fade-in slide-in-from-bottom-1 duration-200">
           <div className="flex items-center gap-1.5">
             <StickyNote className="h-3.5 w-3.5 text-muted-foreground/50" />
-            <span className="text-[11px] font-medium text-muted-foreground/60">Nota do atendente</span>
+            <span className="text-xs font-medium text-muted-foreground/60">Nota do atendente</span>
           </div>
           <div className="flex gap-2">
             <input
@@ -190,7 +190,7 @@ export function ChatInputBar({
           <Lock className="h-4 w-4 text-destructive/60 shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium text-destructive/80">Janela de 24h fechada</p>
-            <p className="text-[10px] text-destructive/50">Envie um template aprovado para retomar a conversa</p>
+            <p className="text-xs text-destructive/50">Envie um template aprovado para retomar a conversa</p>
           </div>
           <Button
             size="sm"
@@ -218,8 +218,8 @@ export function ChatInputBar({
                 selectQuickReply(r.texto);
               }}
             >
-              <span className="font-medium text-primary text-[11px]">/{r.atalho}</span>
-              <span className="ml-2 text-muted-foreground/40 text-[11px]">{r.titulo}</span>
+              <span className="font-medium text-primary text-xs">/{r.atalho}</span>
+              <span className="ml-2 text-muted-foreground/40 text-xs">{r.titulo}</span>
             </button>
           ))}
         </div>
@@ -230,10 +230,10 @@ export function ChatInputBar({
         <div className="mx-4 mt-2 mb-1 p-2 bg-muted/10 border-l-2 border-primary/30 rounded-r-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
           <Reply className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-medium text-muted-foreground/50">
+            <p className="text-xs font-medium text-muted-foreground/50">
               {replyTo.de === "atendente" ? replyTo.sentByAgentName || "Você" : "Contato"}
             </p>
-            <p className="text-[11px] text-muted-foreground/40 truncate">{replyTo.texto || `[${replyTo.msgType}]`}</p>
+            <p className="text-xs text-muted-foreground/40 truncate">{replyTo.texto || `[${replyTo.msgType}]`}</p>
           </div>
           <Button size="icon" variant="ghost" className="h-6 w-6 rounded-lg shrink-0" onClick={onClearReply}>
             <X className="h-3 w-3" />
@@ -258,8 +258,8 @@ export function ChatInputBar({
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium truncate">{pendingFile.name}</p>
-            <p className="text-[10px] text-muted-foreground/40">{(pendingFile.size / 1024).toFixed(0)} KB</p>
+            <p className="text-sm font-medium truncate">{pendingFile.name}</p>
+            <p className="text-xs text-muted-foreground/40">{(pendingFile.size / 1024).toFixed(0)} KB</p>
           </div>
           <Button
             size="icon"
@@ -317,7 +317,7 @@ export function ChatInputBar({
           autoCapitalize="sentences"
           lang="pt-BR"
           className={cn(
-            "min-h-[42px] max-h-[120px] resize-none text-[14px] flex-1 rounded-xl bg-muted/10 border-border/10 focus-visible:border-primary/20 focus-visible:bg-background transition-all",
+            "min-h-[42px] max-h-[120px] resize-none text-sm flex-1 rounded-xl bg-muted/10 border-border/10 focus-visible:border-primary/20 focus-visible:bg-background transition-all",
             ((!windowIsOpen && channel !== "evolution") || isSending) && "opacity-50 cursor-not-allowed",
           )}
           rows={1}
@@ -351,7 +351,7 @@ export function ChatInputBar({
 
       {!isMobile && (
         <div className="text-center pb-1">
-          <span className="text-[9px] text-muted-foreground/20">
+          <span className="text-xs text-muted-foreground/20">
             Enter envia · Shift+Enter nova linha · / templates · ⌘K buscar
           </span>
         </div>

@@ -83,7 +83,7 @@ export function MultiAtendentesSelect({
                   >
                     {getUserName(user)}
                     {user.id === primaryUserId && (
-                      <span className="ml-1 text-[10px]">(principal)</span>
+                      <span className="ml-1 text-xs">(principal)</span>
                     )}
                   </Badge>
                 ))}
@@ -136,7 +136,7 @@ export function MultiAtendentesSelect({
                     )}
                   </div>
                   {isPrimary && (
-                    <Badge variant="default" className="text-[10px] shrink-0">
+                    <Badge variant="default" className="text-xs shrink-0">
                       Principal
                     </Badge>
                   )}

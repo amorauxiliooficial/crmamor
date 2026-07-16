@@ -139,7 +139,7 @@ export const VoiceNote = memo(function VoiceNote({ src, duration, isMe }: VoiceN
         </div>
         <div className="flex items-center justify-between px-0.5">
           <span className={cn(
-            "text-[10px] font-mono tabular-nums",
+            "text-xs font-mono tabular-nums",
             isMe ? "text-white/70" : "text-muted-foreground/50"
           )}>
             {formatTime(displayTime)}
@@ -147,7 +147,7 @@ export const VoiceNote = memo(function VoiceNote({ src, duration, isMe }: VoiceN
           <button
             onClick={toggleSpeed}
             className={cn(
-              "text-[9px] font-bold tabular-nums px-1 py-0.5 rounded transition-colors",
+              "text-xs font-bold tabular-nums px-1 py-0.5 rounded transition-colors",
               isMe
                 ? "text-white/60 hover:bg-white/10"
                 : "text-muted-foreground/40 hover:bg-muted/30"

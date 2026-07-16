@@ -158,7 +158,7 @@ export function IndicacoesNotificacao({ onSelectIndicacao }: IndicacoesNotificac
             {totalNotificacoes > 0 && (
               <Badge 
                 variant="destructive" 
-                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]"
+                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
               >
                 {totalNotificacoes > 9 ? "9+" : totalNotificacoes}
               </Badge>
@@ -186,7 +186,7 @@ export function IndicacoesNotificacao({ onSelectIndicacao }: IndicacoesNotificac
                   <div className="flex items-center gap-2 text-xs font-medium text-primary">
                     <UserPlus className="h-3 w-3" />
                     <span>Novas indicações externas</span>
-                    <Badge variant="secondary" className="ml-auto text-[10px]">
+                    <Badge variant="secondary" className="ml-auto text-xs">
                       {novasExternas.length}
                     </Badge>
                   </div>
@@ -207,7 +207,7 @@ export function IndicacoesNotificacao({ onSelectIndicacao }: IndicacoesNotificac
                             <span className="font-medium text-sm truncate">
                               {indicacao.nome_indicada}
                             </span>
-                            <Badge variant="outline" className="text-[10px] shrink-0 border-primary text-primary">
+                            <Badge variant="outline" className="text-xs shrink-0 border-primary text-primary">
                               Nova
                             </Badge>
                           </div>
@@ -267,7 +267,7 @@ export function IndicacoesNotificacao({ onSelectIndicacao }: IndicacoesNotificac
                           <span className="font-medium text-sm truncate">
                             {indicacao.nome_indicada}
                           </span>
-                          <Badge variant="destructive" className="text-[10px] shrink-0">
+                          <Badge variant="destructive" className="text-xs shrink-0">
                             -{getTempoAtraso(indicacao.proxima_acao_data!)}
                           </Badge>
                         </div>

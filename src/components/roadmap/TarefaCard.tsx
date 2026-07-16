@@ -80,29 +80,29 @@ export function TarefaCard({
             <div className="flex items-center gap-1.5 flex-wrap">
               <Badge
                 variant="secondary"
-                className={cn("text-[10px] px-1.5 py-0 h-5", TASK_CATEGORY_COLORS[tarefa.categoria])}
+                className={cn("text-xs px-1.5 py-0 h-5", TASK_CATEGORY_COLORS[tarefa.categoria])}
               >
                 {TASK_CATEGORY_LABELS[tarefa.categoria]}
               </Badge>
               <Badge
                 variant="secondary"
-                className={cn("text-[10px] px-1.5 py-0 h-5", TASK_PRIORITY_COLORS[tarefa.prioridade])}
+                className={cn("text-xs px-1.5 py-0 h-5", TASK_PRIORITY_COLORS[tarefa.prioridade])}
               >
                 {TASK_PRIORITY_LABELS[tarefa.prioridade]}
               </Badge>
             </div>
             {overdueDuration ? (
-              <span className="flex items-center gap-0.5 text-[10px] font-semibold text-destructive">
+              <span className="flex items-center gap-0.5 text-xs font-semibold text-destructive">
                 <AlertTriangle className="h-3 w-3" />
                 {overdueDuration} atrasado
               </span>
             ) : warningDuration ? (
-              <span className="flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+              <span className="flex items-center gap-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
                 <Clock className="h-3 w-3" />
                 {warningDuration} atrasado
               </span>
             ) : duration ? (
-              <span className={cn("flex items-center gap-0.5 text-[10px] font-medium", durationColor)}>
+              <span className={cn("flex items-center gap-0.5 text-xs font-medium", durationColor)}>
                 <Clock className="h-3 w-3" />
                 {duration}
               </span>
@@ -122,7 +122,7 @@ export function TarefaCard({
           )}
 
           {/* Footer with expand button */}
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
             <div className="flex items-center gap-3">
               {tarefa.imagem_url && (
                 <a
@@ -176,7 +176,7 @@ export function TarefaCard({
             {/* Full description */}
             {tarefa.descricao && (
               <div className="space-y-1">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Descrição
                 </span>
                 <p className="text-xs text-foreground whitespace-pre-wrap">
@@ -188,12 +188,12 @@ export function TarefaCard({
             {/* Responsáveis list */}
             {responsaveis.length > 0 && (
               <div className="space-y-1">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Responsáveis
                 </span>
                 <div className="flex flex-wrap gap-1">
                   {responsaveis.map((r) => (
-                    <Badge key={r.id} variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                    <Badge key={r.id} variant="outline" className="text-xs px-1.5 py-0 h-5">
                       {r.nome}
                     </Badge>
                   ))}
@@ -204,12 +204,12 @@ export function TarefaCard({
             {/* Time history */}
             {timeHistory.length > 0 && (
               <div className="space-y-1">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Histórico de tempo
                 </span>
                 <div className="space-y-1">
                   {timeHistory.map((t) => (
-                    <div key={t.status} className="flex items-center justify-between text-[10px]">
+                    <div key={t.status} className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">
                         {TASK_STATUS_LABELS[t.status as keyof typeof TASK_STATUS_LABELS]}
                       </span>

@@ -93,7 +93,7 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
                     {mae.is_gestante && mesGestacao && (
                       <Badge
                         variant="secondary"
-                        className="shrink-0 text-[10px] px-1.5 py-0 h-4 bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300"
+                        className="shrink-0 text-xs px-1.5 py-0 h-4 bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300"
                       >
                         <Baby className="h-2.5 w-2.5 mr-0.5" />
                         {mesGestacao}º
@@ -146,43 +146,43 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
 
               <div className="flex flex-wrap gap-1 mt-2">
                 {acompanhamento.contatoAtrasado && (
-                  <Badge variant="outline" className="h-5 gap-1 border-primary/15 bg-primary/5 px-1.5 py-0 text-[10px] font-medium text-foreground">
+                  <Badge variant="outline" className="h-5 gap-1 border-primary/15 bg-primary/5 px-1.5 py-0 text-xs font-medium text-foreground">
                     <MessageSquareWarning className="h-2.5 w-2.5 text-primary" />
                     Sem contato {formatarTempo(acompanhamento.diasSemContato)}
                   </Badge>
                 )}
                 {acompanhamento.senhaAtrasada && (
-                  <Badge variant="outline" className="h-5 gap-1 border-amber-200 bg-amber-50 px-1.5 py-0 text-[10px] font-medium text-foreground dark:border-amber-800/60 dark:bg-amber-950/25">
+                  <Badge variant="outline" className="h-5 gap-1 border-amber-200 bg-amber-50 px-1.5 py-0 text-xs font-medium text-foreground dark:border-amber-800/60 dark:bg-amber-950/25">
                     <KeyRound className="h-2.5 w-2.5 text-amber-700 dark:text-amber-300" />
                     Sem senha {formatarTempo(acompanhamento.diasSemSenha)}
                   </Badge>
                 )}
-                <Badge variant={getStatusBadgeVariant(mae.status_processo)} className="text-[10px] px-1.5 py-0 h-5">
+                <Badge variant={getStatusBadgeVariant(mae.status_processo)} className="text-xs px-1.5 py-0 h-5">
                   {emoji} {statusLabel}
                 </Badge>
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                <Badge variant="outline" className="text-xs px-1.5 py-0 h-5">
                   {mae.tipo_evento}
                 </Badge>
                 {mae.uf && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 h-5">
                     {mae.uf}
                   </Badge>
                 )}
                 {precisaDAS && (
-                  <Badge variant="outline" className="h-5 gap-1 border-destructive/25 bg-destructive/[0.07] px-1.5 py-0 text-[10px] font-medium text-foreground">
+                  <Badge variant="outline" className="h-5 gap-1 border-destructive/25 bg-destructive/[0.07] px-1.5 py-0 text-xs font-medium text-foreground">
                     <FileWarning className="h-2.5 w-2.5 text-destructive" />
                     GPS pendente
                   </Badge>
                 )}
                 {dasConcluido && (
-                  <Badge variant="outline" className="h-5 gap-1 border-emerald-200 bg-emerald-50 px-1.5 py-0 text-[10px] font-medium text-foreground dark:border-emerald-800/60 dark:bg-emerald-950/25">
+                  <Badge variant="outline" className="h-5 gap-1 border-emerald-200 bg-emerald-50 px-1.5 py-0 text-xs font-medium text-foreground dark:border-emerald-800/60 dark:bg-emerald-950/25">
                     <FileWarning className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-300" />
                     GPS finalizada
                   </Badge>
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 mt-2 text-[11px] text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
                 {mae.data_evento && (
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />

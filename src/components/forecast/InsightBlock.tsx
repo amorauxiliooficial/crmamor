@@ -40,7 +40,7 @@ export function InsightBlock({ title, icon: Icon, iconTone = "default", rows, em
         <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", ICON_BG[iconTone])}>
           <Icon className="h-4 w-4" />
         </div>
-        <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{title}</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{title}</h3>
       </div>
 
       {rows.length === 0 ? (
@@ -52,7 +52,7 @@ export function InsightBlock({ title, icon: Icon, iconTone = "default", rows, em
               <>
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-medium truncate">{row.label}</div>
-                  {row.hint && <div className="text-[10px] text-muted-foreground truncate mt-0.5">{row.hint}</div>}
+                  {row.hint && <div className="text-xs text-muted-foreground truncate mt-0.5">{row.hint}</div>}
                 </div>
                 <div className={cn("text-xs font-bold tabular-nums shrink-0", TONE_TEXT[row.tone ?? "default"])}>
                   {row.value}

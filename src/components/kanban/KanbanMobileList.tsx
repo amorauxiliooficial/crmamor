@@ -70,7 +70,7 @@ export function KanbanMobileList({
               <Badge 
                 variant={isExpanded ? "secondary" : "outline"} 
                 className={cn(
-                  "h-5 px-1.5 text-[10px] font-bold",
+                  "h-5 px-1.5 text-xs font-bold",
                   isExpanded && "bg-primary-foreground/20 text-primary-foreground border-0"
                 )}
               >
@@ -99,7 +99,7 @@ export function KanbanMobileList({
               <h3 className="font-semibold text-sm">
                 {expandedColumn.split(" ").slice(1).join(" ")}
               </h3>
-              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
                 {STATUS_NEXT_ACTION[expandedColumn]}
               </p>
             </div>

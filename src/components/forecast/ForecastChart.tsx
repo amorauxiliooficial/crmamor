@@ -44,7 +44,7 @@ export function ForecastChart({ data, metaMes, formatBRL, formatBRLShort, onMont
           </div>
           <div className="flex items-center gap-6 text-right">
             <div>
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Média/mês</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Média/mês</div>
               <div className="text-sm font-semibold tabular-nums">{formatBRL(mediaTotal)}</div>
             </div>
             {mesesRisco > 0 && (
@@ -83,7 +83,7 @@ export function ForecastChart({ data, metaMes, formatBRL, formatBRLShort, onMont
               />
               <Legend
                 iconType="circle"
-                wrapperStyle={{ fontSize: 11, paddingTop: 6 }}
+                wrapperStyle={{ fontSize: 12, paddingTop: 6 }}
               />
               {metaMes > 0 && (
                 <ReferenceLine
@@ -95,7 +95,7 @@ export function ForecastChart({ data, metaMes, formatBRL, formatBRLShort, onMont
                     value: "Meta",
                     position: "right",
                     fill: "hsl(var(--primary))",
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: 600,
                   }}
                 />

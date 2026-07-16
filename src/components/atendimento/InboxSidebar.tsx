@@ -122,13 +122,13 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, onSel
         {/* Row 1: Phone + Time */}
         <div className="flex items-baseline justify-between gap-2">
           <span className={cn(
-            "text-[14.5px] leading-tight truncate tracking-tight",
+            "text-sm leading-tight truncate tracking-tight",
             hasUnread ? "font-semibold text-foreground" : "font-medium text-foreground/90"
           )}>
             {contact.displayName}
           </span>
           <span className={cn(
-            "text-[11px] shrink-0 tabular-nums leading-none",
+            "text-xs shrink-0 tabular-nums leading-none",
             hasUnread ? "text-emerald-500 font-semibold" : "text-muted-foreground/60"
           )}>
             {formatHorario(c.horario)}
@@ -137,7 +137,7 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, onSel
 
         {/* Row 2: Contact name (subtle) */}
         {contact.subtitle && (
-          <p className="text-[12px] leading-tight text-primary/70 truncate mt-[1px]">
+          <p className="text-sm leading-tight text-primary/70 truncate mt-[1px]">
             {contact.subtitle}
           </p>
         )}
@@ -145,14 +145,14 @@ const ConversaItem = memo(function ConversaItem({ conversa: c, isSelected, onSel
         {/* Row 3: Preview + Unread badge */}
         <div className="flex items-center justify-between gap-2 mt-[3px]">
           <p className={cn(
-            "text-[13px] truncate leading-tight",
+            "text-sm truncate leading-tight",
             hasUnread ? "text-foreground/60" : "text-muted-foreground/45"
           )}>
             {formatInboxPreview(c.ultimaMensagem)}
           </p>
 
           {hasUnread && (
-            <span className="bg-emerald-500 text-white h-[19px] min-w-[19px] px-[5px] flex items-center justify-center rounded-full text-[10.5px] font-bold shrink-0 leading-none">
+            <span className="bg-emerald-500 text-white h-[19px] min-w-[19px] px-[5px] flex items-center justify-center rounded-full text-xs font-bold shrink-0 leading-none">
               {c.naoLidas}
             </span>
           )}
@@ -244,7 +244,7 @@ export function InboxSidebar({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BackToPanel />
-            <h1 className="font-semibold text-[15px] tracking-tight">Conversas</h1>
+            <h1 className="font-semibold text-sm tracking-tight">Conversas</h1>
           </div>
           <div className="flex items-center gap-0.5">
             <ThemeToggle className="h-8 w-8" />
@@ -261,7 +261,7 @@ export function InboxSidebar({
             placeholder="Pesquisar ou começar uma nova conversa"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 h-9 text-[13px] rounded-lg bg-muted/10 border-border/10 focus-visible:border-primary/20 transition-all"
+            className="pl-10 h-9 text-sm rounded-lg bg-muted/10 border-border/10 focus-visible:border-primary/20 transition-all"
           />
         </div>
 
@@ -274,7 +274,7 @@ export function InboxSidebar({
                 key={tab.value}
                 onClick={() => onStatusFilterChange(tab.value === "all" ? null : (tab.value as TabFilter))}
                 className={cn(
-                  "flex-1 text-[11px] font-medium py-1.5 rounded-md transition-all duration-100",
+                  "flex-1 text-xs font-medium py-1.5 rounded-md transition-all duration-100",
                   isActive
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground/40 hover:text-foreground/70"
@@ -282,12 +282,12 @@ export function InboxSidebar({
               >
                 {tab.label}
                 {tab.value === "nao_lidas" && naoLidasCount > 0 && (
-                  <span className="ml-1 bg-emerald-500 text-white text-[9px] rounded-full px-1.5 font-bold">
+                  <span className="ml-1 bg-emerald-500 text-white text-xs rounded-full px-1.5 font-bold">
                     {naoLidasCount}
                   </span>
                 )}
                 {tab.value === "finalizadas" && finalizadasCount > 0 && (
-                  <span className="ml-1 bg-muted-foreground/30 text-white text-[9px] rounded-full px-1.5 font-bold">
+                  <span className="ml-1 bg-muted-foreground/30 text-white text-xs rounded-full px-1.5 font-bold">
                     {finalizadasCount}
                   </span>
                 )}
@@ -306,8 +306,8 @@ export function InboxSidebar({
             <div className="h-10 w-10 rounded-xl bg-muted/10 flex items-center justify-center mb-3">
               <Search className="h-4 w-4 text-muted-foreground/20" />
             </div>
-            <p className="text-[13px] font-medium text-muted-foreground/40">Nenhuma conversa</p>
-            <p className="text-[11px] text-muted-foreground/25 mt-0.5">Tente outro filtro</p>
+            <p className="text-sm font-medium text-muted-foreground/40">Nenhuma conversa</p>
+            <p className="text-xs text-muted-foreground/25 mt-0.5">Tente outro filtro</p>
           </div>
         ) : (
           <div>

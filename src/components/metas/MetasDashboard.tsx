@@ -223,7 +223,7 @@ function MetasDashboardImpl({ userId, onConfigClick, isAdmin }: MetasDashboardPr
               </div>
             </div>
             <div className="text-center mt-1">
-              <p className="text-[10px] text-muted-foreground">{metasAtingidas}/{totalMetas} metas</p>
+              <p className="text-xs text-muted-foreground">{metasAtingidas}/{totalMetas} metas</p>
             </div>
           </div>
 
@@ -283,7 +283,7 @@ function MetasDashboardImpl({ userId, onConfigClick, isAdmin }: MetasDashboardPr
                               "h-3 w-3 shrink-0",
                               atingido ? "text-chart-1" : quaseLa ? "text-amber-500" : "text-primary"
                             )} />
-                            <span className="text-[10px] font-medium truncate">{p.meta.nome}</span>
+                            <span className="text-xs font-medium truncate">{p.meta.nome}</span>
                           </div>
                           <div className="flex items-baseline gap-1 mt-0.5">
                             <span className={cn(
@@ -292,10 +292,10 @@ function MetasDashboardImpl({ userId, onConfigClick, isAdmin }: MetasDashboardPr
                             )}>
                               {p.realizado}
                             </span>
-                            <span className="text-[10px] text-muted-foreground">/{p.meta.valor_meta}</span>
+                            <span className="text-xs text-muted-foreground">/{p.meta.valor_meta}</span>
                           </div>
                           <p className={cn(
-                            "text-[9px]",
+                            "text-xs",
                             atingido 
                               ? "text-chart-1" 
                               : quaseLa 
@@ -332,7 +332,7 @@ function MetasDashboardImpl({ userId, onConfigClick, isAdmin }: MetasDashboardPr
                           </div>
                           <div>
                             <h4 className="font-semibold text-sm">{p.meta.nome}</h4>
-                            <p className="text-[10px] text-muted-foreground uppercase">{periodoInfo.current}</p>
+                            <p className="text-xs text-muted-foreground uppercase">{periodoInfo.current}</p>
                           </div>
                         </div>
 
@@ -388,7 +388,7 @@ function MetasDashboardImpl({ userId, onConfigClick, isAdmin }: MetasDashboardPr
                         </div>
                         
                         {p.realizadoAnterior > 0 && (
-                          <p className="text-[10px] text-muted-foreground text-center">
+                          <p className="text-xs text-muted-foreground text-center">
                             Período anterior: {p.realizadoAnterior} realizados
                           </p>
                         )}

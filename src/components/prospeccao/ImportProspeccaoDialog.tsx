@@ -196,9 +196,9 @@ export function ImportProspeccaoDialog({ open, onOpenChange, onSuccess }: Import
                       <TableCell className="text-sm">{lead.mes_gestacao || "-"}</TableCell>
                       <TableCell className="text-sm max-w-[150px] truncate">{lead.observacoes || "-"}</TableCell>
                       <TableCell>
-                        {lead.status === "novo" && <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-800">Novo</Badge>}
-                        {lead.status === "duplicado_prospeccao" && <Badge variant="secondary" className="text-[10px] bg-yellow-100 text-yellow-800">Duplicado</Badge>}
-                        {lead.status === "ja_processo" && <Badge variant="secondary" className="text-[10px] bg-red-100 text-red-800">Já Processo</Badge>}
+                        {lead.status === "novo" && <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">Novo</Badge>}
+                        {lead.status === "duplicado_prospeccao" && <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">Duplicado</Badge>}
+                        {lead.status === "ja_processo" && <Badge variant="secondary" className="text-xs bg-red-100 text-red-800">Já Processo</Badge>}
                       </TableCell>
                     </TableRow>
                   ))}

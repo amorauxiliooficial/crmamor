@@ -43,7 +43,7 @@ export function ConsumptionBadge({ conversationId, lastInboundAt, className }: C
             <Badge
               variant="outline"
               className={cn(
-                "text-[10px] h-5 gap-1 cursor-pointer transition-colors",
+                "text-xs h-5 gap-1 cursor-pointer transition-colors",
                 isDanger
                   ? "border-destructive/30 text-destructive/70 hover:bg-destructive/5"
                   : isWarning

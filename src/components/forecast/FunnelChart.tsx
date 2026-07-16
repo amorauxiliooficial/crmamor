@@ -134,13 +134,13 @@ export function FunnelChart({ fases, onFaseClick, formatBRLShort, gestantesCriti
                     </span>
 
                     {showAlerta && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wide animate-pulse shadow-sm">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wide animate-pulse shadow-sm">
                         <Bell className="h-3 w-3" />
                         {gestantesCriticas} em 7º-8º · contato
                       </span>
                     )}
                   </div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                  <div className="text-xs text-muted-foreground mt-0.5 truncate">
                     <span className="font-semibold tabular-nums">{f.quantidade}</span>{" "}
                     {f.quantidade === 1 ? "mãe" : "mães"}
                     {hasMeta && (
@@ -166,12 +166,12 @@ export function FunnelChart({ fases, onFaseClick, formatBRLShort, gestantesCriti
                             style={{ width: `${Math.min(pct * 100, 100)}%` }}
                           />
                         </div>
-                        <span className={cn("text-[10px] font-bold tabular-nums", atingimentoTextColor(f.atingimentoPct, true))}>
+                        <span className={cn("text-xs font-bold tabular-nums", atingimentoTextColor(f.atingimentoPct, true))}>
                           {(f.atingimentoPct * 100).toFixed(0)}%
                         </span>
                       </div>
                     ) : (
-                      <div className="text-[10px] text-muted-foreground/70 italic mt-1">sem meta</div>
+                      <div className="text-xs text-muted-foreground/70 italic mt-1">sem meta</div>
                     )}
                   </div>
 

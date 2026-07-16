@@ -165,7 +165,7 @@ export function SendTemplateDialog({ open, onOpenChange, conversationId, phone, 
                 <div key={i} className="mb-1">
                   {comp.type === "HEADER" && <p className="text-xs font-semibold text-muted-foreground/60">{comp.text}</p>}
                   {(comp.type === "BODY" || comp.type === "body") && <p className="text-sm text-foreground/80 whitespace-pre-wrap">{comp.text}</p>}
-                  {comp.type === "FOOTER" && <p className="text-[10px] text-muted-foreground/40 mt-1">{comp.text}</p>}
+                  {comp.type === "FOOTER" && <p className="text-xs text-muted-foreground/40 mt-1">{comp.text}</p>}
                 </div>
               ))}
             </div>
@@ -174,7 +174,7 @@ export function SendTemplateDialog({ open, onOpenChange, conversationId, phone, 
                 <Label className="text-xs font-medium text-muted-foreground">Variáveis</Label>
                 {extractedVars.map((v, i) => (
                   <div key={v.key} className="space-y-1">
-                    <Label className="text-[11px] text-muted-foreground/50">{`{{${i + 1}}}`}</Label>
+                    <Label className="text-xs text-muted-foreground/50">{`{{${i + 1}}}`}</Label>
                     <Input
                       placeholder={`Valor para {{${i + 1}}}`}
                       value={legacyVars[v.key] || ""}
@@ -233,9 +233,9 @@ export function SendTemplateDialog({ open, onOpenChange, conversationId, phone, 
                     <button key={t.id} onClick={() => setLegacySelected(t)} className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-muted/20 transition-colors">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{t.name}</span>
-                        <Badge variant="outline" className="text-[10px] h-5">{t.category}</Badge>
+                        <Badge variant="outline" className="text-xs h-5">{t.category}</Badge>
                       </div>
-                      <p className="text-[11px] text-muted-foreground/50 mt-0.5">
+                      <p className="text-xs text-muted-foreground/50 mt-0.5">
                         {t.language_code} • {(() => {
                           const schema = Array.isArray(t.components_schema) ? t.components_schema : [];
                           const bodyComp = schema.find((c: any) => c.type === "BODY" || c.type === "body");

@@ -69,7 +69,7 @@ export function ClienteCard({
                 <p className="text-xs text-muted-foreground font-mono">{formatCpf(mae.cpf)}</p>
               </div>
               {pendingCount > 0 && (
-                <Badge variant="destructive" className="shrink-0 text-[10px]">
+                <Badge variant="destructive" className="shrink-0 text-xs">
                   {pendingCount} pendente{pendingCount > 1 ? "s" : ""}
                 </Badge>
               )}
@@ -77,11 +77,11 @@ export function ClienteCard({
             
             {/* Status Badge */}
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              <Badge variant="outline" className={`text-[10px] ${statusBg}`}>
+              <Badge variant="outline" className={`text-xs ${statusBg}`}>
                 {mae.status_processo}
               </Badge>
               {lastActivityDate && (
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   Última: {format(new Date(lastActivityDate), "dd/MM", { locale: ptBR })}
                 </span>
               )}

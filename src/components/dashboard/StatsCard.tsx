@@ -38,7 +38,7 @@ export function StatsCard({
             <p className="text-xs md:text-sm font-medium text-muted-foreground truncate">{title}</p>
             <p className="text-xl md:text-3xl font-bold tracking-tight">{value}</p>
             {description && (
-              <p className="text-[10px] md:text-xs text-muted-foreground truncate">{description}</p>
+              <p className="text-xs md:text-xs text-muted-foreground truncate">{description}</p>
             )}
           </div>
           <div className="flex h-9 w-9 md:h-12 md:w-12 items-center justify-center rounded-full bg-primary/10 shrink-0">

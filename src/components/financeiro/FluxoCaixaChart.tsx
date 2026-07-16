@@ -270,7 +270,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
             accent={saldoTotal >= 0 ? "primary" : "destructive"}
           />
           <div className="rounded-lg border bg-card p-3">
-            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
               Tendência 3m
             </p>
             <div className="flex items-center gap-1.5 mt-1">
@@ -283,7 +283,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
               {formatCurrency(Math.abs(avgLast3))}/mês
             </p>
             {trendPercent !== 0 && (
-              <p className="text-[10px] text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {Math.abs(trendPercent).toFixed(0)}% vs trimestre anterior
               </p>
             )}
@@ -299,33 +299,33 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                 Projeção {currentMonthName}
               </p>
             </div>
-            <span className="text-[10px] uppercase tracking-wider bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-semibold">
+            <span className="text-xs uppercase tracking-wider bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-semibold">
               {daysElapsed} dias passados · {daysLeft} restantes
             </span>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Entrou até agora</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Entrou até agora</p>
               <p className="text-sm font-bold tabular-nums text-primary">{formatCurrency(receitaAtual)}</p>
-              <p className="text-[10px] text-muted-foreground">→ proj: {formatCurrency(receitaProjetada)}</p>
+              <p className="text-xs text-muted-foreground">→ proj: {formatCurrency(receitaProjetada)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Saiu até agora</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Saiu até agora</p>
               <p className="text-sm font-bold tabular-nums text-destructive">{formatCurrency(despesaAtual)}</p>
-              <p className="text-[10px] text-muted-foreground">→ proj: {formatCurrency(despesaProjetada)}</p>
+              <p className="text-xs text-muted-foreground">→ proj: {formatCurrency(despesaProjetada)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Resultado projetado</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Resultado projetado</p>
               <p className={`text-sm font-bold tabular-nums ${resultadoProjetado >= 0 ? "text-primary" : "text-destructive"}`}>
                 {formatCurrency(resultadoProjetado)}
               </p>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 se manter o ritmo
               </p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">vs mês anterior</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">vs mês anterior</p>
               <div className="flex items-center gap-1 mt-0.5">
                 {projecaoVsPrev >= 0 ? (
                   <ArrowUpRight className="h-3.5 w-3.5 text-primary" />
@@ -336,7 +336,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                   {projecaoVsPrev >= 0 ? "+" : ""}{projecaoVsPrev.toFixed(0)}%
                 </p>
               </div>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 na projeção
               </p>
             </div>
@@ -388,7 +388,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
                       <div className="flex items-center gap-2 mb-2.5">
                         <p className="font-semibold text-sm capitalize">{d.fullName}</p>
                         {d.isFuture && (
-                          <span className="text-[9px] uppercase tracking-wider bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-semibold">
+                          <span className="text-xs uppercase tracking-wider bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-semibold">
                             Projeção
                           </span>
                         )}
@@ -526,7 +526,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         </div>
 
         {/* Legend */}
-        <div className="flex items-center justify-center flex-wrap gap-x-3 gap-y-1.5 text-[11px] md:text-xs text-muted-foreground">
+        <div className="flex items-center justify-center flex-wrap gap-x-3 gap-y-1.5 text-xs md:text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm bg-primary opacity-70" />
             Entrou
@@ -545,7 +545,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
           </span>
         </div>
         {isMobile && chartData.length > 6 && (
-          <p className="text-center text-[10px] text-muted-foreground -mt-2">
+          <p className="text-center text-xs text-muted-foreground -mt-2">
             Exibindo últimos 6 meses · Veja todos no desktop
           </p>
         )}
@@ -554,13 +554,13 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
         {(bestMonth || worstMonth) && (
           <div className="flex flex-wrap gap-2 pt-2 border-t">
             {bestMonth && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] bg-primary/10 text-primary rounded-full px-3 py-1 font-medium">
+              <span className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary rounded-full px-3 py-1 font-medium">
                 <TrendingUp className="h-3 w-3" />
                 Melhor: {bestMonth.fullName} ({formatCurrency(bestMonth.resultado)})
               </span>
             )}
             {worstMonth && worstMonth !== bestMonth && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] bg-destructive/10 text-destructive rounded-full px-3 py-1 font-medium">
+              <span className="inline-flex items-center gap-1.5 text-xs bg-destructive/10 text-destructive rounded-full px-3 py-1 font-medium">
                 <TrendingDown className="h-3 w-3" />
                 Pior: {worstMonth.fullName} ({formatCurrency(worstMonth.resultado)})
               </span>
@@ -575,7 +575,7 @@ export function FluxoCaixaChart({ pagamentos, despesas }: FluxoCaixaChartProps) 
 function KpiCard({ label, value, accent }: { label: string; value: string; accent: "primary" | "destructive" }) {
   return (
     <div className="rounded-lg border bg-card p-3">
-      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
+      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
       <p className={`text-lg font-bold tabular-nums mt-1 ${accent === "primary" ? "text-primary" : "text-destructive"}`}>
         {value}
       </p>

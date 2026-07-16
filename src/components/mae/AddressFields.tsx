@@ -105,7 +105,7 @@ export function AddressFields({ value, onChange, disabled }: AddressFieldsProps)
               <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
             )}
           </div>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Digite o CEP para preencher
           </p>
         </div>

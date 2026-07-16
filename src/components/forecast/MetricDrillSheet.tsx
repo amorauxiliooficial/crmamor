@@ -83,14 +83,14 @@ export function MetricDrillSheet({ spec, open, onOpenChange, formatBRL }: Props)
           </div>
           <div className="flex items-end justify-between">
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">
                 {spec.valueLabel ?? "Valor"}
               </div>
               <div className="text-3xl font-bold tabular-nums tracking-tight">
                 {formatBRL(spec.value)}
               </div>
             </div>
-            <Badge variant="outline" className="text-[10px] font-medium">
+            <Badge variant="outline" className="text-xs font-medium">
               {spec.records.length} registro{spec.records.length === 1 ? "" : "s"}
             </Badge>
           </div>
@@ -131,7 +131,7 @@ export function MetricDrillSheet({ spec, open, onOpenChange, formatBRL }: Props)
                                 background: "hsl(var(--background))",
                                 border: "1px solid hsl(var(--border))",
                                 borderRadius: 8,
-                                fontSize: 11,
+                                fontSize: 12,
                               }}
                               formatter={(v: number) => formatBRL(Number(v))}
                             />
@@ -186,7 +186,7 @@ export function MetricDrillSheet({ spec, open, onOpenChange, formatBRL }: Props)
                 ) : (
                   <>
                     {spec.recordsLabel && (
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground">
                         {spec.recordsLabel}
                       </p>
                     )}
@@ -200,13 +200,13 @@ export function MetricDrillSheet({ spec, open, onOpenChange, formatBRL }: Props)
                             <div className="text-sm font-medium truncate">{r.nome}</div>
                             <div className="flex items-center gap-2 mt-0.5">
                               {r.data && (
-                                <span className="text-[10px] text-muted-foreground">
+                                <span className="text-xs text-muted-foreground">
                                   {safeDate(r.data)}
                                 </span>
                               )}
                               {r.meta && (
                                 <span
-                                  className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                  className={`text-xs px-1.5 py-0.5 rounded ${
                                     TONE_BADGE[r.tone ?? "default"]
                                   }`}
                                 >

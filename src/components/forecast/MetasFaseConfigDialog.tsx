@@ -249,7 +249,7 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <div className="min-w-[5rem] text-center">
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                       Ano
                     </div>
                     <div className="text-2xl font-black tabular-nums leading-none text-primary">
@@ -298,11 +298,11 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
                             : "border-border/60 bg-muted/40 text-foreground"
                         )}
                       >
-                        <span className="text-[10px] font-bold uppercase leading-none">{mes}</span>
-                        <span className="text-[9px] leading-none opacity-80 mt-0.5">/{String(ano).slice(2)}</span>
+                        <span className="text-xs font-bold uppercase leading-none">{mes}</span>
+                        <span className="text-xs leading-none opacity-80 mt-0.5">/{String(ano).slice(2)}</span>
                       </div>
                       {isMesAtual && (
-                        <span className="rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">
+                        <span className="rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold uppercase text-primary-foreground">
                           Atual
                         </span>
                       )}
@@ -334,10 +334,10 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
                           <div className="text-sm font-bold tabular-nums text-foreground leading-none">
                             {Math.ceil(val / DEFAULT_TICKET_MEDIO)}
                           </div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5">mães</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">mães</div>
                         </>
                       ) : (
-                        <div className="text-[10px] text-muted-foreground/60">—</div>
+                        <div className="text-xs text-muted-foreground/60">—</div>
                       )}
                     </div>
                   </div>
@@ -381,7 +381,7 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
                 <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Metas por fase do funil
                 </h3>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Soma estimada: <span className="font-semibold text-foreground">{fmtBRL(totalMetaFases)}</span>
                 </p>
               </div>
@@ -401,13 +401,13 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
                   >
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-semibold">{fase}</div>
-                      <div className="text-[11px] text-muted-foreground tabular-nums">
+                      <div className="text-xs text-muted-foreground tabular-nums">
                         {fmtBRL(metaValorCalc)}
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <div className="space-y-1">
-                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                           Meta qtd
                         </Label>
                         <Input
@@ -422,7 +422,7 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                           Ticket (R$)
                         </Label>
                         <Input
@@ -443,7 +443,7 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                           Meta valor (R$)
                         </Label>
                         <Input
@@ -458,7 +458,7 @@ export function MetasFaseConfigDialog({ open, onOpenChange }: MetasFaseConfigDia
                     {isAprovada && (
                       <div className="grid grid-cols-3 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                             Taxa de pagamento (%)
                           </Label>
                           <Input
@@ -493,7 +493,7 @@ function ResumoChip({ label, value, icon }: { label: string; value: string; icon
     <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-background/80 px-3 py-1.5 backdrop-blur">
       <div className="text-primary">{icon}</div>
       <div className="leading-tight">
-        <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+        <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
           {label}
         </div>
         <div className="text-xs font-bold tabular-nums text-foreground">{value}</div>
@@ -514,7 +514,7 @@ function Mini({
 }) {
   return (
     <div className="rounded-lg border border-border/60 bg-background/70 p-2.5">
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
         {icon}
         {label}
       </div>

@@ -178,7 +178,7 @@ export default function Roadmap() {
                 <Users className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Responsável</span>
                 {filtroResponsaveis.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                     {filtroResponsaveis.length}
                   </Badge>
                 )}
@@ -243,7 +243,7 @@ export default function Roadmap() {
                 <Filter className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Prioridade</span>
                 {filtroPrioridades.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                     {filtroPrioridades.length}
                   </Badge>
                 )}
@@ -289,7 +289,7 @@ export default function Roadmap() {
                 <X className="h-3.5 w-3.5" />
                 Limpar
               </Button>
-              <Badge variant="outline" className="text-[10px] md:text-xs">
+              <Badge variant="outline" className="text-xs md:text-xs">
                 {tarefasFiltradas.length} tarefa(s)
               </Badge>
             </>

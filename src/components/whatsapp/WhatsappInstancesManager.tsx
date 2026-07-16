@@ -121,7 +121,7 @@ function InstanceCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="text-sm font-semibold truncate">{instance.name}</p>
-          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 border ${cfg.color} ${cfg.bgColor}`}>
+          <Badge variant="outline" className={`text-xs px-1.5 py-0 h-4 border ${cfg.color} ${cfg.bgColor}`}>
             {cfg.label}
           </Badge>
         </div>
@@ -129,10 +129,10 @@ function InstanceCard({
           {instance.phone && (
             <span className="text-xs text-muted-foreground font-mono">{instance.phone}</span>
           )}
-          <span className="text-[10px] text-muted-foreground/40">
+          <span className="text-xs text-muted-foreground/40">
             {createdAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
           </span>
-          <span className="text-[10px] text-muted-foreground/30 font-mono truncate max-w-[120px]">
+          <span className="text-xs text-muted-foreground/30 font-mono truncate max-w-[120px]">
             {instance.evolution_instance_name}
           </span>
         </div>

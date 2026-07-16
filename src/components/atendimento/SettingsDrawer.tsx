@@ -229,7 +229,7 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
                           ].map((s) => (
                             <div key={s.keys} className="flex items-center justify-between">
                               <span className="text-xs text-muted-foreground/60">{s.desc}</span>
-                              <kbd className="text-[10px] font-mono bg-muted/20 border border-border/30 rounded px-1.5 py-0.5 text-muted-foreground/60">
+                              <kbd className="text-xs font-mono bg-muted/20 border border-border/30 rounded px-1.5 py-0.5 text-muted-foreground/60">
                                 {s.keys}
                               </kbd>
                             </div>

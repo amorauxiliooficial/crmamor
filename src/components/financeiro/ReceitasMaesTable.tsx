@@ -265,14 +265,14 @@ export function ReceitasMaesTable({
           <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10">
             <CheckCircle2 className="h-4 w-4 text-primary" />
             <div>
-              <p className="text-[10px] text-muted-foreground">Recebido</p>
+              <p className="text-xs text-muted-foreground">Recebido</p>
               <p className="text-sm font-bold text-primary">{formatCurrency(totals.pago)}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 p-2 rounded-lg bg-warning/10">
             <Clock className="h-4 w-4 text-warning" />
             <div>
-              <p className="text-[10px] text-muted-foreground">Pendente</p>
+              <p className="text-xs text-muted-foreground">Pendente</p>
               <p className="text-sm font-bold text-warning">{formatCurrency(totals.pendente)}</p>
             </div>
           </div>
@@ -304,7 +304,7 @@ export function ReceitasMaesTable({
                         <p className="text-sm font-medium truncate max-w-[150px] sm:max-w-none">
                           {mae.mae_nome}
                         </p>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           {formatCpfMasked(mae.mae_cpf)}
                         </p>
                       </div>
@@ -320,7 +320,7 @@ export function ReceitasMaesTable({
                       </span>
                     </TableCell>
                     <TableCell className="text-center hidden sm:table-cell">
-                      <Badge variant="outline" className="text-[10px]">
+                      <Badge variant="outline" className="text-xs">
                         {mae.parcelas_pagas}/{mae.total_parcelas}
                       </Badge>
                     </TableCell>

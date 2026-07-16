@@ -71,7 +71,7 @@ export function ConsumptionDrawer({ open, onOpenChange, conversationId, lastInbo
             <div className="p-3 rounded-xl bg-muted/10 border border-border/10 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Próxima mensagem</span>
-                <Badge variant="outline" className="text-[10px] h-5">
+                <Badge variant="outline" className="text-xs h-5">
                   {windowStatus.isOpen ? "Janela aberta" : "Janela fechada"}
                 </Badge>
               </div>
@@ -84,7 +84,7 @@ export function ConsumptionDrawer({ open, onOpenChange, conversationId, lastInbo
                 </span>
               </div>
               {!windowStatus.isOpen && (
-                <p className="text-[11px] text-muted-foreground/50">
+                <p className="text-xs text-muted-foreground/50">
                   Use um template aprovado. O custo varia por categoria.
                 </p>
               )}
@@ -103,7 +103,7 @@ export function ConsumptionDrawer({ open, onOpenChange, conversationId, lastInbo
                 {Object.keys(convoBilling.byCategory).length > 0 && (
                   <div className="space-y-1">
                     {Object.entries(convoBilling.byCategory).map(([cat, data]) => (
-                      <div key={cat} className="flex items-center justify-between text-[11px]">
+                      <div key={cat} className="flex items-center justify-between text-xs">
                         <span className={cn("font-medium", CATEGORY_COLORS[cat] || CATEGORY_COLORS.unknown)}>
                           {CATEGORY_LABELS[cat] || cat}
                         </span>
@@ -128,7 +128,7 @@ export function ConsumptionDrawer({ open, onOpenChange, conversationId, lastInbo
                   <span className="text-muted-foreground/40">limite: {toBRL(dailyLimit)}</span>
                 </div>
                 <Progress value={dayPct} className="h-1.5" />
-                <p className="text-[10px] text-muted-foreground/40">
+                <p className="text-xs text-muted-foreground/40">
                   {monthly?.todayCount ?? 0} conversas cobradas
                 </p>
               </div>
@@ -145,7 +145,7 @@ export function ConsumptionDrawer({ open, onOpenChange, conversationId, lastInbo
                   <span className="text-muted-foreground/40">limite: {toBRL(monthLimit)}</span>
                 </div>
                 <Progress value={monthPct} className="h-1.5" />
-                <p className="text-[10px] text-muted-foreground/40">
+                <p className="text-xs text-muted-foreground/40">
                   {monthly?.monthCount ?? 0} conversas cobradas
                 </p>
               </div>
@@ -153,9 +153,9 @@ export function ConsumptionDrawer({ open, onOpenChange, conversationId, lastInbo
               {/* Category breakdown */}
               {monthly?.byCategory && Object.keys(monthly.byCategory).length > 0 && (
                 <div className="mt-2 space-y-1 p-2.5 rounded-lg bg-muted/5 border border-border/5">
-                  <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider mb-1">Por categoria</p>
+                  <p className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-wider mb-1">Por categoria</p>
                   {Object.entries(monthly.byCategory).map(([cat, data]) => (
-                    <div key={cat} className="flex items-center justify-between text-[11px]">
+                    <div key={cat} className="flex items-center justify-between text-xs">
                       <span className={cn("font-medium", CATEGORY_COLORS[cat] || CATEGORY_COLORS.unknown)}>
                         {CATEGORY_LABELS[cat] || cat}
                       </span>
@@ -173,7 +173,7 @@ export function ConsumptionDrawer({ open, onOpenChange, conversationId, lastInbo
               <h4 className="text-xs font-semibold text-muted-foreground/70 flex items-center gap-1.5">
                 <TrendingUp className="h-3 w-3" /> Tabela de preços (Brasil)
               </h4>
-              <div className="space-y-1 text-[11px]">
+              <div className="space-y-1 text-xs">
                 {rateCards.map((rc, i) => (
                   <div key={i} className="flex items-center justify-between">
                     <span className={cn("font-medium", CATEGORY_COLORS[rc.category] || "text-muted-foreground")}>
@@ -196,7 +196,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="p-2.5 rounded-lg bg-muted/5 border border-border/5 text-center">
       <p className="text-lg font-bold">{value}</p>
-      <p className="text-[10px] text-muted-foreground/50">{label}</p>
+      <p className="text-xs text-muted-foreground/50">{label}</p>
     </div>
   );
 }

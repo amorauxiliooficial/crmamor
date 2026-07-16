@@ -105,7 +105,7 @@ export function MetaFinanceiraDialog({ open, onOpenChange }: Props) {
             placeholder="Ex: 80000"
             className="h-11 text-lg font-semibold tabular-nums"
           />
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Valor aplicado a todos os meses como referência base.
           </p>
         </div>

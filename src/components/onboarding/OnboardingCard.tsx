@@ -354,7 +354,7 @@ export function OnboardingCard() {
                     className="absolute top-0 h-3 flex items-center justify-end pr-1"
                     style={{ width: `${Math.max(progressPercentage, 10)}%` }}
                   >
-                    <span className="text-[10px] font-bold text-primary-foreground">
+                    <span className="text-xs font-bold text-primary-foreground">
                       {Math.round(progressPercentage)}%
                     </span>
                   </div>

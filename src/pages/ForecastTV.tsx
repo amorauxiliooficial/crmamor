@@ -61,11 +61,11 @@ function CountUpNumber({ value, formatter }: { value: number; formatter: (n: num
 function KpiCell({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="flex flex-col">
-      <span className="font-sans text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
+      <span className="font-sans text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
       <span className="mt-1 font-mono text-base md:text-lg font-semibold text-foreground tabular-nums leading-tight">
         {value}
       </span>
-      {hint && <span className="mt-0.5 font-sans text-[10px] text-muted-foreground">{hint}</span>}
+      {hint && <span className="mt-0.5 font-sans text-xs text-muted-foreground">{hint}</span>}
     </div>
   );
 }
@@ -106,7 +106,7 @@ function PhaseRow({ f, index }: { f: FaseForecast; index: number }) {
       {/* Nome + qtd */}
       <div className="min-w-0">
         <p className="font-sans text-sm font-semibold text-foreground truncate">{f.faseKey}</p>
-        <p className="font-mono text-[11px] text-muted-foreground mt-0.5 tabular-nums">
+        <p className="font-mono text-xs text-muted-foreground mt-0.5 tabular-nums">
           {f.quantidade} {f.quantidade === 1 ? "mãe" : "mães"}
           {hasMeta && <span className="text-muted-foreground/70"> / meta {f.metaQuantidade}</span>}
         </p>
@@ -114,7 +114,7 @@ function PhaseRow({ f, index }: { f: FaseForecast; index: number }) {
 
       {/* Realizado */}
       <div className="text-right">
-        <p className="font-sans text-[10px] uppercase tracking-wider text-muted-foreground">Realizado</p>
+        <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground">Realizado</p>
         <p className="font-mono text-base font-semibold text-foreground tabular-nums">
           <CountUpNumber value={f.valorBruto} formatter={formatBRLShort} />
         </p>
@@ -122,7 +122,7 @@ function PhaseRow({ f, index }: { f: FaseForecast; index: number }) {
 
       {/* Meta */}
       <div className="text-right hidden md:block">
-        <p className="font-sans text-[10px] uppercase tracking-wider text-muted-foreground">Meta</p>
+        <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground">Meta</p>
         <p className="font-mono text-base text-muted-foreground tabular-nums">
           {hasMeta ? formatBRLShort(f.metaValor) : "—"}
         </p>
@@ -130,7 +130,7 @@ function PhaseRow({ f, index }: { f: FaseForecast; index: number }) {
 
       {/* Gap */}
       <div className="text-right hidden lg:block min-w-[100px]">
-        <p className="font-sans text-[10px] uppercase tracking-wider text-muted-foreground">Gap</p>
+        <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground">Gap</p>
         <p className={cn("font-mono text-base tabular-nums font-semibold", hasMeta ? (f.gapValor > 0 ? "text-rose-400" : "text-emerald-400") : "text-muted-foreground")}>
           {hasMeta ? `${f.gapValor > 0 ? "−" : "+"}${formatBRLShort(Math.abs(f.gapValor))}` : "—"}
         </p>
@@ -183,7 +183,7 @@ function FocusCard({
       className="rounded-xl border border-border/60 bg-card p-5 opacity-0"
       style={{ animation: `tv-rise 700ms ${EASE} forwards`, animationDelay: `${delay}ms` }}
     >
-      <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+      <p className="font-sans text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
         {label}
       </p>
       <p className={cn("mt-3 font-serif text-4xl xl:text-5xl font-bold tabular-nums leading-none", valueColor)}>
@@ -199,7 +199,7 @@ function FocusCard({
           )}>
             {delta.text}
           </span>
-          {deltaLabel && <span className="text-muted-foreground uppercase tracking-wider text-[10px]">{deltaLabel}</span>}
+          {deltaLabel && <span className="text-muted-foreground uppercase tracking-wider text-xs">{deltaLabel}</span>}
         </p>
       )}
     </div>
@@ -293,7 +293,7 @@ export default function ForecastTV() {
               <h1 className="font-sans text-sm font-bold tracking-tight text-foreground">
                 Forecast · Sala de Operações
               </h1>
-              <p className="font-mono text-[11px] text-muted-foreground flex items-center gap-2">
+              <p className="font-mono text-xs text-muted-foreground flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary tv-led" />
                 AO VIVO · {forecast.totalMaes} mães · sync {secondsSinceSync}s
               </p>
@@ -301,7 +301,7 @@ export default function ForecastTV() {
           </div>
           <div className="text-right">
             <p className="font-mono text-lg font-bold text-foreground leading-none tabular-nums">{clockStr}</p>
-            <p className="font-sans text-[11px] text-muted-foreground mt-1 capitalize">{dateStr}</p>
+            <p className="font-sans text-xs text-muted-foreground mt-1 capitalize">{dateStr}</p>
           </div>
         </div>
       </header>
@@ -313,7 +313,7 @@ export default function ForecastTV() {
           <div className="opacity-0" style={{ animation: `tv-rise 800ms ${EASE} forwards`, animationDelay: "60ms" }}>
             <div className="flex items-center gap-2 mb-4">
               <Target className="h-4 w-4 text-primary" />
-              <span className="font-sans text-[11px] font-bold uppercase tracking-[0.25em] text-primary">
+              <span className="font-sans text-xs font-bold uppercase tracking-[0.25em] text-primary">
                 {metaBatida ? "Meta do mês batida" : "Atingimento da meta"}
               </span>
             </div>
@@ -354,7 +354,7 @@ export default function ForecastTV() {
                   />
                 )}
               </div>
-              <div className="mt-2 flex justify-between font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <div className="mt-2 flex justify-between font-mono text-xs uppercase tracking-wider text-muted-foreground">
                 <span>0</span>
                 <span>Ritmo ideal: {Math.round((diaAtual / diasNoMes) * 100)}%</span>
                 <span>100%</span>
@@ -413,7 +413,7 @@ export default function ForecastTV() {
                   Ordenado pela maior distância até a meta
                 </p>
               </div>
-              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
                 {forecast.fases.length} fases
               </span>
             </div>
@@ -431,7 +431,7 @@ export default function ForecastTV() {
               className="rounded-xl border border-border/60 bg-card p-5 opacity-0"
               style={{ animation: `tv-rise 700ms ${EASE} forwards`, animationDelay: "200ms" }}
             >
-              <h3 className="font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-primary mb-4">
+              <h3 className="font-sans text-xs font-bold uppercase tracking-[0.2em] text-primary mb-4">
                 Resumo executivo
               </h3>
               <div className="space-y-3">
@@ -447,7 +447,7 @@ export default function ForecastTV() {
               className="rounded-xl border border-border/60 bg-card p-5 opacity-0"
               style={{ animation: `tv-rise 700ms ${EASE} forwards`, animationDelay: "280ms" }}
             >
-              <h3 className="font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-primary mb-4">
+              <h3 className="font-sans text-xs font-bold uppercase tracking-[0.2em] text-primary mb-4">
                 Alertas
               </h3>
               <div className="space-y-3">
@@ -494,7 +494,7 @@ export default function ForecastTV() {
 
       {/* ============ FOOTER ============ */}
       <footer className="relative z-10 border-t border-border/60 bg-card/40">
-        <div className="max-w-[1600px] mx-auto px-6 py-3 flex justify-between items-center font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+        <div className="max-w-[1600px] mx-auto px-6 py-3 flex justify-between items-center font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
           <span className="flex items-center gap-2">
             <span className="h-1 w-1 rounded-full bg-primary tv-led" />
             <span className="text-primary font-semibold">Status nominal</span>

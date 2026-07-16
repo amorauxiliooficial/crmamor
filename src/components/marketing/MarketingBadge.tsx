@@ -36,7 +36,7 @@ export function MarketingBadge({ etiqueta, className, compact = false }: Marketi
       variant="outline"
       className={cn(
         "gap-1 border font-medium text-foreground",
-        compact ? "h-6 px-2 py-0 text-[10px]" : "h-7 px-2.5 py-0.5 text-xs",
+        compact ? "h-6 px-2 py-0 text-xs" : "h-7 px-2.5 py-0.5 text-xs",
         className
       )}
       style={{
