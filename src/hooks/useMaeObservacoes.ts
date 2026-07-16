@@ -109,6 +109,7 @@ export function useMaeObservacoes(maeId: string | null | undefined) {
     onSuccess: () => {
       toast.success("Anotação adicionada");
       queryClient.invalidateQueries({ queryKey: key });
+      queryClient.invalidateQueries({ queryKey: ["maes_data"] });
     },
     onError: (e: any) => toast.error(e.message || "Erro ao adicionar"),
   });

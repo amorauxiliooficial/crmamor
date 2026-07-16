@@ -45,6 +45,7 @@ import { GuidedTour } from "@/components/tour/GuidedTour";
 
 // Types
 import { Indicacao } from "@/types/indicacao";
+import { getAcompanhamentoMae } from "@/lib/maeAcompanhamento";
 
 const VIEW_ORDER = ["kanban", "atividades", "gestantes", "conferencia", "pagamentos", "indicacoes", "prospeccao", "chat"];
 
@@ -59,6 +60,7 @@ export default function Index() {
   // View state
   const [currentView, setCurrentView] = useState("kanban");
   const [searchQuery, setSearchQuery] = useState("");
+  const [acompanhamentoFilter, setAcompanhamentoFilter] = useState<"contato" | "senha" | null>(null);
   
 
   // Dialog state
@@ -108,8 +110,23 @@ export default function Index() {
       );
     }
 
+    if (acompanhamentoFilter === "contato") {
+      result = result.filter((m) => !isOutOfFunnel(m.status_processo) && getAcompanhamentoMae(m).contatoAtrasado);
+    }
+    if (acompanhamentoFilter === "senha") {
+      result = result.filter((m) => !isOutOfFunnel(m.status_processo) && getAcompanhamentoMae(m).senhaAtrasada);
+    }
+
     return result;
-  }, [maes, searchQuery]);
+  }, [maes, searchQuery, acompanhamentoFilter]);
+
+  const acompanhamentoResumo = useMemo(() => {
+    const ativas = maes.filter((m) => !isOutOfFunnel(m.status_processo));
+    return {
+      semContato: ativas.filter((m) => getAcompanhamentoMae(m).contatoAtrasado).length,
+      semSenha: ativas.filter((m) => getAcompanhamentoMae(m).senhaAtrasada).length,
+    };
+  }, [maes]);
 
 
   const handleCardClick = useCallback((mae: MaeProcesso) => {
@@ -213,6 +230,10 @@ export default function Index() {
             emAndamento={maes.filter((m) => !isOutOfFunnel(m.status_processo)).length}
             concluidos={maes.filter((m) => isConcludedStage(m.status_processo)).length}
             encerradosSemExito={maes.filter((m) => isDeniedStage(m.status_processo)).length}
+            semContato={acompanhamentoResumo.semContato}
+            semSenha={acompanhamentoResumo.semSenha}
+            filtroAtivo={acompanhamentoFilter}
+            onFiltroChange={setAcompanhamentoFilter}
           />
         )}
 

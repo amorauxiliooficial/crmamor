@@ -28,8 +28,9 @@ import {
 } from "@/components/ui/select";
 import { format, differenceInMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Settings2, Check, X, ArrowUpDown, Filter, MoreHorizontal, Copy, Baby, FolderOpen, Flame } from "lucide-react";
+import { Settings2, Check, X, ArrowUpDown, Filter, MoreHorizontal, Copy, Baby, FolderOpen, Flame, MessageSquareWarning, KeyRound } from "lucide-react";
 import { toast } from "sonner";
+import { formatarTempo, getAcompanhamentoMae } from "@/lib/maeAcompanhamento";
 
 interface MaeTableProps {
   maes: MaeProcesso[];
@@ -133,6 +134,7 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [statusFilter, setStatusFilter] = useState<StatusProcesso | "all">("all");
   const [quenteFilter, setQuenteFilter] = useState(false);
+  const [pendenciaFilter, setPendenciaFilter] = useState<"all" | "contato" | "senha">("all");
 
   useEffect(() => {
     localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(columns));
@@ -148,8 +150,14 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
     if (quenteFilter) {
       result = result.filter((mae) => (mae as any).ja_trabalhou === true);
     }
+    if (pendenciaFilter === "contato") {
+      result = result.filter((mae) => getAcompanhamentoMae(mae).contatoAtrasado);
+    }
+    if (pendenciaFilter === "senha") {
+      result = result.filter((mae) => getAcompanhamentoMae(mae).senhaAtrasada);
+    }
     return result;
-  }, [maes, statusFilter, quenteFilter]);
+  }, [maes, statusFilter, quenteFilter, pendenciaFilter]);
 
   const sortedMaes = useMemo(() => {
     if (!sortColumn) return filteredMaes;
@@ -218,15 +226,30 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
 
     switch (columnId) {
       case "nome_mae":
+        const acompanhamento = getAcompanhamentoMae(mae);
         return (
-          <div className="flex items-center gap-1.5">
-            <span>{value as string}</span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <span>{value as string}</span>
             {(mae as any).ja_trabalhou && (
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 gap-0.5">
                 <Flame className="h-2.5 w-2.5" />
                 Quente
               </Badge>
-            )}
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              <Badge variant={acompanhamento.contatoAtrasado ? "destructive" : "outline"} className="h-5 gap-1 px-1.5 text-[10px]">
+                <MessageSquareWarning className="h-3 w-3" />
+                Contato {formatarTempo(acompanhamento.diasSemContato)}
+              </Badge>
+              {!mae.senha_gov && (
+                <Badge variant={acompanhamento.senhaAtrasada ? "destructive" : "secondary"} className="h-5 gap-1 px-1.5 text-[10px]">
+                  <KeyRound className="h-3 w-3" />
+                  Sem senha {formatarTempo(acompanhamento.diasSemSenha)}
+                </Badge>
+              )}
+            </div>
           </div>
         );
       case "cpf":
@@ -298,6 +321,24 @@ export function MaeTable({ maes, onRowClick }: MaeTableProps) {
           >
             <Flame className="h-3.5 w-3.5" />
             Quentes
+          </Button>
+          <Button
+            variant={pendenciaFilter === "contato" ? "destructive" : "outline"}
+            size="sm"
+            onClick={() => setPendenciaFilter(pendenciaFilter === "contato" ? "all" : "contato")}
+            className="gap-1"
+          >
+            <MessageSquareWarning className="h-3.5 w-3.5" />
+            Sem contato +7 dias
+          </Button>
+          <Button
+            variant={pendenciaFilter === "senha" ? "destructive" : "outline"}
+            size="sm"
+            onClick={() => setPendenciaFilter(pendenciaFilter === "senha" ? "all" : "senha")}
+            className="gap-1"
+          >
+            <KeyRound className="h-3.5 w-3.5" />
+            Sem senha +7 dias
           </Button>
         </div>
         <DropdownMenu>

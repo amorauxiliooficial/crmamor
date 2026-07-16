@@ -12,6 +12,8 @@ import {
   MoreVertical,
   Copy,
   FileWarning,
+  MessageSquareWarning,
+  KeyRound,
 } from "lucide-react";
 import { formatCpf } from "@/lib/formatters";
 import { format, parseISO, differenceInDays } from "date-fns";
@@ -24,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { calcularMesGravidez } from "@/lib/gestacaoUtils";
+import { formatarTempo, getAcompanhamentoMae } from "@/lib/maeAcompanhamento";
 
 interface MaeCardListProps {
   maes: MaeProcesso[];
@@ -72,6 +75,7 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
         const dasConcluido = mae.das_concluido;
         const statusLabel = mae.status_processo.split(" ").slice(1).join(" ") || mae.status_processo;
         const emoji = mae.status_processo.split(" ")[0];
+        const acompanhamento = getAcompanhamentoMae(mae);
 
         return (
           <Card
@@ -141,6 +145,16 @@ export function MaeCardList({ maes, onCardClick }: MaeCardListProps) {
               </div>
 
               <div className="flex flex-wrap gap-1 mt-2">
+                <Badge variant={acompanhamento.contatoAtrasado ? "destructive" : "outline"} className="text-[10px] px-1.5 py-0 h-5 gap-1">
+                  <MessageSquareWarning className="h-2.5 w-2.5" />
+                  Contato {formatarTempo(acompanhamento.diasSemContato)}
+                </Badge>
+                {!mae.senha_gov && (
+                  <Badge variant={acompanhamento.senhaAtrasada ? "destructive" : "secondary"} className="text-[10px] px-1.5 py-0 h-5 gap-1">
+                    <KeyRound className="h-2.5 w-2.5" />
+                    Sem senha {formatarTempo(acompanhamento.diasSemSenha)}
+                  </Badge>
+                )}
                 <Badge variant={getStatusBadgeVariant(mae.status_processo)} className="text-[10px] px-1.5 py-0 h-5">
                   {emoji} {statusLabel}
                 </Badge>
