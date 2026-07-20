@@ -41,11 +41,24 @@ export function DocumentosContent({
   }, [linkDocumentos, maeId]);
 
   const handleSave = async () => {
+    const normalizedLink = link.trim();
+    if (normalizedLink) {
+      try {
+        const parsed = new URL(normalizedLink);
+        if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+          throw new Error("Invalid protocol");
+        }
+      } catch {
+        toast.error("Informe um link válido iniciado por http:// ou https://");
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     const { error } = await supabase
       .from("mae_processo")
-      .update({ link_documentos: link.trim() || null })
+      .update({ link_documentos: normalizedLink || null })
       .eq("id", maeId);
 
     setIsLoading(false);
@@ -70,28 +83,28 @@ export function DocumentosContent({
         <div>
           <h4 className="flex items-center gap-2 font-semibold">
             <FolderOpen className="h-4 w-4 text-primary" />
-            Pasta de documentos
+            Documentos no ZapResponder
           </h4>
           <p className="mt-1 text-sm text-muted-foreground">
-            Gerencie o acesso à pasta no OneDrive ou SharePoint.
+            Acesse diretamente o card onde estão os anexos da cliente.
           </p>
         </div>
         {link && (
           <Button variant="outline" size="sm" onClick={handleOpenLink} className="shrink-0 gap-2">
             <ExternalLink className="h-4 w-4" />
-            Abrir pasta
+            Abrir anexos
           </Button>
         )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`link_documentos_${maeId}`}>Link da pasta</Label>
+        <Label htmlFor={`link_documentos_${maeId}`}>Link do card</Label>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             id={`link_documentos_${maeId}`}
             value={link}
             onChange={(event) => setLink(event.target.value)}
-            placeholder="Cole o link de compartilhamento..."
+            placeholder="Cole o link do card no ZapResponder..."
             className="flex-1"
           />
           <Button onClick={handleSave} disabled={isLoading} className="gap-2 sm:shrink-0">
@@ -100,15 +113,16 @@ export function DocumentosContent({
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          No OneDrive, abra Compartilhar e copie o link de acesso da pasta.
+          O link é preenchido automaticamente quando o card entra em Contrato fechado. Você também pode colá-lo
+          manualmente.
         </p>
       </div>
 
       {!link && (
         <div className="border-t py-8 text-center text-muted-foreground">
           <FolderOpen className="mx-auto mb-2 h-9 w-9 opacity-40" />
-          <p className="text-sm font-medium text-foreground">Nenhuma pasta vinculada</p>
-          <p className="mt-1 text-xs">Cole o link acima para centralizar os documentos da mãe.</p>
+          <p className="text-sm font-medium text-foreground">Nenhum card vinculado</p>
+          <p className="mt-1 text-xs">Cole o link acima para acessar os anexos da cliente no ZapResponder.</p>
         </div>
       )}
     </div>
@@ -132,7 +146,7 @@ export function DocumentosDialog({
             Documentos - {maeNome}
           </DialogTitle>
           <DialogDescription>
-            Gerencie o link da pasta de documentos no OneDrive.
+            Acesse os anexos disponíveis no card do ZapResponder.
           </DialogDescription>
         </DialogHeader>
 
