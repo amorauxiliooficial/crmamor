@@ -99,6 +99,189 @@ function resolveZapCardUrl(body: AnyObj, card: AnyObj, cardId: string | null): s
   return normalizeHttpUrl(template.replaceAll("{cardId}", encodeURIComponent(cardId)));
 }
 
+const MAX_DOCUMENT_BYTES = 20 * 1024 * 1024;
+const DOCUMENT_BUCKET = "documentos-clientes";
+
+function safeFilename(value: unknown, messageType: string): string {
+  const fallback = messageType === "image" ? "imagem.jpg" : "documento";
+  const raw = typeof value === "string" && value.trim() ? value.trim() : fallback;
+  return raw
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 140) || fallback;
+}
+
+function isReceivedMessageEvent(eventType: string): boolean {
+  return ["message.received", "message_received", "whatsapp_message_received"].includes(
+    eventType.toLowerCase(),
+  );
+}
+
+async function receiveZapDocument(body: AnyObj, jsonHeaders: Record<string, string>) {
+  const data: AnyObj = body.data ?? body.message ?? body;
+  const messageType = String(data.type ?? data.messageType ?? data.message_type ?? "").toLowerCase();
+  const mediaUrl = normalizeHttpUrl(firstDefined(data, [
+    "content.media.url",
+    "media.url",
+    "mediaUrl",
+    "media_url",
+    "content.url",
+    "url",
+  ]));
+
+  if (!mediaUrl || !["image", "document", "file"].includes(messageType)) {
+    return new Response(JSON.stringify({ ignored: true, reason: "not_a_document" }), {
+      status: 200,
+      headers: jsonHeaders,
+    });
+  }
+
+  const phoneRaw = firstDefined(data, [
+    "recipient.id",
+    "sender.id",
+    "contact.chatId",
+    "contact.phone",
+    "chatId",
+    "phone",
+  ]);
+  const telefoneE164 = normalizePhoneToE164BR(typeof phoneRaw === "string" ? phoneRaw : null);
+  const messageIdRaw = firstDefined(data, ["id", "messageId", "message_id"]);
+  const messageId = typeof messageIdRaw === "string" ? messageIdRaw.trim() : "";
+
+  if (!telefoneE164 || !messageId) {
+    console.warn("zap-handoff: media ignored; missing phone or message id");
+    return new Response(JSON.stringify({ ignored: true, reason: "missing_identity" }), {
+      status: 200,
+      headers: jsonHeaders,
+    });
+  }
+
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } },
+  );
+
+  const { data: duplicate } = await supabaseAdmin
+    .from("mae_documentos")
+    .select("id, mae_id")
+    .eq("source", "ZapResponder")
+    .eq("source_message_id", messageId)
+    .maybeSingle();
+
+  if (duplicate) {
+    return new Response(JSON.stringify({ duplicate: true, id: duplicate.id }), {
+      status: 200,
+      headers: jsonHeaders,
+    });
+  }
+
+  const download = await fetch(mediaUrl, { redirect: "follow" });
+  if (!download.ok) {
+    console.error("zap-handoff: media download failed", download.status);
+    return new Response(JSON.stringify({ error: "Nao foi possivel baixar o documento" }), {
+      status: 502,
+      headers: jsonHeaders,
+    });
+  }
+
+  const declaredSize = Number(download.headers.get("content-length") ?? 0);
+  if (declaredSize > MAX_DOCUMENT_BYTES) {
+    return new Response(JSON.stringify({ error: "Documento maior que 20 MB" }), {
+      status: 413,
+      headers: jsonHeaders,
+    });
+  }
+
+  const bytes = new Uint8Array(await download.arrayBuffer());
+  if (bytes.byteLength > MAX_DOCUMENT_BYTES) {
+    return new Response(JSON.stringify({ error: "Documento maior que 20 MB" }), {
+      status: 413,
+      headers: jsonHeaders,
+    });
+  }
+
+  const mimeType = String(
+    firstDefined(data, ["content.media.mime_type", "content.media.mimetype", "mime_type", "mimetype"]) ??
+      download.headers.get("content-type") ??
+      (messageType === "image" ? "image/jpeg" : "application/octet-stream"),
+  ).split(";")[0].trim();
+  const filename = safeFilename(
+    firstDefined(data, [
+      "content.media.fileName",
+      "content.media.filename",
+      "content.fileName",
+      "filename",
+      "fileName",
+    ]),
+    messageType,
+  );
+  const phonePath = telefoneE164.replace(/\D/g, "");
+  const storagePath = `zap/${phonePath}/${new Date().toISOString().slice(0, 10)}/${safeFilename(messageId, "document")}-${filename}`;
+
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from(DOCUMENT_BUCKET)
+    .upload(storagePath, bytes, { contentType: mimeType, upsert: false });
+  if (uploadError) {
+    console.error("zap-handoff: storage upload failed", uploadError.message);
+    return new Response(JSON.stringify({ error: "Erro ao armazenar documento" }), {
+      status: 500,
+      headers: jsonHeaders,
+    });
+  }
+
+  const { data: mae } = await supabaseAdmin
+    .from("mae_processo")
+    .select("id")
+    .eq("telefone_e164", telefoneE164)
+    .eq("contrato_assinado", true)
+    .limit(1)
+    .maybeSingle();
+
+  const receivedAtRaw = firstDefined(data, ["sent_at", "created_at"]);
+  const receivedAt = typeof receivedAtRaw === "string" && !Number.isNaN(Date.parse(receivedAtRaw))
+    ? new Date(receivedAtRaw).toISOString()
+    : null;
+
+  const { data: documentRow, error: insertError } = await supabaseAdmin
+    .from("mae_documentos")
+    .insert({
+      mae_id: mae?.id ?? null,
+      telefone_e164: telefoneE164,
+      source: "ZapResponder",
+      source_message_id: messageId,
+      nome_arquivo: filename,
+      mime_type: mimeType,
+      tamanho_bytes: bytes.byteLength,
+      storage_path: storagePath,
+      received_at: receivedAt,
+    })
+    .select("id, mae_id")
+    .single();
+
+  if (insertError) {
+    await supabaseAdmin.storage.from(DOCUMENT_BUCKET).remove([storagePath]);
+    console.error("zap-handoff: document insert failed", insertError.message);
+    return new Response(JSON.stringify({ error: "Erro ao registrar documento" }), {
+      status: 500,
+      headers: jsonHeaders,
+    });
+  }
+
+  console.log("zap-handoff: document stored", {
+    id: documentRow.id,
+    linked: documentRow.mae_id !== null,
+    messageType,
+    size: bytes.byteLength,
+  });
+  return new Response(JSON.stringify({
+    success: true,
+    document_id: documentRow.id,
+    linked: documentRow.mae_id !== null,
+  }), { status: 200, headers: jsonHeaders });
+}
+
 serve(async (req) => {
   const corsHeaders = publicCorsHeaders();
   if (req.method === "OPTIONS") {
@@ -128,6 +311,11 @@ serve(async (req) => {
     }
 
     const body: AnyObj = await req.json();
+    const eventType = typeof body.type === "string" ? body.type : typeof body.event === "string" ? body.event : "";
+
+    if (isReceivedMessageEvent(eventType)) {
+      return await receiveZapDocument(body, jsonHeaders);
+    }
 
     // Event type guard
     if (body.type && body.type !== "crm_card_moved") {
@@ -266,6 +454,14 @@ serve(async (req) => {
             console.error("zap-handoff: failed to update card link", linkError.message);
           }
         }
+        if (telefoneE164) {
+          const { error: documentsError } = await supabaseAdmin
+            .from("mae_documentos")
+            .update({ mae_id: existing.id })
+            .eq("telefone_e164", telefoneE164)
+            .is("mae_id", null);
+          if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
+        }
         console.log("zap-handoff: duplicate by zap_card_id", cardId, existing.id);
         return new Response(
           JSON.stringify({ duplicate: true, id: existing.id, card_linked: cardUrl !== null }),
@@ -294,6 +490,12 @@ serve(async (req) => {
             console.error("zap-handoff: failed to link existing record", linkError.message);
           }
         }
+        const { error: documentsError } = await supabaseAdmin
+          .from("mae_documentos")
+          .update({ mae_id: existing.id })
+          .eq("telefone_e164", telefoneE164)
+          .is("mae_id", null);
+        if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
         console.log("zap-handoff: duplicate by telefone_e164", telefoneE164, existing.id);
         return new Response(
           JSON.stringify({ duplicate: true, id: existing.id, card_linked: cardUrl !== null }),
@@ -352,6 +554,14 @@ serve(async (req) => {
     }
 
     const incomplete = cpf === null || senhaGov === null;
+    if (telefoneE164) {
+      const { error: documentsError } = await supabaseAdmin
+        .from("mae_documentos")
+        .update({ mae_id: newMae.id })
+        .eq("telefone_e164", telefoneE164)
+        .is("mae_id", null);
+      if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
+    }
     console.log("zap-handoff: created mae_processo", newMae.id, "incomplete:", incomplete);
 
     return new Response(JSON.stringify({

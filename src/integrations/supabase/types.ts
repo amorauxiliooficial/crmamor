@@ -1340,6 +1340,56 @@ export type Database = {
           },
         ]
       }
+      mae_documentos: {
+        Row: {
+          created_at: string
+          id: string
+          mae_id: string | null
+          mime_type: string | null
+          nome_arquivo: string
+          received_at: string | null
+          source: string
+          source_message_id: string
+          storage_path: string
+          tamanho_bytes: number | null
+          telefone_e164: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mae_id?: string | null
+          mime_type?: string | null
+          nome_arquivo: string
+          received_at?: string | null
+          source?: string
+          source_message_id: string
+          storage_path: string
+          tamanho_bytes?: number | null
+          telefone_e164: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mae_id?: string | null
+          mime_type?: string | null
+          nome_arquivo?: string
+          received_at?: string | null
+          source?: string
+          source_message_id?: string
+          storage_path?: string
+          tamanho_bytes?: number | null
+          telefone_e164?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mae_documentos_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mae_processo: {
         Row: {
           bairro: string | null
