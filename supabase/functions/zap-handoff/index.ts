@@ -3,6 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { publicCorsHeaders } from "../_shared/cors.ts";
 
+const DEFAULT_ZAP_CARD_URL_TEMPLATE =
+  "https://app.zapresponder.com.br/dashboard/crm/6a27ff28c7f1661d384e305b/card/{cardId}";
+
 // Inline copy of src/lib/phoneUtils.ts normalizePhoneToE164BR (do NOT import from src/)
 function normalizePhoneToE164BR(input: string | null | undefined): string | null {
   if (!input) return null;
@@ -59,6 +62,43 @@ function toNumber(v: unknown): number | null {
   return null;
 }
 
+function normalizeHttpUrl(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+
+  try {
+    const parsed = new URL(value.trim());
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function resolveZapCardUrl(body: AnyObj, card: AnyObj, cardId: string | null): string | null {
+  const payloadUrl = firstDefined(card, [
+    "url",
+    "link",
+    "cardUrl",
+    "cardURL",
+    "card_url",
+    "permalink",
+    "shareUrl",
+    "share_url",
+    "links.web",
+    "links.self",
+  ]) ?? firstDefined(body, [
+    "cardUrl",
+    "cardURL",
+    "card_url",
+  ]);
+  const normalizedPayloadUrl = normalizeHttpUrl(payloadUrl);
+  if (normalizedPayloadUrl) return normalizedPayloadUrl;
+
+  const template = Deno.env.get("ZAP_CARD_URL_TEMPLATE")?.trim() || DEFAULT_ZAP_CARD_URL_TEMPLATE;
+  if (!cardId || !template.includes("{cardId}")) return null;
+
+  return normalizeHttpUrl(template.replaceAll("{cardId}", encodeURIComponent(cardId)));
+}
+
 serve(async (req) => {
   const corsHeaders = publicCorsHeaders();
   if (req.method === "OPTIONS") {
@@ -88,7 +128,6 @@ serve(async (req) => {
     }
 
     const body: AnyObj = await req.json();
-    console.log("ZAP webhook payload:", JSON.stringify(body));
 
     // Event type guard
     if (body.type && body.type !== "crm_card_moved") {
@@ -112,6 +151,12 @@ serve(async (req) => {
     }
 
     const cardId = typeof card.cardId === "string" ? card.cardId.trim() : null;
+    const cardUrl = resolveZapCardUrl(body, card, cardId);
+    console.log("zap-handoff: event received", {
+      type: body.type ?? "unknown",
+      cardId,
+      hasCardUrl: cardUrl !== null,
+    });
 
     const contacts = Array.isArray(card.contacts) ? card.contacts : [];
     const contact: AnyObj = contacts[0] ?? {};
@@ -129,7 +174,7 @@ serve(async (req) => {
     const ZAP_FIELD_MES_GESTACAO = "6a2ca2c98bf457bc11b8b6f8";
 
     const additionalFields: AnyObj = card.additionalFields ?? {};
-    console.log("ZAP additionalFields:", JSON.stringify(additionalFields));
+    console.log("zap-handoff: additional field keys", Object.keys(additionalFields));
 
     const cpfRaw = additionalFields[ZAP_FIELD_CPF];
     const cpfDigits = cpfRaw !== undefined ? String(cpfRaw).replace(/\D/g, "") : "";
@@ -207,32 +252,53 @@ serve(async (req) => {
     if (cardId) {
       const { data: existing } = await supabaseAdmin
         .from("mae_processo")
-        .select("id")
+        .select("id, link_documentos")
         .eq("zap_card_id", cardId)
         .limit(1)
         .maybeSingle();
       if (existing) {
+        if (cardUrl && existing.link_documentos !== cardUrl) {
+          const { error: linkError } = await supabaseAdmin
+            .from("mae_processo")
+            .update({ link_documentos: cardUrl })
+            .eq("id", existing.id);
+          if (linkError) {
+            console.error("zap-handoff: failed to update card link", linkError.message);
+          }
+        }
         console.log("zap-handoff: duplicate by zap_card_id", cardId, existing.id);
-        return new Response(JSON.stringify({ duplicate: true, id: existing.id }), {
-          status: 200,
-          headers: jsonHeaders,
-        });
+        return new Response(
+          JSON.stringify({ duplicate: true, id: existing.id, card_linked: cardUrl !== null }),
+          { status: 200, headers: jsonHeaders },
+        );
       }
     }
 
     if (telefoneE164) {
       const { data: existing } = await supabaseAdmin
         .from("mae_processo")
-        .select("id")
+        .select("id, zap_card_id, link_documentos")
         .eq("telefone_e164", telefoneE164)
         .limit(1)
         .maybeSingle();
       if (existing) {
+        const updates: Record<string, string> = {};
+        if (cardUrl && existing.link_documentos !== cardUrl) updates.link_documentos = cardUrl;
+        if (cardId && !existing.zap_card_id) updates.zap_card_id = cardId;
+        if (Object.keys(updates).length > 0) {
+          const { error: linkError } = await supabaseAdmin
+            .from("mae_processo")
+            .update(updates)
+            .eq("id", existing.id);
+          if (linkError) {
+            console.error("zap-handoff: failed to link existing record", linkError.message);
+          }
+        }
         console.log("zap-handoff: duplicate by telefone_e164", telefoneE164, existing.id);
-        return new Response(JSON.stringify({ duplicate: true, id: existing.id }), {
-          status: 200,
-          headers: jsonHeaders,
-        });
+        return new Response(
+          JSON.stringify({ duplicate: true, id: existing.id, card_linked: cardUrl !== null }),
+          { status: 200, headers: jsonHeaders },
+        );
       }
     }
 
@@ -264,6 +330,7 @@ serve(async (req) => {
         etiqueta,
         observacoes,
         zap_card_id: cardId,
+        link_documentos: cardUrl,
         user_id: systemUserId,
       })
       .select()
@@ -287,7 +354,12 @@ serve(async (req) => {
     const incomplete = cpf === null || senhaGov === null;
     console.log("zap-handoff: created mae_processo", newMae.id, "incomplete:", incomplete);
 
-    return new Response(JSON.stringify({ success: true, id: newMae.id, incomplete }), {
+    return new Response(JSON.stringify({
+      success: true,
+      id: newMae.id,
+      incomplete,
+      card_linked: cardUrl !== null,
+    }), {
       status: 200,
       headers: jsonHeaders,
     });
