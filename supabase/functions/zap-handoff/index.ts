@@ -52,6 +52,17 @@ function toBool(v: unknown): boolean {
   return false;
 }
 
+function toOptionalBool(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1 ? true : value === 0 ? false : null;
+  if (typeof value !== "string") return null;
+
+  const normalized = value.trim().toLowerCase();
+  if (["true", "1", "yes", "sim"].includes(normalized)) return true;
+  if (["false", "0", "no", "nao", "não"].includes(normalized)) return false;
+  return null;
+}
+
 function toNumber(v: unknown): number | null {
   if (typeof v === "number" && !isNaN(v)) return v;
   if (typeof v === "string") {
@@ -130,9 +141,114 @@ function isReceivedMessageEvent(eventType: string): boolean {
   );
 }
 
+type HistoryMessageOrigin = "customer" | "operation" | "unknown";
+
+function getHistoryMessageOrigin(message: AnyObj, telefoneE164: string): HistoryMessageOrigin {
+  const fromMe = toOptionalBool(firstDefined(message, [
+    "isFromMe",
+    "isMine",
+    "mine",
+    "fromMe",
+    "from_me",
+    "sentByMe",
+    "sent_by_me",
+    "mensagem.isFromMe",
+    "mensagem.isMine",
+    "mensagem.mine",
+    "mensagem.fromMe",
+    "mensagem.from_me",
+  ]));
+  if (fromMe !== null) return fromMe ? "operation" : "customer";
+
+  const directionRaw = firstDefined(message, [
+    "direction",
+    "messageDirection",
+    "message_direction",
+    "origem",
+    "origin",
+  ]);
+  if (typeof directionRaw === "string") {
+    const direction = directionRaw.trim().toLowerCase();
+    if (["in", "incoming", "inbound", "received", "recebida", "cliente", "contact"].includes(direction)) {
+      return "customer";
+    }
+    if (["out", "outgoing", "outbound", "sent", "enviada", "operacao", "operação", "attendant"].includes(direction)) {
+      return "operation";
+    }
+  }
+
+  const senderRaw = firstDefined(message, [
+    "sender.id",
+    "sender.phone",
+    "senderId",
+    "sender_id",
+    "from",
+    "from.id",
+    "contact.phone",
+  ]);
+  const senderPhone = normalizePhoneToE164BR(typeof senderRaw === "string" ? senderRaw : null);
+  if (!senderPhone) return "unknown";
+  return senderPhone === telefoneE164 ? "customer" : "operation";
+}
+
+async function removeStoredOperationDocuments(messageIds: string[]): Promise<number> {
+  const uniqueIds = [...new Set(messageIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return 0;
+
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } },
+  );
+  let removed = 0;
+
+  for (let index = 0; index < uniqueIds.length; index += 100) {
+    const batch = uniqueIds.slice(index, index + 100);
+    const { data: rows, error: selectError } = await supabaseAdmin
+      .from("mae_documentos")
+      .select("id, storage_path")
+      .eq("source", "ZapResponder")
+      .in("source_message_id", batch);
+    if (selectError) {
+      console.error("zap-handoff: operation document lookup failed", selectError.message);
+      continue;
+    }
+    if (!rows?.length) continue;
+
+    const { error: storageError } = await supabaseAdmin.storage
+      .from(DOCUMENT_BUCKET)
+      .remove(rows.map((row) => row.storage_path));
+    if (storageError) {
+      console.error("zap-handoff: operation document storage cleanup failed", storageError.message);
+      continue;
+    }
+
+    const { error: deleteError } = await supabaseAdmin
+      .from("mae_documentos")
+      .delete()
+      .in("id", rows.map((row) => row.id));
+    if (deleteError) {
+      console.error("zap-handoff: operation document row cleanup failed", deleteError.message);
+      continue;
+    }
+    removed += rows.length;
+  }
+
+  return removed;
+}
+
 async function receiveZapDocument(body: AnyObj, jsonHeaders: Record<string, string>) {
   const data: AnyObj = body.data ?? body.message ?? body;
   const messageType = String(data.type ?? data.messageType ?? data.message_type ?? "").toLowerCase();
+  const fromMe = toOptionalBool(firstDefined(data, [
+    "isFromMe", "isMine", "mine", "fromMe", "from_me", "sentByMe", "sent_by_me",
+  ]));
+  if (fromMe === true) {
+    return new Response(JSON.stringify({ ignored: true, reason: "sent_by_operation" }), {
+      status: 200,
+      headers: jsonHeaders,
+    });
+  }
   const mediaUrl = normalizeHttpUrl(firstDefined(data, [
     "content.media.url",
     "media.url",
@@ -369,7 +485,16 @@ async function syncZapConversationHistory(telefoneE164: string, maeId: string): 
     pageCount += 1;
   } while (cursor && pageCount < 100);
 
+  const operationMessageIds = messages.flatMap((message) => {
+    if (getHistoryMessageOrigin(message, telefoneE164) !== "operation") return [];
+    if (String(message?.mensagem?.type ?? "").toLowerCase() !== "file") return [];
+    return typeof message?._id === "string" && message._id.trim() ? [message._id.trim()] : [];
+  });
+  const removedOperationDocuments = await removeStoredOperationDocuments(operationMessageIds);
+
   const mediaMessages = messages.flatMap((message) => {
+    if (getHistoryMessageOrigin(message, telefoneE164) !== "customer") return [];
+
     const content = message?.mensagem ?? {};
     if (String(content.type ?? "").toLowerCase() !== "file") return [];
 
@@ -439,6 +564,7 @@ async function syncZapConversationHistory(telefoneE164: string, maeId: string): 
     pages: pageCount,
     messages: messages.length,
     media: mediaMessages.length,
+    removedOperationDocuments,
     stored,
     duplicates,
     failed,
