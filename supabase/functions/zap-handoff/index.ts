@@ -141,7 +141,9 @@ function isReceivedMessageEvent(eventType: string): boolean {
   );
 }
 
-function isCustomerHistoryMessage(message: AnyObj, telefoneE164: string): boolean {
+type HistoryMessageOrigin = "customer" | "operation" | "unknown";
+
+function getHistoryMessageOrigin(message: AnyObj, telefoneE164: string): HistoryMessageOrigin {
   const fromMe = toOptionalBool(firstDefined(message, [
     "isFromMe",
     "isMine",
@@ -156,7 +158,7 @@ function isCustomerHistoryMessage(message: AnyObj, telefoneE164: string): boolea
     "mensagem.fromMe",
     "mensagem.from_me",
   ]));
-  if (fromMe !== null) return !fromMe;
+  if (fromMe !== null) return fromMe ? "operation" : "customer";
 
   const directionRaw = firstDefined(message, [
     "direction",
@@ -168,10 +170,10 @@ function isCustomerHistoryMessage(message: AnyObj, telefoneE164: string): boolea
   if (typeof directionRaw === "string") {
     const direction = directionRaw.trim().toLowerCase();
     if (["in", "incoming", "inbound", "received", "recebida", "cliente", "contact"].includes(direction)) {
-      return true;
+      return "customer";
     }
     if (["out", "outgoing", "outbound", "sent", "enviada", "operacao", "operação", "attendant"].includes(direction)) {
-      return false;
+      return "operation";
     }
   }
 
@@ -185,7 +187,54 @@ function isCustomerHistoryMessage(message: AnyObj, telefoneE164: string): boolea
     "contact.phone",
   ]);
   const senderPhone = normalizePhoneToE164BR(typeof senderRaw === "string" ? senderRaw : null);
-  return senderPhone !== null && senderPhone === telefoneE164;
+  if (!senderPhone) return "unknown";
+  return senderPhone === telefoneE164 ? "customer" : "operation";
+}
+
+async function removeStoredOperationDocuments(messageIds: string[]): Promise<number> {
+  const uniqueIds = [...new Set(messageIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return 0;
+
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } },
+  );
+  let removed = 0;
+
+  for (let index = 0; index < uniqueIds.length; index += 100) {
+    const batch = uniqueIds.slice(index, index + 100);
+    const { data: rows, error: selectError } = await supabaseAdmin
+      .from("mae_documentos")
+      .select("id, storage_path")
+      .eq("source", "ZapResponder")
+      .in("source_message_id", batch);
+    if (selectError) {
+      console.error("zap-handoff: operation document lookup failed", selectError.message);
+      continue;
+    }
+    if (!rows?.length) continue;
+
+    const { error: storageError } = await supabaseAdmin.storage
+      .from(DOCUMENT_BUCKET)
+      .remove(rows.map((row) => row.storage_path));
+    if (storageError) {
+      console.error("zap-handoff: operation document storage cleanup failed", storageError.message);
+      continue;
+    }
+
+    const { error: deleteError } = await supabaseAdmin
+      .from("mae_documentos")
+      .delete()
+      .in("id", rows.map((row) => row.id));
+    if (deleteError) {
+      console.error("zap-handoff: operation document row cleanup failed", deleteError.message);
+      continue;
+    }
+    removed += rows.length;
+  }
+
+  return removed;
 }
 
 async function receiveZapDocument(body: AnyObj, jsonHeaders: Record<string, string>) {
@@ -436,8 +485,15 @@ async function syncZapConversationHistory(telefoneE164: string, maeId: string): 
     pageCount += 1;
   } while (cursor && pageCount < 100);
 
+  const operationMessageIds = messages.flatMap((message) => {
+    if (getHistoryMessageOrigin(message, telefoneE164) !== "operation") return [];
+    if (String(message?.mensagem?.type ?? "").toLowerCase() !== "file") return [];
+    return typeof message?._id === "string" && message._id.trim() ? [message._id.trim()] : [];
+  });
+  const removedOperationDocuments = await removeStoredOperationDocuments(operationMessageIds);
+
   const mediaMessages = messages.flatMap((message) => {
-    if (!isCustomerHistoryMessage(message, telefoneE164)) return [];
+    if (getHistoryMessageOrigin(message, telefoneE164) !== "customer") return [];
 
     const content = message?.mensagem ?? {};
     if (String(content.type ?? "").toLowerCase() !== "file") return [];
@@ -508,6 +564,7 @@ async function syncZapConversationHistory(telefoneE164: string, maeId: string): 
     pages: pageCount,
     messages: messages.length,
     media: mediaMessages.length,
+    removedOperationDocuments,
     stored,
     duplicates,
     failed,
