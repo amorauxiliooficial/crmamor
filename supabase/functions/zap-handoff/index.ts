@@ -52,6 +52,17 @@ function toBool(v: unknown): boolean {
   return false;
 }
 
+function toOptionalBool(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1 ? true : value === 0 ? false : null;
+  if (typeof value !== "string") return null;
+
+  const normalized = value.trim().toLowerCase();
+  if (["true", "1", "yes", "sim"].includes(normalized)) return true;
+  if (["false", "0", "no", "nao", "não"].includes(normalized)) return false;
+  return null;
+}
+
 function toNumber(v: unknown): number | null {
   if (typeof v === "number" && !isNaN(v)) return v;
   if (typeof v === "string") {
@@ -130,9 +141,65 @@ function isReceivedMessageEvent(eventType: string): boolean {
   );
 }
 
+function isCustomerHistoryMessage(message: AnyObj, telefoneE164: string): boolean {
+  const fromMe = toOptionalBool(firstDefined(message, [
+    "isFromMe",
+    "isMine",
+    "mine",
+    "fromMe",
+    "from_me",
+    "sentByMe",
+    "sent_by_me",
+    "mensagem.isFromMe",
+    "mensagem.isMine",
+    "mensagem.mine",
+    "mensagem.fromMe",
+    "mensagem.from_me",
+  ]));
+  if (fromMe !== null) return !fromMe;
+
+  const directionRaw = firstDefined(message, [
+    "direction",
+    "messageDirection",
+    "message_direction",
+    "origem",
+    "origin",
+  ]);
+  if (typeof directionRaw === "string") {
+    const direction = directionRaw.trim().toLowerCase();
+    if (["in", "incoming", "inbound", "received", "recebida", "cliente", "contact"].includes(direction)) {
+      return true;
+    }
+    if (["out", "outgoing", "outbound", "sent", "enviada", "operacao", "operação", "attendant"].includes(direction)) {
+      return false;
+    }
+  }
+
+  const senderRaw = firstDefined(message, [
+    "sender.id",
+    "sender.phone",
+    "senderId",
+    "sender_id",
+    "from",
+    "from.id",
+    "contact.phone",
+  ]);
+  const senderPhone = normalizePhoneToE164BR(typeof senderRaw === "string" ? senderRaw : null);
+  return senderPhone !== null && senderPhone === telefoneE164;
+}
+
 async function receiveZapDocument(body: AnyObj, jsonHeaders: Record<string, string>) {
   const data: AnyObj = body.data ?? body.message ?? body;
   const messageType = String(data.type ?? data.messageType ?? data.message_type ?? "").toLowerCase();
+  const fromMe = toOptionalBool(firstDefined(data, [
+    "isFromMe", "isMine", "mine", "fromMe", "from_me", "sentByMe", "sent_by_me",
+  ]));
+  if (fromMe === true) {
+    return new Response(JSON.stringify({ ignored: true, reason: "sent_by_operation" }), {
+      status: 200,
+      headers: jsonHeaders,
+    });
+  }
   const mediaUrl = normalizeHttpUrl(firstDefined(data, [
     "content.media.url",
     "media.url",
@@ -370,6 +437,8 @@ async function syncZapConversationHistory(telefoneE164: string, maeId: string): 
   } while (cursor && pageCount < 100);
 
   const mediaMessages = messages.flatMap((message) => {
+    if (!isCustomerHistoryMessage(message, telefoneE164)) return [];
+
     const content = message?.mensagem ?? {};
     if (String(content.type ?? "").toLowerCase() !== "file") return [];
 
