@@ -39,6 +39,19 @@ interface DocumentoCliente {
   signedUrl: string;
 }
 
+const hiddenMediaExtensions = new Set([
+  "aac", "amr", "flac", "m4a", "mp3", "oga", "ogg", "opus", "wav", "wma",
+  "3gp", "avi", "mkv", "mov", "mp4", "mpeg", "mpg", "webm",
+]);
+
+function isAudioOrVideo(document: Pick<DocumentoCliente, "nome_arquivo" | "mime_type">) {
+  const mimeType = document.mime_type?.toLowerCase() || "";
+  if (mimeType.startsWith("audio/") || mimeType.startsWith("video/")) return true;
+
+  const extension = document.nome_arquivo.toLowerCase().split(".").pop();
+  return Boolean(extension && hiddenMediaExtensions.has(extension));
+}
+
 function formatFileSize(bytes: number | null) {
   if (!bytes) return null;
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -74,7 +87,8 @@ export function DocumentosContent({
       return;
     }
 
-    const withUrls = await Promise.all((data || []).map(async (document) => {
+    const visibleDocuments = (data || []).filter((document) => !isAudioOrVideo(document));
+    const withUrls = await Promise.all(visibleDocuments.map(async (document) => {
       const { data: signed } = await supabase.storage
         .from("documentos-clientes")
         .createSignedUrl(document.storage_path, 60 * 15);

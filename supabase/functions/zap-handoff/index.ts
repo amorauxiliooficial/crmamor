@@ -101,6 +101,18 @@ function resolveZapCardUrl(body: AnyObj, card: AnyObj, cardId: string | null): s
 
 const MAX_DOCUMENT_BYTES = 20 * 1024 * 1024;
 const DOCUMENT_BUCKET = "documentos-clientes";
+const DISALLOWED_MEDIA_EXTENSIONS = new Set([
+  "aac", "amr", "flac", "m4a", "mp3", "oga", "ogg", "opus", "wav", "wma",
+  "3gp", "avi", "mkv", "mov", "mp4", "mpeg", "mpg", "webm",
+]);
+
+function isDisallowedMedia(filename: string, mimeType?: string | null): boolean {
+  const normalizedMime = (mimeType ?? "").toLowerCase();
+  if (normalizedMime.startsWith("audio/") || normalizedMime.startsWith("video/")) return true;
+
+  const extension = filename.toLowerCase().split(".").pop();
+  return Boolean(extension && DISALLOWED_MEDIA_EXTENSIONS.has(extension));
+}
 
 function safeFilename(value: unknown, messageType: string): string {
   const fallback = messageType === "image" ? "imagem.jpg" : "documento";
@@ -132,6 +144,23 @@ async function receiveZapDocument(body: AnyObj, jsonHeaders: Record<string, stri
 
   if (!mediaUrl || !["image", "document", "file"].includes(messageType)) {
     return new Response(JSON.stringify({ ignored: true, reason: "not_a_document" }), {
+      status: 200,
+      headers: jsonHeaders,
+    });
+  }
+
+  const filename = safeFilename(
+    firstDefined(data, [
+      "content.media.fileName",
+      "content.media.filename",
+      "content.fileName",
+      "filename",
+      "fileName",
+    ]),
+    messageType,
+  );
+  if (isDisallowedMedia(filename)) {
+    return new Response(JSON.stringify({ ignored: true, reason: "audio_or_video" }), {
       status: 200,
       headers: jsonHeaders,
     });
@@ -194,6 +223,18 @@ async function receiveZapDocument(body: AnyObj, jsonHeaders: Record<string, stri
     });
   }
 
+  const mimeType = String(
+    firstDefined(data, ["content.media.mime_type", "content.media.mimetype", "mime_type", "mimetype"]) ??
+      download.headers.get("content-type") ??
+      (messageType === "image" ? "image/jpeg" : "application/octet-stream"),
+  ).split(";")[0].trim();
+  if (isDisallowedMedia(filename, mimeType)) {
+    return new Response(JSON.stringify({ ignored: true, reason: "audio_or_video" }), {
+      status: 200,
+      headers: jsonHeaders,
+    });
+  }
+
   const bytes = new Uint8Array(await download.arrayBuffer());
   if (bytes.byteLength > MAX_DOCUMENT_BYTES) {
     return new Response(JSON.stringify({ error: "Documento maior que 20 MB" }), {
@@ -202,21 +243,6 @@ async function receiveZapDocument(body: AnyObj, jsonHeaders: Record<string, stri
     });
   }
 
-  const mimeType = String(
-    firstDefined(data, ["content.media.mime_type", "content.media.mimetype", "mime_type", "mimetype"]) ??
-      download.headers.get("content-type") ??
-      (messageType === "image" ? "image/jpeg" : "application/octet-stream"),
-  ).split(";")[0].trim();
-  const filename = safeFilename(
-    firstDefined(data, [
-      "content.media.fileName",
-      "content.media.filename",
-      "content.fileName",
-      "filename",
-      "fileName",
-    ]),
-    messageType,
-  );
   const phonePath = telefoneE164.replace(/\D/g, "");
   const storagePath = `zap/${phonePath}/${new Date().toISOString().slice(0, 10)}/${safeFilename(messageId, "document")}-${filename}`;
 
@@ -351,10 +377,13 @@ async function syncZapConversationHistory(telefoneE164: string, maeId: string): 
     const messageId = typeof message?._id === "string" ? message._id.trim() : "";
     if (!mediaUrl || !messageId) return [];
 
+    const filename = filenameFromMediaUrl(mediaUrl);
+    if (filename && isDisallowedMedia(filename)) return [];
+
     return [{
       mediaUrl,
       messageId,
-      filename: filenameFromMediaUrl(mediaUrl),
+      filename,
       receivedAt: typeof message.createdAt === "string" ? message.createdAt : null,
     }];
   });
