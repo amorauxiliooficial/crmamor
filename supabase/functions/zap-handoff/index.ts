@@ -282,6 +282,155 @@ async function receiveZapDocument(body: AnyObj, jsonHeaders: Record<string, stri
   }), { status: 200, headers: jsonHeaders });
 }
 
+function filenameFromMediaUrl(mediaUrl: string): string | null {
+  try {
+    const pathname = new URL(mediaUrl).pathname;
+    const lastSegment = pathname.split("/").filter(Boolean).at(-1);
+    return lastSegment ? decodeURIComponent(lastSegment) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function syncZapConversationHistory(telefoneE164: string, maeId: string): Promise<void> {
+  const apiToken = Deno.env.get("ZAP_API_TOKEN")?.trim();
+  if (!apiToken) {
+    console.warn("zap-handoff: ZAP_API_TOKEN missing; history sync skipped");
+    return;
+  }
+
+  const phone = telefoneE164.replace(/\D/g, "");
+  const apiBase = "https://api.zapresponder.com.br/api";
+  const apiHeaders = { Authorization: `Bearer ${apiToken}`, Accept: "application/json" };
+
+  const conversationResponse = await fetch(
+    `${apiBase}/v2/conversations/chatId/${encodeURIComponent(phone)}?includeClosed=true`,
+    { headers: apiHeaders },
+  );
+  if (!conversationResponse.ok) {
+    console.error("zap-handoff: conversation history lookup failed", conversationResponse.status);
+    return;
+  }
+
+  const conversationPayload: AnyObj = await conversationResponse.json();
+  const conversation = conversationPayload.conversation ?? conversationPayload.data ?? conversationPayload;
+  const conversationId = typeof conversation?._id === "string"
+    ? conversation._id
+    : typeof conversation?.id === "string"
+    ? conversation.id
+    : null;
+  if (!conversationId) {
+    console.warn("zap-handoff: no conversation found for history sync");
+    return;
+  }
+
+  const messages: AnyObj[] = [];
+  let cursor: string | null = null;
+  let pageCount = 0;
+  do {
+    const messagesUrl = new URL(`${apiBase}/v2/conversations/${encodeURIComponent(conversationId)}/messages`);
+    if (cursor) messagesUrl.searchParams.set("cursor", cursor);
+
+    const pageResponse = await fetch(messagesUrl, { headers: apiHeaders });
+    if (!pageResponse.ok) {
+      console.error("zap-handoff: conversation messages lookup failed", pageResponse.status);
+      break;
+    }
+
+    const page: AnyObj = await pageResponse.json();
+    if (Array.isArray(page.messages)) messages.push(...page.messages);
+    cursor = typeof page.nextCursor === "string" && page.nextCursor ? page.nextCursor : null;
+    pageCount += 1;
+  } while (cursor && pageCount < 100);
+
+  const mediaMessages = messages.flatMap((message) => {
+    const content = message?.mensagem ?? {};
+    if (String(content.type ?? "").toLowerCase() !== "file") return [];
+
+    const mediaUrl = normalizeHttpUrl(content.mensagem);
+    const messageId = typeof message?._id === "string" ? message._id.trim() : "";
+    if (!mediaUrl || !messageId) return [];
+
+    return [{
+      mediaUrl,
+      messageId,
+      filename: filenameFromMediaUrl(mediaUrl),
+      receivedAt: typeof message.createdAt === "string" ? message.createdAt : null,
+    }];
+  });
+
+  let stored = 0;
+  let duplicates = 0;
+  let failed = 0;
+  for (let index = 0; index < mediaMessages.length; index += 4) {
+    const batch = mediaMessages.slice(index, index + 4);
+    const results = await Promise.all(batch.map(async (media) => {
+      try {
+        const response = await receiveZapDocument({
+          type: "message.received",
+          data: {
+            id: media.messageId,
+            type: "file",
+            created_at: media.receivedAt,
+            recipient: { id: phone },
+            content: { media: { url: media.mediaUrl, filename: media.filename } },
+          },
+        }, { "Content-Type": "application/json" });
+        const result: AnyObj = await response.json();
+        if (result.success) return "stored";
+        if (result.duplicate) return "duplicate";
+        return "failed";
+      } catch (error) {
+        console.error(
+          "zap-handoff: history document import failed",
+          error instanceof Error ? error.message : String(error),
+        );
+        return "failed";
+      }
+    }));
+
+    stored += results.filter((result) => result === "stored").length;
+    duplicates += results.filter((result) => result === "duplicate").length;
+    failed += results.filter((result) => result === "failed").length;
+  }
+
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } },
+  );
+  const { error: linkError } = await supabaseAdmin
+    .from("mae_documentos")
+    .update({ mae_id: maeId })
+    .eq("telefone_e164", telefoneE164)
+    .is("mae_id", null);
+  if (linkError) console.error("zap-handoff: failed to link imported documents", linkError.message);
+
+  console.log("zap-handoff: conversation history sync completed", {
+    pages: pageCount,
+    messages: messages.length,
+    media: mediaMessages.length,
+    stored,
+    duplicates,
+    failed,
+  });
+}
+
+function queueZapConversationHistorySync(telefoneE164: string | null, maeId: string): void {
+  if (!telefoneE164) return;
+
+  const task = syncZapConversationHistory(telefoneE164, maeId).catch((error) => {
+    console.error(
+      "zap-handoff: conversation history sync failed",
+      error instanceof Error ? error.message : String(error),
+    );
+  });
+  const edgeRuntime = (globalThis as AnyObj).EdgeRuntime;
+  if (edgeRuntime && typeof edgeRuntime.waitUntil === "function") {
+    edgeRuntime.waitUntil(task);
+  }
+}
+
 serve(async (req) => {
   const corsHeaders = publicCorsHeaders();
   if (req.method === "OPTIONS") {
@@ -462,6 +611,7 @@ serve(async (req) => {
             .is("mae_id", null);
           if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
         }
+        queueZapConversationHistorySync(telefoneE164, existing.id);
         console.log("zap-handoff: duplicate by zap_card_id", cardId, existing.id);
         return new Response(
           JSON.stringify({ duplicate: true, id: existing.id, card_linked: cardUrl !== null }),
@@ -496,6 +646,7 @@ serve(async (req) => {
           .eq("telefone_e164", telefoneE164)
           .is("mae_id", null);
         if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
+        queueZapConversationHistorySync(telefoneE164, existing.id);
         console.log("zap-handoff: duplicate by telefone_e164", telefoneE164, existing.id);
         return new Response(
           JSON.stringify({ duplicate: true, id: existing.id, card_linked: cardUrl !== null }),
@@ -562,6 +713,7 @@ serve(async (req) => {
         .is("mae_id", null);
       if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
     }
+    queueZapConversationHistorySync(telefoneE164, newMae.id);
     console.log("zap-handoff: created mae_processo", newMae.id, "incomplete:", incomplete);
 
     return new Response(JSON.stringify({
