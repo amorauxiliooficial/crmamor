@@ -229,13 +229,17 @@ async function storeWebhookMessage(body: AnyObj) {
   }
 
   const supabaseAdmin = adminClient();
-  const { data: mae } = await supabaseAdmin
+  const { data: mae, error: maeError } = await supabaseAdmin
     .from("mae_processo")
     .select("id")
     .eq("telefone_e164", telefoneE164)
     .eq("contrato_assinado", true)
     .limit(1)
     .maybeSingle();
+  if (maeError) throw maeError;
+  if (!mae) {
+    return { ignored: true, reason: "mother_not_registered" };
+  }
 
   const attendantRaw = firstDefined(data, [
     "attendant.name",
@@ -258,7 +262,7 @@ async function storeWebhookMessage(body: AnyObj) {
     .upsert({
       source_message_id: messageId,
       conversation_id: typeof conversationRaw === "string" ? conversationRaw : null,
-      mae_id: mae?.id ?? null,
+      mae_id: mae.id,
       telefone_e164: telefoneE164,
       direction,
       texto: text,
@@ -269,7 +273,7 @@ async function storeWebhookMessage(body: AnyObj) {
     }, { onConflict: "source_message_id", ignoreDuplicates: true });
   if (error) throw error;
 
-  return { success: true, linked: Boolean(mae?.id) };
+  return { success: true, linked: true };
 }
 
 async function generateAiSummary(
@@ -365,6 +369,7 @@ async function generateSummaryForPhone(
   const { data: rows, error: messagesError } = await supabaseAdmin
     .from("zap_conversation_messages")
     .select("id, source_message_id, telefone_e164, direction, texto, attendant_name, occurred_at")
+    .eq("mae_id", mother.id)
     .eq("telefone_e164", telefoneE164)
     .gte("occurred_at", start)
     .lt("occurred_at", end)
@@ -469,6 +474,7 @@ async function generatePendingDailySummaries() {
   const { data: pending, error } = await supabaseAdmin
     .from("zap_conversation_messages")
     .select("telefone_e164, occurred_at")
+    .not("mae_id", "is", null)
     .is("processed_at", null)
     .gte("occurred_at", retentionStart)
     .lt("occurred_at", todayRange.start)
