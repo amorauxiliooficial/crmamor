@@ -1,0 +1,36 @@
+name: Resumo diário das conversas
+
+on:
+  schedule:
+    # 03:10 UTC corresponde a 00:10 no horário de Brasília.
+    - cron: "10 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zap-conversation-summary-daily
+  cancel-in-progress: false
+
+jobs:
+  generate-summaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      INTERNAL_FUNCTION_TOKEN: ${{ secrets.INTERNAL_FUNCTION_TOKEN }}
+    steps:
+      - name: Gerar resumos pendentes
+        shell: bash
+        run: |
+          if [ -z "$INTERNAL_FUNCTION_TOKEN" ]; then
+            echo "::error::O secret INTERNAL_FUNCTION_TOKEN não está configurado no GitHub."
+            exit 1
+          fi
+
+          curl --silent --show-error --fail-with-body \
+            --request POST \
+            --url "https://rfrqemafmqcmmbgctrtt.supabase.co/functions/v1/zap-conversation-summary" \
+            --header "Content-Type: application/json" \
+            --header "x-internal-token: $INTERNAL_FUNCTION_TOKEN" \
+            --data '{"action":"daily"}'
