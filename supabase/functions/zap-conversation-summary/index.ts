@@ -126,8 +126,10 @@ function extractText(data: AnyObj): string | null {
     "body",
     "content",
     "message",
+    "mensagem",
     "mensagem.mensagem",
     "mensagem.text",
+    "caption",
   ]);
   if (typeof raw !== "string") return null;
   const text = raw.replace(/\u0000/g, "").trim();
