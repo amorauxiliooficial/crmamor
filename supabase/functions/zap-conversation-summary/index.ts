@@ -595,7 +595,7 @@ serve(async (req) => {
         },
         bodyKeys: keysOf(body),
       };
-      for (const key of ["data", "message", "payload", "conversation", "contact"] as const) {
+      for (const key of ["data", "message", "payload", "conversation", "contact", "raw_message"] as const) {
         const nested = (body as AnyObj)?.[key];
         if (nested && typeof nested === "object") diag[`${key}Keys`] = keysOf(nested);
       }
