@@ -566,6 +566,31 @@ serve(async (req) => {
     }
 
     const result = await storeWebhookMessage(body);
+
+    try {
+      const eventValue = body?.type ?? body?.event ?? body?.eventType ?? body?.event_type ?? null;
+      const keysOf = (obj: unknown): string[] =>
+        obj && typeof obj === "object" && !Array.isArray(obj)
+          ? Object.keys(obj as AnyObj).slice(0, 40)
+          : [];
+      const diag: AnyObj = {
+        event: typeof eventValue === "string" ? eventValue : eventValue === null ? null : typeof eventValue,
+        result: {
+          success: (result as AnyObj)?.success ?? null,
+          ignored: (result as AnyObj)?.ignored ?? null,
+          reason: (result as AnyObj)?.reason ?? null,
+        },
+        bodyKeys: keysOf(body),
+      };
+      for (const key of ["data", "message", "payload", "conversation", "contact"] as const) {
+        const nested = (body as AnyObj)?.[key];
+        if (nested && typeof nested === "object") diag[`${key}Keys`] = keysOf(nested);
+      }
+      console.log("zap-conversation-summary: webhook diag", JSON.stringify(diag));
+    } catch (_diagErr) {
+      // diagnostic logging must never break the handler
+    }
+
     return jsonResponse(result, 200, corsHeaders);
   } catch (error) {
     console.error(
