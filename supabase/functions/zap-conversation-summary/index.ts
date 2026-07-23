@@ -221,7 +221,18 @@ async function storeWebhookMessage(body: AnyObj) {
 
   const telefoneE164 = extractPhone(data, direction) ?? extractPhone(body, direction);
   const messageIdRaw = firstDefined(data, ["id", "_id", "messageId", "message_id", "key.id"]) ??
-    firstDefined(body, ["id", "_id", "messageId", "message_id", "key.id"]);
+    firstDefined(body, [
+      "id",
+      "_id",
+      "messageId",
+      "message_id",
+      "key.id",
+      "raw_message.id",
+      "raw_message._id",
+      "raw_message.messageId",
+      "raw_message.message_id",
+      "raw_message.key.id",
+    ]);
   const messageId = typeof messageIdRaw === "string" || typeof messageIdRaw === "number"
     ? String(messageIdRaw).trim()
     : "";
