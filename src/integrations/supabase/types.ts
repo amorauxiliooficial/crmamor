@@ -2917,6 +2917,107 @@ export type Database = {
         }
         Relationships: []
       }
+      zap_conversation_messages: {
+        Row: {
+          attendant_name: string | null
+          conversation_id: string | null
+          created_at: string
+          direction: string
+          id: string
+          mae_id: string
+          occurred_at: string
+          processed_at: string | null
+          source_message_id: string
+          telefone_e164: string
+          texto: string
+        }
+        Insert: {
+          attendant_name?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          direction: string
+          id?: string
+          mae_id: string
+          occurred_at: string
+          processed_at?: string | null
+          source_message_id: string
+          telefone_e164: string
+          texto: string
+        }
+        Update: {
+          attendant_name?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          direction?: string
+          id?: string
+          mae_id?: string
+          occurred_at?: string
+          processed_at?: string | null
+          source_message_id?: string
+          telefone_e164?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zap_conversation_messages_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zap_daily_summaries: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          mae_id: string
+          message_count: number
+          observation_id: string
+          summary_date: string
+          telefone_e164: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at: string
+          mae_id: string
+          message_count?: number
+          observation_id: string
+          summary_date: string
+          telefone_e164: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          mae_id?: string
+          message_count?: number
+          observation_id?: string
+          summary_date?: string
+          telefone_e164?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zap_daily_summaries_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zap_daily_summaries_observation_id_fkey"
+            columns: ["observation_id"]
+            isOneToOne: false
+            referencedRelation: "mae_observacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
