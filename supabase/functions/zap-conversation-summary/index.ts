@@ -126,8 +126,10 @@ function extractText(data: AnyObj): string | null {
     "body",
     "content",
     "message",
+    "mensagem",
     "mensagem.mensagem",
     "mensagem.text",
+    "caption",
   ]);
   if (typeof raw !== "string") return null;
   const text = raw.replace(/\u0000/g, "").trim();
@@ -219,7 +221,18 @@ async function storeWebhookMessage(body: AnyObj) {
 
   const telefoneE164 = extractPhone(data, direction) ?? extractPhone(body, direction);
   const messageIdRaw = firstDefined(data, ["id", "_id", "messageId", "message_id", "key.id"]) ??
-    firstDefined(body, ["id", "_id", "messageId", "message_id", "key.id"]);
+    firstDefined(body, [
+      "id",
+      "_id",
+      "messageId",
+      "message_id",
+      "key.id",
+      "raw_message.id",
+      "raw_message._id",
+      "raw_message.messageId",
+      "raw_message.message_id",
+      "raw_message.key.id",
+    ]);
   const messageId = typeof messageIdRaw === "string" || typeof messageIdRaw === "number"
     ? String(messageIdRaw).trim()
     : "";
@@ -582,7 +595,7 @@ serve(async (req) => {
         },
         bodyKeys: keysOf(body),
       };
-      for (const key of ["data", "message", "payload", "conversation", "contact"] as const) {
+      for (const key of ["data", "message", "payload", "conversation", "contact", "raw_message"] as const) {
         const nested = (body as AnyObj)?.[key];
         if (nested && typeof nested === "object") diag[`${key}Keys`] = keysOf(nested);
       }
