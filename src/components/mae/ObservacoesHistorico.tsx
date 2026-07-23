@@ -13,6 +13,8 @@ import {
   Check,
   AlertTriangle,
   SlidersHorizontal,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +40,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   useMaeObservacoes,
   CATEGORIA_LABEL,
@@ -74,7 +78,7 @@ function formatDateTime(iso: string) {
 
 export function ObservacoesHistorico({ maeId, startOpen = false }: Props) {
   const { user } = useAuth();
-  const { data: observacoes = [], isLoading, create, update, togglePin, remove } =
+  const { data: observacoes = [], isLoading, create, update, togglePin, remove, refetch } =
     useMaeObservacoes(maeId);
 
   // form
@@ -82,6 +86,7 @@ export function ObservacoesHistorico({ maeId, startOpen = false }: Props) {
   const [novaCategoria, setNovaCategoria] = useState<ObservacaoCategoria>("outro");
   const [showComposer, setShowComposer] = useState(startOpen);
   const [showFilters, setShowFilters] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
   // filtros
   const [busca, setBusca] = useState("");
@@ -147,7 +152,33 @@ export function ObservacoesHistorico({ maeId, startOpen = false }: Props) {
   };
 
   const canModify = (o: MaeObservacao) =>
-    !!user && o.autor_id === user.id && !o.conferencia_id;
+    !!user &&
+    !o.conferencia_id &&
+    (o.autor_id === user.id || (!o.autor_id && o.autor_nome === "ZapResponder · Resumo IA"));
+
+  const handleGenerateSummary = async () => {
+    setIsGeneratingSummary(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("zap-conversation-summary", {
+        body: { action: "generate_now", mae_id: maeId },
+      });
+      if (error) throw error;
+      if (data?.skipped) {
+        const message = data.reason === "mother_without_phone"
+          ? "Esta mãe não possui telefone vinculado."
+          : "Ainda não há mensagens de texto do ZapResponder para resumir hoje.";
+        toast.info(message);
+        return;
+      }
+      toast.success("Resumo da conversa gerado com IA");
+      await refetch();
+    } catch (error) {
+      console.error(error);
+      toast.error("Não foi possível gerar o resumo agora");
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
 
   const renderItem = (o: MaeObservacao) => {
     const isEditing = editando?.id === o.id;
@@ -174,6 +205,14 @@ export function ObservacoesHistorico({ maeId, startOpen = false }: Props) {
             {o.fixada && (
               <Badge variant="outline" className="text-xs border-primary/50 text-primary">
                 <Pin className="h-3 w-3 mr-1" /> Fixada
+              </Badge>
+            )}
+            {o.autor_nome === "ZapResponder · Resumo IA" && (
+              <Badge
+                variant="outline"
+                className="border-violet-500/30 bg-violet-500/10 text-xs text-violet-700"
+              >
+                <Sparkles className="mr-1 h-3 w-3" /> Resumo IA
               </Badge>
             )}
           </div>
@@ -267,8 +306,20 @@ export function ObservacoesHistorico({ maeId, startOpen = false }: Props) {
         <h4 className="font-semibold">Observações & Histórico</h4>
           <p className="mt-1 text-sm text-muted-foreground">Contatos, conferências e atualizações em ordem cronológica.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Badge variant="secondary" className="text-xs">{observacoes.length}</Badge>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={() => void handleGenerateSummary()}
+            disabled={isGeneratingSummary}
+          >
+            {isGeneratingSummary
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : <Sparkles className="h-4 w-4" />}
+            Gerar resumo agora
+          </Button>
           <Button size="sm" className="gap-2" onClick={() => setShowComposer(true)}>
             <Plus className="h-4 w-4" /> Nova anotação
           </Button>
