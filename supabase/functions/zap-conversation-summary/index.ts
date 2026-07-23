@@ -22,6 +22,8 @@ const BRAZIL_OFFSET_MS = 3 * 60 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 4_000;
 const MAX_TRANSCRIPT_LENGTH = 18_000;
 const MESSAGE_RETENTION_DAYS = 45;
+const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
+const MAX_SUMMARY_TOKENS = 700;
 
 function getPath(obj: AnyObj | null | undefined, path: string): unknown {
   if (!obj) return undefined;
@@ -275,8 +277,9 @@ async function generateAiSummary(
   motherName: string,
   dateKey: string,
 ): Promise<string> {
-  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!lovableKey) throw new Error("LOVABLE_API_KEY não configurada");
+  const openaiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!openaiKey) throw new Error("OPENAI_API_KEY não configurada");
+  const model = Deno.env.get("OPENAI_SUMMARY_MODEL") || DEFAULT_OPENAI_MODEL;
 
   const selected: StoredMessage[] = [];
   let transcriptLength = 0;
@@ -292,15 +295,16 @@ async function generateAiSummary(
     `${message.direction === "customer" ? "Cliente" : message.attendant_name || "Atendente"}: ${message.texto}`
   ).join("\n");
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${lovableKey}`,
+      Authorization: `Bearer ${openaiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash-lite",
+      model,
       temperature: 0.1,
+      max_tokens: MAX_SUMMARY_TOKENS,
       messages: [
         {
           role: "system",
