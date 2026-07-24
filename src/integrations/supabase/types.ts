@@ -280,6 +280,21 @@ export type Database = {
           },
         ]
       }
+      atualizacoes_maes_acesso: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bancos: {
         Row: {
           cidade: string | null
@@ -1255,20 +1270,34 @@ export type Database = {
           },
         ]
       }
-      atualizacoes_maes_acesso: {
+      mae_atendentes: {
         Row: {
           created_at: string
+          id: string
+          mae_id: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          id?: string
+          mae_id: string
           user_id: string
         }
         Update: {
           created_at?: string
+          id?: string
+          mae_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "mae_atendentes_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mae_atualizacoes: {
         Row: {
@@ -1307,35 +1336,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "mae_atualizacoes_mae_id_fkey"
-            columns: ["mae_id"]
-            isOneToOne: false
-            referencedRelation: "mae_processo"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      mae_atendentes: {
-        Row: {
-          created_at: string
-          id: string
-          mae_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          mae_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          mae_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "mae_atendentes_mae_id_fkey"
             columns: ["mae_id"]
             isOneToOne: false
             referencedRelation: "mae_processo"
@@ -3073,6 +3073,47 @@ export type Database = {
             columns: ["observation_id"]
             isOneToOne: false
             referencedRelation: "mae_observacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zap_document_sync_jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          last_error: string | null
+          mae_id: string
+          next_attempt_at: string
+          status: string
+          telefone_e164: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          last_error?: string | null
+          mae_id: string
+          next_attempt_at?: string
+          status?: string
+          telefone_e164: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          last_error?: string | null
+          mae_id?: string
+          next_attempt_at?: string
+          status?: string
+          telefone_e164?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zap_document_sync_jobs_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: true
+            referencedRelation: "mae_processo"
             referencedColumns: ["id"]
           },
         ]
