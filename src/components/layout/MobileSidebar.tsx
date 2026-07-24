@@ -27,6 +27,7 @@ import {
   Map,
   Wallet,
   MessageSquare,
+  BellRing,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ interface MobileSidebarProps {
   isAdmin?: boolean;
   onboardingProgress?: number | null;
   onAdminClick?: () => void;
+  canViewUpdates?: boolean;
 }
 
 const navigationItems = [
@@ -59,6 +61,7 @@ export function MobileSidebar({
   isAdmin = false,
   onboardingProgress,
   onAdminClick,
+  canViewUpdates = false,
 }: MobileSidebarProps) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
@@ -176,6 +179,19 @@ export function MobileSidebar({
               >
                 <Map className="h-4 w-4" />
                 Roadmap
+              </Button>
+            )}
+            {canViewUpdates && (
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2.5 h-10 text-sm"
+                onClick={() => {
+                  navigate("/atualizacoes-maes");
+                  setOpen(false);
+                }}
+              >
+                <BellRing className="h-4 w-4" />
+                Atualizações das Mães
               </Button>
             )}
             <Button

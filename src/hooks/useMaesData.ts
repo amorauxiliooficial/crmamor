@@ -35,7 +35,7 @@ export const mapDbStatusToDisplay = (status: string): StatusProcesso => {
 };
 
 // Map a single database item to MaeProcessoComAtividade
-const mapDbToMae = (item: Record<string, unknown>): MaeProcessoComAtividade => ({
+export const mapDbToMae = (item: Record<string, unknown>): MaeProcessoComAtividade => ({
   id: item.id as string,
   user_id: item.user_id as string,
   nome_mae: item.nome_mae as string,
