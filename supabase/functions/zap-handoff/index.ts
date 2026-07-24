@@ -23,6 +23,24 @@ function normalizePhoneToE164BR(input: string | null | undefined): string | null
   return `+55${digits}`;
 }
 
+function phoneCandidatesBR(phone: string | null): string[] {
+  const normalized = normalizePhoneToE164BR(phone);
+  if (!normalized) return [];
+
+  const national = normalized.slice(3);
+  const candidates = new Set([normalized]);
+
+  // Telefones brasileiros podem aparecer no WhatsApp/ZapResponder com ou sem
+  // o nono dígito, dependendo da origem e da idade da conversa.
+  if (national.length === 11 && national[2] === "9") {
+    candidates.add(`+55${national.slice(0, 2)}${national.slice(3)}`);
+  } else if (national.length === 10) {
+    candidates.add(`+55${national.slice(0, 2)}9${national.slice(2)}`);
+  }
+
+  return [...candidates];
+}
+
 // deno-lint-ignore no-explicit-any
 type AnyObj = Record<string, any>;
 
@@ -143,7 +161,10 @@ function isReceivedMessageEvent(eventType: string): boolean {
 
 type HistoryMessageOrigin = "customer" | "operation" | "unknown";
 
-function getHistoryMessageOrigin(message: AnyObj, telefoneE164: string): HistoryMessageOrigin {
+function getHistoryMessageOrigin(
+  message: AnyObj,
+  telefoneCandidates: string[],
+): HistoryMessageOrigin {
   const fromMe = toOptionalBool(firstDefined(message, [
     "isFromMe",
     "isMine",
@@ -188,7 +209,7 @@ function getHistoryMessageOrigin(message: AnyObj, telefoneE164: string): History
   ]);
   const senderPhone = normalizePhoneToE164BR(typeof senderRaw === "string" ? senderRaw : null);
   if (!senderPhone) return "unknown";
-  return senderPhone === telefoneE164 ? "customer" : "operation";
+  return telefoneCandidates.includes(senderPhone) ? "customer" : "operation";
 }
 
 async function removeStoredOperationDocuments(messageIds: string[]): Promise<number> {
@@ -291,6 +312,7 @@ async function receiveZapDocument(body: AnyObj, jsonHeaders: Record<string, stri
     "phone",
   ]);
   const telefoneE164 = normalizePhoneToE164BR(typeof phoneRaw === "string" ? phoneRaw : null);
+  const telefoneCandidates = phoneCandidatesBR(telefoneE164);
   const messageIdRaw = firstDefined(data, ["id", "messageId", "message_id"]);
   const messageId = typeof messageIdRaw === "string" ? messageIdRaw.trim() : "";
 
@@ -376,7 +398,7 @@ async function receiveZapDocument(body: AnyObj, jsonHeaders: Record<string, stri
   const { data: mae } = await supabaseAdmin
     .from("mae_processo")
     .select("id")
-    .eq("telefone_e164", telefoneE164)
+    .in("telefone_e164", telefoneCandidates)
     .eq("contrato_assinado", true)
     .limit(1)
     .maybeSingle();
@@ -434,36 +456,92 @@ function filenameFromMediaUrl(mediaUrl: string): string | null {
   }
 }
 
-async function syncZapConversationHistory(telefoneE164: string, maeId: string): Promise<void> {
+type HistorySyncResult = "complete" | "empty" | "unavailable" | "partial";
+const DOCUMENT_SYNC_RETRY_MINUTES = [5, 15, 60, 360, 1_440, 1_440, 1_440, 1_440];
+
+async function enqueueAutomaticDocumentSync(
+  maeId: string,
+  telefoneE164: string | null,
+): Promise<void> {
+  if (!telefoneE164) return;
+
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } },
+  );
+  const { error } = await supabaseAdmin
+    .from("zap_document_sync_jobs")
+    .upsert({
+      mae_id: maeId,
+      telefone_e164: telefoneE164,
+      status: "pending",
+      attempts: 0,
+      next_attempt_at: new Date().toISOString(),
+      last_error: null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "mae_id" });
+
+  if (error) {
+    console.error("zap-handoff: failed to enqueue automatic document sync", error.message);
+  }
+}
+
+async function syncZapConversationHistory(
+  telefoneE164: string,
+  maeId: string,
+): Promise<HistorySyncResult> {
   const apiToken = Deno.env.get("ZAP_API_TOKEN")?.trim();
   if (!apiToken) {
     console.warn("zap-handoff: ZAP_API_TOKEN missing; history sync skipped");
-    return;
+    return "unavailable";
   }
 
-  const phone = telefoneE164.replace(/\D/g, "");
+  const telefoneCandidates = phoneCandidatesBR(telefoneE164);
   const apiBase = "https://api.zapresponder.com.br/api";
   const apiHeaders = { Authorization: `Bearer ${apiToken}`, Accept: "application/json" };
 
-  const conversationResponse = await fetch(
-    `${apiBase}/v2/conversations/chatId/${encodeURIComponent(phone)}?includeClosed=true`,
-    { headers: apiHeaders },
-  );
-  if (!conversationResponse.ok) {
-    console.error("zap-handoff: conversation history lookup failed", conversationResponse.status);
-    return;
+  let conversation: AnyObj | null = null;
+  let matchedPhone: string | null = null;
+  for (const candidate of telefoneCandidates) {
+    const phone = candidate.replace(/\D/g, "");
+    const conversationResponse = await fetch(
+      `${apiBase}/v2/conversations/chatId/${encodeURIComponent(phone)}?includeClosed=true`,
+      { headers: apiHeaders },
+    );
+    if (!conversationResponse.ok) {
+      console.error("zap-handoff: conversation history lookup failed", {
+        phoneSuffix: phone.slice(-4),
+        status: conversationResponse.status,
+      });
+      continue;
+    }
+
+    const conversationPayload: AnyObj = await conversationResponse.json();
+    const candidateConversation =
+      conversationPayload.conversation ?? conversationPayload.data ?? conversationPayload;
+    const candidateId = typeof candidateConversation?._id === "string"
+      ? candidateConversation._id
+      : typeof candidateConversation?.id === "string"
+      ? candidateConversation.id
+      : null;
+    if (candidateId) {
+      conversation = candidateConversation;
+      matchedPhone = candidate;
+      break;
+    }
   }
 
-  const conversationPayload: AnyObj = await conversationResponse.json();
-  const conversation = conversationPayload.conversation ?? conversationPayload.data ?? conversationPayload;
   const conversationId = typeof conversation?._id === "string"
     ? conversation._id
     : typeof conversation?.id === "string"
     ? conversation.id
     : null;
   if (!conversationId) {
-    console.warn("zap-handoff: no conversation found for history sync");
-    return;
+    console.warn("zap-handoff: no conversation found for history sync", {
+      candidates: telefoneCandidates.map((candidate) => candidate.slice(-4)),
+    });
+    return "empty";
   }
 
   const messages: AnyObj[] = [];
@@ -486,14 +564,14 @@ async function syncZapConversationHistory(telefoneE164: string, maeId: string): 
   } while (cursor && pageCount < 100);
 
   const operationMessageIds = messages.flatMap((message) => {
-    if (getHistoryMessageOrigin(message, telefoneE164) !== "operation") return [];
+    if (getHistoryMessageOrigin(message, telefoneCandidates) !== "operation") return [];
     if (String(message?.mensagem?.type ?? "").toLowerCase() !== "file") return [];
     return typeof message?._id === "string" && message._id.trim() ? [message._id.trim()] : [];
   });
   const removedOperationDocuments = await removeStoredOperationDocuments(operationMessageIds);
 
   const mediaMessages = messages.flatMap((message) => {
-    if (getHistoryMessageOrigin(message, telefoneE164) !== "customer") return [];
+    if (getHistoryMessageOrigin(message, telefoneCandidates) !== "customer") return [];
 
     const content = message?.mensagem ?? {};
     if (String(content.type ?? "").toLowerCase() !== "file") return [];
@@ -526,7 +604,7 @@ async function syncZapConversationHistory(telefoneE164: string, maeId: string): 
             id: media.messageId,
             type: "file",
             created_at: media.receivedAt,
-            recipient: { id: phone },
+            recipient: { id: (matchedPhone ?? telefoneE164).replace(/\D/g, "") },
             content: { media: { url: media.mediaUrl, filename: media.filename } },
           },
         }, { "Content-Type": "application/json" });
@@ -556,7 +634,7 @@ async function syncZapConversationHistory(telefoneE164: string, maeId: string): 
   const { error: linkError } = await supabaseAdmin
     .from("mae_documentos")
     .update({ mae_id: maeId })
-    .eq("telefone_e164", telefoneE164)
+    .in("telefone_e164", telefoneCandidates)
     .is("mae_id", null);
   if (linkError) console.error("zap-handoff: failed to link imported documents", linkError.message);
 
@@ -564,22 +642,105 @@ async function syncZapConversationHistory(telefoneE164: string, maeId: string): 
     pages: pageCount,
     messages: messages.length,
     media: mediaMessages.length,
+    matchedPhoneSuffix: matchedPhone?.slice(-4) ?? null,
     removedOperationDocuments,
     stored,
     duplicates,
     failed,
   });
+
+  if (failed > 0) return "partial";
+  return mediaMessages.length > 0 ? "complete" : "empty";
+}
+
+async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } },
+  );
+  const { data: jobs, error: jobsError } = await supabaseAdmin
+    .from("zap_document_sync_jobs")
+    .select("mae_id, telefone_e164, attempts")
+    .eq("status", "pending")
+    .lte("next_attempt_at", new Date().toISOString())
+    .order("next_attempt_at", { ascending: true })
+    .limit(10);
+
+  if (jobsError) throw jobsError;
+
+  const results: AnyObj[] = [];
+  for (const job of jobs ?? []) {
+    const attempt = Number(job.attempts ?? 0) + 1;
+    let result: HistorySyncResult = "partial";
+    let lastError: string | null = null;
+
+    try {
+      result = await syncZapConversationHistory(job.telefone_e164, job.mae_id);
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+    }
+
+    const completed = result === "complete";
+    const exhausted = attempt >= DOCUMENT_SYNC_RETRY_MINUTES.length;
+    const retryMinutes =
+      DOCUMENT_SYNC_RETRY_MINUTES[Math.min(attempt - 1, DOCUMENT_SYNC_RETRY_MINUTES.length - 1)];
+    const nextAttemptAt = new Date(Date.now() + retryMinutes * 60_000).toISOString();
+    const status = completed ? "complete" : exhausted ? "failed" : "pending";
+
+    const { error: updateError } = await supabaseAdmin
+      .from("zap_document_sync_jobs")
+      .update({
+        status,
+        attempts: attempt,
+        next_attempt_at: nextAttemptAt,
+        last_error: lastError ?? (completed ? null : result),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("mae_id", job.mae_id);
+    if (updateError) {
+      console.error("zap-handoff: failed to update document sync job", updateError.message);
+    }
+
+    results.push({ maeId: job.mae_id, attempt, result, status });
+  }
+
+  return {
+    success: true,
+    processed: results.length,
+    results,
+  };
 }
 
 function queueZapConversationHistorySync(telefoneE164: string | null, maeId: string): void {
   if (!telefoneE164) return;
 
-  const task = syncZapConversationHistory(telefoneE164, maeId).catch((error) => {
-    console.error(
-      "zap-handoff: conversation history sync failed",
-      error instanceof Error ? error.message : String(error),
-    );
-  });
+  const task = (async () => {
+    const retryDelaysMs = [0, 3_000, 12_000];
+    for (let attempt = 0; attempt < retryDelaysMs.length; attempt += 1) {
+      const delay = retryDelaysMs[attempt];
+      if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
+
+      try {
+        const result = await syncZapConversationHistory(telefoneE164, maeId);
+        console.log("zap-handoff: automatic history sync attempt", {
+          attempt: attempt + 1,
+          result,
+        });
+        if (result === "complete" || result === "unavailable") return;
+      } catch (error) {
+        console.error(
+          "zap-handoff: conversation history sync failed",
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    }
+
+    console.warn("zap-handoff: automatic history sync exhausted", {
+      maeId,
+      phoneSuffix: telefoneE164.slice(-4),
+    });
+  })();
   const edgeRuntime = (globalThis as AnyObj).EdgeRuntime;
   if (edgeRuntime && typeof edgeRuntime.waitUntil === "function") {
     edgeRuntime.waitUntil(task);
@@ -597,6 +758,29 @@ serve(async (req) => {
   try {
     // Security: secret via header or query param (same pattern as evolution-webhook)
     const url = new URL(req.url);
+    const mode = url.searchParams.get("mode");
+    if (mode === "sync_pending_documents") {
+      const expectedInternalToken = Deno.env.get("INTERNAL_FUNCTION_TOKEN")?.trim();
+      const authorization = req.headers.get("authorization") ?? "";
+      const receivedInternalToken = authorization.replace(/^Bearer\s+/i, "").trim();
+      if (!expectedInternalToken || receivedInternalToken !== expectedInternalToken) {
+        console.warn("zap-handoff: invalid internal sync token");
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: jsonHeaders,
+        });
+      }
+      if (req.method !== "POST") {
+        return new Response(JSON.stringify({ error: "Method not allowed" }), {
+          status: 405,
+          headers: jsonHeaders,
+        });
+      }
+
+      const result = await processAutomaticDocumentSyncJobs();
+      return new Response(JSON.stringify(result), { status: 200, headers: jsonHeaders });
+    }
+
     const expectedSecret = Deno.env.get("ZAP_WEBHOOK_SECRET");
     const receivedSecret = req.headers.get("x-webhook-secret") ?? url.searchParams.get("secret");
     if (expectedSecret && receivedSecret !== expectedSecret) {
@@ -759,13 +943,15 @@ serve(async (req) => {
           }
         }
         if (telefoneE164) {
+          const telefoneCandidates = phoneCandidatesBR(telefoneE164);
           const { error: documentsError } = await supabaseAdmin
             .from("mae_documentos")
             .update({ mae_id: existing.id })
-            .eq("telefone_e164", telefoneE164)
+            .in("telefone_e164", telefoneCandidates)
             .is("mae_id", null);
           if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
         }
+        await enqueueAutomaticDocumentSync(existing.id, telefoneE164);
         queueZapConversationHistorySync(telefoneE164, existing.id);
         console.log("zap-handoff: duplicate by zap_card_id", cardId, existing.id);
         return new Response(
@@ -776,10 +962,11 @@ serve(async (req) => {
     }
 
     if (telefoneE164) {
+      const telefoneCandidates = phoneCandidatesBR(telefoneE164);
       const { data: existing } = await supabaseAdmin
         .from("mae_processo")
         .select("id, zap_card_id, link_documentos")
-        .eq("telefone_e164", telefoneE164)
+        .in("telefone_e164", telefoneCandidates)
         .limit(1)
         .maybeSingle();
       if (existing) {
@@ -798,9 +985,10 @@ serve(async (req) => {
         const { error: documentsError } = await supabaseAdmin
           .from("mae_documentos")
           .update({ mae_id: existing.id })
-          .eq("telefone_e164", telefoneE164)
+          .in("telefone_e164", telefoneCandidates)
           .is("mae_id", null);
         if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
+        await enqueueAutomaticDocumentSync(existing.id, telefoneE164);
         queueZapConversationHistorySync(telefoneE164, existing.id);
         console.log("zap-handoff: duplicate by telefone_e164", telefoneE164, existing.id);
         return new Response(
@@ -861,13 +1049,15 @@ serve(async (req) => {
 
     const incomplete = cpf === null || senhaGov === null;
     if (telefoneE164) {
+      const telefoneCandidates = phoneCandidatesBR(telefoneE164);
       const { error: documentsError } = await supabaseAdmin
         .from("mae_documentos")
         .update({ mae_id: newMae.id })
-        .eq("telefone_e164", telefoneE164)
+        .in("telefone_e164", telefoneCandidates)
         .is("mae_id", null);
       if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
     }
+    await enqueueAutomaticDocumentSync(newMae.id, telefoneE164);
     queueZapConversationHistorySync(telefoneE164, newMae.id);
     console.log("zap-handoff: created mae_processo", newMae.id, "incomplete:", incomplete);
 
