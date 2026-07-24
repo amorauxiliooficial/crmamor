@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Search, LogOut, UserPlus, Settings, X, Key, Map, Wallet, FileBarChart, TrendingUp } from "lucide-react";
+import { Search, LogOut, UserPlus, Settings, X, Key, Map, Wallet, FileBarChart, TrendingUp, BellRing } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MobileSidebar } from "./MobileSidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import logoAam from "@/assets/logo-aam.png";
+import { usePrivateUpdatesAccess } from "@/hooks/usePrivateUpdatesAccess";
 
 interface HeaderProps {
   searchQuery: string;
@@ -49,6 +50,7 @@ export function Header({
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [onboardingProgress, setOnboardingProgress] = useState<number | null>(null);
+  const { canViewUpdates } = usePrivateUpdatesAccess();
 
   const fetchOnboardingProgress = useCallback(async () => {
     if (!user) return;
@@ -154,6 +156,7 @@ export function Header({
             isAdmin={isAdmin}
             onboardingProgress={onboardingProgress}
             onAdminClick={() => setAdminDialogOpen(true)}
+            canViewUpdates={canViewUpdates}
           />
           
           <div className="flex items-center gap-3 tour-logo">
@@ -260,6 +263,17 @@ export function Header({
               </Button>
             </>
           )}
+          {canViewUpdates && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden md:flex gap-2 border-primary/30 text-primary hover:bg-primary/10"
+              onClick={() => navigate("/atualizacoes-maes")}
+            >
+              <BellRing className="h-4 w-4" />
+              <span className="hidden lg:inline">Atualizações</span>
+            </Button>
+          )}
           
           <div className="tour-notifications flex items-center gap-0.5 md:gap-1">
             <ThemeToggle className="h-9 w-9" />
@@ -327,6 +341,12 @@ export function Header({
                 <FileBarChart className="mr-2 h-4 w-4" />
                 Relatório Semanal
               </DropdownMenuItem>
+              {canViewUpdates && (
+                <DropdownMenuItem onClick={() => navigate("/atualizacoes-maes")}>
+                  <BellRing className="mr-2 h-4 w-4" />
+                  Atualizações das Mães
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />

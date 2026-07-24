@@ -1255,6 +1255,65 @@ export type Database = {
           },
         ]
       }
+      atualizacoes_maes_acesso: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mae_atualizacoes: {
+        Row: {
+          alterado_por: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          mae_id: string
+          origem: string | null
+          source_key: string | null
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          alterado_por?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          mae_id: string
+          origem?: string | null
+          source_key?: string | null
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          alterado_por?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          mae_id?: string
+          origem?: string | null
+          source_key?: string | null
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mae_atualizacoes_mae_id_fkey"
+            columns: ["mae_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mae_atendentes: {
         Row: {
           created_at: string
@@ -3027,6 +3086,7 @@ export type Database = {
         Args: { _boleto_status: string }
         Returns: string
       }
+      can_view_atualizacoes_maes: { Args: never; Returns: boolean }
       ensure_pagamento_mae: { Args: { _mae_id: string }; Returns: string }
       gerar_comissao_parcela: {
         Args: { _parcela_id: string }
