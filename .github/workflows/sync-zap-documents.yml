@@ -1,0 +1,35 @@
+name: Sincronizar documentos do ZapResponder
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-zap-documents
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Processar fila automática de documentos
+        env:
+          INTERNAL_FUNCTION_TOKEN: ${{ secrets.INTERNAL_FUNCTION_TOKEN }}
+        run: |
+          set -euo pipefail
+          response_file="$(mktemp)"
+          status="$(
+            curl --silent --show-error \
+              --output "$response_file" \
+              --write-out "%{http_code}" \
+              --request POST \
+              --header "Authorization: Bearer ${INTERNAL_FUNCTION_TOKEN}" \
+              "https://rfrqemafmqcmmbgctrtt.supabase.co/functions/v1/zap-handoff?mode=sync_pending_documents"
+          )"
+          cat "$response_file"
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "Falha ao processar fila automática (HTTP $status)" >&2
+            exit 1
+          fi
