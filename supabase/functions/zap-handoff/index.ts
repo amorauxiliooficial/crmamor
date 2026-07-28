@@ -165,11 +165,19 @@ function getHistoryMessageOrigin(
   message: AnyObj,
   telefoneCandidates: string[],
 ): HistoryMessageOrigin {
+  const fullMessageSender = firstDefined(message, ["full_message.from"]);
+  const fullMessageSenderPhone = normalizePhoneToE164BR(
+    typeof fullMessageSender === "string" ? fullMessageSender : null,
+  );
+  if (fullMessageSenderPhone) {
+    return telefoneCandidates.includes(fullMessageSenderPhone) ? "customer" : "operation";
+  }
+
   const authorRaw = firstDefined(message, ["autor", "author"]);
   if (typeof authorRaw === "string") {
     const author = authorRaw.trim().toLowerCase();
-    if (author === "mobile") return "customer";
-    if (["usuario", "user", "atendente", "attendant"].includes(author)) return "operation";
+    if (["usuario", "user"].includes(author)) return "customer";
+    if (["mobile", "atendente", "attendant"].includes(author)) return "operation";
   }
 
   const fromMe = toOptionalBool(firstDefined(message, [
