@@ -165,6 +165,13 @@ function getHistoryMessageOrigin(
   message: AnyObj,
   telefoneCandidates: string[],
 ): HistoryMessageOrigin {
+  const authorRaw = firstDefined(message, ["autor", "author"]);
+  if (typeof authorRaw === "string") {
+    const author = authorRaw.trim().toLowerCase();
+    if (author === "mobile") return "customer";
+    if (["usuario", "user", "atendente", "attendant"].includes(author)) return "operation";
+  }
+
   const fromMe = toOptionalBool(firstDefined(message, [
     "isFromMe",
     "isMine",
@@ -569,6 +576,56 @@ async function syncZapConversationHistory(
       conversation = candidateConversation;
       matchedPhone = candidate;
       break;
+    }
+  }
+
+  if (!conversation) {
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } },
+    );
+    const { data: mae, error: maeError } = await supabaseAdmin
+      .from("mae_processo")
+      .select("zap_card_id")
+      .eq("id", maeId)
+      .maybeSingle();
+    if (maeError) {
+      console.error("zap-handoff: card lookup for history sync failed", maeError.message);
+    }
+
+    const cardId = typeof mae?.zap_card_id === "string" ? mae.zap_card_id.trim() : "";
+    if (cardId) {
+      const cardResponse = await fetch(
+        `${apiBase}/v2/crm/cards/${encodeURIComponent(cardId)}`,
+        { headers: apiHeaders },
+      );
+      if (cardResponse.ok) {
+        const cardPayload: AnyObj = await cardResponse.json();
+        const card = cardPayload.card ?? cardPayload.data ?? cardPayload;
+        const conversations = Array.isArray(card?.conversations) ? card.conversations : [];
+        const cardConversation = conversations.find((item: unknown) => {
+          if (!item || typeof item !== "object") return false;
+          const candidate = item as AnyObj;
+          return typeof candidate._id === "string" || typeof candidate.id === "string";
+        });
+        if (cardConversation) {
+          conversation = cardConversation;
+          const chatId = typeof cardConversation.chatId === "string"
+            ? cardConversation.chatId
+            : telefoneE164;
+          matchedPhone = normalizePhoneToE164BR(chatId) ?? telefoneE164;
+          console.log("zap-handoff: conversation resolved from CRM card", {
+            cardIdSuffix: cardId.slice(-4),
+            phoneSuffix: matchedPhone.slice(-4),
+          });
+        }
+      } else {
+        console.error("zap-handoff: CRM card lookup failed", {
+          cardIdSuffix: cardId.slice(-4),
+          status: cardResponse.status,
+        });
+      }
     }
   }
 
