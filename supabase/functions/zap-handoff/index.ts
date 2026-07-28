@@ -477,6 +477,7 @@ const DOCUMENT_SYNC_RETRY_MINUTES = [5, 15, 60, 360, 1_440, 1_440, 1_440, 1_440]
 async function enqueueAutomaticDocumentSync(
   maeId: string,
   telefoneE164: string | null,
+  triggerImmediate = true,
 ): Promise<void> {
   if (!telefoneE164) return;
 
@@ -502,7 +503,9 @@ async function enqueueAutomaticDocumentSync(
     return;
   }
 
-  queueImmediateDocumentWorker();
+  if (triggerImmediate) {
+    queueImmediateDocumentWorker();
+  }
 }
 
 function queueImmediateDocumentWorker(): void {
@@ -850,6 +853,7 @@ serve(async (req) => {
       const result = await processAutomaticDocumentSyncJobs();
       return new Response(JSON.stringify(result), { status: 200, headers: jsonHeaders });
     }
+    const deferDocumentSync = url.searchParams.get("defer_document_sync") === "true";
 
     const expectedSecret = Deno.env.get("ZAP_WEBHOOK_SECRET");
     const receivedSecret = req.headers.get("x-webhook-secret") ?? url.searchParams.get("secret");
@@ -1021,7 +1025,7 @@ serve(async (req) => {
             .is("mae_id", null);
           if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
         }
-        await enqueueAutomaticDocumentSync(existing.id, telefoneE164);
+        await enqueueAutomaticDocumentSync(existing.id, telefoneE164, !deferDocumentSync);
         console.log("zap-handoff: duplicate by zap_card_id", cardId, existing.id);
         return new Response(
           JSON.stringify({ duplicate: true, id: existing.id, card_linked: cardUrl !== null }),
@@ -1057,7 +1061,7 @@ serve(async (req) => {
           .in("telefone_e164", telefoneCandidates)
           .is("mae_id", null);
         if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
-        await enqueueAutomaticDocumentSync(existing.id, telefoneE164);
+        await enqueueAutomaticDocumentSync(existing.id, telefoneE164, !deferDocumentSync);
         console.log("zap-handoff: duplicate by telefone_e164", telefoneE164, existing.id);
         return new Response(
           JSON.stringify({ duplicate: true, id: existing.id, card_linked: cardUrl !== null }),
@@ -1125,7 +1129,7 @@ serve(async (req) => {
         .is("mae_id", null);
       if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
     }
-    await enqueueAutomaticDocumentSync(newMae.id, telefoneE164);
+    await enqueueAutomaticDocumentSync(newMae.id, telefoneE164, !deferDocumentSync);
     console.log("zap-handoff: created mae_processo", newMae.id, "incomplete:", incomplete);
 
     return new Response(JSON.stringify({
