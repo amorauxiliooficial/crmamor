@@ -773,7 +773,9 @@ async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
     .eq("status", "pending")
     .lte("next_attempt_at", new Date().toISOString())
     .order("next_attempt_at", { ascending: true })
-    .limit(10);
+    // Históricos com muitos anexos podem levar dezenas de segundos. Um lote
+    // pequeno evita o timeout de 150 s da Edge Function.
+    .limit(3);
 
   if (jobsError) throw jobsError;
 
