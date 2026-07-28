@@ -484,6 +484,46 @@ async function enqueueAutomaticDocumentSync(
 
   if (error) {
     console.error("zap-handoff: failed to enqueue automatic document sync", error.message);
+    return;
+  }
+
+  queueImmediateDocumentWorker();
+}
+
+function queueImmediateDocumentWorker(): void {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")?.replace(/\/+$/, "");
+  const internalToken = Deno.env.get("INTERNAL_FUNCTION_TOKEN")?.trim();
+  if (!supabaseUrl || !internalToken) {
+    console.warn("zap-handoff: immediate document worker not configured");
+    return;
+  }
+
+  const task = fetch(`${supabaseUrl}/functions/v1/zap-document-sync`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${internalToken}`,
+    },
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        console.error("zap-handoff: immediate document worker failed", {
+          status: response.status,
+          body: (await response.text()).slice(0, 500),
+        });
+        return;
+      }
+      console.log("zap-handoff: immediate document worker started");
+    })
+    .catch((error) => {
+      console.error(
+        "zap-handoff: immediate document worker unavailable",
+        error instanceof Error ? error.message : String(error),
+      );
+    });
+
+  const edgeRuntime = (globalThis as AnyObj).EdgeRuntime;
+  if (edgeRuntime && typeof edgeRuntime.waitUntil === "function") {
+    edgeRuntime.waitUntil(task);
   }
 }
 
@@ -712,41 +752,6 @@ async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
   };
 }
 
-function queueZapConversationHistorySync(telefoneE164: string | null, maeId: string): void {
-  if (!telefoneE164) return;
-
-  const task = (async () => {
-    const retryDelaysMs = [0, 3_000, 12_000];
-    for (let attempt = 0; attempt < retryDelaysMs.length; attempt += 1) {
-      const delay = retryDelaysMs[attempt];
-      if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
-
-      try {
-        const result = await syncZapConversationHistory(telefoneE164, maeId);
-        console.log("zap-handoff: automatic history sync attempt", {
-          attempt: attempt + 1,
-          result,
-        });
-        if (result === "complete" || result === "unavailable") return;
-      } catch (error) {
-        console.error(
-          "zap-handoff: conversation history sync failed",
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    }
-
-    console.warn("zap-handoff: automatic history sync exhausted", {
-      maeId,
-      phoneSuffix: telefoneE164.slice(-4),
-    });
-  })();
-  const edgeRuntime = (globalThis as AnyObj).EdgeRuntime;
-  if (edgeRuntime && typeof edgeRuntime.waitUntil === "function") {
-    edgeRuntime.waitUntil(task);
-  }
-}
-
 serve(async (req) => {
   const corsHeaders = publicCorsHeaders();
   if (req.method === "OPTIONS") {
@@ -952,7 +957,6 @@ serve(async (req) => {
           if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
         }
         await enqueueAutomaticDocumentSync(existing.id, telefoneE164);
-        queueZapConversationHistorySync(telefoneE164, existing.id);
         console.log("zap-handoff: duplicate by zap_card_id", cardId, existing.id);
         return new Response(
           JSON.stringify({ duplicate: true, id: existing.id, card_linked: cardUrl !== null }),
@@ -989,7 +993,6 @@ serve(async (req) => {
           .is("mae_id", null);
         if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
         await enqueueAutomaticDocumentSync(existing.id, telefoneE164);
-        queueZapConversationHistorySync(telefoneE164, existing.id);
         console.log("zap-handoff: duplicate by telefone_e164", telefoneE164, existing.id);
         return new Response(
           JSON.stringify({ duplicate: true, id: existing.id, card_linked: cardUrl !== null }),
@@ -1058,7 +1061,6 @@ serve(async (req) => {
       if (documentsError) console.error("zap-handoff: failed to link pending documents", documentsError.message);
     }
     await enqueueAutomaticDocumentSync(newMae.id, telefoneE164);
-    queueZapConversationHistorySync(telefoneE164, newMae.id);
     console.log("zap-handoff: created mae_processo", newMae.id, "incomplete:", incomplete);
 
     return new Response(JSON.stringify({

@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.zap-conversation-summary]
 verify_jwt = false
+
+[functions.zap-document-sync]
+verify_jwt = false
