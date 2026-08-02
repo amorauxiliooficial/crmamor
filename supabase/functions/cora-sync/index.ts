@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildCorsHeaders } from "../_shared/cors.ts";
 
 type Obj = Record<string, any>;
 
@@ -31,8 +32,10 @@ function normalizeEntry(entry: Obj) {
 
 serve(async (req) => {
   let syncId: string | null = null;
+  const responseHeaders = { ...jsonHeaders, ...buildCorsHeaders(req) };
   try {
-    if (req.method !== "POST") return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: jsonHeaders });
+    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: responseHeaders });
+    if (req.method !== "POST") return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: responseHeaders });
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -45,10 +48,10 @@ serve(async (req) => {
       userId = null;
     } else {
       const { data: userData, error: userError } = await admin.auth.getUser(token);
-      if (userError || !userData.user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: jsonHeaders });
+      if (userError || !userData.user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: responseHeaders });
       userId = userData.user.id;
       const { data: staff } = await admin.rpc("is_staff", { _user_id: userId });
-      if (!staff) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: jsonHeaders });
+      if (!staff) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: responseHeaders });
     }
 
     const clientId = Deno.env.get("CORA_CLIENT_ID")?.trim();
@@ -56,7 +59,7 @@ serve(async (req) => {
     const privateKey = Deno.env.get("CORA_PRIVATE_KEY_PEM")?.replace(/\\n/g, "\n");
     const baseUrl = (Deno.env.get("CORA_API_BASE_URL") || "https://matls-clients.api.cora.com.br").replace(/\/+$/, "");
     if (!clientId || !certificate || !privateKey) {
-      return new Response(JSON.stringify({ configured: false, error: "Credenciais Cora ainda não configuradas" }), { status: 412, headers: jsonHeaders });
+      return new Response(JSON.stringify({ configured: false, error: "Credenciais Cora ainda não configuradas" }), { status: 412, headers: responseHeaders });
     }
 
     const body = await req.json().catch(() => ({}));
@@ -147,14 +150,14 @@ serve(async (req) => {
       if (error) throw error;
     }
     await admin.from("cora_sincronizacoes").update({ status: "sucesso", finalizado_em: new Date().toISOString(), importados: normalized.length }).eq("id", syncId);
-    return new Response(JSON.stringify({ success: true, start, end, processed: normalized.length }), { headers: jsonHeaders });
+    return new Response(JSON.stringify({ success: true, start, end, processed: normalized.length }), { headers: responseHeaders });
   } catch (error) {
     console.error("cora-sync:", error instanceof Error ? error.message : String(error));
     if (syncId) {
       const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
       await admin.from("cora_sincronizacoes").update({ status: "erro", finalizado_em: new Date().toISOString(), mensagem: error instanceof Error ? error.message.slice(0, 500) : String(error).slice(0, 500) }).eq("id", syncId);
     }
-    return new Response(JSON.stringify({ error: "Não foi possível sincronizar a Cora" }), { status: 500, headers: jsonHeaders });
+    return new Response(JSON.stringify({ error: "Não foi possível sincronizar a Cora" }), { status: 500, headers: responseHeaders });
   }
 });
 
