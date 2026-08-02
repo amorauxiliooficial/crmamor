@@ -18,7 +18,6 @@ import { ViewTransition } from "@/components/layout/ViewTransition";
 
 // Dashboard
 import { OperationsPanel } from "@/components/dashboard/OperationsPanel";
-import { CoraKanbanPreview } from "@/components/cora/CoraKanbanPreview";
 
 // Kanban / Table
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
@@ -244,7 +243,6 @@ export default function Index() {
               filtroAtivo={acompanhamentoFilter}
               onFiltroChange={setAcompanhamentoFilter}
             />
-            <CoraKanbanPreview />
           </div>
         )}
 
