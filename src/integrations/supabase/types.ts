@@ -838,6 +838,142 @@ export type Database = {
           },
         ]
       }
+      cora_movimentacoes: {
+        Row: {
+          confianca: number | null
+          contraparte_documento: string | null
+          contraparte_nome: string | null
+          cora_entry_id: string
+          created_at: string
+          dados_originais: Json
+          descricao: string | null
+          despesa_sugerida_id: string | null
+          id: string
+          mae_sugerida_id: string | null
+          motivos: Json
+          ocorrido_em: string
+          parcela_sugerida_id: string | null
+          sincronizado_em: string
+          situacao: string
+          tipo: string
+          transaction_id: string | null
+          transaction_type: string | null
+          updated_at: string
+          validado_em: string | null
+          validado_por: string | null
+          valor_centavos: number
+        }
+        Insert: {
+          confianca?: number | null
+          contraparte_documento?: string | null
+          contraparte_nome?: string | null
+          cora_entry_id: string
+          created_at?: string
+          dados_originais?: Json
+          descricao?: string | null
+          despesa_sugerida_id?: string | null
+          id?: string
+          mae_sugerida_id?: string | null
+          motivos?: Json
+          ocorrido_em: string
+          parcela_sugerida_id?: string | null
+          sincronizado_em?: string
+          situacao?: string
+          tipo: string
+          transaction_id?: string | null
+          transaction_type?: string | null
+          updated_at?: string
+          validado_em?: string | null
+          validado_por?: string | null
+          valor_centavos: number
+        }
+        Update: {
+          confianca?: number | null
+          contraparte_documento?: string | null
+          contraparte_nome?: string | null
+          cora_entry_id?: string
+          created_at?: string
+          dados_originais?: Json
+          descricao?: string | null
+          despesa_sugerida_id?: string | null
+          id?: string
+          mae_sugerida_id?: string | null
+          motivos?: Json
+          ocorrido_em?: string
+          parcela_sugerida_id?: string | null
+          sincronizado_em?: string
+          situacao?: string
+          tipo?: string
+          transaction_id?: string | null
+          transaction_type?: string | null
+          updated_at?: string
+          validado_em?: string | null
+          validado_por?: string | null
+          valor_centavos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cora_movimentacoes_despesa_sugerida_id_fkey"
+            columns: ["despesa_sugerida_id"]
+            isOneToOne: false
+            referencedRelation: "despesas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cora_movimentacoes_mae_sugerida_id_fkey"
+            columns: ["mae_sugerida_id"]
+            isOneToOne: false
+            referencedRelation: "mae_processo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cora_movimentacoes_parcela_sugerida_id_fkey"
+            columns: ["parcela_sugerida_id"]
+            isOneToOne: false
+            referencedRelation: "parcelas_pagamento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cora_sincronizacoes: {
+        Row: {
+          atualizados: number
+          executado_por: string | null
+          finalizado_em: string | null
+          id: string
+          importados: number
+          iniciado_em: string
+          mensagem: string | null
+          periodo_fim: string | null
+          periodo_inicio: string | null
+          status: string
+        }
+        Insert: {
+          atualizados?: number
+          executado_por?: string | null
+          finalizado_em?: string | null
+          id?: string
+          importados?: number
+          iniciado_em?: string
+          mensagem?: string | null
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          status?: string
+        }
+        Update: {
+          atualizados?: number
+          executado_por?: string | null
+          finalizado_em?: string | null
+          id?: string
+          importados?: number
+          iniciado_em?: string
+          mensagem?: string | null
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       criativos: {
         Row: {
           arquivo_url: string | null
