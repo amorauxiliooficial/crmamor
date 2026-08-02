@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.zap-contract-reconcile]
 verify_jwt = false
+
+[functions.cora-sync]
+verify_jwt = false
