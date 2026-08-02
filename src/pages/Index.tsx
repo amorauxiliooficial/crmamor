@@ -18,6 +18,7 @@ import { ViewTransition } from "@/components/layout/ViewTransition";
 
 // Dashboard
 import { OperationsPanel } from "@/components/dashboard/OperationsPanel";
+import { CoraKanbanPreview } from "@/components/cora/CoraKanbanPreview";
 
 // Kanban / Table
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
@@ -231,17 +232,20 @@ export default function Index() {
 
         {/* Operations Panel - simplified */}
         {(currentView === "kanban") && (
-          <OperationsPanel
-            totalMaes={maes.length}
-            filteredCount={filteredMaes.length}
-            emAndamento={maes.filter((m) => !isOutOfFunnel(m.status_processo)).length}
-            concluidos={maes.filter((m) => isConcludedStage(m.status_processo)).length}
-            encerradosSemExito={maes.filter((m) => isDeniedStage(m.status_processo)).length}
-            semContato={acompanhamentoResumo.semContato}
-            semSenha={acompanhamentoResumo.semSenha}
-            filtroAtivo={acompanhamentoFilter}
-            onFiltroChange={setAcompanhamentoFilter}
-          />
+          <div className="space-y-3">
+            <OperationsPanel
+              totalMaes={maes.length}
+              filteredCount={filteredMaes.length}
+              emAndamento={maes.filter((m) => !isOutOfFunnel(m.status_processo)).length}
+              concluidos={maes.filter((m) => isConcludedStage(m.status_processo)).length}
+              encerradosSemExito={maes.filter((m) => isDeniedStage(m.status_processo)).length}
+              semContato={acompanhamentoResumo.semContato}
+              semSenha={acompanhamentoResumo.semSenha}
+              filtroAtivo={acompanhamentoFilter}
+              onFiltroChange={setAcompanhamentoFilter}
+            />
+            <CoraKanbanPreview />
+          </div>
         )}
 
         {/* Content area with view transition */}
