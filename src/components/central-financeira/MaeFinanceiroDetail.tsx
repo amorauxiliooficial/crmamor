@@ -269,7 +269,7 @@ export function MaeFinanceiroDetail({ mae }: Props) {
                 <CardTitle className="text-sm flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <Receipt className="h-4 w-4 text-primary" />
-                    Honorários da Parceiro
+                    Honorários do Parceiro
                   </span>
                   <Button
                     size="sm"
@@ -351,12 +351,12 @@ export function MaeFinanceiroDetail({ mae }: Props) {
 
         {/* CENTRAL — Honorários + Benefício & Boletos & Comunicado */}
         <TabsContent value="central" className="mt-4 space-y-6">
-          {/* ===== Honorários da Parceiro ===== */}
+          {/* ===== Honorários do Parceiro ===== */}
           <section className="space-y-4">
             <div className="flex items-center gap-2">
               <Receipt className="h-4 w-4 text-primary" />
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Honorários da Parceiro
+                Honorários do Parceiro
               </h3>
             </div>
 

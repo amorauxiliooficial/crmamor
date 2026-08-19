@@ -137,7 +137,7 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
 
   const alertas: string[] = [];
   if (Math.abs(diferencaBoletos) > 0.01 && totalBoletos > 0)
-    alertas.push("A soma dos boletos não bate com o total da Parceiro.");
+    alertas.push("A soma dos boletos não bate com o total do Parceiro.");
   if (boletosAberto > 0.01) alertas.push("Existe saldo em aberto nos boletos.");
   if (central?.observacoes_valores_futuros && central.observacoes_valores_futuros.trim().length > 0)
     alertas.push("Existe valor futuro registrado em observações.");
@@ -197,7 +197,7 @@ Valor futuro previsto: ${brl(totalFuturo)}
 Parcelas:
 ${linhasParc || "  • —"}
 
-📑 *Honorários e taxas da Parceiro*
+📑 *Honorários e taxas do Parceiro*
 Honorários (${percentual}%): ${brl(honorarios)}
 Taxa administrativa: ${brl(taxa)}
 Total Parceiro: ${brl(totalAmor)}
@@ -329,7 +329,7 @@ Qualquer dúvida estamos à disposição!`;
       <div className={inline ? "mb-4" : "px-6 pt-6 pb-2"}>
         <h2 className="flex items-center gap-2 text-lg font-semibold">
           <Wallet className="h-5 w-5 text-primary" />
-          Central Financeira da Parceiro — {mae.nome_mae}
+          Central Financeira do Parceiro — {mae.nome_mae}
         </h2>
         <p className="text-sm text-muted-foreground">
           Calculadora, projeção de saque, boletos e comunicados da mãe.
@@ -439,10 +439,10 @@ Qualquer dúvida estamos à disposição!`;
             )}
 
 
-            {/* Cobrança da Parceiro */}
+            {/* Cobrança do Parceiro */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Cobrança da Parceiro</CardTitle>
+                <CardTitle className="text-base">Cobrança do Parceiro</CardTitle>
               </CardHeader>
               <CardContent className="grid md:grid-cols-2 gap-3">
                 <div className="md:col-span-2 grid grid-cols-3 gap-2 text-sm">
