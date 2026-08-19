@@ -137,7 +137,7 @@ export function CentralFinanceiraDialog({ mae, open = false, onOpenChange, inlin
 
   const alertas: string[] = [];
   if (Math.abs(diferencaBoletos) > 0.01 && totalBoletos > 0)
-    alertas.push("A soma dos boletos não bate com o total da Amor.");
+    alertas.push("A soma dos boletos não bate com o total da Parceiro.");
   if (boletosAberto > 0.01) alertas.push("Existe saldo em aberto nos boletos.");
   if (central?.observacoes_valores_futuros && central.observacoes_valores_futuros.trim().length > 0)
     alertas.push("Existe valor futuro registrado em observações.");
@@ -197,10 +197,10 @@ Valor futuro previsto: ${brl(totalFuturo)}
 Parcelas:
 ${linhasParc || "  • —"}
 
-📑 *Honorários e taxas da Amor*
+📑 *Honorários e taxas da Parceiro*
 Honorários (${percentual}%): ${brl(honorarios)}
 Taxa administrativa: ${brl(taxa)}
-Total Amor: ${brl(totalAmor)}
+Total Parceiro: ${brl(totalAmor)}
 
 🧾 *Boletos*
 ${linhasBoletos || "  • —"}
@@ -329,7 +329,7 @@ Qualquer dúvida estamos à disposição!`;
       <div className={inline ? "mb-4" : "px-6 pt-6 pb-2"}>
         <h2 className="flex items-center gap-2 text-lg font-semibold">
           <Wallet className="h-5 w-5 text-primary" />
-          Central Financeira da Amor — {mae.nome_mae}
+          Central Financeira da Parceiro — {mae.nome_mae}
         </h2>
         <p className="text-sm text-muted-foreground">
           Calculadora, projeção de saque, boletos e comunicados da mãe.
@@ -439,10 +439,10 @@ Qualquer dúvida estamos à disposição!`;
             )}
 
 
-            {/* Cobrança da Amor */}
+            {/* Cobrança da Parceiro */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Cobrança da Amor</CardTitle>
+                <CardTitle className="text-base">Cobrança da Parceiro</CardTitle>
               </CardHeader>
               <CardContent className="grid md:grid-cols-2 gap-3">
                 <div className="md:col-span-2 grid grid-cols-3 gap-2 text-sm">
@@ -476,7 +476,7 @@ Qualquer dúvida estamos à disposição!`;
                   onSave={(v) => updateCentral.mutate({ taxa_administrativa: v === "" ? 0 : Number(v) })}
                 />
                 <SmallStat label="Honorários" value={brl(honorarios)} />
-                <SmallStat label="Total Amor" value={brl(totalAmor)} highlight />
+                <SmallStat label="Total Parceiro" value={brl(totalAmor)} highlight />
                 <div className="md:col-span-2">
                   <SmallStat label="Valor líquido estimado da cliente" value={brl(liquidoCliente)} highlight={totalRecebimentos > 0} />
                 </div>
@@ -559,7 +559,7 @@ Qualquer dúvida estamos à disposição!`;
                   <SmallStat label="Pago" value={brl(boletosPagos)} />
                   <SmallStat label="Em aberto" value={brl(boletosAberto)} />
                   <SmallStat
-                    label="Diferença vs Amor"
+                    label="Diferença vs Parceiro"
                     value={brl(diferencaBoletos)}
                     highlight={Math.abs(diferencaBoletos) > 0.01}
                   />
@@ -567,7 +567,7 @@ Qualquer dúvida estamos à disposição!`;
                 {Math.abs(diferencaBoletos) > 0.01 && totalBoletos > 0 && (
                   <div className="flex items-center gap-2 text-xs text-destructive pt-1">
                     <AlertTriangle className="h-4 w-4" />
-                    A soma dos boletos não bate com o Total Amor.
+                    A soma dos boletos não bate com o Total Parceiro.
                   </div>
                 )}
               </CardContent>
@@ -632,7 +632,7 @@ Qualquer dúvida estamos à disposição!`;
                 <Separator className="my-2" />
                 <Row label={`Honorários (${percentual}%)`} value={brl(honorarios)} />
                 <Row label="Taxa administrativa" value={brl(taxa)} />
-                <Row label="Total Amor" value={brl(totalAmor)} strong />
+                <Row label="Total Parceiro" value={brl(totalAmor)} strong />
                 <Separator className="my-2" />
                 <Row label="Líquido cliente" value={brl(liquidoCliente)} strong />
                 <Separator className="my-2" />
