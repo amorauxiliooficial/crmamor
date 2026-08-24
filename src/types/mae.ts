@@ -63,7 +63,10 @@ export interface MaeProcesso {
   cidade?: string | null;
   precisa_das: boolean;
   das_concluido: boolean;
+  /** Mãe única? true = Sim, false = Não, null/undefined = Não informado. */
+  mae_unica?: boolean | null;
   ja_trabalhou?: boolean;
+
 }
 
 export interface ChecklistMae {
