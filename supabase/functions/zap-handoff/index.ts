@@ -473,6 +473,8 @@ function filenameFromMediaUrl(mediaUrl: string): string | null {
 
 type HistorySyncResult = "complete" | "empty" | "unavailable" | "partial";
 const DOCUMENT_SYNC_RETRY_MINUTES = [5, 15, 60, 360, 1_440, 1_440, 1_440, 1_440];
+// Jobs concluídos podem ser revalidados depois de 1 hora.
+const DOCUMENT_SYNC_REVALIDATE_MINUTES = 60;
 
 async function enqueueAutomaticDocumentSync(
   maeId: string,
@@ -1196,9 +1198,7 @@ serve(async (req) => {
         is_gestante: isGestante,
         mes_gestacao: mesGestacao,
         categoria_previdenciaria: "Não informado",
-        status_processo: isGestante && mesGestacao !== null && mesGestacao <= 8
-          ? "Gestantes 1 a 8 meses"
-          : "Entradas do Mês",
+        status_processo: "Pré-Análise de Elegibilidade",
         tipo_evento: "Parto",
         contrato_assinado: true,
         verificacao_duas_etapas: false,
