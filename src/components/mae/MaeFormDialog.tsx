@@ -284,7 +284,9 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
         senha_gov: data.senha_gov || undefined,
         verificacao_duas_etapas: data.verificacao_duas_etapas ?? false,
         is_gestante: data.is_gestante ?? false,
+        mae_unica: (data as { mae_unica?: boolean | null }).mae_unica ?? null,
         data_ultima_atualizacao: data.data_ultima_atualizacao,
+
       };
 
       setFormData(getEmptyFormData());
