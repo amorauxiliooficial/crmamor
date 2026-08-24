@@ -21,6 +21,7 @@ import { Sparkles, Loader2, AlertCircle } from "lucide-react";
 import type { Indicacao } from "@/types/indicacao";
 
 export const FUNIL_OPTIONS = [
+  "Pré-Análise de Elegibilidade",
   "Gestantes 1 a 8 meses",
   "Gestantes em Maturação",
   "Entradas do Mês",
@@ -39,7 +40,7 @@ export interface ConvertPayload {
 }
 
 export function detectFunil(indicacao: Indicacao | null): FunilOption {
-  if (!indicacao) return "Entradas do Mês";
+  if (!indicacao) return "Pré-Análise de Elegibilidade";
   const haystack = [
     indicacao.observacoes,
     indicacao.proxima_acao_observacao,

@@ -2,6 +2,7 @@ import { differenceInCalendarDays, parseISO } from "date-fns";
 import { MaeProcesso, StatusProcesso } from "@/types/mae";
 
 const ETAPAS_COM_ACOMPANHAMENTO: readonly StatusProcesso[] = [
+  "🔎 Pré-Análise de Elegibilidade",
   "🤰 Gestantes 1 a 8 meses",
   "📥 Entradas do Mês",
   "⏳ Aguardando Análise INSS",

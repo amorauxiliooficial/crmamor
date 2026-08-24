@@ -10,6 +10,7 @@ interface Props {
 }
 
 const TONE_DOT: Record<string, string> = {
+  "Pré-Análise de Elegibilidade": "bg-cyan-500",
   "Gestantes 1 a 8 meses": "bg-pink-500",
   "Entradas do Mês": "bg-amber-500",
   "Aguardando Análise INSS": "bg-sky-500",

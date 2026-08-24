@@ -13,6 +13,7 @@ interface FunnelChartProps {
 type Tone = "rosa" | "amarelo" | "verde" | "azul" | "laranja" | "vermelho" | "cinza";
 
 const FASE_TONE: Record<string, Tone> = {
+  "Pré-Análise de Elegibilidade": "azul",
   "Gestantes 1 a 8 meses": "rosa",
   "Entradas do Mês": "amarelo",
   "Aguardando Análise INSS": "azul",

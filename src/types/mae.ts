@@ -1,4 +1,5 @@
 export type StatusProcesso =
+  | "🔎 Pré-Análise de Elegibilidade"
   | "🤰 Gestantes 1 a 8 meses"
   | "📥 Entradas do Mês"
   | "⏳ Aguardando Análise INSS"
@@ -84,6 +85,7 @@ export interface DecisaoProcesso {
 }
 
 export const STATUS_ORDER: StatusProcesso[] = [
+  "🔎 Pré-Análise de Elegibilidade",
   "🤰 Gestantes 1 a 8 meses",
   "📥 Entradas do Mês",
   "⏳ Aguardando Análise INSS",
@@ -115,6 +117,7 @@ export const isOutOfFunnel = (status: StatusProcesso) =>
 
 // Placeholder helper text shown under each column title (exact copy TBD).
 export const STATUS_NEXT_ACTION: Record<StatusProcesso, string> = {
+  "🔎 Pré-Análise de Elegibilidade": "Ação: ...",
   "🤰 Gestantes 1 a 8 meses": "Ação: ...",
   "📥 Entradas do Mês": "Ação: ...",
   "⏳ Aguardando Análise INSS": "Ação: ...",
@@ -129,6 +132,7 @@ export const STATUS_NEXT_ACTION: Record<StatusProcesso, string> = {
 };
 
 export const STATUS_COLORS: Record<StatusProcesso, string> = {
+  "🔎 Pré-Análise de Elegibilidade": "bg-muted/60",
   "🤰 Gestantes 1 a 8 meses": "bg-muted/60",
   "📥 Entradas do Mês": "bg-muted/60",
   "⏳ Aguardando Análise INSS": "bg-muted/60",
@@ -144,6 +148,7 @@ export const STATUS_COLORS: Record<StatusProcesso, string> = {
 
 // Thin top-bar accent colors per status (used as border-top on column headers)
 export const STATUS_BAR_COLORS: Record<StatusProcesso, string> = {
+  "🔎 Pré-Análise de Elegibilidade": "border-t-cyan-500/60",
   "🤰 Gestantes 1 a 8 meses": "border-t-pink-500/60",
   "📥 Entradas do Mês": "border-t-amber-500/60",
   "⏳ Aguardando Análise INSS": "border-t-sky-500/50",
@@ -159,6 +164,7 @@ export const STATUS_BAR_COLORS: Record<StatusProcesso, string> = {
 
 // Prazos de follow-up para exibição na UI (em dias)
 export const FOLLOWUP_PRAZO_LABELS: Record<StatusProcesso, string> = {
+  "🔎 Pré-Análise de Elegibilidade": "3 a 5 dias",
   "🤰 Gestantes 1 a 8 meses": "1x/mês",
   "📥 Entradas do Mês": "1x/semana",
   "⏳ Aguardando Análise INSS": "15 dias",
