@@ -155,24 +155,36 @@ serve(async (req) => {
     const { data: jobRows, error: jobsError } = maeIds.length
       ? await supabase
         .from("zap_document_sync_jobs")
-        .select("mae_id, status")
+        .select("mae_id, status, updated_at")
         .in("mae_id", maeIds)
       : { data: [], error: null };
     if (jobsError) throw jobsError;
 
-    const jobStatusByMaeId = new Map<string, string>();
+    // Jobs concluídos são revalidados após 1 hora.
+    const REVALIDATE_AFTER_MS = 60 * 60 * 1000;
+    const jobByMaeId = new Map<string, { status: string; updatedAt: number }>();
     for (const row of jobRows ?? []) {
       if (typeof row.mae_id === "string" && typeof row.status === "string") {
-        jobStatusByMaeId.set(row.mae_id, row.status);
+        const updatedAt = typeof row.updated_at === "string" ? Date.parse(row.updated_at) : NaN;
+        jobByMaeId.set(row.mae_id, {
+          status: row.status,
+          updatedAt: Number.isNaN(updatedAt) ? 0 : updatedAt,
+        });
       }
     }
 
     const candidates = ids.filter((id) => {
       const maeId = maeByCardId.get(id);
       if (!maeId) return true;
-      const status = jobStatusByMaeId.get(maeId);
-      return !status || status === "failed";
+      const job = jobByMaeId.get(maeId);
+      if (!job) return true;
+      if (job.status === "failed") return true;
+      if (job.status === "complete") {
+        return Date.now() - job.updatedAt >= REVALIDATE_AFTER_MS;
+      }
+      return false;
     });
+
 
     const results: Array<{ cardId: string; ok: boolean; status: number; error?: string }> = [];
     await runWithConcurrency(candidates, async (id) => {
