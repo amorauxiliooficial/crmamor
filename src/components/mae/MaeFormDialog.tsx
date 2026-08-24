@@ -83,7 +83,9 @@ const getEmptyFormData = (): MaeFormData => ({
   senha_gov: "",
   verificacao_duas_etapas: false,
   is_gestante: false,
+  mae_unica: "nao_informado",
 });
+
 
 const UF_OPTIONS = [
   "AC",
