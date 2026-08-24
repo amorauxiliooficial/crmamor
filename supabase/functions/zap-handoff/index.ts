@@ -652,9 +652,87 @@ async function syncZapConversationHistory(
     return "empty";
   }
 
+  const pickArray = (payload: AnyObj): AnyObj[] => {
+    const candidates = [
+      payload?.messages,
+      payload?.data,
+      payload?.items,
+      payload?.results,
+      payload?.docs,
+      payload?.records,
+      payload?.data?.messages,
+      payload,
+    ];
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate)) return candidate as AnyObj[];
+    }
+    return [];
+  };
+
+  const pickCursor = (payload: AnyObj): string | null => {
+    const candidates = [
+      payload?.nextCursor,
+      payload?.next_cursor,
+      payload?.cursor,
+      payload?.paging?.next,
+      payload?.pagination?.nextCursor,
+    ];
+    for (const candidate of candidates) {
+      if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+    }
+    return null;
+  };
+
+  const messageIdOf = (message: AnyObj): string => {
+    const candidates = [
+      message?._id,
+      message?.id,
+      message?.messageId,
+      message?.message_id,
+      message?.key?.id,
+    ];
+    for (const candidate of candidates) {
+      if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+    }
+    return "";
+  };
+
+  const contentOf = (message: AnyObj): AnyObj => {
+    const content = message?.mensagem ?? message?.message ?? message?.content ?? {};
+    return content && typeof content === "object" ? content as AnyObj : {};
+  };
+
+  const isFileMessage = (message: AnyObj): boolean => {
+    const content = contentOf(message);
+    const type = String(content?.type ?? message?.type ?? "").toLowerCase();
+    if (["file", "document", "image", "audio", "video", "media"].includes(type)) return true;
+    return Boolean(mediaUrlOf(message));
+  };
+
+  function mediaUrlOf(message: AnyObj): string | null {
+    const content = contentOf(message);
+    const candidates = [
+      content?.mensagem,
+      content?.url,
+      content?.mediaUrl,
+      content?.media_url,
+      content?.fileUrl,
+      content?.file_url,
+      content?.media?.url,
+      message?.mediaUrl,
+      message?.url,
+    ];
+    for (const candidate of candidates) {
+      const normalized = typeof candidate === "string" ? normalizeHttpUrl(candidate) : null;
+      if (normalized) return normalized;
+    }
+    return null;
+  }
+
   const messages: AnyObj[] = [];
   let cursor: string | null = null;
   let pageCount = 0;
+  let messagesUnavailable = false;
   do {
     const messagesUrl = new URL(`${apiBase}/v2/conversations/${encodeURIComponent(conversationId)}/messages`);
     if (cursor) messagesUrl.searchParams.set("cursor", cursor);
@@ -662,42 +740,64 @@ async function syncZapConversationHistory(
     const pageResponse = await fetch(messagesUrl, { headers: apiHeaders });
     if (!pageResponse.ok) {
       console.error("zap-handoff: conversation messages lookup failed", pageResponse.status);
+      if (pageCount === 0) messagesUnavailable = true;
       break;
     }
 
-    const page: AnyObj = await pageResponse.json();
-    if (Array.isArray(page.messages)) messages.push(...page.messages);
-    cursor = typeof page.nextCursor === "string" && page.nextCursor ? page.nextCursor : null;
+    let page: AnyObj = {};
+    try {
+      page = await pageResponse.json();
+    } catch (error) {
+      console.error(
+        "zap-handoff: conversation messages payload invalid",
+        error instanceof Error ? error.message : String(error),
+      );
+      if (pageCount === 0) messagesUnavailable = true;
+      break;
+    }
+
+    messages.push(...pickArray(page));
+    cursor = pickCursor(page);
     pageCount += 1;
   } while (cursor && pageCount < 100);
 
+  if (messagesUnavailable) {
+    return "unavailable";
+  }
+
   const operationMessageIds = messages.flatMap((message) => {
     if (getHistoryMessageOrigin(message, telefoneCandidates) !== "operation") return [];
-    if (String(message?.mensagem?.type ?? "").toLowerCase() !== "file") return [];
-    return typeof message?._id === "string" && message._id.trim() ? [message._id.trim()] : [];
+    if (!isFileMessage(message)) return [];
+    const messageId = messageIdOf(message);
+    return messageId ? [messageId] : [];
   });
   const removedOperationDocuments = await removeStoredOperationDocuments(operationMessageIds);
 
   const mediaMessages = messages.flatMap((message) => {
     if (getHistoryMessageOrigin(message, telefoneCandidates) !== "customer") return [];
+    if (!isFileMessage(message)) return [];
 
-    const content = message?.mensagem ?? {};
-    if (String(content.type ?? "").toLowerCase() !== "file") return [];
-
-    const mediaUrl = normalizeHttpUrl(content.mensagem);
-    const messageId = typeof message?._id === "string" ? message._id.trim() : "";
+    const mediaUrl = mediaUrlOf(message);
+    const messageId = messageIdOf(message);
     if (!mediaUrl || !messageId) return [];
 
-    const filename = filenameFromMediaUrl(mediaUrl);
+    const content = contentOf(message);
+    const filename = (typeof content?.filename === "string" && content.filename.trim())
+      ? content.filename.trim()
+      : filenameFromMediaUrl(mediaUrl);
     if (filename && isDisallowedMedia(filename)) return [];
+
+    const receivedAt = [message?.createdAt, message?.created_at, message?.timestamp]
+      .find((value) => typeof value === "string") as string | undefined;
 
     return [{
       mediaUrl,
       messageId,
       filename,
-      receivedAt: typeof message.createdAt === "string" ? message.createdAt : null,
+      receivedAt: receivedAt ?? null,
     }];
   });
+
 
   let stored = 0;
   let duplicates = 0;
