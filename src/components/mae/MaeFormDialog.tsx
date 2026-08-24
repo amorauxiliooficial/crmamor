@@ -226,7 +226,10 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
       senha_gov: formData.senha_gov || null,
       verificacao_duas_etapas: formData.verificacao_duas_etapas,
       is_gestante: formData.is_gestante,
+      mae_unica:
+        formData.mae_unica === "sim" ? true : formData.mae_unica === "nao" ? false : null,
     }).select().single();
+
 
     setIsLoading(false);
 
