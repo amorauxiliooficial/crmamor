@@ -473,6 +473,8 @@ function filenameFromMediaUrl(mediaUrl: string): string | null {
 
 type HistorySyncResult = "complete" | "empty" | "unavailable" | "partial";
 const DOCUMENT_SYNC_RETRY_MINUTES = [5, 15, 60, 360, 1_440, 1_440, 1_440, 1_440];
+// Jobs concluídos podem ser revalidados depois de 1 hora.
+const DOCUMENT_SYNC_REVALIDATE_MINUTES = 60;
 
 async function enqueueAutomaticDocumentSync(
   maeId: string,
@@ -652,9 +654,87 @@ async function syncZapConversationHistory(
     return "empty";
   }
 
+  const pickArray = (payload: AnyObj): AnyObj[] => {
+    const candidates = [
+      payload?.messages,
+      payload?.data,
+      payload?.items,
+      payload?.results,
+      payload?.docs,
+      payload?.records,
+      payload?.data?.messages,
+      payload,
+    ];
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate)) return candidate as AnyObj[];
+    }
+    return [];
+  };
+
+  const pickCursor = (payload: AnyObj): string | null => {
+    const candidates = [
+      payload?.nextCursor,
+      payload?.next_cursor,
+      payload?.cursor,
+      payload?.paging?.next,
+      payload?.pagination?.nextCursor,
+    ];
+    for (const candidate of candidates) {
+      if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+    }
+    return null;
+  };
+
+  const messageIdOf = (message: AnyObj): string => {
+    const candidates = [
+      message?._id,
+      message?.id,
+      message?.messageId,
+      message?.message_id,
+      message?.key?.id,
+    ];
+    for (const candidate of candidates) {
+      if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+    }
+    return "";
+  };
+
+  const contentOf = (message: AnyObj): AnyObj => {
+    const content = message?.mensagem ?? message?.message ?? message?.content ?? {};
+    return content && typeof content === "object" ? content as AnyObj : {};
+  };
+
+  const isFileMessage = (message: AnyObj): boolean => {
+    const content = contentOf(message);
+    const type = String(content?.type ?? message?.type ?? "").toLowerCase();
+    if (["file", "document", "image", "audio", "video", "media"].includes(type)) return true;
+    return Boolean(mediaUrlOf(message));
+  };
+
+  function mediaUrlOf(message: AnyObj): string | null {
+    const content = contentOf(message);
+    const candidates = [
+      content?.mensagem,
+      content?.url,
+      content?.mediaUrl,
+      content?.media_url,
+      content?.fileUrl,
+      content?.file_url,
+      content?.media?.url,
+      message?.mediaUrl,
+      message?.url,
+    ];
+    for (const candidate of candidates) {
+      const normalized = typeof candidate === "string" ? normalizeHttpUrl(candidate) : null;
+      if (normalized) return normalized;
+    }
+    return null;
+  }
+
   const messages: AnyObj[] = [];
   let cursor: string | null = null;
   let pageCount = 0;
+  let messagesUnavailable = false;
   do {
     const messagesUrl = new URL(`${apiBase}/v2/conversations/${encodeURIComponent(conversationId)}/messages`);
     if (cursor) messagesUrl.searchParams.set("cursor", cursor);
@@ -662,42 +742,64 @@ async function syncZapConversationHistory(
     const pageResponse = await fetch(messagesUrl, { headers: apiHeaders });
     if (!pageResponse.ok) {
       console.error("zap-handoff: conversation messages lookup failed", pageResponse.status);
+      if (pageCount === 0) messagesUnavailable = true;
       break;
     }
 
-    const page: AnyObj = await pageResponse.json();
-    if (Array.isArray(page.messages)) messages.push(...page.messages);
-    cursor = typeof page.nextCursor === "string" && page.nextCursor ? page.nextCursor : null;
+    let page: AnyObj = {};
+    try {
+      page = await pageResponse.json();
+    } catch (error) {
+      console.error(
+        "zap-handoff: conversation messages payload invalid",
+        error instanceof Error ? error.message : String(error),
+      );
+      if (pageCount === 0) messagesUnavailable = true;
+      break;
+    }
+
+    messages.push(...pickArray(page));
+    cursor = pickCursor(page);
     pageCount += 1;
   } while (cursor && pageCount < 100);
 
+  if (messagesUnavailable) {
+    return "unavailable";
+  }
+
   const operationMessageIds = messages.flatMap((message) => {
     if (getHistoryMessageOrigin(message, telefoneCandidates) !== "operation") return [];
-    if (String(message?.mensagem?.type ?? "").toLowerCase() !== "file") return [];
-    return typeof message?._id === "string" && message._id.trim() ? [message._id.trim()] : [];
+    if (!isFileMessage(message)) return [];
+    const messageId = messageIdOf(message);
+    return messageId ? [messageId] : [];
   });
   const removedOperationDocuments = await removeStoredOperationDocuments(operationMessageIds);
 
   const mediaMessages = messages.flatMap((message) => {
     if (getHistoryMessageOrigin(message, telefoneCandidates) !== "customer") return [];
+    if (!isFileMessage(message)) return [];
 
-    const content = message?.mensagem ?? {};
-    if (String(content.type ?? "").toLowerCase() !== "file") return [];
-
-    const mediaUrl = normalizeHttpUrl(content.mensagem);
-    const messageId = typeof message?._id === "string" ? message._id.trim() : "";
+    const mediaUrl = mediaUrlOf(message);
+    const messageId = messageIdOf(message);
     if (!mediaUrl || !messageId) return [];
 
-    const filename = filenameFromMediaUrl(mediaUrl);
+    const content = contentOf(message);
+    const filename = (typeof content?.filename === "string" && content.filename.trim())
+      ? content.filename.trim()
+      : filenameFromMediaUrl(mediaUrl);
     if (filename && isDisallowedMedia(filename)) return [];
+
+    const receivedAt = [message?.createdAt, message?.created_at, message?.timestamp]
+      .find((value) => typeof value === "string") as string | undefined;
 
     return [{
       mediaUrl,
       messageId,
       filename,
-      receivedAt: typeof message.createdAt === "string" ? message.createdAt : null,
+      receivedAt: receivedAt ?? null,
     }];
   });
+
 
   let stored = 0;
   let duplicates = 0;
@@ -758,6 +860,8 @@ async function syncZapConversationHistory(
   });
 
   if (failed > 0) return "partial";
+  // Uma conversa sem mídias do cliente é um processamento concluído (não há o
+  // que importar) — não deve manter o job preso em "pending".
   return mediaMessages.length > 0 ? "complete" : "empty";
 }
 
@@ -769,8 +873,10 @@ async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
   );
   const { data: jobs, error: jobsError } = await supabaseAdmin
     .from("zap_document_sync_jobs")
-    .select("mae_id, telefone_e164, attempts")
-    .eq("status", "pending")
+    .select("mae_id, telefone_e164, attempts, status")
+    // Jobs concluídos são revalidados após 1 hora (next_attempt_at futuro),
+    // garantindo que novos documentos enviados depois sejam importados.
+    .in("status", ["pending", "complete"])
     .lte("next_attempt_at", new Date().toISOString())
     .order("next_attempt_at", { ascending: true })
     // Históricos com muitos anexos podem levar dezenas de segundos. Um lote
@@ -781,7 +887,8 @@ async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
 
   const results: AnyObj[] = [];
   for (const job of jobs ?? []) {
-    const attempt = Number(job.attempts ?? 0) + 1;
+    const wasComplete = job.status === "complete";
+    const attempt = wasComplete ? 1 : Number(job.attempts ?? 0) + 1;
     let result: HistorySyncResult = "partial";
     let lastError: string | null = null;
 
@@ -791,10 +898,12 @@ async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
       lastError = error instanceof Error ? error.message : String(error);
     }
 
-    const completed = result === "complete";
+    // "empty" também conta como processamento concluído.
+    const completed = !lastError && (result === "complete" || result === "empty");
     const exhausted = attempt >= DOCUMENT_SYNC_RETRY_MINUTES.length;
-    const retryMinutes =
-      DOCUMENT_SYNC_RETRY_MINUTES[Math.min(attempt - 1, DOCUMENT_SYNC_RETRY_MINUTES.length - 1)];
+    const retryMinutes = completed
+      ? DOCUMENT_SYNC_REVALIDATE_MINUTES
+      : DOCUMENT_SYNC_RETRY_MINUTES[Math.min(attempt - 1, DOCUMENT_SYNC_RETRY_MINUTES.length - 1)];
     const nextAttemptAt = new Date(Date.now() + retryMinutes * 60_000).toISOString();
     const status = completed ? "complete" : exhausted ? "failed" : "pending";
 
@@ -802,7 +911,7 @@ async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
       .from("zap_document_sync_jobs")
       .update({
         status,
-        attempts: attempt,
+        attempts: completed ? 0 : attempt,
         next_attempt_at: nextAttemptAt,
         last_error: lastError ?? (completed ? null : result),
         updated_at: new Date().toISOString(),
@@ -812,7 +921,8 @@ async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
       console.error("zap-handoff: failed to update document sync job", updateError.message);
     }
 
-    results.push({ maeId: job.mae_id, attempt, result, status });
+    results.push({ maeId: job.mae_id, attempt, result, status, revalidation: wasComplete });
+
   }
 
   return {
@@ -1088,9 +1198,7 @@ serve(async (req) => {
         is_gestante: isGestante,
         mes_gestacao: mesGestacao,
         categoria_previdenciaria: "Não informado",
-        status_processo: isGestante && mesGestacao !== null && mesGestacao <= 8
-          ? "Gestantes 1 a 8 meses"
-          : "Entradas do Mês",
+        status_processo: "Pré-Análise de Elegibilidade",
         tipo_evento: "Parto",
         contrato_assinado: true,
         verificacao_duas_etapas: false,

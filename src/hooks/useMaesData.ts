@@ -15,6 +15,8 @@ export interface MaeProcessoComAtividade extends MaeProcesso {
 // any legacy row read from the DB continues to render correctly.
 export const mapDbStatusToDisplay = (status: string): StatusProcesso => {
   const statusMap: Record<string, StatusProcesso> = {
+    "Pré-Análise de Elegibilidade": "🔎 Pré-Análise de Elegibilidade",
+    "🔎 Pré-Análise de Elegibilidade": "🔎 Pré-Análise de Elegibilidade",
     "Gestantes 1 a 8 meses": "🤰 Gestantes 1 a 8 meses",
     "Gestantes em Maturação": "🤰 Gestantes 1 a 8 meses",
     "Entradas do Mês": "📥 Entradas do Mês",

@@ -239,7 +239,7 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     setIsLoading(true);
     
     const dbStatusValue = mapDisplayStatusToDb(formData.status_processo) as 
-      "Gestantes 1 a 8 meses" | "Entradas do Mês" |
+      "Pré-Análise de Elegibilidade" | "Gestantes 1 a 8 meses" | "Entradas do Mês" |
       "Aguardando Análise INSS" | "Aprovada" | "Indeferida" | 
       "Recurso / Judicial" | "Inadimplência" | "Negativação" | "Renegociação" |
       "📄 Rescisão de Contrato" | "Processo Encerrado";

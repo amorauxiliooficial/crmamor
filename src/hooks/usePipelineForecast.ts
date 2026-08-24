@@ -8,6 +8,7 @@ export const DEFAULT_TAXA_PAGAMENTO = 0.75;
 
 // Probabilidades por fase (sem emoji)
 export const PROBABILIDADE_FASE: Record<string, number> = {
+  "Pré-Análise de Elegibilidade": 0.1,
   "Gestantes 1 a 8 meses": 0.2,
   "Entradas do Mês": 0.5,
   "Aguardando Análise INSS": 0.75,
@@ -16,6 +17,7 @@ export const PROBABILIDADE_FASE: Record<string, number> = {
 
 // Ordem de exibição no funil (com emoji do display)
 export const FASES_FUNIL: StatusProcesso[] = [
+  "🔎 Pré-Análise de Elegibilidade",
   "🤰 Gestantes 1 a 8 meses",
   "📥 Entradas do Mês",
   "⏳ Aguardando Análise INSS",
@@ -70,6 +72,7 @@ export function usePipelineForecast(): PipelineForecast {
     const statusToFase = (status: string): StatusProcesso | null => {
       if (!status) return null;
       const key = stripEmoji(status);
+      if (key === "Pré-Análise de Elegibilidade") return "🔎 Pré-Análise de Elegibilidade";
       if (key === "Gestantes 1 a 8 meses" || key === "Gestantes em Maturação") return "🤰 Gestantes 1 a 8 meses";
       if (key === "Entradas do Mês" || key === "Pendência Documental" || key === "Elegível") return "📥 Entradas do Mês";
       if (key === "Aguardando Análise INSS") return "⏳ Aguardando Análise INSS";

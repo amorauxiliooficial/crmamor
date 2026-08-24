@@ -3353,6 +3353,7 @@ export type Database = {
         | "Negativação"
         | "Renegociação"
         | "📄 Rescisão de Contrato"
+        | "Pré-Análise de Elegibilidade"
       status_prospeccao:
         | "novo"
         | "em_contato"
@@ -3558,6 +3559,7 @@ export const Constants = {
         "Negativação",
         "Renegociação",
         "📄 Rescisão de Contrato",
+        "Pré-Análise de Elegibilidade",
       ],
       status_prospeccao: [
         "novo",
