@@ -81,6 +81,79 @@ function toOptionalBool(value: unknown): boolean | null {
   return null;
 }
 
+// Normaliza rótulos: remove acentos, pontuação e espaços -> "maeunica"
+function normalizeKeyLabel(value: unknown): string {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+const MAE_UNICA_KEYS = ["maeunica", "maeunicaq", "eumaeunica", "souemaeunica"];
+
+// Procura o valor de "Mãe única" em objetos, arrays de custom fields
+// ({name/label/title/key} + {value/valor/answer/response}) e chaves diretas.
+function findMaeUnicaValue(node: unknown, depth = 0): unknown {
+  if (node === null || node === undefined || depth > 4) return undefined;
+
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      const found = findMaeUnicaValue(item, depth + 1);
+      if (found !== undefined) return found;
+    }
+    return undefined;
+  }
+
+  if (typeof node !== "object") return undefined;
+
+  const obj = node as AnyObj;
+
+  // Formato { name/label/key: "Mãe única", value: "Sim" }
+  const labelCandidate = obj.name ?? obj.label ?? obj.title ?? obj.key ?? obj.field ?? obj.campo;
+  if (labelCandidate !== undefined && MAE_UNICA_KEYS.includes(normalizeKeyLabel(labelCandidate))) {
+    const raw = obj.value ?? obj.valor ?? obj.answer ?? obj.resposta ?? obj.text ?? obj.selected;
+    if (raw !== undefined) return raw;
+  }
+
+  for (const [key, value] of Object.entries(obj)) {
+    if (MAE_UNICA_KEYS.includes(normalizeKeyLabel(key))) return value;
+  }
+
+  for (const value of Object.values(obj)) {
+    if (value && typeof value === "object") {
+      const found = findMaeUnicaValue(value, depth + 1);
+      if (found !== undefined) return found;
+    }
+  }
+
+  return undefined;
+}
+
+function extractMaeUnica(card: AnyObj, additionalFields: AnyObj): boolean | null {
+  const sources = [
+    additionalFields,
+    card.customFields,
+    card.custom_fields,
+    card.fields,
+    card.campos,
+    card,
+  ];
+  for (const source of sources) {
+    const raw = findMaeUnicaValue(source);
+    if (raw === undefined) continue;
+    const parsed = toOptionalBool(
+      typeof raw === "object" && raw !== null
+        ? ((raw as AnyObj).value ?? (raw as AnyObj).label ?? (raw as AnyObj).name)
+        : raw,
+    );
+    if (parsed !== null) return parsed;
+  }
+  return null;
+}
+
+
+
 function toNumber(v: unknown): number | null {
   if (typeof v === "number" && !isNaN(v)) return v;
   if (typeof v === "string") {
