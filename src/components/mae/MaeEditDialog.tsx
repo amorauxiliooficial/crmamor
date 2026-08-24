@@ -110,7 +110,9 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     verificacao_duas_etapas: false,
     is_gestante: false,
     mes_gestacao: null as number | null,
+    mae_unica: "nao_informado" as "sim" | "nao" | "nao_informado",
   });
+
 
   // Fetch users for admin assignment
   useEffect(() => {
