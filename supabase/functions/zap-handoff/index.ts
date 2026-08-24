@@ -1054,6 +1054,11 @@ serve(async (req) => {
 
     const isGestante = mesGestacao !== null;
 
+    // "Mãe única": aceita variações de nome de campo e de valor (Sim/Não, true/false, 1/0)
+    const maeUnica = extractMaeUnica(card, additionalFields);
+    console.log("zap-handoff: mae_unica extraída:", maeUnica);
+
+
     // Etiqueta: extrai do payload (tags do card ou campo "etiqueta"/"tag" em additionalFields)
     let etiqueta: string | null = null;
     const rawTags = card.tags ?? card.labels ?? card.etiquetas;
