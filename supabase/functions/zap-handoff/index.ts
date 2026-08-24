@@ -1002,6 +1002,7 @@ serve(async (req) => {
 
     const card: AnyObj = body.card ?? {};
 
+
     // Stage filter: only proceed if stage contains "contrato fechado" (case-insensitive)
     const stageName = typeof card.stage?.name === "string" ? card.stage.name : "";
     if (!stageName.toLowerCase().includes("contrato fechado")) {
