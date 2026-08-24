@@ -1281,6 +1281,8 @@ serve(async (req) => {
         cpf,
         senha_gov: senhaGov,
         is_gestante: isGestante,
+        mae_unica: maeUnica,
+
         mes_gestacao: mesGestacao,
         categoria_previdenciaria: "Não informado",
         status_processo: "Pré-Análise de Elegibilidade",
