@@ -283,7 +283,10 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       verificacao_duas_etapas: formData.verificacao_duas_etapas,
       is_gestante: formData.is_gestante,
       mes_gestacao: formData.is_gestante ? formData.mes_gestacao : null,
+      mae_unica:
+        formData.mae_unica === "sim" ? true : formData.mae_unica === "nao" ? false : null,
     };
+
 
     // Admin can reassign to different user - always update if admin has selected a user
     if (isAdmin && selectedUserId) {
