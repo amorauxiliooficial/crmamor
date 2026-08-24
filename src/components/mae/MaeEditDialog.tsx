@@ -590,6 +590,25 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                 </p>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="mae_unica">Mãe única?</Label>
+                <Select
+                  value={formData.mae_unica}
+                  onValueChange={(value: "sim" | "nao" | "nao_informado") =>
+                    setFormData({ ...formData, mae_unica: value })
+                  }
+                >
+                  <SelectTrigger id="mae_unica">
+                    <SelectValue placeholder="Não informado" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                    <SelectItem value="nao_informado">Não informado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+
                 <Label htmlFor="senha_gov">Senha Gov.br</Label>
                 <Input
                   id="senha_gov"
