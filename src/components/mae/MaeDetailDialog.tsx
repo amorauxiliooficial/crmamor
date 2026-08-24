@@ -176,7 +176,14 @@ export function MaeDetailDialog({
                       <span className="italic text-muted-foreground">não cadastrada</span>
                     )}
                   </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="uppercase tracking-widest text-muted-foreground/70">Mãe única</span>
+                    <span className="text-foreground/80">
+                      {mae.mae_unica === true ? "Sim" : mae.mae_unica === false ? "Não" : "Não informado"}
+                    </span>
+                  </div>
                 </div>
+
               </div>
 
               {onEdit && (
