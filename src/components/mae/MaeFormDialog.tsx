@@ -63,7 +63,9 @@ type MaeFormData = {
   senha_gov: string;
   verificacao_duas_etapas: boolean;
   is_gestante: boolean;
+  mae_unica: "sim" | "nao" | "nao_informado";
 };
+
 
 const getEmptyFormData = (): MaeFormData => ({
   nome_mae: "",
