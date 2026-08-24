@@ -44,7 +44,9 @@ interface MaeProcesso {
   senha_gov?: string;
   verificacao_duas_etapas: boolean;
   is_gestante: boolean;
+  mae_unica?: boolean | null;
   data_ultima_atualizacao: string;
+
 }
 
 type MaeFormData = {
