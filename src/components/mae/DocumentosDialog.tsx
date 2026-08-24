@@ -68,6 +68,7 @@ export function DocumentosContent({
   const [isLoading, setIsLoading] = useState(false);
   const [documents, setDocuments] = useState<DocumentoCliente[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     setLink(linkDocumentos || "");
@@ -75,29 +76,40 @@ export function DocumentosContent({
 
   const loadDocuments = useCallback(async () => {
     setIsLoadingDocuments(true);
+    setLoadError(null);
     const { data, error } = await supabase
       .from("mae_documentos")
       .select("id, nome_arquivo, mime_type, tamanho_bytes, received_at, created_at, storage_path")
       .eq("mae_id", maeId)
-      .order("received_at", { ascending: false, nullsFirst: false });
+      .order("received_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false });
 
     if (error) {
-      console.error(error);
+      console.error("Erro ao carregar documentos:", error);
       setDocuments([]);
+      setLoadError(error.message || "Não foi possível carregar os documentos.");
       setIsLoadingDocuments(false);
       return;
     }
 
     const visibleDocuments = (data || []).filter((document) => !isAudioOrVideo(document));
     const withUrls = await Promise.all(visibleDocuments.map(async (document) => {
-      const { data: signed } = await supabase.storage
-        .from("documentos-clientes")
-        .createSignedUrl(document.storage_path, 60 * 15);
-      return { ...document, signedUrl: signed?.signedUrl || "" };
+      try {
+        const { data: signed, error: signedError } = await supabase.storage
+          .from("documentos-clientes")
+          .createSignedUrl(document.storage_path, 60 * 60);
+        if (signedError) console.error("Erro ao gerar URL:", document.storage_path, signedError);
+        return { ...document, signedUrl: signed?.signedUrl || "" };
+      } catch (err) {
+        console.error("Erro ao gerar URL:", document.storage_path, err);
+        return { ...document, signedUrl: "" };
+      }
     }));
-    setDocuments(withUrls.filter((document) => document.signedUrl));
+    // Mantém os itens mesmo se a URL assinada falhar individualmente
+    setDocuments(withUrls);
     setIsLoadingDocuments(false);
   }, [maeId]);
+
 
   useEffect(() => {
     void loadDocuments();
