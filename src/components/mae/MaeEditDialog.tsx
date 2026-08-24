@@ -189,7 +189,9 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
         verificacao_duas_etapas: mae.verificacao_duas_etapas ?? false,
         is_gestante: mae.is_gestante ?? false,
         mes_gestacao: mae.mes_gestacao ?? null,
+        mae_unica: mae.mae_unica === true ? "sim" : mae.mae_unica === false ? "nao" : "nao_informado",
       });
+
       // Always set selectedUserId when mae data loads
       setSelectedUserId(mae.user_id || "");
       setAddress({
