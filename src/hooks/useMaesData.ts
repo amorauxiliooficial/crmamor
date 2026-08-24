@@ -75,7 +75,9 @@ export const mapDbToMae = (item: Record<string, unknown>): MaeProcessoComAtivida
   ultima_atividade_em: (item.ultima_atividade_em as string) || null,
   precisa_das: (item.precisa_das as boolean) ?? false,
   das_concluido: (item.das_concluido as boolean) ?? false,
+  mae_unica: (item.mae_unica as boolean | null) ?? null,
 });
+
 
 interface MaesDataResult {
   maes: MaeProcessoComAtividade[];
