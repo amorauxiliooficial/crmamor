@@ -39,6 +39,7 @@ interface DocumentoCliente {
   signedUrl: string;
 }
 
+
 const hiddenMediaExtensions = new Set([
   "aac", "amr", "flac", "m4a", "mp3", "oga", "ogg", "opus", "wav", "wma",
   "3gp", "avi", "mkv", "mov", "mp4", "mpeg", "mpg", "webm",
