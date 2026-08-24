@@ -372,6 +372,25 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="mae_unica_form">Mãe única?</Label>
+                <Select
+                  value={formData.mae_unica}
+                  onValueChange={(value: "sim" | "nao" | "nao_informado") =>
+                    setFormData({ ...formData, mae_unica: value })
+                  }
+                >
+                  <SelectTrigger id="mae_unica_form">
+                    <SelectValue placeholder="Não informado" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                    <SelectItem value="nao_informado">Não informado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-center space-x-2 pt-6">
                 <Switch
                   id="verificacao_duas_etapas_form"
