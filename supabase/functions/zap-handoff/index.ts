@@ -858,6 +858,8 @@ async function syncZapConversationHistory(
   });
 
   if (failed > 0) return "partial";
+  // Uma conversa sem mídias do cliente é um processamento concluído (não há o
+  // que importar) — não deve manter o job preso em "pending".
   return mediaMessages.length > 0 ? "complete" : "empty";
 }
 
@@ -869,8 +871,10 @@ async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
   );
   const { data: jobs, error: jobsError } = await supabaseAdmin
     .from("zap_document_sync_jobs")
-    .select("mae_id, telefone_e164, attempts")
-    .eq("status", "pending")
+    .select("mae_id, telefone_e164, attempts, status")
+    // Jobs concluídos são revalidados após 1 hora (next_attempt_at futuro),
+    // garantindo que novos documentos enviados depois sejam importados.
+    .in("status", ["pending", "complete"])
     .lte("next_attempt_at", new Date().toISOString())
     .order("next_attempt_at", { ascending: true })
     // Históricos com muitos anexos podem levar dezenas de segundos. Um lote
@@ -881,7 +885,8 @@ async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
 
   const results: AnyObj[] = [];
   for (const job of jobs ?? []) {
-    const attempt = Number(job.attempts ?? 0) + 1;
+    const wasComplete = job.status === "complete";
+    const attempt = wasComplete ? 1 : Number(job.attempts ?? 0) + 1;
     let result: HistorySyncResult = "partial";
     let lastError: string | null = null;
 
@@ -891,10 +896,12 @@ async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
       lastError = error instanceof Error ? error.message : String(error);
     }
 
-    const completed = result === "complete";
+    // "empty" também conta como processamento concluído.
+    const completed = !lastError && (result === "complete" || result === "empty");
     const exhausted = attempt >= DOCUMENT_SYNC_RETRY_MINUTES.length;
-    const retryMinutes =
-      DOCUMENT_SYNC_RETRY_MINUTES[Math.min(attempt - 1, DOCUMENT_SYNC_RETRY_MINUTES.length - 1)];
+    const retryMinutes = completed
+      ? DOCUMENT_SYNC_REVALIDATE_MINUTES
+      : DOCUMENT_SYNC_RETRY_MINUTES[Math.min(attempt - 1, DOCUMENT_SYNC_RETRY_MINUTES.length - 1)];
     const nextAttemptAt = new Date(Date.now() + retryMinutes * 60_000).toISOString();
     const status = completed ? "complete" : exhausted ? "failed" : "pending";
 
@@ -902,7 +909,7 @@ async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
       .from("zap_document_sync_jobs")
       .update({
         status,
-        attempts: attempt,
+        attempts: completed ? 0 : attempt,
         next_attempt_at: nextAttemptAt,
         last_error: lastError ?? (completed ? null : result),
         updated_at: new Date().toISOString(),
@@ -912,7 +919,8 @@ async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
       console.error("zap-handoff: failed to update document sync job", updateError.message);
     }
 
-    results.push({ maeId: job.mae_id, attempt, result, status });
+    results.push({ maeId: job.mae_id, attempt, result, status, revalidation: wasComplete });
+
   }
 
   return {
