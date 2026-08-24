@@ -1238,9 +1238,11 @@ serve(async (req) => {
         .limit(1)
         .maybeSingle();
       if (existing) {
-        const updates: Record<string, string> = {};
+        const updates: Record<string, unknown> = {};
         if (cardUrl && existing.link_documentos !== cardUrl) updates.link_documentos = cardUrl;
         if (cardId && !existing.zap_card_id) updates.zap_card_id = cardId;
+        if (maeUnica !== null) updates.mae_unica = maeUnica;
+
         if (Object.keys(updates).length > 0) {
           const { error: linkError } = await supabaseAdmin
             .from("mae_processo")
