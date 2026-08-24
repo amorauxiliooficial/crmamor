@@ -1198,15 +1198,19 @@ serve(async (req) => {
         .limit(1)
         .maybeSingle();
       if (existing) {
-        if (cardUrl && existing.link_documentos !== cardUrl) {
+        const dupUpdates: Record<string, unknown> = {};
+        if (cardUrl && existing.link_documentos !== cardUrl) dupUpdates.link_documentos = cardUrl;
+        if (maeUnica !== null) dupUpdates.mae_unica = maeUnica;
+        if (Object.keys(dupUpdates).length > 0) {
           const { error: linkError } = await supabaseAdmin
             .from("mae_processo")
-            .update({ link_documentos: cardUrl })
+            .update(dupUpdates)
             .eq("id", existing.id);
           if (linkError) {
             console.error("zap-handoff: failed to update card link", linkError.message);
           }
         }
+
         if (telefoneE164) {
           const telefoneCandidates = phoneCandidatesBR(telefoneE164);
           const { error: documentsError } = await supabaseAdmin
