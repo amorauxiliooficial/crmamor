@@ -1615,6 +1615,7 @@ export type Database = {
           ja_trabalhou: boolean | null
           last_contact_at: string | null
           link_documentos: string | null
+          mae_unica: boolean | null
           mes_gestacao: number | null
           nome_mae: string
           numero: string | null
@@ -1669,6 +1670,7 @@ export type Database = {
           ja_trabalhou?: boolean | null
           last_contact_at?: string | null
           link_documentos?: string | null
+          mae_unica?: boolean | null
           mes_gestacao?: number | null
           nome_mae: string
           numero?: string | null
@@ -1723,6 +1725,7 @@ export type Database = {
           ja_trabalhou?: boolean | null
           last_contact_at?: string | null
           link_documentos?: string | null
+          mae_unica?: boolean | null
           mes_gestacao?: number | null
           nome_mae?: string
           numero?: string | null

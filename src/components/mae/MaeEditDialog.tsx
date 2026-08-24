@@ -110,7 +110,9 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
     verificacao_duas_etapas: false,
     is_gestante: false,
     mes_gestacao: null as number | null,
+    mae_unica: "nao_informado" as "sim" | "nao" | "nao_informado",
   });
+
 
   // Fetch users for admin assignment
   useEffect(() => {
@@ -187,7 +189,9 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
         verificacao_duas_etapas: mae.verificacao_duas_etapas ?? false,
         is_gestante: mae.is_gestante ?? false,
         mes_gestacao: mae.mes_gestacao ?? null,
+        mae_unica: mae.mae_unica === true ? "sim" : mae.mae_unica === false ? "nao" : "nao_informado",
       });
+
       // Always set selectedUserId when mae data loads
       setSelectedUserId(mae.user_id || "");
       setAddress({
@@ -279,7 +283,10 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
       verificacao_duas_etapas: formData.verificacao_duas_etapas,
       is_gestante: formData.is_gestante,
       mes_gestacao: formData.is_gestante ? formData.mes_gestacao : null,
+      mae_unica:
+        formData.mae_unica === "sim" ? true : formData.mae_unica === "nao" ? false : null,
     };
+
 
     // Admin can reassign to different user - always update if admin has selected a user
     if (isAdmin && selectedUserId) {
@@ -583,6 +590,25 @@ export function MaeEditDialog({ mae, open, onOpenChange, onSuccess }: MaeEditDia
                 </p>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="mae_unica">Mãe única?</Label>
+                <Select
+                  value={formData.mae_unica}
+                  onValueChange={(value: "sim" | "nao" | "nao_informado") =>
+                    setFormData({ ...formData, mae_unica: value })
+                  }
+                >
+                  <SelectTrigger id="mae_unica">
+                    <SelectValue placeholder="Não informado" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                    <SelectItem value="nao_informado">Não informado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+
                 <Label htmlFor="senha_gov">Senha Gov.br</Label>
                 <Input
                   id="senha_gov"

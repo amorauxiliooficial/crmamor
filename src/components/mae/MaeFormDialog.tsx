@@ -44,7 +44,9 @@ interface MaeProcesso {
   senha_gov?: string;
   verificacao_duas_etapas: boolean;
   is_gestante: boolean;
+  mae_unica?: boolean | null;
   data_ultima_atualizacao: string;
+
 }
 
 type MaeFormData = {
@@ -63,7 +65,9 @@ type MaeFormData = {
   senha_gov: string;
   verificacao_duas_etapas: boolean;
   is_gestante: boolean;
+  mae_unica: "sim" | "nao" | "nao_informado";
 };
+
 
 const getEmptyFormData = (): MaeFormData => ({
   nome_mae: "",
@@ -81,7 +85,9 @@ const getEmptyFormData = (): MaeFormData => ({
   senha_gov: "",
   verificacao_duas_etapas: false,
   is_gestante: false,
+  mae_unica: "nao_informado",
 });
+
 
 const UF_OPTIONS = [
   "AC",
@@ -222,7 +228,10 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
       senha_gov: formData.senha_gov || null,
       verificacao_duas_etapas: formData.verificacao_duas_etapas,
       is_gestante: formData.is_gestante,
+      mae_unica:
+        formData.mae_unica === "sim" ? true : formData.mae_unica === "nao" ? false : null,
     }).select().single();
+
 
     setIsLoading(false);
 
@@ -277,7 +286,9 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
         senha_gov: data.senha_gov || undefined,
         verificacao_duas_etapas: data.verificacao_duas_etapas ?? false,
         is_gestante: data.is_gestante ?? false,
+        mae_unica: (data as { mae_unica?: boolean | null }).mae_unica ?? null,
         data_ultima_atualizacao: data.data_ultima_atualizacao,
+
       };
 
       setFormData(getEmptyFormData());
@@ -361,6 +372,25 @@ export function MaeFormDialog({ open, onOpenChange, onSuccess }: MaeFormDialogPr
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="mae_unica_form">Mãe única?</Label>
+                <Select
+                  value={formData.mae_unica}
+                  onValueChange={(value: "sim" | "nao" | "nao_informado") =>
+                    setFormData({ ...formData, mae_unica: value })
+                  }
+                >
+                  <SelectTrigger id="mae_unica_form">
+                    <SelectValue placeholder="Não informado" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                    <SelectItem value="nao_informado">Não informado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-center space-x-2 pt-6">
                 <Switch
                   id="verificacao_duas_etapas_form"
