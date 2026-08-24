@@ -214,6 +214,12 @@ export function DocumentosContent({
           </Button>
         </div>
 
+        {loadError && (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            Erro ao carregar documentos: {loadError}
+          </div>
+        )}
+
         {isLoadingDocuments ? (
           <div className="flex items-center justify-center py-8 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -223,17 +229,20 @@ export function DocumentosContent({
             {documents.map((document) => {
               const isImage = document.mime_type?.startsWith("image/");
               const receivedAt = document.received_at || document.created_at;
-              return (
-                <a
-                  key={document.id}
-                  href={document.signedUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex min-w-0 items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/60"
-                >
+              const tipo = document.mime_type?.split("/").pop()?.toUpperCase()
+                || document.nome_arquivo.split(".").pop()?.toUpperCase()
+                || "Arquivo";
+              const meta = [
+                tipo,
+                new Date(receivedAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }),
+                formatFileSize(document.tamanho_bytes),
+              ].filter(Boolean).join(" · ");
+
+              const inner = (
+                <>
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
-                    {isImage ? (
-                      <img src={document.signedUrl} alt="" className="h-full w-full object-cover" />
+                    {isImage && document.signedUrl ? (
+                      <img src={document.signedUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
                     ) : (
                       <FileText className="h-5 w-5 text-muted-foreground" />
                     )}
@@ -241,16 +250,35 @@ export function DocumentosContent({
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{document.nome_arquivo}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(receivedAt).toLocaleDateString("pt-BR")}
-                      {formatFileSize(document.tamanho_bytes) ? ` · ${formatFileSize(document.tamanho_bytes)}` : ""}
+                      {meta}
+                      {!document.signedUrl && " · link indisponível"}
                     </p>
                   </div>
                   {isImage && <Image className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />}
+                </>
+              );
+
+              const className = "flex min-w-0 items-center gap-3 rounded-lg border p-3 transition-colors";
+
+              return document.signedUrl ? (
+                <a
+                  key={document.id}
+                  href={document.signedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${className} hover:bg-muted/60`}
+                >
+                  {inner}
                 </a>
+              ) : (
+                <div key={document.id} className={`${className} opacity-60`}>
+                  {inner}
+                </div>
               );
             })}
           </div>
         ) : (
+
           <div className="rounded-lg border border-dashed py-7 text-center text-muted-foreground">
             <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
             <p className="text-sm">Nenhum anexo sincronizado ainda.</p>
