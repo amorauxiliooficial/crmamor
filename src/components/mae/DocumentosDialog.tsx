@@ -68,6 +68,7 @@ export function DocumentosContent({
   const [isLoading, setIsLoading] = useState(false);
   const [documents, setDocuments] = useState<DocumentoCliente[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
