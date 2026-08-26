@@ -239,11 +239,11 @@ export function DocumentosContent({
             variant="ghost"
             size="sm"
             className="gap-2"
-            onClick={() => void loadDocuments()}
-            disabled={isLoadingDocuments}
+            onClick={() => void handleSync()}
+            disabled={isSyncing || isLoadingDocuments}
           >
-            <RefreshCw className={`h-4 w-4 ${isLoadingDocuments ? "animate-spin" : ""}`} />
-            Atualizar
+            <RefreshCw className={`h-4 w-4 ${isSyncing || isLoadingDocuments ? "animate-spin" : ""}`} />
+            {isSyncing ? "Sincronizando..." : "Atualizar"}
           </Button>
         </div>
 
