@@ -944,23 +944,33 @@ async function syncZapConversationHistory(
   return mediaMessages.length > 0 ? "complete" : "empty";
 }
 
-async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
+async function processAutomaticDocumentSyncJobs(targetMaeId?: string | null): Promise<AnyObj> {
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     { auth: { persistSession: false } },
   );
-  const { data: jobs, error: jobsError } = await supabaseAdmin
+  let query = supabaseAdmin
     .from("zap_document_sync_jobs")
-    .select("mae_id, telefone_e164, attempts, status")
-    // Jobs concluídos são revalidados após 1 hora (next_attempt_at futuro),
-    // garantindo que novos documentos enviados depois sejam importados.
-    .in("status", ["pending", "complete"])
-    .lte("next_attempt_at", new Date().toISOString())
-    .order("next_attempt_at", { ascending: true })
-    // Históricos com muitos anexos podem levar dezenas de segundos. Um lote
-    // pequeno evita o timeout de 150 s da Edge Function.
-    .limit(3);
+    .select("mae_id, telefone_e164, attempts, status");
+
+  if (targetMaeId) {
+    // Processamento direcionado (sincronização manual ou job recém-criado):
+    // ignora janela de retry e status para rodar imediatamente.
+    query = query.eq("mae_id", targetMaeId).limit(1);
+  } else {
+    query = query
+      // Jobs concluídos são revalidados após 1 hora (next_attempt_at futuro),
+      // garantindo que novos documentos enviados depois sejam importados.
+      .in("status", ["pending", "complete"])
+      .lte("next_attempt_at", new Date().toISOString())
+      .order("next_attempt_at", { ascending: true })
+      // Históricos com muitos anexos podem levar dezenas de segundos. Um lote
+      // pequeno evita o timeout de 150 s da Edge Function.
+      .limit(3);
+  }
+
+  const { data: jobs, error: jobsError } = await query;
 
   if (jobsError) throw jobsError;
 
