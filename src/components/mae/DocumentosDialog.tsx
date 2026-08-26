@@ -115,6 +115,38 @@ export function DocumentosContent({
     void loadDocuments();
   }, [loadDocuments]);
 
+  const handleSync = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("zap-sync-documentos", {
+        body: { maeId },
+      });
+
+      if (error) {
+        console.error("Erro ao sincronizar documentos:", error);
+        toast.error("Não foi possível sincronizar a conversa agora.");
+        return;
+      }
+
+      if (data && data.success === false) {
+        toast.error(data.error || "Falha ao processar a conversa.");
+        return;
+      }
+
+      if (data?.processed) {
+        toast.success("Conversa sincronizada. Atualizando documentos...");
+      } else {
+        toast.success("Sincronização agendada. Os documentos aparecerão em instantes.");
+      }
+    } catch (err) {
+      console.error("Erro ao sincronizar documentos:", err);
+      toast.error("Não foi possível sincronizar a conversa agora.");
+    } finally {
+      setIsSyncing(false);
+      await loadDocuments();
+    }
+  }, [maeId, loadDocuments]);
+
   const handleSave = async () => {
     const normalizedLink = link.trim();
     if (normalizedLink) {
