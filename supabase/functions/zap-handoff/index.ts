@@ -579,11 +579,13 @@ async function enqueueAutomaticDocumentSync(
   }
 
   if (triggerImmediate) {
-    queueImmediateDocumentWorker();
+    // Dispara o worker apontando para ESTA mãe, garantindo que o job recém-criado
+    // seja processado de imediato (e não fique atrás de outros na fila).
+    queueImmediateDocumentWorker(maeId);
   }
 }
 
-function queueImmediateDocumentWorker(): void {
+function queueImmediateDocumentWorker(maeId?: string): void {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")?.replace(/\/+$/, "");
   const internalToken = Deno.env.get("INTERNAL_FUNCTION_TOKEN")?.trim();
   if (!supabaseUrl || !internalToken) {
@@ -591,7 +593,11 @@ function queueImmediateDocumentWorker(): void {
     return;
   }
 
-  const task = fetch(`${supabaseUrl}/functions/v1/zap-document-sync`, {
+  const target = maeId
+    ? `${supabaseUrl}/functions/v1/zap-handoff?mode=sync_pending_documents&mae_id=${encodeURIComponent(maeId)}`
+    : `${supabaseUrl}/functions/v1/zap-document-sync`;
+
+  const task = fetch(target, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${internalToken}`,
@@ -938,23 +944,33 @@ async function syncZapConversationHistory(
   return mediaMessages.length > 0 ? "complete" : "empty";
 }
 
-async function processAutomaticDocumentSyncJobs(): Promise<AnyObj> {
+async function processAutomaticDocumentSyncJobs(targetMaeId?: string | null): Promise<AnyObj> {
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     { auth: { persistSession: false } },
   );
-  const { data: jobs, error: jobsError } = await supabaseAdmin
+  let query = supabaseAdmin
     .from("zap_document_sync_jobs")
-    .select("mae_id, telefone_e164, attempts, status")
-    // Jobs concluídos são revalidados após 1 hora (next_attempt_at futuro),
-    // garantindo que novos documentos enviados depois sejam importados.
-    .in("status", ["pending", "complete"])
-    .lte("next_attempt_at", new Date().toISOString())
-    .order("next_attempt_at", { ascending: true })
-    // Históricos com muitos anexos podem levar dezenas de segundos. Um lote
-    // pequeno evita o timeout de 150 s da Edge Function.
-    .limit(3);
+    .select("mae_id, telefone_e164, attempts, status");
+
+  if (targetMaeId) {
+    // Processamento direcionado (sincronização manual ou job recém-criado):
+    // ignora janela de retry e status para rodar imediatamente.
+    query = query.eq("mae_id", targetMaeId).limit(1);
+  } else {
+    query = query
+      // Jobs concluídos são revalidados após 1 hora (next_attempt_at futuro),
+      // garantindo que novos documentos enviados depois sejam importados.
+      .in("status", ["pending", "complete"])
+      .lte("next_attempt_at", new Date().toISOString())
+      .order("next_attempt_at", { ascending: true })
+      // Históricos com muitos anexos podem levar dezenas de segundos. Um lote
+      // pequeno evita o timeout de 150 s da Edge Function.
+      .limit(3);
+  }
+
+  const { data: jobs, error: jobsError } = await query;
 
   if (jobsError) throw jobsError;
 
@@ -1035,7 +1051,7 @@ serve(async (req) => {
         });
       }
 
-      const result = await processAutomaticDocumentSyncJobs();
+      const result = await processAutomaticDocumentSyncJobs(url.searchParams.get("mae_id"));
       return new Response(JSON.stringify(result), { status: 200, headers: jsonHeaders });
     }
     const deferDocumentSync = url.searchParams.get("defer_document_sync") === "true";

@@ -68,6 +68,7 @@ export function DocumentosContent({
   const [isLoading, setIsLoading] = useState(false);
   const [documents, setDocuments] = useState<DocumentoCliente[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -114,6 +115,38 @@ export function DocumentosContent({
   useEffect(() => {
     void loadDocuments();
   }, [loadDocuments]);
+
+  const handleSync = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("zap-sync-documentos", {
+        body: { maeId },
+      });
+
+      if (error) {
+        console.error("Erro ao sincronizar documentos:", error);
+        toast.error("Não foi possível sincronizar a conversa agora.");
+        return;
+      }
+
+      if (data && data.success === false) {
+        toast.error(data.error || "Falha ao processar a conversa.");
+        return;
+      }
+
+      if (data?.processed) {
+        toast.success("Conversa sincronizada. Atualizando documentos...");
+      } else {
+        toast.success("Sincronização agendada. Os documentos aparecerão em instantes.");
+      }
+    } catch (err) {
+      console.error("Erro ao sincronizar documentos:", err);
+      toast.error("Não foi possível sincronizar a conversa agora.");
+    } finally {
+      setIsSyncing(false);
+      await loadDocuments();
+    }
+  }, [maeId, loadDocuments]);
 
   const handleSave = async () => {
     const normalizedLink = link.trim();
@@ -206,11 +239,11 @@ export function DocumentosContent({
             variant="ghost"
             size="sm"
             className="gap-2"
-            onClick={() => void loadDocuments()}
-            disabled={isLoadingDocuments}
+            onClick={() => void handleSync()}
+            disabled={isSyncing || isLoadingDocuments}
           >
-            <RefreshCw className={`h-4 w-4 ${isLoadingDocuments ? "animate-spin" : ""}`} />
-            Atualizar
+            <RefreshCw className={`h-4 w-4 ${isSyncing || isLoadingDocuments ? "animate-spin" : ""}`} />
+            {isSyncing ? "Sincronizando..." : "Atualizar"}
           </Button>
         </div>
 
