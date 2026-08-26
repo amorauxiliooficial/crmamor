@@ -579,11 +579,13 @@ async function enqueueAutomaticDocumentSync(
   }
 
   if (triggerImmediate) {
-    queueImmediateDocumentWorker();
+    // Dispara o worker apontando para ESTA mãe, garantindo que o job recém-criado
+    // seja processado de imediato (e não fique atrás de outros na fila).
+    queueImmediateDocumentWorker(maeId);
   }
 }
 
-function queueImmediateDocumentWorker(): void {
+function queueImmediateDocumentWorker(maeId?: string): void {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")?.replace(/\/+$/, "");
   const internalToken = Deno.env.get("INTERNAL_FUNCTION_TOKEN")?.trim();
   if (!supabaseUrl || !internalToken) {
@@ -591,7 +593,11 @@ function queueImmediateDocumentWorker(): void {
     return;
   }
 
-  const task = fetch(`${supabaseUrl}/functions/v1/zap-document-sync`, {
+  const target = maeId
+    ? `${supabaseUrl}/functions/v1/zap-handoff?mode=sync_pending_documents&mae_id=${encodeURIComponent(maeId)}`
+    : `${supabaseUrl}/functions/v1/zap-document-sync`;
+
+  const task = fetch(target, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${internalToken}`,
