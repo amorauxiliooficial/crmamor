@@ -1051,7 +1051,7 @@ serve(async (req) => {
         });
       }
 
-      const result = await processAutomaticDocumentSyncJobs();
+      const result = await processAutomaticDocumentSyncJobs(url.searchParams.get("mae_id"));
       return new Response(JSON.stringify(result), { status: 200, headers: jsonHeaders });
     }
     const deferDocumentSync = url.searchParams.get("defer_document_sync") === "true";
